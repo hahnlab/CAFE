@@ -14,7 +14,7 @@ all: $(EXEC)
 
 $(EXEC): $(LIBS) $(OBJS)
 	ar -r $(ARFILE) $(OBJS)
-	$(CC) main.c $(INCLUDE) $(OPTS) $(LINKS) $(ARFILE) $(LIBS) -o $@
+	$(CC) main.c $(INCLUDE) $(OPTS) $(ARFILE) $(LIBS) $(LINKS) -o $@
 
 $(LIBS):
 	make -C $(COMMON)
