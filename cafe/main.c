@@ -2,11 +2,13 @@
 
 char* __date__ = __DATE__;
 
+const int VERBOSE = 0;
+
 int main(int argc, char* argv[])
 {
 	//int i = 0;
 	char prompt[STRING_BUF_SIZE];
-	cafe_shell_init();
+	cafe_shell_init(VERBOSE);
 	srand((unsigned int)time(NULL));
 	int shell = 0;
 	if ( argc == 2 )

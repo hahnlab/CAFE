@@ -141,6 +141,8 @@ struct tagCafeParam
 	double* averageExpansion;
 	double** cutPvalues;
 	double** likelihoodRatios;
+
+	int quiet;
 };
 
 

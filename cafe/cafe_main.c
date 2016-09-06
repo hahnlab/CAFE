@@ -14,8 +14,11 @@ void cafe_log(pCafeParam param, char* msg, ... )
     vfprintf(param->flog, msg, ap2); 
     va_end(ap2);
   }
-  vfprintf(stdout, msg, ap); 
-  fflush(stdout);
+  if (!param->quiet)
+  {
+	  vfprintf(stdout, msg, ap);
+	  fflush(stdout);
+  }
   fflush(param->flog);
   va_end(ap);
 }
@@ -185,18 +188,19 @@ double cafe_get_posterior(pCafeParam param)
 		}
 		if ( param->ML[i] == 0 )
 		{ 
-
-			printf(">> %d %d\n", i, pitem->ref );
-			printf("Root size: %d ~ %d , %d \n", 
-					param->pcafe->rootfamilysizes[0],
-					param->pcafe->rootfamilysizes[1], param->pcafe->rfsize );
-			printf("Family size: %d ~ %d\n", param->pcafe->familysizes[0], param->pcafe->familysizes[1] );
-			printf("Root size: %d ~ %d\n", param->rootfamily_sizes[0], param->rootfamily_sizes[1] );
-			printf("Family size: %d ~ %d\n", param->family_sizes[0], param->family_sizes[1] );
-			pString pstr = cafe_tree_string_with_familysize_lambda(param->pcafe);
-			fprintf(stderr, "%d: %s\n", i, pstr->buf );
-			string_free(pstr);
-
+			if (!param->quiet)
+			{ 
+				printf(">> %d %d\n", i, pitem->ref );
+				printf("Root size: %d ~ %d , %d \n", 
+						param->pcafe->rootfamilysizes[0],
+						param->pcafe->rootfamilysizes[1], param->pcafe->rfsize );
+				printf("Family size: %d ~ %d\n", param->pcafe->familysizes[0], param->pcafe->familysizes[1] );
+				printf("Root size: %d ~ %d\n", param->rootfamily_sizes[0], param->rootfamily_sizes[1] );
+				printf("Family size: %d ~ %d\n", param->family_sizes[0], param->family_sizes[1] );
+				pString pstr = cafe_tree_string_with_familysize_lambda(param->pcafe);
+				fprintf(stderr, "%d: %s\n", i, pstr->buf );
+				string_free(pstr);
+			}
 			score = log(0);
 			break;
 		}

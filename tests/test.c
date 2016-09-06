@@ -84,7 +84,7 @@ TEST(FirstTestGroup, TestCafeTree)
 TEST(FirstTestGroup, TestShellDispatcher)
 {
 	char c[10];
-	cafe_shell_init();
+	cafe_shell_init(1);
 
 	CafeShellCommand *old = cafe_cmd;
 	cafe_cmd[0] = cafe_cmd_test[0];
@@ -98,7 +98,7 @@ TEST(FirstTestGroup, TestShellDispatcher)
 TEST(FirstTestGroup, TestCmdLambda_FailsWithoutTree)
 {
 	char c[10];
-	cafe_shell_init();
+	cafe_shell_init(1);
 	char strs[4][30];
 	strcpy(strs[0], "lambda");
 	strcpy(strs[1], "-s");
@@ -116,7 +116,7 @@ TEST(FirstTestGroup, TestCmdLambda_FailsWithoutTree)
 
 TEST(FirstTestGroup, TestCmdLambdaFailsWithoutLoad)
 {
-	cafe_shell_init();
+	cafe_shell_init(1);
 	char strs[4][30];
 	strcpy(strs[0], "lambda");
 	strcpy(strs[1], "-s");
@@ -142,7 +142,7 @@ TEST(FirstTestGroup, TestCmdLambdaFailsWithoutLoad)
 
 TEST(FirstTestGroup, TestCmdLambda)
 {
-	cafe_shell_init();
+	cafe_shell_init(1);
 	char strs[4][30];
 	strcpy(strs[0], "lambda");
 	strcpy(strs[1], "-s");

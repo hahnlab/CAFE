@@ -807,7 +807,7 @@ double* cafe_shell_likelihood(int max)
 	return cafe_tree_likelihood(pcafe);
 }
 
-void cafe_shell_init()
+void cafe_shell_init(int quiet)
 {
 	cafe_param = (pCafeParam)memory_new(1,sizeof(CafeParam));
 	cafe_param->rootfamily_sizes[0] = 1;
@@ -820,6 +820,7 @@ void cafe_shell_init()
 	cafe_param->num_random_samples = 1000;
 	cafe_param->bl_augment = 0.5;
 	cafe_param->pvalue = 0.01;
+	cafe_param->quiet = quiet;
 }
 
 int cafe_cmd_echo(int argc, char* argv[])
