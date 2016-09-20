@@ -161,6 +161,40 @@ TEST(FirstTestGroup, TestCmdLambda)
 	LONGS_EQUAL(0, cafe_cmd_lambda(4, argv));
 }
 
+extern "C" {
+	void show_sizes(FILE*, pCafeParam param, pCafeFamilyItem pitem, int i);
+}
+
+TEST(FirstTestGroup, TestShowSizes)
+{
+	char outbuf[10000];
+	setbuf(stdout, outbuf);
+
+	CafeParam param;
+	param.rootfamily_sizes[0] = 29;
+	param.rootfamily_sizes[1] = 31;
+	param.family_sizes[0] = 37;
+	param.family_sizes[1] = 41;
+
+	CafeFamilyItem item;
+	item.ref = 14;
+	CafeTree tree;
+	tree.rootfamilysizes[0] = 11;
+	tree.rootfamilysizes[1] = 13;
+	tree.familysizes[0] = 23;
+	tree.familysizes[1] = 19;
+	tree.rfsize = 17;
+	param.pcafe = &tree;
+	FILE* in = fmemopen(outbuf, 999, "w");
+	show_sizes(in, &param, &item, 7);
+	fclose(in);
+	STRCMP_CONTAINS(">> 7 14", outbuf);
+	STRCMP_CONTAINS("Root size: 11 ~ 13 , 17", outbuf);
+	STRCMP_CONTAINS("Family size: 23 ~ 19", outbuf);
+	STRCMP_CONTAINS("Root size: 29 ~ 31", outbuf);
+	STRCMP_CONTAINS("Family size: 37 ~ 41", outbuf);
+}
+
 int main(int ac, char** av)
 {
 	return CommandLineTestRunner::RunAllTests(ac, av);

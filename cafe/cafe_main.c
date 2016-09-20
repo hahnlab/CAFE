@@ -141,6 +141,18 @@ pGMatrix cafe_lambda_distribution(pCafeParam param, int numrange, double** range
 }
 
 
+
+void show_sizes(FILE* f, pCafeParam param, pCafeFamilyItem pitem, int i)
+{
+	fprintf(f, ">> %d %d\n", i, pitem->ref);
+	fprintf(f, "Root size: %d ~ %d , %d \n",
+		param->pcafe->rootfamilysizes[0],
+		param->pcafe->rootfamilysizes[1], param->pcafe->rfsize);
+	fprintf(f, "Family size: %d ~ %d\n", param->pcafe->familysizes[0], param->pcafe->familysizes[1]);
+	fprintf(f, "Root size: %d ~ %d\n", param->rootfamily_sizes[0], param->rootfamily_sizes[1]);
+	fprintf(f, "Family size: %d ~ %d\n", param->family_sizes[0], param->family_sizes[1]);
+}
+
 double cafe_get_posterior(pCafeParam param)
 {
 	int i, j;
@@ -190,13 +202,7 @@ double cafe_get_posterior(pCafeParam param)
 		{ 
 			if (!param->quiet)
 			{ 
-				printf(">> %d %d\n", i, pitem->ref );
-				printf("Root size: %d ~ %d , %d \n", 
-						param->pcafe->rootfamilysizes[0],
-						param->pcafe->rootfamilysizes[1], param->pcafe->rfsize );
-				printf("Family size: %d ~ %d\n", param->pcafe->familysizes[0], param->pcafe->familysizes[1] );
-				printf("Root size: %d ~ %d\n", param->rootfamily_sizes[0], param->rootfamily_sizes[1] );
-				printf("Family size: %d ~ %d\n", param->family_sizes[0], param->family_sizes[1] );
+				show_sizes(stdout, param, pitem, i);
 				pString pstr = cafe_tree_string_with_familysize_lambda(param->pcafe);
 				fprintf(stderr, "%d: %s\n", i, pstr->buf );
 				string_free(pstr);
@@ -308,7 +314,6 @@ void __cafe_scaledown_cluster_parameters(pCafeParam param, int lambda_len, int m
 }
 
 
-
 double cafe_get_clustered_posterior(pCafeParam param)
 {
 	int i,j,k;
@@ -386,18 +391,11 @@ double cafe_get_clustered_posterior(pCafeParam param)
 		}
 		if ( param->MAP[i] == 0 )
 		{ 
-			
-			printf(">> %d %d\n", i, pitem->ref );
-			printf("Root size: %d ~ %d , %d \n", 
-				   param->pcafe->rootfamilysizes[0],
-				   param->pcafe->rootfamilysizes[1], param->pcafe->rfsize );
-			printf("Family size: %d ~ %d\n", param->pcafe->familysizes[0], param->pcafe->familysizes[1] );
-			printf("Root size: %d ~ %d\n", param->rootfamily_sizes[0], param->rootfamily_sizes[1] );
-			printf("Family size: %d ~ %d\n", param->family_sizes[0], param->family_sizes[1] );
+			show_sizes(stdout, param, pitem, i);
 			pString pstr = cafe_tree_string_with_familysize_lambda(param->pcafe);
-			fprintf(stderr, "%d: %s\n", i, pstr->buf );
+			fprintf(stderr, "%d: %s\n", i, pstr->buf);
 			string_free(pstr);
-			
+
 			score = log(0);
 			break;
 		}
@@ -572,14 +570,7 @@ double cafe_set_prior_rfsize_by_family(pCafeParam param)
 		}
 		if ( param->ML[i] == 0 )
 		{ 
-
-			printf(">> %d %d\n", i, pitem->ref );
-			printf("Root size: %d ~ %d , %d \n", 
-					param->pcafe->rootfamilysizes[0],
-					param->pcafe->rootfamilysizes[1], param->pcafe->rfsize );
-			printf("Family size: %d ~ %d\n", param->pcafe->familysizes[0], param->pcafe->familysizes[1] );
-			printf("Root size: %d ~ %d\n", param->rootfamily_sizes[0], param->rootfamily_sizes[1] );
-			printf("Family size: %d ~ %d\n", param->family_sizes[0], param->family_sizes[1] );
+			show_sizes(stdout, param, pitem, i);
 			pString pstr = cafe_tree_string_with_familysize_lambda(param->pcafe);
 			fprintf(stderr, "%d: %s\n", i, pstr->buf );
 			string_free(pstr);
