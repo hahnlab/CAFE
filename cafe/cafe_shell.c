@@ -1,3 +1,9 @@
+/** @file cafe_shell.c
+* @brief  Functions corresponding to the commands available in Cafe.
+*
+* Command list is found in the #cafe_cmd function
+*/
+
 #include "cafe_shell.h"
 #include<mathfunc.h>
 #include<ctype.h>
@@ -12,6 +18,14 @@ pArrayList cafe_pCD;
 	#define STDERR_IF(a,b)	if ( a ) { fprintf(stderr,b); return -1; }
 #endif
 
+/**
+* \brief Holds the list of commands that are available in Cafe.
+* 
+* Each element consists of a command and the function that is 
+* called to handle that command. Terminated by a NULL, NULL pair
+* Functions include #cafe_cmd_lambda, #cafe_cmd_family, #cafe_cmd_tree,
+* etc.
+*/
 CafeShellCommand cafe_cmd[]  =
 {
 	{ "?", cafe_cmd_list },
@@ -1530,8 +1544,18 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 
 
 
-
-
+/**
+* \brief Find lambda values
+*
+* Arguments include -s and -t. The -s argument starts a search
+* for lambda values maximizing the log likelihood of data for
+* all values. Subsequent analayses will automatically use the
+* results from the lambda search.
+* -t takes the same Newick tree structure as in the tree
+* command, excluding branch lengths and subsituting integer
+* values from 1 to N taxon names.
+* etc.
+*/
 int cafe_cmd_lambda(int argc, char* argv[])
 {
 	int i,j;
