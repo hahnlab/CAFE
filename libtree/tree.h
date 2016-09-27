@@ -93,7 +93,7 @@ extern pTree phylogeny_load_from_file(char* sztree,
 		                         phylogeny_func_parse_node parsefunc );
 extern void phylogeny_free(pTree ptree);
 
-extern pTreeNode phylogeny_new_empty_node();
+extern pTreeNode phylogeny_new_empty_node(pTree ptree);
 extern void phylogeny_clear_node(pPhylogenyNode pnode);
 extern pTree phylogeny_copy(pTree psrc);
 extern pTree phylogeny_new(char* sztree, phylogeny_func_parse_node parsefunc );
