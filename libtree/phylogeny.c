@@ -1,4 +1,5 @@
-#include<tree.h>
+#include "tree.h"
+
 #include<io.h>
 #include<string.h>
 #include<stdlib.h>
@@ -328,7 +329,7 @@ int phylogeny_check_tree_string(char* sztree)
 	}
 	if ( grp_cnt != 0 )
 	{
-		fprintf( stderr, "Unbalance of paranthesis\n");
+		fprintf(stderr, "Tree error (Unbalanced parentheses): %s\n", sztree);
 		err = 1;
 	}	
 	stack_free(pstack);

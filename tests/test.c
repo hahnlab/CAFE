@@ -4,10 +4,26 @@ extern "C"
 {
 #include <utils_string.h>
 #include <cafe_shell.h>
+#include <tree.h>
 
 }
 
+extern "C" {
+	void show_sizes(FILE*, pCafeParam param, pCafeFamilyItem pitem, int i);
+	int __cafe_cmd_lambda_tree(pArgument parg);
+	void phylogeny_lambda_parse_func(pTree ptree, pTreeNode ptnode);
+}
+
 const char *newick_tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)";
+
+void init_cafe_tree()
+{
+	char buf[100];
+	strcpy(buf, "tree ");
+	strcat(buf, newick_tree);
+	cafe_shell_dispatch_command(buf);
+}
+
 
 int cafe_cmd_atoi(int argc, char* argv[])
 {
@@ -143,6 +159,7 @@ TEST(FirstTestGroup, TestCmdLambdaFailsWithoutLoad)
 TEST(FirstTestGroup, TestCmdLambda)
 {
 	cafe_shell_init(1);
+	init_cafe_tree();
 	char strs[4][30];
 	strcpy(strs[0], "lambda");
 	strcpy(strs[1], "-s");
@@ -151,19 +168,26 @@ TEST(FirstTestGroup, TestCmdLambda)
 	char *argv[] = { strs[0], strs[1], strs[2], strs[3] };
 
 	char buf[100];
-	strcpy(buf, "tree ");
-	strcat(buf, newick_tree);
-	cafe_shell_dispatch_command(buf);
-
 	strcpy(buf, "load -i ../example/example_data.tab");
 	cafe_shell_dispatch_command(buf);
 
 	LONGS_EQUAL(0, cafe_cmd_lambda(4, argv));
-}
+};
 
-extern "C" {
-	void show_sizes(FILE*, pCafeParam param, pCafeFamilyItem pitem, int i);
-}
+TEST(FirstTestGroup, TestLambdaTree)
+{
+	cafe_shell_init(1);
+	init_cafe_tree();
+	char strs[2][100];
+	strcpy(strs[0], "(((2,2)1,(1,1)1)1,1)");
+
+	Argument arg;
+	arg.argc = 1;
+	char* argv[] = { strs[0], strs[1] };
+	arg.argv = argv;
+	__cafe_cmd_lambda_tree(&arg);
+};
+
 
 TEST(FirstTestGroup, TestShowSizes)
 {
@@ -194,6 +218,20 @@ TEST(FirstTestGroup, TestShowSizes)
 	STRCMP_CONTAINS("Root size: 29 ~ 31", outbuf);
 	STRCMP_CONTAINS("Family size: 37 ~ 41", outbuf);
 }
+
+TEST(FirstTestGroup, TestPhylogenyLoadFromString)
+{
+	char outbuf[10000];
+	strcpy(outbuf, "(((1,1)1,(2,2)2)2,2)");
+	cafe_shell_init(1);
+	init_cafe_tree();
+	pTree tree = phylogeny_load_from_string(outbuf, tree_new, phylogeny_new_empty_node, phylogeny_lambda_parse_func);
+	CHECK(tree != 0);
+	LONGS_EQUAL(56, tree->size);
+
+};
+
+
 
 int main(int ac, char** av)
 {

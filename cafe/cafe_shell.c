@@ -919,7 +919,8 @@ int cafe_cmd_tree(int argc, char* argv[])
 		cafe_param->pcafe = NULL;
 		return -1;
 	}
-	cafe_tree_string_print(cafe_param->pcafe);
+	if (!cafe_param->quiet)
+		cafe_tree_string_print(cafe_param->pcafe);
 	if ( cafe_param->pfamily )
 	{
 		cafe_family_set_species_index(cafe_param->pfamily, cafe_param->pcafe);
@@ -1025,7 +1026,8 @@ int __cafe_cmd_lambda_tree(pArgument parg)
 			if ( n == m ) cafe_param->old_branchlength[m++] = lambda_idx;	// save new lambda idx
 		}
 		cafe_param->num_lambdas = m;										// number of branch-specific lambdas = m
-		printf("The number of lambdas is %d\n", m );
+		if (!cafe_param->quiet)
+			printf("The number of lambdas is %d\n", m );
 	}
 	return 0;
 }
@@ -1083,7 +1085,6 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 		}		
 		else if ( !strcmp( parg->opt, "-t") )
 		{
-			// here is where I need to put in stuff!
 			bdone = __cafe_cmd_lambda_tree(parg);
 			if (bdone < 0) {
 				return -1;
