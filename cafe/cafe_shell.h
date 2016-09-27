@@ -1,11 +1,7 @@
 #ifndef __CAFE_SHELL_H__
 #define __CAFE_SHELL_H__
 
-#include<stdarg.h>
-#include<stdio.h>
-#include "cafe.h"
 #include<utils.h>
-#include<io.h>
 
 typedef int (*cafe_command)(int argc, char* argv[]);
 

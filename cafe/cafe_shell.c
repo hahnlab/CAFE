@@ -9,6 +9,10 @@
 #include<ctype.h>
 #include <assert.h>
 #include <float.h>
+#include<stdarg.h>
+#include<stdio.h>
+#include "cafe.h"
+#include<io.h>
 
 pCafeParam cafe_param;
 pTree tmp_lambda_tree;

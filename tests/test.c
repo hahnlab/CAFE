@@ -5,6 +5,7 @@ extern "C"
 #include <utils_string.h>
 #include <cafe_shell.h>
 #include <tree.h>
+#include <cafe.h>
 
 }
 

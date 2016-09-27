@@ -1,4 +1,5 @@
 #include "cafe_shell.h"
+#include <utils_string.h>
 
 char* __date__ = __DATE__;
 
