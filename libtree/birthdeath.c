@@ -5,6 +5,7 @@
 #include<pthread.h>
 #include<family.h>
 #include<float.h>
+#include<mathfunc.h>
 
 /*
 P(X(t) = c | X(0) = s)  = \sum_{j=0}^{\min(s,c)} \binom{s}{j}\binom{s+c-j-1}{s-1}

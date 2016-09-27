@@ -1,9 +1,6 @@
 #ifndef __BIRTHDEATH_H__
 #define __BIRTHDEATH_H__
 
-#include<mathfunc.h>
-#include<memalloc.h>
-#include<utils.h>
 #include "hashtable.h"
 
 

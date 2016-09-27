@@ -25,6 +25,10 @@ variable in cafe_shell.c .
 #include<stdlib.h>
 #include<math.h>
 #include<stdio.h>
+#include<pthread.h>
+#include<mathfunc.h>
+#include<memalloc.h>
+#include<utils.h>
 
 void cafe_log(pCafeParam param, char* msg, ... )
 {

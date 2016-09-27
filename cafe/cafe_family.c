@@ -1,6 +1,9 @@
 #include "cafe.h"
 #include<stdlib.h>
 #include<stdio.h>
+#include<mathfunc.h>
+#include<memalloc.h>
+#include<utils.h>
 
 void __cafe_famliy_check_the_pattern(pCafeFamily pcf)
 {

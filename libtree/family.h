@@ -3,8 +3,6 @@
 
 #include<tree.h>
 #include<birthdeath.h>
-#include<pthread.h>
-#include<gmatrix.h>
 
 #define FAMILYSIZEMAX	1000
 typedef struct 

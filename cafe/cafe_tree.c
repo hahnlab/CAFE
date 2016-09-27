@@ -2,6 +2,7 @@
 #include<stdlib.h>
 #include<io.h>
 #include<math.h>
+#include<mathfunc.h>
 
 extern void __phylogeny_free_node(pTree ptree, pTreeNode ptnode, va_list ap1);
 

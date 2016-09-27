@@ -2,6 +2,7 @@
 #define __CAFE_TREE_H__
 
 #include<family.h>
+#include<gmatrix.h>
 
 typedef struct
 {
