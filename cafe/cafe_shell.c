@@ -1143,153 +1143,8 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 		{
 			tmp_param->eqbg = 1;
 		}
-		//else if ( !strcmp( parg->opt, "-post") ) 
-		//{
-		//	tmp_param->posterior = 1;			
-		//}
-		
 	}
-	
-	
-	
-	//////
-	/*
-	 for ( i = 0 ; i < pargs->size ; i++ )
-	 {
-	 pArgument parg = (pArgument)pargs->array[i];
-	 // Search for whole family 
-	 if ( !strcmp( parg->opt, "-s" ) )
-	 {
-	 if ( cafe_param->num_lambdas < 0 )
-	 {
-	 cafe_param->num_lambdas = 1;
-	 cafe_param->num_mus = 1;
-	 }
-	 bsearch = 1;
-	 }
-	 else if ( !strcmp( parg->opt, "-t") )
-	 {
-	 bdone = __cafe_cmd_lambda_tree(parg);
-	 if (bdone < 0) {
-	 return -1;
-	 }
-	 cafe_param->num_mus = cafe_param->num_lambdas;
-	 if (cafe_param->k) {
-	 cafe_param->num_params = (cafe_param->num_lambdas*(cafe_param->k-cafe_param->fixcluster0))+(cafe_param->num_mus*(cafe_param->k-cafe_param->fixcluster0))+(cafe_param->k-1);
-	 }
-	 pString pstr = phylogeny_string(cafe_param->lambda_tree,NULL);
-	 cafe_log(cafe_param,"Lambda Tree: %s\n", pstr->buf);
-	 string_free(pstr);
-	 }
-	 else if ( !strcmp( parg->opt, "-v") )
-	 {
-	 //sscanf( parg->argv[0], "%lf", &vlambda ); 
-	 }
-	 else if ( !strcmp( parg->opt, "-l") )
-	 {
-	 if (cafe_param->num_lambdas < 0) {
-	 cafe_param->num_lambdas = 1;
-	 cafe_param->num_mus = 1;
-	 }
-	 if ( cafe_param->lambda ) memory_free(cafe_param->lambda);
-	 cafe_param->lambda = NULL;
-	 cafe_param->lambda = (double*)memory_new(cafe_param->num_lambdas*cafe_param->k, sizeof(double) );
-	 for ( j = 0 ; j < parg->argc ; j++ )
-	 {
-	 sscanf( parg->argv[j], "%lf", &cafe_param->lambda[j] );
-	 }
-	 blambda = 1;
-	 }
-	 else if ( !strcmp( parg->opt, "-m") )
-	 {
-	 STDERR_IF( cafe_param->lambda == NULL, "ERROR(lambdakmean): You must specify lambda values first: '-l' before '-m'\n");
-	 STDERR_IF( cafe_param->num_lambdas*cafe_param->k != parg->argc, "ERROR(lambdakmean): the number of mus specified must be equal to the number of lambda values\n");
-	 if ( cafe_param->mu ) memory_free(cafe_param->mu);
-	 cafe_param->mu = NULL;
-	 //cafe_param->num_mus = parg->argc;
-	 cafe_param->mu = (double*)memory_new(cafe_param->num_mus*cafe_param->k, sizeof(double) );
-	 for ( j = 0 ; j < parg->argc ; j++ )
-	 {
-	 sscanf( parg->argv[j], "%lf", &cafe_param->mu[j] );
-	 }
-	 }
-	 else if ( !strcmp( parg->opt, "-p") )
-	 {
-	 if ( cafe_param->k_weights ) memory_free(cafe_param->k_weights);
-	 cafe_param->k_weights = NULL;
-	 cafe_param->k_weights = (double*)memory_new(cafe_param->k, sizeof(double) );
-	 double sumofweights = 0;
-	 for ( j = 0 ; j < cafe_param->k-1; j++ ) {
-	 sscanf( parg->argv[j], "%lf", &cafe_param->k_weights[j] );
-	 sumofweights += cafe_param->k_weights[j];
-	 }
-	 cafe_param->k_weights[j] = 1- sumofweights;
-	 cafe_param->num_params = (cafe_param->num_lambdas*cafe_param->k)+(cafe_param->num_mus*cafe_param->k)+(cafe_param->k-1);
-	 }
-	 else if ( !strcmp (parg->opt, "-k") ) 
-	 {
-	 if ( cafe_param->num_lambdas < 0 )
-	 {
-	 cafe_param->num_lambdas = 1;
-	 cafe_param->num_mus = 1;
-	 }
-	 sscanf( parg->argv[0], "%d", &num_cluster_k );  
-	 cafe_param->k = num_cluster_k;
-	 cafe_param->num_params = (cafe_param->num_lambdas*cafe_param->k)+(cafe_param->num_mus*cafe_param->k)+(cafe_param->k-1);
-	 }
-	 else if ( !strcmp (parg->opt, "-f") ) 
-	 {
-	 if (cafe_param->k < 2) {
-	 //we need at least two clusters to fix one cluster as zero
-	 fprintf( stderr, "ERROR: -f option needs at least two clusters. -k with at least 2 needs to be specified beforehand.\n");
-	 return -1;
-	 }
-	 cafe_param->fixcluster0 = 1;
-	 cafe_param->num_params = (cafe_param->num_lambdas*(cafe_param->k-1))+(cafe_param->num_mus*(cafe_param->k-1))+(cafe_param->k-1);
-	 }
-	 
-	 }
-	 
-	 arraylist_free( pargs, free );
-	 
-	 STDERR_IF(cafe_param->k == 0 && cafe_param->num_lambdas != 1 && !bprint, "ERROR(lambda): You did not specify cluster information\n");
-	 
-	 if ( bsearch == 1 )
-	 {
-	 if ( cafe_param->num_lambdas > 1 && cafe_param->lambda_tree == NULL )
-	 {
-	 fprintf(stderr,"ERROR(lambda): You have to describe lambda information using option -t, because the number of lambda is more than 1\n" );
-	 return -1;
-	 }
-	 if ( cafe_param->pfamily && cafe_param->pcafe )
-	 {
-	 if (cafe_param->eqbg) {
-	 cafe_best_lambda_mu_eqbg_by_fminsearch(cafe_param, cafe_param->num_lambdas,  cafe_param->num_mus);
-	 }
-	 else {
-	 cafe_best_lambda_mu_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->num_mus, cafe_param->k);
-	 }
-	 }
-	 else
-	 {
-	 fprintf(stderr,"ERROR(lambda): Please load family and cafe tree before\n");
-	 return -1;
-	 }
-	 }
-	 else if (cafe_param->num_lambdas > 0)
-	 {
-	 if( cafe_param->parameters ) memory_free(cafe_param->parameters);
-	 cafe_param->parameters = NULL;
-	 cafe_param->parameters = (double*)memory_new(cafe_param->num_params, sizeof(double));
-	 memcpy(cafe_param->parameters,cafe_param->lambda, sizeof(double)*cafe_param->num_lambdas*cafe_param->k);
-	 memcpy(&cafe_param->parameters[cafe_param->num_lambdas*cafe_param->k],cafe_param->mu, sizeof(double)*cafe_param->num_mus*cafe_param->k);
-	 memcpy(&cafe_param->parameters[cafe_param->num_lambdas*cafe_param->k+cafe_param->num_mus*cafe_param->k], cafe_param->k_weights, sizeof(double)*(cafe_param->k-1));
-	 cafe_param->param_set_func(cafe_param, cafe_param->parameters);
-	 //bprint = 1;
-	 }
-	 
-	 */	
-	
+		
 	//////////
 	arraylist_free( pargs, free );
 	
@@ -1308,15 +1163,6 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 		// search or set
 		if (bsearch) {
             pTree ptree = (pTree)pcafe;
-            // scale branch lengths by sum_branch_length.
-            /*for( j = 0 ; j < ptree->nlist->size; j++ )
-            {
-                pPhylogenyNode pnode = (pPhylogenyNode)ptree->nlist->array[j];
-                if ( pnode->branchlength > 0 )
-                {
-                    pnode->branchlength = pnode->branchlength/cafe_param->sum_branch_length;
-                }
-            }*/
             // prepare parameters
 			if (tmp_param->lambda_tree != NULL) {
 				// cafe_param->num_lambdas determined by lambda tree.
@@ -1334,9 +1180,6 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 					if (cafe_param->k_weights) { memory_free(cafe_param->k_weights);}
 					cafe_param->k_weights = NULL;
 					cafe_param->k_weights = (double*) memory_new(cafe_param->k, sizeof(double));
-					
-					//cafe_param->lambda = &(cafe_param->parameters[0]);
-					//cafe_param->mu = &(cafe_param->parameters[tmp_param->num_lambdas*(tmp_param->k-tmp_param->fixcluster0)]);
 				}
 				else {	// search whole dataset branch specific
 					cafe_param->num_params = tmp_param->num_lambdas+(tmp_param->num_mus-tmp_param->eqbg);
@@ -1344,9 +1187,6 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 					if( cafe_param->parameters ) memory_free(cafe_param->parameters);
 					cafe_param->parameters = NULL;
 					cafe_param->parameters = (double*)memory_new(cafe_param->num_params, sizeof(double));
-					
-					//cafe_param->lambda = &(cafe_param->parameters[0]);
-					//cafe_param->mu = &(cafe_param->parameters[tmp_param->num_lambdas]);
 				}
 			}
 			else {
@@ -1369,9 +1209,6 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 					if (cafe_param->k_weights) { memory_free(cafe_param->k_weights);}
 					cafe_param->k_weights = NULL;
 					cafe_param->k_weights = (double*) memory_new(cafe_param->k, sizeof(double));
-					
-					//cafe_param->lambda = &(cafe_param->parameters[0]);
-					//cafe_param->mu = &(cafe_param->parameters[tmp_param->num_lambdas*(tmp_param->k-tmp_param->fixcluster0)]);
 				}
 				else {	// search whole dataset whole tree
 					cafe_param->num_params = tmp_param->num_lambdas+tmp_param->num_mus;
@@ -1379,25 +1216,11 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 					if( cafe_param->parameters ) memory_free(cafe_param->parameters);
 					cafe_param->parameters = NULL;
 					cafe_param->parameters = (double*)memory_new(cafe_param->num_params, sizeof(double));
-					
-					//cafe_param->lambda = &(cafe_param->parameters[0]);
-					//cafe_param->mu = &(cafe_param->parameters[tmp_param->num_lambdas]);
 				}
 			}
 			// search
 			if (tmp_param->checkconv) { cafe_param->checkconv = 1; }
 			cafe_best_lambda_mu_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->num_mus, cafe_param->k);
-            
-            // scale back branch lengths by sum_branch_length.
-            /*for( j = 0 ; j < ptree->nlist->size; j++ )
-            {
-                pPhylogenyNode pnode = (pPhylogenyNode)ptree->nlist->array[j];
-                if ( pnode->branchlength > 0 )
-                {
-                    pnode->branchlength = pnode->branchlength*cafe_param->sum_branch_length;
-                }
-            }*/
-
 		}
 		else {
 			if (tmp_param->lambda_tree != NULL) {
