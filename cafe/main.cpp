@@ -1,7 +1,11 @@
+extern "C" {
 #include "cafe_shell.h"
 #include <utils_string.h>
+}
 
-char* __date__ = __DATE__;
+#include <time.h>
+
+const char* __date__ = __DATE__;
 
 const int VERBOSE = 0;
 
@@ -21,7 +25,9 @@ int main(int argc, char* argv[])
 	{
 		while(shell !=  CAFE_SHELL_EXIT )
 		{
-			printf("%s", "# "); fgets(prompt,STRING_BUF_SIZE,stdin);
+			printf("%s", "# "); 
+			if (!fgets(prompt,STRING_BUF_SIZE,stdin))
+				return -1;
 			shell = cafe_shell_dispatch_command(prompt);
 		}
 	}
