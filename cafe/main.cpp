@@ -3,6 +3,7 @@ extern "C" {
 #include <utils_string.h>
 }
 
+#include "cafe_commands.h"
 #include <time.h>
 
 const char* __date__ = __DATE__;

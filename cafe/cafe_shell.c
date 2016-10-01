@@ -63,7 +63,6 @@ CafeShellCommand cafe_cmd[]  =
 	{ "save", cafe_cmd_save},
 	{ "score", cafe_cmd_score },
 	{ "simextinct", cafe_cmd_sim_extinct },
-	{ "source", cafe_cmd_source },
 	{ "tree", cafe_cmd_tree },
 	{ "version", cafe_cmd_version },
 	{ "viterbi", cafe_cmd_viterbi},
@@ -255,50 +254,6 @@ void cafe_shell_prompt(char* prompt, char* format, ... )
 	printf("%s ", prompt);
 	vscanf( format, ap );
 	va_end(ap);
-}
-
-
-int cafe_shell_dispatch_command(char* cmd)
-{
-	pArrayList parg = string_pchar_space_split(cmd);
-
-	int i;
-	int rtn = 0;
-	
-	if ( parg->size > 0 )
-	{
-		if ( ((char*)parg->array[0])[0] == '#' ) return 0;
-	}
-
-	if ( parg->size != 0 ) 
-	{
-		rtn = CAFE_SHELL_NO_COMMAND;
-		for ( i = 0 ; cafe_cmd[i].command ; i++ )
-		{
-			if ( strcasecmp( (char*)parg->array[0],  cafe_cmd[i].command) == 0 )
-			{
-				rtn = cafe_cmd[i].func( parg->size, (char**)parg->array );
-				break;
-			}
-		}
-		if ( rtn == CAFE_SHELL_NO_COMMAND )
-		{
-			fprintf(stderr, "cafe: %s: command not found\n", (char*)parg->array[0]);		
-		}
-	}
-	arraylist_free(parg,NULL);
-	return rtn;
-}
-
-int cafe_shell_dispatch_commandf(char* format, ... )
-{
-	va_list ap;
-	char buf[STRING_BUF_SIZE];
-	va_start(ap, format);
-	vsprintf(buf, format, ap );
-	int r = cafe_shell_dispatch_command(buf);
-	va_end(ap);
-	return r;
 }
 
 
@@ -2512,34 +2467,6 @@ int cafe_cmd_print_param(int argc, char* argv[])
 	}
 	return 0;
 }
-
-
-int cafe_cmd_source(int argc, char* argv[])
-{
-	if ( argc != 2 )
-	{
-		fprintf( stderr, "Usage: %s <file>\n", argv[0]);
-		return -1;
-	}
-	char fname[STRING_STEP_SIZE];
-	string_pchar_join(fname, " ", argc-1, &argv[1]);
-	FILE* fp = fopen( fname, "r" );
-	if ( fp == NULL ) 
-	{
-		fprintf( stderr, "Error(source): Cannot open %s\n", argv[1] );
-		return -1;
-	}
-
-	char buf[STRING_BUF_SIZE];
-	int rtn  = 0;
-	while( fgets( buf, STRING_BUF_SIZE, fp ) )
-	{
-		if ( (rtn = cafe_shell_dispatch_command(buf)) ) break;
-	}
-	fclose(fp);
-	return rtn;
-}
-
 
 int cafe_cmd_version(int argc, char* argv[])
 {
