@@ -9,6 +9,8 @@ extern "C"
 
 }
 
+#include <cafe_commands.h>
+
 extern "C" {
 	void show_sizes(FILE*, pCafeParam param, pCafeFamilyItem pitem, int i);
 	int __cafe_cmd_lambda_tree(pArgument parg);
@@ -110,6 +112,11 @@ TEST(FirstTestGroup, TestShellDispatcher)
 	strcpy(c, "atoi 9528");
 	LONGS_EQUAL(9528, cafe_shell_dispatch_command(c));
 
+	strcpy(c, "# a comment");
+	LONGS_EQUAL(0, cafe_shell_dispatch_command(c));
+
+	strcpy(c, "unknown");
+	LONGS_EQUAL(CAFE_SHELL_NO_COMMAND, cafe_shell_dispatch_command(c));
 }
 
 TEST(FirstTestGroup, TestCmdLambda_FailsWithoutTree)
@@ -230,6 +237,16 @@ TEST(FirstTestGroup, TestPhylogenyLoadFromString)
 	CHECK(tree != 0);
 	LONGS_EQUAL(56, tree->size);
 
+};
+
+TEST(FirstTestGroup, Test_cafe_cmd_source)
+{
+	std::vector<std::string> strs;
+	strs.push_back("source");
+	LONGS_EQUAL( -1, cafe_cmd_source(strs));
+
+	strs.push_back("nonexistent");
+	LONGS_EQUAL(-1, cafe_cmd_source(strs));
 };
 
 

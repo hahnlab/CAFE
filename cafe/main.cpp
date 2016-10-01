@@ -5,6 +5,10 @@ extern "C" {
 
 #include "cafe_commands.h"
 #include <time.h>
+#include <iostream>
+#include <sstream>
+#include <vector>
+#include <string>
 
 const char* __date__ = __DATE__;
 
@@ -19,7 +23,10 @@ int main(int argc, char* argv[])
 	int shell = 0;
 	if ( argc == 2 )
 	{
-		cafe_cmd_source(argc,argv);
+		std::vector<std::string> tokens;
+		tokens.push_back(argv[0]);
+		tokens.push_back(argv[1]);
+		cafe_cmd_source(tokens);
 		cafe_cmd_exit(0,NULL);
 	}
 	else

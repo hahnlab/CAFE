@@ -1,26 +1,43 @@
 #include<stdio.h>
 #include <map>
 #include <string>
+#include <iostream>
+#include <sstream>
+#include <vector>
 
 extern "C" {
 #include <utils_string.h>
 #include "cafe_shell.h"
 }
 
+using namespace std;
 
-int cafe_cmd_source(int argc, char* argv[])
+vector<string> tokenize(string s)
 {
-	if ( argc != 2 )
+	vector<string> result;
+	istringstream iss(s);
+
+	do
 	{
-		fprintf( stderr, "Usage: %s <file>\n", argv[0]);
+		string sub;
+		iss >> sub;
+		result.push_back(sub);
+	} while (iss);
+
+	return result;
+}
+
+int cafe_cmd_source(vector<string> tokens)
+{
+	if ( tokens.size() != 2 )
+	{
+		fprintf( stderr, "Usage: source <file>\n");
 		return -1;
 	}
-	char fname[STRING_STEP_SIZE];
-	string_pchar_join(fname, " ", argc-1, &argv[1]);
-	FILE* fp = fopen( fname, "r" );
+	FILE* fp = fopen( tokens[1].c_str(), "r" );
 	if ( fp == NULL ) 
 	{
-		fprintf( stderr, "Error(source): Cannot open %s\n", argv[1] );
+		fprintf( stderr, "Error(source): Cannot open %s\n", tokens[1].c_str() );
 		return -1;
 	}
 
@@ -34,42 +51,45 @@ int cafe_cmd_source(int argc, char* argv[])
 	return rtn;
 }
 
+typedef int(*cafe_command2)(vector<string>);
 
 int cafe_shell_dispatch_command(char* cmd)
 {
 	using namespace std;
 
-	map<string, cafe_command> dispatcher;
+	map<string, cafe_command2> dispatcher;
 	dispatcher["source"] = cafe_cmd_source;
-	pArrayList parg = string_pchar_space_split(cmd);
+	vector<string> tokens = tokenize(cmd);
 
 	int i;
 	int rtn = 0;
 
-	if (parg->size > 0)
-	{
-		if (((char*)parg->array[0])[0] == '#') return 0;
-	}
+	if (tokens.size() > 0 && tokens[0][0] == '#')
+		return 0;
 
-	if (parg->size != 0)
+	if (tokens.size() != 0)
 	{
 		rtn = CAFE_SHELL_NO_COMMAND;
-		if (dispatcher.find((char *)parg->array[0]) != dispatcher.end())
-			rtn = cafe_cmd[i].func(parg->size, (char**)parg->array);
-		else for (i = 0; cafe_cmd[i].command; i++)
+		if (dispatcher.find(tokens[0]) != dispatcher.end())
+			rtn = dispatcher[tokens[0]](tokens);
+		else
 		{
-			if (strcasecmp((char*)parg->array[0], cafe_cmd[i].command) == 0)
+			pArrayList parg = string_pchar_space_split(cmd);
+			for (i = 0; cafe_cmd[i].command; i++)
 			{
-				rtn = cafe_cmd[i].func(parg->size, (char**)parg->array);
-				break;
+				if (strcasecmp((char*)parg->array[0], cafe_cmd[i].command) == 0)
+				{
+					rtn = cafe_cmd[i].func(parg->size, (char**)parg->array);
+					break;
+				}
 			}
+			arraylist_free(parg, NULL);
 		}
 		if (rtn == CAFE_SHELL_NO_COMMAND)
 		{
-			fprintf(stderr, "cafe: %s: command not found\n", (char*)parg->array[0]);
+			fprintf(stderr, "cafe: %s: command not found\n", tokens[0].c_str());
 		}
 	}
-	arraylist_free(parg, NULL);
 	return rtn;
 }
 
