@@ -50,6 +50,18 @@ pArrayList lambda_build_argument(vector<string> tokens)
 	return pal;
 }
 
+int get_doubles_array(double** loc, pArgument parg)
+{
+	if (*loc) memory_free(*loc);
+	*loc = (double*)memory_new(parg->argc, sizeof(double));
+	double *dlist = *loc;
+	for (int j = 0; j < parg->argc; j++)
+	{
+		sscanf(parg->argv[j], "%lf", &dlist[j]);
+	}
+	return parg->argc;
+}
+
 lambda_args get_arguments(pArrayList pargs)
 {
 	lambda_args result;
@@ -87,61 +99,25 @@ lambda_args get_arguments(pArrayList pargs)
 		}
 		else if (!strcmp(parg->opt, "-l"))
 		{
-			if (result.tmp_param.lambda) memory_free(result.tmp_param.lambda);
-			result.tmp_param.lambda = NULL;
-			result.tmp_param.lambda = (double*)memory_new(parg->argc, sizeof(double));
-			for (int j = 0; j < parg->argc; j++)
-			{
-				sscanf(parg->argv[j], "%lf", &result.tmp_param.lambda[j]);
-			}
-			result.tmp_param.num_params += parg->argc;
+			result.tmp_param.num_params += get_doubles_array(&result.tmp_param.lambda, parg);
 			result.blambda = 1;
 
 		}
 		else if (!strcmp(parg->opt, "-p"))
 		{
-			if (result.tmp_param.k_weights) memory_free(result.tmp_param.k_weights);
-			result.tmp_param.k_weights = NULL;
-			result.tmp_param.k_weights = (double*)memory_new(parg->argc, sizeof(double));
-			for (int j = 0; j < parg->argc; j++)
-			{
-				sscanf(parg->argv[j], "%lf", &result.tmp_param.k_weights[j]);
-			}
-			result.tmp_param.num_params += parg->argc;
+			// TODO: Are the l and p parameters really supposed to be added together into num_params?
+			result.tmp_param.num_params += get_doubles_array(&result.tmp_param.k_weights, parg);
 		}
-		// Lambda Distribution
 		else if (!strcmp(parg->opt, "-r"))
 		{
 			result.pdist = parg;
 			result.pout = cafe_shell_get_argument("-o", pargs);
 		}
-		// Search for each family 
 		else if (!strcmp(parg->opt, "-e"))
 		{
 			result.pout = cafe_shell_get_argument("-o", pargs);
-			if (result.pout)
-			{
-				result.name = std::string(result.pout->argv[0]) + ".lambda";
-				if ((result.fpout = fopen(result.name.c_str(), "w")) == NULL)
-				{
-					throw std::runtime_error((std::string("Cannot open file: ") + result.name).c_str());
-				}
-				result.name = std::string(result.pout->argv[0]) + ".mp";
-				if ((result.fmpout = fopen(result.name.c_str(), "w")) == NULL)
-				{
-					fclose(result.fpout);
-					throw std::runtime_error((std::string("Cannot open file: ") + result.name).c_str());
-				}
-				result.name = std::string(result.pout->argv[0]) + ".html";
-				if ((result.fhttp = fopen(result.name.c_str(), "w")) == NULL)
-				{
-					fclose(result.fpout);
-					fclose(result.fmpout);
-					throw std::runtime_error((std::string("Cannot open file: ") + result.name).c_str());
-				}
-				result.name = result.pout->argv[0];
-			}
-			result.beach = 1;
+			result.write_files = true;
+			result.each = true;
 		}
 		else if (!strcmp(parg->opt, "-k"))
 		{
@@ -206,6 +182,7 @@ int cafe_cmd_lambda(vector<string> tokens)
 
 	try {
 		lambda_args params = get_arguments(pargs);
+
 		// now set or search
 		if (params.blambda == 2 && params.vlambda > 0 )
 		{
@@ -315,7 +292,7 @@ int cafe_cmd_lambda(vector<string> tokens)
 			}
 			// search
 			if (params.tmp_param.checkconv) { cafe_param->checkconv = 1; }
-			if (params.beach )
+			if (params.each )
 			{
 				cafe_each_best_lambda_by_fminsearch(cafe_param,cafe_param->num_lambdas);
 			}
@@ -431,12 +408,38 @@ int cafe_cmd_lambda(vector<string> tokens)
 		}
 	}
 		
-	// now print output
-	if( params.beach )
+	FILE* fpout = stdout;
+	FILE* fmpout;
+	FILE* fhttp;
+	if (params.write_files)
 	{
-		if (params.fhttp )
+		params.name = std::string(params.pout->argv[0]) + ".lambda";
+		if ((fpout = fopen(params.name.c_str(), "w")) == NULL)
 		{
-			fprintf(params.fhttp,"<html>\n<body>\n<table border=1>\n");
+			throw std::runtime_error((std::string("Cannot open file: ") + params.name).c_str());
+		}
+		params.name = std::string(params.pout->argv[0]) + ".mp";
+		if ((fmpout = fopen(params.name.c_str(), "w")) == NULL)
+		{
+			fclose(fpout);
+			throw std::runtime_error((std::string("Cannot open file: ") + params.name).c_str());
+		}
+		params.name = std::string(params.pout->argv[0]) + ".html";
+		if ((fhttp = fopen(params.name.c_str(), "w")) == NULL)
+		{
+			fclose(fpout);
+			fclose(fmpout);
+			throw std::runtime_error((std::string("Cannot open file: ") + params.name).c_str());
+		}
+		params.name = params.pout->argv[0];
+	}
+
+	// now print output
+	if( params.each )
+	{
+		if (fhttp )
+		{
+			fprintf(fhttp,"<html>\n<body>\n<table border=1>\n");
 		}
 		for ( i = 0 ; i < cafe_param->pfamily->flist->size ; i++ )
 		{
@@ -449,31 +452,31 @@ int cafe_cmd_lambda(vector<string> tokens)
 				double a = pitem->lambda[j] * cafe_param->max_branch_length;
 				if ( a >= 0.5 || fabs(a-0.5) < 1e-3 )
 				{
-					fprintf(params.fpout, "@@ ");
+					fprintf(fpout, "@@ ");
 					break;
 				}	
 			}
-			fprintf(params.fpout, "%s\t%s\n", pitem->id, pstr->buf );
-			if (params.fhttp )
+			fprintf(fpout, "%s\t%s\n", pitem->id, pstr->buf );
+			if (fhttp )
 			{
-				fprintf(params.fhttp,"<tr><td rowspan=2><a href=pdf/%s-%d.pdf>%s</a></td><td>%s</td></tr>\n",
+				fprintf(fhttp,"<tr><td rowspan=2><a href=pdf/%s-%d.pdf>%s</a></td><td>%s</td></tr>\n",
 					params.name.c_str(), i+1, pitem->id, pitem->desc ? pitem->desc : "NONE" );
-				fprintf(params.fhttp,"<tr><td>%s</td></tr>\n", pstr->buf );
+				fprintf(fhttp,"<tr><td>%s</td></tr>\n", pstr->buf );
 			}
 			string_free(pstr);
-			if (params.fmpout )
+			if (fmpout )
 			{
 				pstr = cafe_tree_metapost( pcafe, i+1, pitem->id, 6, 6 );
-				fprintf(params.fmpout, "%s\n", pstr->buf );
+				fprintf(fmpout, "%s\n", pstr->buf );
 				string_free(pstr);
 			}
 		}
-		if (params.fpout != stdout ) fclose(params.fpout);
-		if (params.fmpout ) fclose(params.fmpout);
-		if (params.fhttp )
+		if (fpout != stdout ) fclose(fpout);
+		if (fmpout ) fclose(fmpout);
+		if (fhttp )
 		{
-			fprintf(params.fhttp,"</table>\n</body>\n</html>\n");
-			fclose(params.fhttp );
+			fprintf(fhttp,"</table>\n</body>\n</html>\n");
+			fclose(fhttp );
 		}
 	}
 	else

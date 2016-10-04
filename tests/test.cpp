@@ -257,15 +257,94 @@ TEST(LambdaTests, Test_arguments)
 	pArrayList pal = lambda_build_argument(strs);
 	lambda_args args = get_arguments(pal);
 	CHECK_FALSE(args.search);
+	CHECK_FALSE(args.tmp_param.checkconv);
 	CHECK_TRUE(args.tmp_param.lambda_tree != 0);
 	LONGS_EQUAL(2, args.tmp_param.num_lambdas);
+	DOUBLES_EQUAL(0, args.vlambda, .001);
+	LONGS_EQUAL(0, args.blambda);
 
 	strs.push_back("-s");
 	pal = lambda_build_argument(strs);
 	args = get_arguments(pal);
 	CHECK_TRUE(args.search);
+
+	strs.push_back("-checkconv");
+	pal = lambda_build_argument(strs);
+	args = get_arguments(pal);
+	CHECK_TRUE(args.tmp_param.checkconv);
+
+	strs.push_back("-v");
+	strs.push_back("14.6");
+	pal = lambda_build_argument(strs);
+	args = get_arguments(pal);
+	DOUBLES_EQUAL(14.6, args.vlambda, .001);
+	LONGS_EQUAL(2, args.blambda);
+
+	strs.push_back("-k");
+	strs.push_back("19");
+	pal = lambda_build_argument(strs);
+	args = get_arguments(pal);
+	LONGS_EQUAL(19, args.tmp_param.k);
+
+	strs.push_back("-f");
+	pal = lambda_build_argument(strs);
+	args = get_arguments(pal);
+	LONGS_EQUAL(1, args.tmp_param.fixcluster0);
 };
 
+
+TEST(LambdaTests, Test_l_argument)
+{
+	cafe_shell_init(1);
+	init_cafe_tree();
+	std::vector<std::string> strs;
+	strs.push_back("lambda");
+	strs.push_back("-l");
+	strs.push_back("15.6");
+	strs.push_back("9.2");
+	strs.push_back("21.8");
+	pArrayList pal = lambda_build_argument(strs);
+	lambda_args args = get_arguments(pal);
+	LONGS_EQUAL(3, args.tmp_param.num_params);
+	LONGS_EQUAL(1, args.blambda);
+	DOUBLES_EQUAL(15.6, args.tmp_param.lambda[0], .001);
+	DOUBLES_EQUAL(9.2, args.tmp_param.lambda[1], .001);
+	DOUBLES_EQUAL(21.8, args.tmp_param.lambda[2], .001);
+};
+
+TEST(LambdaTests, Test_p_argument)
+{
+	cafe_shell_init(1);
+	init_cafe_tree();
+	std::vector<std::string> strs;
+	strs.push_back("lambda");
+	strs.push_back("-p");
+	strs.push_back("15.6");
+	strs.push_back("9.2");
+	strs.push_back("21.8");
+	pArrayList pal = lambda_build_argument(strs);
+	lambda_args args = get_arguments(pal);
+	LONGS_EQUAL(3, args.tmp_param.num_params);
+	DOUBLES_EQUAL(15.6, args.tmp_param.k_weights[0], .001);
+	DOUBLES_EQUAL(9.2, args.tmp_param.k_weights[1], .001);
+	DOUBLES_EQUAL(21.8, args.tmp_param.k_weights[2], .001);
+};
+
+TEST(LambdaTests, Test_r_argument)
+{
+	cafe_shell_init(1);
+	init_cafe_tree();
+	std::vector<std::string> strs;
+	strs.push_back("lambda");
+	strs.push_back("-r");
+	strs.push_back("-o");
+	strs.push_back("test.txt");
+	pArrayList pal = lambda_build_argument(strs);
+	lambda_args args = get_arguments(pal);
+	STRCMP_EQUAL("-r", args.pdist->opt);
+	LONGS_EQUAL(1, args.pout->argc);
+	STRCMP_EQUAL("test.txt", args.pout->argv[0]);
+};
 
 int main(int ac, char** av)
 {
