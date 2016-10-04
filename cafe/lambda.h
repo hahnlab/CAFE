@@ -9,10 +9,12 @@ extern "C" {
 #include "cafe_shell.h"
 }
 
+enum LAMBDA_TYPE { UNDEFINED_LAMBDA, SINGLE_LAMBDA, MULTIPLE_LAMBDAS };
+
 struct lambda_args
 {
 	bool search;
-	int blambda;
+	LAMBDA_TYPE lambda_type;
 	double vlambda;
 	CafeParam tmp_param;
 	Argument dist;
@@ -22,7 +24,7 @@ struct lambda_args
 	bool write_files;
 	std::string name;
 
-	lambda_args() : search(false), blambda(0), vlambda(0.0), tmp_param(), bdone(0), each(false),
+	lambda_args() : search(false), lambda_type(UNDEFINED_LAMBDA), vlambda(0.0), tmp_param(), bdone(0), each(false),
 		write_files(false)
 	{
 		memset(&tmp_param, 0, sizeof(CafeParam));
@@ -36,6 +38,8 @@ lambda_args get_arguments(std::vector<Argument> pargs);
 std::vector<Argument> lambda_build_argument(std::vector<std::string> tokens);
 int cafe_cmd_lambda(std::vector<std::string> tokens);
 void prepare_cafe_param(pCafeParam param);
+void set_all_lambdas(pCafeParam param, double value);
+void write_lambda_distribution(pArgument parg, FILE* fp);
 
 
 #endif

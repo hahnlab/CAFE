@@ -896,39 +896,6 @@ void phylogeny_lambda_parse_func(pTree ptree, pTreeNode ptnode)
 	pnode->taxaid--;
 }
 
-void __cafe_cmd_lambda_distribution(pArgument parg, FILE* fp)
-{
-	double** range = (double**)memory_new_2dim(parg->argc,3,sizeof(double));
-	int j;
-	for ( j = 0 ;  j < parg->argc ; j++ )
-	{
-		sscanf( parg->argv[j],"%lf:%lf:%lf", &range[j][0], &range[j][1], &range[j][2] );
-		cafe_log(cafe_param,"%dst Distribution: %lf : %lf : %lf\n", j+1, range[j][0], range[j][1], range[j][2] );
-	}
-	cafe_param->num_lambdas = parg->argc;
-	pGMatrix pgm = cafe_lambda_distribution(cafe_param,parg->argc,range );
-	if ( fp )
-	{
-		int k;
-		int* idx = (int*)memory_new( parg->argc, sizeof(int));
-		for ( j = 0 ; j < pgm->num_elements; j++ )
-		{
-			gmatrix_dim_index(pgm,j,idx);							
-			fprintf( fp, "%lf",  idx[0] * range[0][1] + range[0][0] );
-			for ( k = 1 ; k < parg->argc; k++ )
-			{
-				fprintf( fp, "\t%lf",  idx[k] * range[k][1] + range[k][0] );
-			}
-			fprintf( fp, "\t%lf\n", gmatrix_double_get_with_index(pgm,j) ) ;
-		}
-		fclose(fp);
-		memory_free(idx);
-		idx = NULL;
-	}
-	memory_free_2dim( (void**)range, parg->argc, 0, NULL );
-	gmatrix_free(pgm);
-}
-
 int __cafe_cmd_lambda_tree(pArgument parg)
 {
 	int idx = 1;

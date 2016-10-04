@@ -5,12 +5,10 @@
 #include "lambda.h"
 
 extern "C" {
-//#include <utils_string.h>
 #include <cafe_shell.h>
-//#include <tree.h>
-//#include <cafe.h>
 	extern pCafeParam cafe_param;
 	int __cafe_cmd_lambda_tree(pArgument parg);
+	void cafe_shell_set_lambda(pCafeParam param, double* parameters);
 };
 
 static void init_cafe_tree()
@@ -51,7 +49,7 @@ TEST(LambdaTests, TestCmdLambda_FailsWithoutTree)
 	setbuf(stderr, NULL);
 }
 
-TEST(LambdaTests, TestCmdLambdaFailsWithoutLoad)
+TEST(LambdaTests, PrepareCafeParamFailsWithoutLoad)
 {
 	const char *newick_tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)";
 
@@ -70,6 +68,24 @@ TEST(LambdaTests, TestCmdLambdaFailsWithoutLoad)
 		const char *expected = "ERROR(lambda): Please load family (\"load\") and cafe tree (\"tree\") before running \"lambda\" command.";
 		STRCMP_EQUAL(expected, err.what());
 	}
+}
+
+TEST(LambdaTests, PrepareCafeParam)
+{
+	CafeParam param;
+	CafeFamily fam;
+	CafeTree tree;
+	param.pfamily = &fam;
+	param.pcafe = &tree;
+	param.lambda_tree = 0;
+	param.mu_tree = 0;
+	prepare_cafe_param(&param);
+	POINTERS_EQUAL(0, param.lambda);
+	POINTERS_EQUAL(0, param.mu);
+	LONGS_EQUAL(-1, param.num_lambdas);
+	LONGS_EQUAL(-1, param.num_mus);
+	LONGS_EQUAL(0, param.k);
+	POINTERS_EQUAL(cafe_shell_set_lambda, param.param_set_func);
 }
 
 TEST(LambdaTests, TestCmdLambda)
@@ -113,7 +129,7 @@ TEST(LambdaTests, Test_arguments)
 	CHECK_TRUE(args.tmp_param.lambda_tree != 0);
 	LONGS_EQUAL(2, args.tmp_param.num_lambdas);
 	DOUBLES_EQUAL(0, args.vlambda, .001);
-	LONGS_EQUAL(0, args.blambda);
+	LONGS_EQUAL(UNDEFINED_LAMBDA, args.lambda_type);
 
 	strs.push_back("-s");
 	pal = lambda_build_argument(strs);
@@ -130,7 +146,7 @@ TEST(LambdaTests, Test_arguments)
 	pal = lambda_build_argument(strs);
 	args = get_arguments(pal);
 	DOUBLES_EQUAL(14.6, args.vlambda, .001);
-	LONGS_EQUAL(2, args.blambda);
+	LONGS_EQUAL(SINGLE_LAMBDA, args.lambda_type);
 
 	strs.push_back("-k");
 	strs.push_back("19");
@@ -158,7 +174,7 @@ TEST(LambdaTests, Test_l_argument)
 	std::vector<Argument> pal = lambda_build_argument(strs);
 	lambda_args args = get_arguments(pal);
 	LONGS_EQUAL(3, args.tmp_param.num_params);
-	LONGS_EQUAL(1, args.blambda);
+	LONGS_EQUAL(MULTIPLE_LAMBDAS, args.lambda_type);
 	DOUBLES_EQUAL(15.6, args.tmp_param.lambda[0], .001);
 	DOUBLES_EQUAL(9.2, args.tmp_param.lambda[1], .001);
 	DOUBLES_EQUAL(21.8, args.tmp_param.lambda[2], .001);
@@ -198,4 +214,15 @@ TEST(LambdaTests, Test_r_argument)
 	STRCMP_EQUAL("test.txt", args.out.argv[0]);
 };
 
+TEST(LambdaTests, set_all_lambdas)
+{
+	CafeParam param;
+	// shows that existing lambda values will be released
+	param.lambda = (double *)memory_new(10, sizeof(double));
+	param.num_lambdas = 15;
+	set_all_lambdas(&param, 17.9);
+	DOUBLES_EQUAL(17.9, param.lambda[0], 0.01);
+	DOUBLES_EQUAL(17.9, param.lambda[10], 0.01);
+	DOUBLES_EQUAL(17.9, param.lambda[14], 0.01);
+};
 

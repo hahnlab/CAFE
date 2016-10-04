@@ -19,7 +19,6 @@ extern "C" {
 	extern pCafeParam cafe_param;
 	void cafe_shell_set_lambda(pCafeParam param, double* parameters);
 	int __cafe_cmd_lambda_tree(pArgument parg);
-	void __cafe_cmd_lambda_distribution(pArgument parg, FILE* fp);
 }
 
 using namespace std;
@@ -101,12 +100,12 @@ lambda_args get_arguments(vector<Argument> pargs)
 		else if (!strcmp(parg->opt, "-v"))
 		{
 			sscanf(parg->argv[0], "%lf", &result.vlambda);
-			result.blambda = 2;
+			result.lambda_type = SINGLE_LAMBDA;
 		}
 		else if (!strcmp(parg->opt, "-l"))
 		{
 			result.tmp_param.num_params += get_doubles_array(&result.tmp_param.lambda, parg);
-			result.blambda = 1;
+			result.lambda_type = MULTIPLE_LAMBDAS;
 
 		}
 		else if (!strcmp(parg->opt, "-p"))
@@ -166,6 +165,53 @@ void prepare_cafe_param(pCafeParam param)
 	}
 }
 
+void set_all_lambdas(pCafeParam param, double value)
+{
+	if (param->lambda) memory_free(param->lambda);
+	param->lambda = NULL;
+	param->num_lambdas = param->num_lambdas < 1 ? 1 : param->num_lambdas;
+	param->lambda = (double*)memory_new(param->num_lambdas, sizeof(double));
+	for (int j = 0; j < param->num_lambdas; j++)
+	{
+		param->lambda[j] = value;
+	}
+
+}
+
+void write_lambda_distribution(pArgument parg, FILE* fp)
+{
+	double** range = (double**)memory_new_2dim(parg->argc, 3, sizeof(double));
+	int j;
+	for (j = 0; j < parg->argc; j++)
+	{
+		sscanf(parg->argv[j], "%lf:%lf:%lf", &range[j][0], &range[j][1], &range[j][2]);
+		cafe_log(cafe_param, "%dst Distribution: %lf : %lf : %lf\n", j + 1, range[j][0], range[j][1], range[j][2]);
+	}
+	cafe_param->num_lambdas = parg->argc;
+	pGMatrix pgm = cafe_lambda_distribution(cafe_param, parg->argc, range);
+	if (fp)
+	{
+		int k;
+		int* idx = (int*)memory_new(parg->argc, sizeof(int));
+		for (j = 0; j < pgm->num_elements; j++)
+		{
+			gmatrix_dim_index(pgm, j, idx);
+			fprintf(fp, "%lf", idx[0] * range[0][1] + range[0][0]);
+			for (k = 1; k < parg->argc; k++)
+			{
+				fprintf(fp, "\t%lf", idx[k] * range[k][1] + range[k][0]);
+			}
+			fprintf(fp, "\t%lf\n", gmatrix_double_get_with_index(pgm, j));
+		}
+		fclose(fp);
+		memory_free(idx);
+		idx = NULL;
+	}
+	memory_free_2dim((void**)range, parg->argc, 0, NULL);
+	gmatrix_free(pgm);
+}
+
+
 /**
 * \brief Find lambda values
 *
@@ -195,17 +241,9 @@ int cafe_cmd_lambda(vector<string> tokens)
 
 		lambda_args params = get_arguments(pargs);
 
-		// now set or search
-		if (params.blambda == 2 && params.vlambda > 0 )
+		if (params.lambda_type == SINGLE_LAMBDA && params.vlambda > 0 )
 		{
-			if ( cafe_param->lambda ) memory_free(cafe_param->lambda);
-			cafe_param->lambda = NULL;
-			cafe_param->num_lambdas = cafe_param->num_lambdas < 1 ? 1 : cafe_param->num_lambdas;
-			cafe_param->lambda = (double*)memory_new( cafe_param->num_lambdas, sizeof(double) );
-			for( j = 0 ; j < cafe_param->num_lambdas; j++ )
-			{
-				cafe_param->lambda[j] = params.vlambda;
-			}
+			set_all_lambdas(cafe_param, params.vlambda);
 		}
 		if ( params.dist.opt )
 		{
@@ -226,7 +264,7 @@ int cafe_cmd_lambda(vector<string> tokens)
 			cafe_param->parameters = NULL;
 			cafe_param->parameters = (double*)memory_new(cafe_param->num_params, sizeof(double));
 
-			__cafe_cmd_lambda_distribution(&params.dist, fp);
+			write_lambda_distribution(&params.dist, fp);
 			params.bdone = 1;
 			fclose(fp);
 		}
