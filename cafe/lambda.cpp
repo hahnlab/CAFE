@@ -11,6 +11,8 @@ extern "C" {
 #include <vector>
 #include <sstream>
 #include <iterator>
+#include <algorithm>
+
 #include "lambda.h"
 
 extern "C" {
@@ -18,36 +20,35 @@ extern "C" {
 	void cafe_shell_set_lambda(pCafeParam param, double* parameters);
 	int __cafe_cmd_lambda_tree(pArgument parg);
 	void __cafe_cmd_lambda_distribution(pArgument parg, FILE* fp);
-	pArgument cafe_shell_get_argument(char* opt, pArrayList pal);
 }
 
 using namespace std;
 
-pArrayList lambda_build_argument(vector<string> tokens)
+vector<Argument> lambda_build_argument(vector<string> tokens)
 {
 	size_t i, j;
-	pArrayList pal = arraylist_new(20);
+	vector<Argument> result;
 	for (i = 1; i < tokens.size(); i++)
 	{
 		if (tokens[i][0] == '-' && !isdigit(tokens[i][1]))
 		{
-			pArgument parg = (pArgument)memory_new(1, sizeof(Argument));
-			parg->argc = 0;
-			parg->opt = strdup(tokens[i].c_str());
+			Argument arg;
+			arg.argc = 0;
+			arg.opt = strdup(tokens[i].c_str());
 			for (j = i + 1; j < tokens.size(); j++)
 			{
 				if (tokens[j][0] == '-' && !isdigit(tokens[j][1])) break;
-				parg->argc++;
+				arg.argc++;
 			}
 			char ** argv = (char **)memory_new(tokens.size(), sizeof(char *));
 			for (size_t k = 0, kk = i + 1; kk < tokens.size(); ++kk, ++k)
 				argv[k] = strdup(tokens[kk].c_str());
-			parg->argv = argv;  
-			arraylist_add(pal, parg);
+			arg.argv = argv;  
+			result.push_back(arg);
 			i = j - 1;
 		}
 	}
-	return pal;
+	return result;
 }
 
 int get_doubles_array(double** loc, pArgument parg)
@@ -62,13 +63,18 @@ int get_doubles_array(double** loc, pArgument parg)
 	return parg->argc;
 }
 
-lambda_args get_arguments(pArrayList pargs)
+bool is_out(Argument arg)
+{
+	return !strcmp(arg.opt, "-o");
+}
+
+lambda_args get_arguments(vector<Argument> pargs)
 {
 	lambda_args result;
 
-	for (int i = 0; i < pargs->size; i++)
+	for (size_t i = 0; i < pargs.size(); i++)
 	{
-		pArgument parg = (pArgument)pargs->array[i];
+		pArgument parg = &pargs[i];
 
 		// Search for whole family 
 		if (!strcmp(parg->opt, "-s"))
@@ -110,12 +116,16 @@ lambda_args get_arguments(pArrayList pargs)
 		}
 		else if (!strcmp(parg->opt, "-r"))
 		{
-			result.pdist = parg;
-			result.pout = cafe_shell_get_argument("-o", pargs);
+			result.dist = *parg;
+			vector<Argument>::iterator it = find_if(pargs.begin(), pargs.end(), is_out);
+			if (it != pargs.end())
+				result.out = *it;
 		}
 		else if (!strcmp(parg->opt, "-e"))
 		{
-			result.pout = cafe_shell_get_argument("-o", pargs);
+			vector<Argument>::iterator it = find_if(pargs.begin(), pargs.end(), is_out);
+			if (it != pargs.end())
+				result.out = *it;
 			result.write_files = true;
 			result.each = true;
 		}
@@ -132,6 +142,29 @@ lambda_args get_arguments(pArrayList pargs)
 	return result;
 }
 
+void prepare_cafe_param(pCafeParam param)
+{
+	param->lambda = NULL;
+	param->mu = NULL;
+	if (param->lambda_tree) {
+		phylogeny_free(param->lambda_tree);
+		param->lambda_tree = NULL;
+	}
+	if (param->mu_tree)
+	{
+		phylogeny_free(param->mu_tree);
+		param->mu_tree = NULL;
+	}
+	param->num_lambdas = -1;
+	param->num_mus = -1;
+	param->k = 0;
+	param->param_set_func = cafe_shell_set_lambda;
+
+	if (param->pfamily == NULL || param->pcafe == NULL)
+	{
+		throw runtime_error("ERROR(lambda): Please load family (\"load\") and cafe tree (\"tree\") before running \"lambda\" command.");
+	}
+}
 
 /**
 * \brief Find lambda values
@@ -147,40 +180,19 @@ lambda_args get_arguments(pArrayList pargs)
 */
 int cafe_cmd_lambda(vector<string> tokens)
 {
-	int i,j;
-	//int num_cluster_k = 0;
-	if(!cafe_param->pcafe)
-	{
-		fprintf( stderr, "ERROR(lambda): You did not specify tree: command 'tree'\n" );
-		return -1;
-	}
-	pCafeTree pcafe = cafe_param->pcafe;
-	pArrayList pargs = lambda_build_argument(tokens);
-	cafe_param->lambda = NULL;
-	cafe_param->mu = NULL;
-	if (cafe_param->lambda_tree) {
-		phylogeny_free(cafe_param->lambda_tree); 
-		cafe_param->lambda_tree = NULL;
-	}
-	if ( cafe_param->mu_tree ) 
-	{
-		phylogeny_free(cafe_param->mu_tree);
-		cafe_param->mu_tree = NULL;
-	}
-	cafe_param->num_lambdas = -1;
-	cafe_param->num_mus = -1;
-	cafe_param->k = 0;
-	cafe_param->param_set_func = cafe_shell_set_lambda;
-
-	int bprint = 0;
-
-	if (cafe_param->pfamily == NULL || cafe_param->pcafe == NULL)
-	{ 
-		fprintf(stderr, "ERROR(lambda): Please load family (\"load\") and cafe tree (\"tree\") before running \"lambda\" command.");
-		return -1;
-	}
-
 	try {
+		int i,j;
+
+		if(!cafe_param->pcafe)
+		{
+			fprintf( stderr, "ERROR(lambda): You did not specify tree: command 'tree'\n" );
+			return -1;
+		}
+		pCafeTree pcafe = cafe_param->pcafe;
+		vector<Argument> pargs = lambda_build_argument(tokens);
+
+		prepare_cafe_param(cafe_param);
+
 		lambda_args params = get_arguments(pargs);
 
 		// now set or search
@@ -195,12 +207,12 @@ int cafe_cmd_lambda(vector<string> tokens)
 				cafe_param->lambda[j] = params.vlambda;
 			}
 		}
-		if ( params.pdist )
+		if ( params.dist.opt )
 		{
 			FILE* fp = NULL;
-			if( params.pout && (fp = fopen(params.pout->argv[0],"w") ) == NULL )
+			if( params.out.opt && (fp = fopen(params.out.argv[0],"w") ) == NULL )
 			{
-				fprintf( stderr, "ERROR(lambda): Cannot open file: %s\n", params.pout->argv[0] );
+				fprintf( stderr, "ERROR(lambda): Cannot open file: %s\n", params.out.argv[0] );
 				return -1;
 			}
 			cafe_param->posterior = params.tmp_param.posterior;
@@ -214,14 +226,10 @@ int cafe_cmd_lambda(vector<string> tokens)
 			cafe_param->parameters = NULL;
 			cafe_param->parameters = (double*)memory_new(cafe_param->num_params, sizeof(double));
 
-			__cafe_cmd_lambda_distribution(params.pdist, fp);
+			__cafe_cmd_lambda_distribution(&params.dist, fp);
 			params.bdone = 1;
 			fclose(fp);
 		}
-
-
-
-	arraylist_free( pargs, free );
 
 	if (params.bdone )
 	{
@@ -409,29 +417,30 @@ int cafe_cmd_lambda(vector<string> tokens)
 	}
 		
 	FILE* fpout = stdout;
-	FILE* fmpout;
-	FILE* fhttp;
+	FILE* fmpout = NULL;
+	FILE* fhttp = NULL;
 	if (params.write_files)
 	{
-		params.name = std::string(params.pout->argv[0]) + ".lambda";
+		string base_name = params.out.argv[0];
+		params.name = base_name + ".lambda";
 		if ((fpout = fopen(params.name.c_str(), "w")) == NULL)
 		{
 			throw std::runtime_error((std::string("Cannot open file: ") + params.name).c_str());
 		}
-		params.name = std::string(params.pout->argv[0]) + ".mp";
+		params.name = base_name + ".mp";
 		if ((fmpout = fopen(params.name.c_str(), "w")) == NULL)
 		{
 			fclose(fpout);
 			throw std::runtime_error((std::string("Cannot open file: ") + params.name).c_str());
 		}
-		params.name = std::string(params.pout->argv[0]) + ".html";
+		params.name = base_name + ".html";
 		if ((fhttp = fopen(params.name.c_str(), "w")) == NULL)
 		{
 			fclose(fpout);
 			fclose(fmpout);
 			throw std::runtime_error((std::string("Cannot open file: ") + params.name).c_str());
 		}
-		params.name = params.pout->argv[0];
+		params.name = base_name;
 	}
 
 	// now print output
@@ -481,12 +490,6 @@ int cafe_cmd_lambda(vector<string> tokens)
 	}
 	else
 	{
-		if ( bprint && !cafe_param->quiet)
-		{
-			pString pstr = cafe_tree_string_with_lambda(pcafe);
-			printf("%s\n", pstr->buf );
-			string_free(pstr);
-		}
 		if ( cafe_param->pfamily )
 		{
 			cafe_set_birthdeath_cache_thread(cafe_param);
