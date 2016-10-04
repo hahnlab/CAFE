@@ -56,7 +56,6 @@ int cafe_cmd_viterbi(int argc, char* argv[]);
 int cafe_cmd_print_param(int argc, char* argv[]);
 int cafe_cmd_load(int argc, char* argv[]);
 int cafe_cmd_save(int argc, char* argv[]);
-int cafe_cmd_lambda(int argc, char* argv[]);
 int cafe_cmd_lambda_mu(int argc, char* argv[]);
 int cafe_cmd_version(int argc, char* argv[]);
 int cafe_cmd_pvalue(int argc, char* argv[]);

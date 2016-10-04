@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include "lambda.h"
 
 extern "C" {
 #include <utils_string.h>
@@ -59,6 +60,7 @@ int cafe_shell_dispatch_command(char* cmd)
 
 	map<string, cafe_command2> dispatcher;
 	dispatcher["source"] = cafe_cmd_source;
+	dispatcher["lambda"] = cafe_cmd_lambda;
 	vector<string> tokens = tokenize(cmd);
 
 	int i;
