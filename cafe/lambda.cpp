@@ -11,6 +11,7 @@ extern "C" {
 #include <vector>
 #include <sstream>
 #include <iterator>
+#include "lambda.h"
 
 extern "C" {
 	extern pCafeParam cafe_param;
@@ -22,31 +23,9 @@ extern "C" {
 
 using namespace std;
 
-struct lambda_args
-{
-	int blambda;
-	double vlambda;
-	CafeParam tmp_param;
-	pArgument pdist;
-	pArgument pout;
-	int bdone;
-	int beach;
-	FILE* fpout;
-	FILE* fmpout;
-	FILE* fhttp;
-	std::string name;
-
-	lambda_args() : blambda(0), vlambda(0.0), bdone(0), pdist(NULL), pout(NULL), beach(0),
-		fpout(stdout), fmpout(NULL), fhttp(NULL)
-	{
-		memset(&tmp_param, 0, sizeof(CafeParam));
-		tmp_param.posterior = 1;
-	}
-};
-
 pArrayList lambda_build_argument(vector<string> tokens)
 {
-	int i, j;
+	size_t i, j;
 	pArrayList pal = arraylist_new(20);
 	for (i = 1; i < tokens.size(); i++)
 	{
@@ -61,7 +40,7 @@ pArrayList lambda_build_argument(vector<string> tokens)
 				parg->argc++;
 			}
 			char ** argv = (char **)memory_new(tokens.size(), sizeof(char *));
-			for (int k = 0, kk = i + 1; kk < tokens.size(); ++kk, ++k)
+			for (size_t k = 0, kk = i + 1; kk < tokens.size(); ++kk, ++k)
 				argv[k] = strdup(tokens[kk].c_str());
 			parg->argv = argv;  
 			arraylist_add(pal, parg);
@@ -73,8 +52,6 @@ pArrayList lambda_build_argument(vector<string> tokens)
 
 lambda_args get_arguments(pArrayList pargs)
 {
-	int bsearch = 0;
-
 	lambda_args result;
 
 	for (int i = 0; i < pargs->size; i++)
@@ -84,7 +61,7 @@ lambda_args get_arguments(pArrayList pargs)
 		// Search for whole family 
 		if (!strcmp(parg->opt, "-s"))
 		{
-			bsearch = 1;
+			result.search = true;
 		}
 		else if (!strcmp(parg->opt, "-checkconv"))
 		{
@@ -282,17 +259,7 @@ int cafe_cmd_lambda(vector<string> tokens)
 			cafe_set_prior_rfsize_empirical(cafe_param);
 		}		
 		// search or set
-		if (bsearch) {
-            pTree ptree = (pTree)pcafe;
-            // scale branch lengths by sum_branch_length.
-            /*for( j = 0 ; j < ptree->nlist->size; j++ )
-            {
-                pPhylogenyNode pnode = (pPhylogenyNode)ptree->nlist->array[j];
-                if ( pnode->branchlength > 0 )
-                {
-                    pnode->branchlength = pnode->branchlength/cafe_param->sum_branch_length;
-                }
-            }*/
+		if (params.search) {
             // prepare parameters
 			if (params.tmp_param.lambda_tree != NULL) {
 				// cafe_param->num_lambdas determined by lambda tree.
@@ -523,14 +490,14 @@ int cafe_cmd_lambda(vector<string> tokens)
 		}
 	}
 	
-	cafe_log(cafe_param,"DONE: Lamda Search or setting, for command:\n");
+	cafe_log(cafe_param,"DONE: Lambda Search or setting, for command:\n");
 
 	std::ostringstream cmd;
 	std::copy(tokens.begin(), tokens.end(),
 		std::ostream_iterator<std::string>(cmd, " "));
 	cafe_log(cafe_param,"%s\n", cmd.str().c_str());
 	
-	if (bsearch && (cafe_param->k > 0)) {
+	if (params.search && (cafe_param->k > 0)) {
 		// print the cluster memberships
 		cafe_family_print_cluster_membership(cafe_param);
 	}

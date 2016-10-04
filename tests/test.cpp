@@ -123,14 +123,15 @@ TEST(FirstTestGroup, TestShellDispatcher)
 	LONGS_EQUAL(CAFE_SHELL_NO_COMMAND, cafe_shell_dispatch_command(c));
 }
 
-std::vector<std::string> lambda_args()
+int lambda_cmd_helper()
 {
 	std::vector<std::string> strs;
 	strs.push_back("lambda");
 	strs.push_back("-s");
 	strs.push_back("-t");
 	strs.push_back("(((2,2)1,(1,1)1)1,1)");
-	return strs;
+	return cafe_cmd_lambda(strs);
+
 }
 
 TEST(LambdaTests, TestCmdLambda_FailsWithoutTree)
@@ -140,7 +141,7 @@ TEST(LambdaTests, TestCmdLambda_FailsWithoutTree)
 	char buf[1000];
 	setbuf(stderr, buf);
 
-	LONGS_EQUAL(-1, cafe_cmd_lambda(lambda_args()));
+	LONGS_EQUAL(-1, lambda_cmd_helper());
 	const char *expected = "ERROR(lambda): You did not specify tree: command 'tree'";
 	STRCMP_CONTAINS(expected, buf);
 	setbuf(stderr, NULL);
@@ -159,7 +160,7 @@ TEST(LambdaTests, TestCmdLambdaFailsWithoutLoad)
 	setbuf(stderr, errbuf);
 	char outbuf[10000];
 	setbuf(stdout, outbuf);
-	LONGS_EQUAL(-1, cafe_cmd_lambda(lambda_args()));
+	LONGS_EQUAL(-1, lambda_cmd_helper());
 	const char *expected = "ERROR(lambda): Please load family (\"load\") and cafe tree (\"tree\") before running \"lambda\" command.";
 	STRCMP_CONTAINS(expected, errbuf);
 	setbuf(stderr, NULL);
@@ -175,7 +176,7 @@ TEST(LambdaTests, TestCmdLambda)
 	strcpy(buf, "load -i ../example/example_data.tab");
 	cafe_shell_dispatch_command(buf);
 
-	LONGS_EQUAL(0, cafe_cmd_lambda(lambda_args()));
+	LONGS_EQUAL(0, lambda_cmd_helper());
 };
 
 TEST(LambdaTests, TestLambdaTree)
@@ -247,12 +248,22 @@ TEST(FirstTestGroup, Test_cafe_cmd_source)
 
 TEST(LambdaTests, Test_arguments)
 {
+	cafe_shell_init(1);
+	init_cafe_tree();
 	std::vector<std::string> strs;
-	strs.push_back("source");
-	LONGS_EQUAL(-1, cafe_cmd_source(strs));
+	strs.push_back("lambda");
+	strs.push_back("-t");
+	strs.push_back("(((2,2)1,(1,1)1)1,1)");
+	pArrayList pal = lambda_build_argument(strs);
+	lambda_args args = get_arguments(pal);
+	CHECK_FALSE(args.search);
+	CHECK_TRUE(args.tmp_param.lambda_tree != 0);
+	LONGS_EQUAL(2, args.tmp_param.num_lambdas);
 
-	strs.push_back("nonexistent");
-	LONGS_EQUAL(-1, cafe_cmd_source(strs));
+	strs.push_back("-s");
+	pal = lambda_build_argument(strs);
+	args = get_arguments(pal);
+	CHECK_TRUE(args.search);
 };
 
 
