@@ -110,53 +110,6 @@ extern pString phylogeny_string_newick(pTree ptree, phylogeny_func_name_modify f
 #define PS_NWICK	0x0000
 #define PS_NHX 		0x0FFE
 
-/****************************************************************************
- * Paml
-****************************************************************************/
-
-typedef struct
-{
-	PhylogenyNode super;
-	double N, S;
-	double dN, dS, omega;
-	double accudS;
-}PamlNode;
-typedef PamlNode* pPamlNode;
-
-typedef struct
-{
-	Tree super;
-	int    num_genes;
-	char** gene_names;
-	int    model;
-	double* omega;
-	double* prob;
-	double  lnL;
-	double  meanOmega;
-	pPamlNode* nodelist;
-	double** nei_gojobori_w;
-	double** nei_gojobori_dN;
-	double** nei_gojobori_dS;
-}PamlTree;
-
-typedef PamlTree* pPamlTree;
-
-extern pPamlTree paml_tree_new(char* file);
-extern void paml_tree_free(pPamlTree ptree);
-extern pString paml_tree_metapost(pPamlTree ptree, int id, char* title, double width, double height);
-extern void paml_tree_print_info(pPamlTree ptree);
-extern pString paml_tree_string(pPamlTree ptree);
-extern void paml_tree_accu_dS_from_root(pPamlTree ptree);
-extern void paml_tree_accu_dS_from_node(pPamlTree ptree, pPamlNode pstartnode, double** dS_matrix);
-extern void paml_tree_accu_dS_from_bottom_with_longer_dS(pPamlTree ptree);
-extern void paml_tree_accu_dS_from_bottom_with_average_dS(pPamlTree ptree);
-extern int paml_tree_get_nodes_over_threshold(pPamlTree ptree, double threshold, int* rtn);
-extern double paml_tree_average_nei_gojobori(pPamlTree ptree);
-extern double paml_tree_average_w(pPamlTree ptree);
-extern int paml_tree_check_significant(pPamlTree ptree, pPamlTree parg, double t);
-extern int paml_tree_delete_nodes_by_reg( pPamlTree ptree, tree_func_node freenode );
-extern int paml_tree_delete_node( pPamlTree ptree, pPamlNode pnode, tree_func_node freenode );
-extern pTree paml_tree_split_tree(pTree ptree, pTreeNode pnode, tree_func_node freenode );
 
 /****************************************************************************
  * Gene and Species Tree
@@ -169,7 +122,7 @@ typedef struct
 	int 	gain;
 	int 	numduplicated;
 	int 	size;			// family size
-}SpeciesTreeNode;
+} SpeciesTreeNode;
 
 typedef SpeciesTreeNode* pSpeciesTreeNode;
 
