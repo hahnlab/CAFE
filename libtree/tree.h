@@ -110,54 +110,6 @@ extern pString phylogeny_string_newick(pTree ptree, phylogeny_func_name_modify f
 #define PS_NWICK	0x0000
 #define PS_NHX 		0x0FFE
 
-
-/****************************************************************************
- * Gene and Species Tree
-****************************************************************************/
-typedef struct
-{
-	PhylogenyNode super;
-	pVector vsubspecies;
-	int* 	mask;
-	int 	gain;
-	int 	numduplicated;
-	int 	size;			// family size
-} SpeciesTreeNode;
-
-typedef SpeciesTreeNode* pSpeciesTreeNode;
-
-typedef struct
-{
-	PhylogenyNode super;
-	pVector vsubspecies;
-	pSpeciesTreeNode psnode;
-}GeneTreeNode;
-
-typedef struct
-{
-	Tree super;
-	pTree species_tree;
-	int* species_tid;
-}GeneTree;
-
-typedef GeneTree* pGeneTree;
-
-typedef GeneTreeNode* pGeneTreeNode;
-
-extern void gene_tree_free(pGeneTree ptree);
-extern void species_tree_free(pTree ptree);
-extern pTree species_tree_new(char* sztree, phylogeny_func_parse_node fparse );
-extern pGeneTree gene_tree_new(char* sztree, pTree pstree, phylogeny_func_parse_node fparse );
-extern pString gene_tree_string(pGeneTree ptree, int mode);
-extern pString species_tree_string(pTree ptree, int mode);
-extern int gene_tree_map_species(pGeneTree pgtree);
-extern int gene_tree_duplication_count(pGeneTree pgtree);
-extern void gene_tree_duplication_count_report(pTree pstree, FILE* fout);
-extern void species_tree_clear_gain(pTree pstree);
-
-extern pString species_tree_metapost(pTree pstree, int id, char* title, double width, double height );
-extern pString gene_tree_metapost(pGeneTree pstree, int id, char* title, double width, double height );
-
 /****************************************************************************
  * MetaPhost Config
 ****************************************************************************/
