@@ -906,12 +906,12 @@ int __cafe_cmd_lambda_tree(pArgument parg)
 	{
 		sscanf( parg->argv[0], "%d", &idx );
 		plambdastr = parg->argv[1];
-		ptree = phylogeny_load_from_string(parg->argv[1], tree_new, phylogeny_new_empty_node, phylogeny_lambda_parse_func );
+		ptree = phylogeny_load_from_string(parg->argv[1], tree_new, phylogeny_new_empty_node, phylogeny_lambda_parse_func, 0 );
 	}
 	else
 	{
 		plambdastr = parg->argv[0];
-		ptree = phylogeny_load_from_string(parg->argv[0], tree_new, phylogeny_new_empty_node, phylogeny_lambda_parse_func );
+		ptree = phylogeny_load_from_string(parg->argv[0], tree_new, phylogeny_new_empty_node, phylogeny_lambda_parse_func, 0 );
 	}
 	tree_build_node_list(ptree);
 	if ( ptree->nlist->size != cafe_param->pcafe->super.nlist->size )

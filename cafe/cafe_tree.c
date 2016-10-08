@@ -53,15 +53,12 @@ void cafe_tree_set_parameters(pCafeTree pcafe, int familysizes[],
 	}
 }
 
-pTree __cafe_tree_new(tree_func_node_new new_tree_node_func, va_list ap1)
+pTree __cafe_tree_new(tree_func_node_new new_tree_node_func, int size)
 {
-  va_list ap;
-  va_copy(ap, ap1);
 	pCafeTree pcafe = (pCafeTree)memory_new(1,sizeof(CafeTree));
-	pcafe->size_of_factor = va_arg(ap,int);
+	pcafe->size_of_factor = size;
 	tree_new_fill((pTree)pcafe, cafe_tree_new_empty_node);
 	pcafe->super.size = sizeof(CafeTree);
-  va_end(ap);
 	return (pTree)pcafe;
 }
 

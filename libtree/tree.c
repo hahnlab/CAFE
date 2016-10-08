@@ -14,7 +14,7 @@ void tree_new_fill(pTree ptree, tree_func_node_new nfunc )
 	ptree->prefix = NULL;
 }
 
-pTree tree_new(tree_func_node_new nfunc, va_list ap1) 
+pTree tree_new(tree_func_node_new nfunc, int size) 
 {
 	pTree ptree = (pTree)memory_new(1,sizeof(Tree));
 	if ( nfunc == NULL ) 

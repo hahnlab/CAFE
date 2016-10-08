@@ -163,7 +163,7 @@ pTree phylogeny_load_from_file(char* fname,
 		if ( sztree[i] == '\n' ) sztree[i] = ' ';
 	}
 	pTree ptree = phylogeny_load_from_string(sztree, new_tree_func, 
-							   new_tree_node_func, parsefunc ); 
+							   new_tree_node_func, parsefunc, 0); 
 	memory_free(sztree);
 	sztree = NULL;
 	return ptree;
@@ -296,7 +296,6 @@ int phylogeny_check_tree_string(char* sztree)
 	size_t len = strlen(sztree);
 	int i,grp_cnt = 0; 
 	uintptr_t leaf_cnt = -1;
-	int start = 0;
 	int err = 0;
 	pStack pstack = stack_new();
 	for ( i = 0 ; i < len ; i++ )
@@ -304,21 +303,12 @@ int phylogeny_check_tree_string(char* sztree)
 		if ( sztree[i] == ' ' ) continue;
 		if ( sztree[i] == '(' ) 
 		{
-			start = i;
 			if ( leaf_cnt != -1 ) stack_push( pstack, (void*)leaf_cnt );
 			leaf_cnt = 0;
 			grp_cnt++;
 		}
 		else if ( sztree[i] == ')') 
 		{
-/*			if ( leaf_cnt != 1 )
-			{
-				char buf[STRING_STEP_SIZE];
-				strncpy( buf, &sztree[start], i - start + 1);
-				buf[i-start+1] = '\0';
-				fprintf(stderr,"Each node must contain two leaves. Check %s\n", buf );
-				err = 2;
-			}*/
 			leaf_cnt = (uintptr_t)stack_pop( pstack );
 			grp_cnt--;
 		}
@@ -339,12 +329,9 @@ int phylogeny_check_tree_string(char* sztree)
 pTree phylogeny_load_from_string(char* sztree, 
 								 tree_func_new new_tree_func, 
 								 tree_func_node_new new_tree_node_func, 
-		                         phylogeny_func_parse_node parsefunc, ... )
+		                         phylogeny_func_parse_node parsefunc, int size)
 {
-	va_list ap; 
-	va_start(ap,parsefunc);
-	pTree ptree = new_tree_func(new_tree_node_func, ap);
-	va_end(ap);
+	pTree ptree = new_tree_func(new_tree_node_func, size);
 	ptree->data = vector_new();
 	pTreeNode cur = ptree->root;
 	int bfirst = 1;
@@ -570,7 +557,7 @@ pString phylogeny_string(pTree ptree, phylogeny_func_name_modify fmod)
 
 pTree phylogeny_new(char* sztree, phylogeny_func_parse_node parsefunc )
 {
-	return	phylogeny_load_from_string(sztree, tree_new, phylogeny_new_empty_node, parsefunc );
+	return	phylogeny_load_from_string(sztree, tree_new, phylogeny_new_empty_node, parsefunc, 0 );
 }
 
 pTree phylogeny_copy(pTree psrc)

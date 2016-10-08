@@ -31,11 +31,11 @@ typedef struct tagTreeNode
 ****************************************************************************/
 
 typedef pTreeNode (*tree_func_node_new)(pTree ptree);
-typedef pTree (*tree_func_new)(tree_func_node_new nfunc, va_list ap);
+typedef pTree (*tree_func_new)(tree_func_node_new nfunc, int size);
 typedef void (*tree_func_node)(pTree ptree, pTreeNode pnode, va_list ap);
 typedef void (*tree_func_node_copy)(pTreeNode psrc, pTreeNode pdest );
 
-extern pTree tree_new(tree_func_node_new nfunc, va_list ap);
+extern pTree tree_new(tree_func_node_new nfunc, int size);
 extern void tree_new_fill(pTree ptree, tree_func_node_new nfunc ) ;
 extern void tree_free(pTree ptree);
 extern pTreeNode tree_new_empty_node();
@@ -83,7 +83,7 @@ extern void phylogeny_node_copy(pTreeNode psrc, pTreeNode pdest );
 extern pTree phylogeny_load_from_string(char* sztree, 
 								 tree_func_new new_tree_func, 
 								 tree_func_node_new new_tree_node_func, 
-		                         phylogeny_func_parse_node parsefunc, ... );
+		                         phylogeny_func_parse_node parsefunc, int size);
 extern pTree phylogeny_root_tree(pTree ptree, 
 							tree_func_node_new new_tree_node_func, 
 							phylogeny_func_parse_node parsefunc, ... );
