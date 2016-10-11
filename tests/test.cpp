@@ -1,6 +1,7 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 #include <stdexcept>
+#include <math.h>
 
 extern "C" {
 #include <utils_string.h>
@@ -42,6 +43,10 @@ CafeShellCommand cafe_cmd_test[] =
 
 TEST_GROUP(FirstTestGroup)
 {
+	void setup()
+	{
+		srand(10);
+	}
 };
 
 TEST(FirstTestGroup, TestStringSplitter)
@@ -179,13 +184,56 @@ TEST(FirstTestGroup, Test_cafe_cmd_source)
 	LONGS_EQUAL(-1, cafe_cmd_source(strs));
 };
 
+static pArrayList build_arraylist(const char *items[], int count)
+{
+	pArrayList psplit = arraylist_new(20);
+	for (int i = 0; i < count; ++i)
+	{
+		char *str = (char*)memory_new(strlen(items[i]) + 1, sizeof(char));
+		strcpy(str, items[i]);
+		arraylist_add(psplit, str);
+	}
+	return psplit;
+}
+
 TEST(FirstTestGroup, Test_cafe_get_posterior)
 {
 	CafeParam param;
-	CafeFamily family;
-	param.pfamily = &family;
-	//cafe_get_posterior(&param);
+	param.flog = stdout;
+	param.quiet = 1;
+	param.prior_rfsize_by_family = NULL;
+	param.prior_rfsize = NULL;
+	param.pcafe = create_tree();
+	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
+	param.pfamily = cafe_family_init(build_arraylist(species, 7));
+	cafe_family_set_species_index(param.pfamily, param.pcafe);
+	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
+	cafe_family_add_item(param.pfamily, build_arraylist(values, 7));
+
+	param.ML = (double*)memory_new(5, sizeof(double));
+	param.MAP = (double*)memory_new(5, sizeof(double));
+
+	DOUBLES_EQUAL(-1.0, cafe_get_posterior(&param), 0.01);	// -1 represents an error - empirical posterior not defined. Is this safe?
+
+	cafe_set_prior_rfsize_empirical(&param);
+	CHECK_FALSE(isfinite(cafe_get_posterior(&param)));
 };
+
+TEST(FirstTestGroup, cafe_set_prior_rfsize_empirical)
+{
+	CafeParam param;
+	param.flog = stdout;
+	param.prior_rfsize = NULL;
+	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
+	param.pfamily = cafe_family_init(build_arraylist(species, 7));
+	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
+	cafe_family_add_item(param.pfamily, build_arraylist(values, 7));
+
+	param.pcafe = create_tree();
+	cafe_set_prior_rfsize_empirical(&param);
+	DOUBLES_EQUAL(0.5679, param.prior_rfsize[0], .001);
+}
+
 
 int main(int ac, char** av)
 {

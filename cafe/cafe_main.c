@@ -501,7 +501,7 @@ double cafe_set_prior_rfsize_poisson_lambda(pCafeParam param, double* lambda)
 	return 0;
 }
 
-// set empirical prior on rootsize based on the assumption that rootsize follows leaf size distribution
+/// set empirical prior on rootsize based on the assumption that rootsize follows leaf size distribution
 double cafe_set_prior_rfsize_empirical(pCafeParam param)
 {
 	int i=0;
@@ -523,7 +523,7 @@ double cafe_set_prior_rfsize_empirical(pCafeParam param)
 			}
 		}
 	}
-	
+
 	// now estimate parameter based on data and distribution (poisson or gamma). 
 	pFMinSearch pfm;
 	int num_params = 1;
@@ -544,7 +544,7 @@ double cafe_set_prior_rfsize_empirical(pCafeParam param)
 	
 	// set rfsize based on estimated prior
 	cafe_set_prior_rfsize_poisson_lambda(param, param->prior_poisson_lambda);
-	
+
 	// clean
 	fminsearch_free(pfm);
 	arraylist_free(pLeavesSize, NULL);
@@ -552,71 +552,6 @@ double cafe_set_prior_rfsize_empirical(pCafeParam param)
 	return 0;
 }
 	
-
-double cafe_set_prior_rfsize_by_family(pCafeParam param)
-{
-	int i;
-	double score = 0;
-	double* likelihood = NULL;
-	if( param->num_lambdas != 1 || param->num_mus !=0) {
-		fprintf(stderr, "equilibrium lambda = mu not found yet." );
-		return -1;
-	}
-	if ( param->prior_rfsize_by_family ) { 
-		memory_free_2dim((void**)param->prior_rfsize_by_family, param->pfamily->flist->size, FAMILYSIZEMAX, NULL); 
-		param->prior_rfsize_by_family = NULL;
-	}
-	param->prior_rfsize_by_family = (double**)memory_new_2dim(param->pfamily->flist->size, FAMILYSIZEMAX, sizeof(double));
-
-
-	for ( i = 0 ; i < param->pfamily->flist->size ; i++ )
-	{
-		pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
-		if ( pitem->ref < 0 || pitem->ref == i ) 
-		{
-			cafe_family_set_size(param->pfamily, i, param->pcafe);
-			likelihood = cafe_tree_likelihood(param->pcafe);		// likelihood of the whole tree = multiplication of likelihood of all nodes
-			param->ML[i] = __max(likelihood,param->pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
-			// integrate likelihood over all possible root values
-			//param->ML[i] = mean(likelihood, param->pcafe->rfsize);
-				
-			// ((pCafeNode)param->pcafe->super.root)->likelihoods is an array of size_of_factor that contains the root likelihood values
-			// lets save the root likehood values for future use as prior
-			double* famidx = param->prior_rfsize_by_family[i]+param->pcafe->rootfamilysizes[0];
-			double suml = summation(likelihood, param->pcafe->rfsize);			
-			memcpy( famidx, ((pCafeNode)param->pcafe->super.root)->likelihoods, param->pcafe->rfsize*sizeof(double));
-			vector_fraction( famidx, param->pcafe->rfsize, suml);
-
-			if ( pitem->maxlh < 0 )
-			{
-				pitem->maxlh = __maxidx(likelihood,param->pcafe->rfsize);	
-			}
-		}
-		else
-		{
-			param->ML[i] = param->ML[pitem->ref];
-			// ((pCafeNode)param->pcafe->super.root)->likelihoods is an array of size_of_factor that contains the root likelihood values
-			// lets save the root likehood values for future use as prior
-			double* famidx = param->prior_rfsize_by_family[i];
-			memcpy( famidx, param->prior_rfsize_by_family[pitem->ref], FAMILYSIZEMAX*sizeof(double));			
-		}
-		if ( param->ML[i] == 0 )
-		{ 
-			show_sizes(stdout, param, pitem, i);
-			pString pstr = cafe_tree_string_with_familysize_lambda(param->pcafe);
-			fprintf(stderr, "%d: %s\n", i, pstr->buf );
-			string_free(pstr);
-
-			score = log(0);
-			break;
-		}
-		score += log(param->ML[i]);			// add log-likelihood across all families
-	}
-	
-	return score;
-}
-
-
 
 double __cafe_cluster_lambda_search(double* parameters, void* args)
 {

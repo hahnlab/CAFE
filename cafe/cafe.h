@@ -32,10 +32,8 @@ typedef enum
  * Cafe Tree
 ****************************************************************************/
 
-//extern double cafe_get_likelihood(pCafeParam param);
 extern double cafe_get_posterior(pCafeParam param);
 extern double cafe_set_prior_rfsize_empirical(pCafeParam param);
-extern double cafe_set_prior_rfsize_by_family(pCafeParam param);
 extern pCafeTree cafe_tree_new(char* sztree, int familysizes[], int rootfamilysizes[], double lambda, double mu);
 extern pTreeNode cafe_tree_new_empty_node(pTree pcafe);
 extern void cafe_tree_set_parameters(pCafeTree pcafe, int familysizes[], int rootfamilysizes[], double lambda);
@@ -117,12 +115,9 @@ extern void cafe_set_birthdeath_cache_thread(pCafeParam param);
 extern double* cafe_best_lambda_by_fminsearch(pCafeParam param, int lambda_len, int k);
 extern double* cafe_best_lambda_mu_by_fminsearch(pCafeParam param, int lambda_len, int mu_len, int k );
 extern double* cafe_best_lambda_mu_eqbg_by_fminsearch(pCafeParam param, int lambda_len, int mu_len );
-//extern double* cafe_best_lambda_clusters_by_fminsearch(pCafeParam param, int lambda_len, int k );
-//extern double* cafe_best_lambda_mu_clusters_by_fminsearch(pCafeParam param, int lambda_len, int mu_len, int k );
 extern double* cafe_each_best_lambda_by_fminsearch(pCafeParam param, int lambda_len );
 extern void cafe_report(pCafeParam param, int method);
 extern pArrayList cafe_conditional_distribution(pCafeParam param);
-//extern void cafe_birthdeath_cache_refresh( pCafeTree pcafe );
 extern void cafe_lambda_set_default(pCafeParam param, double* lambda);
 
 extern void cafe_resize_birthdeath_cache(pCafeParam param);

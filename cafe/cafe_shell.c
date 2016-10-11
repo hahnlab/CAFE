@@ -14,6 +14,8 @@
 #include "cafe.h"
 #include<io.h>
 
+extern int cafe_shell_dispatch_commandf(char* format, ...);
+
 /**
 * \brief Holds the global program state that user commands act on.
 *
@@ -256,7 +258,8 @@ void cafe_shell_prompt(char* prompt, char* format, ... )
 	va_list ap;
 	va_start(ap, format);
 	printf("%s ", prompt);
-	vscanf( format, ap );
+	if (vscanf( format, ap ) == EOF)
+		fprintf(stderr, "Read failure\n");
 	va_end(ap);
 }
 
@@ -732,7 +735,9 @@ int cafe_shell_set_branchlength()
 		pPhylogenyNode pnode = (pPhylogenyNode)nlist->array[i];
 		if ( tree_is_root( (pTree)cafe_param->pcafe, (pTreeNode)pnode) ) continue;
 		printf("%d[%d]: ", i, (int)pnode->branchlength );
-		fgets(buf,STRING_STEP_SIZE,stdin);
+		if (fgets(buf,STRING_STEP_SIZE,stdin) == NULL)
+			fprintf(stderr, "Failed to read input\n");
+
 		size_t len = strlen(buf);
 		buf[--len] = '\0';
 		if ( len != 0 )
@@ -802,6 +807,7 @@ void cafe_shell_init(int quiet)
 	cafe_param->bl_augment = 0.5;
 	cafe_param->pvalue = 0.01;
 	cafe_param->quiet = quiet;
+	cafe_param->prior_rfsize_by_family = NULL;
 }
 
 int cafe_cmd_echo(int argc, char* argv[])
@@ -839,7 +845,9 @@ int cafe_cmd_tree(int argc, char* argv[])
 	if ( argc == 1 )
 	{
 		printf("Newick: ");
-		fgets(buf,STRING_BUF_SIZE,stdin);
+		if (fgets(buf,STRING_BUF_SIZE,stdin) == NULL)
+			fprintf(stderr, "Failed to read input\n");
+
 	}
 	else
 	{
@@ -995,7 +1003,6 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 	int bdone = 0;
 	int bsearch = 0;
 	int bprint = 0;
-	int blambda = 0;
 	
 	//////
 	CafeParam tmpparam;
@@ -1040,8 +1047,6 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 			 	sscanf( parg->argv[j], "%lf", &tmp_param->lambda[j] );
 			}
 			tmp_param->num_params += parg->argc;
-			blambda = 1;
-			
 		}
 		else if ( !strcmp( parg->opt, "-m") )
 		{
@@ -1053,7 +1058,6 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 			 	sscanf( parg->argv[j], "%lf", &tmp_param->mu[j] );
 			}
 			tmp_param->num_params += parg->argc;
-			blambda = 1;			
 		}
 		else if ( !strcmp( parg->opt, "-p") )
 		{
@@ -1097,7 +1101,6 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 		}		
 		// search or set
 		if (bsearch) {
-            pTree ptree = (pTree)pcafe;
             // prepare parameters
 			if (tmp_param->lambda_tree != NULL) {
 				// cafe_param->num_lambdas determined by lambda tree.

@@ -81,18 +81,25 @@ struct tagCafeParam
 	FILE *fout, *flog;
 	pString str_fdata, str_fout, str_log;
 
-	pCafeTree pcafe;		/// tree information stored when the user calls the "tree" command
-	pCafeFamily pfamily;	/// family information stored when the user calls the "load" command
-	
-	// Deprecated
-	//double* lambda_scores;
-	//double* lambda_values;
+	/// tree information stored when the user calls the "tree" command
+	pCafeTree pcafe;		
 
+	/// family information stored when the user calls the "load" command
+	pCafeFamily pfamily;	
+	
 	int eqbg;
 	int posterior;
+
+	/// Max Likelihood - Initialized by the "load" command with the number of families in the table
 	double* ML;
+
+	/// root size condition with max likelihood for each family	- Initialized by the "load" command with the number of families in the table
 	double* MAP;
+
+	/// prior is a poisson distribution on the root size based on leaves' size
 	double* prior_rfsize;
+
+
 	double** prior_rfsize_by_family;
 
 	double* parameters;
