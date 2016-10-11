@@ -8,5 +8,7 @@ int cafe_cmd_source(std::vector<std::string> tokens);
 
 int cafe_shell_dispatch_command(char* cmd);
 
+std::vector<std::string> tokenize(std::string s);
+
 #endif
 

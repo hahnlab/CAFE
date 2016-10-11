@@ -5,6 +5,8 @@
 #include <sstream>
 #include <vector>
 #include "lambda.h"
+#include <strings.h>
+#include "cafe_commands.h"
 
 extern "C" {
 #include <utils_string.h>
@@ -16,14 +18,16 @@ using namespace std;
 vector<string> tokenize(string s)
 {
 	vector<string> result;
-	istringstream iss(s);
-
-	do
+	if (s.size() > 0)
 	{
-		string sub;
-		iss >> sub;
-		result.push_back(sub);
-	} while (iss);
+		istringstream iss(s);
+
+		string tmp;
+		while (iss.good()) {
+			iss >> tmp;
+			result.push_back(tmp);
+		}
+	}
 
 	return result;
 }

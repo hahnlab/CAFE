@@ -60,12 +60,28 @@ TEST_GROUP(FirstTestGroup)
 TEST(FirstTestGroup, TestStringSplitter)
 {
 	char c[10];
+	c[0] = 0;
+	LONGS_EQUAL(0, string_pchar_space_split(c)->size);
+
 	pArrayList pArray;
 	strcpy(c, "a b");
 	pArray = string_pchar_space_split(c);
 	LONGS_EQUAL(2, pArray->size);
 	STRCMP_EQUAL("a", (char *)(pArray->array[0]));
 	STRCMP_EQUAL("b", (char *)(pArray->array[1]));
+}
+
+TEST(FirstTestGroup, Tokenize)
+{
+	char c[10];
+	c[0] = 0;
+	LONGS_EQUAL(0, tokenize(c).size());
+
+	strcpy(c, "a b");
+	std::vector<std::string> arr = tokenize(c);
+	LONGS_EQUAL(2, arr.size());
+	STRCMP_EQUAL("a", arr[0].c_str());
+	STRCMP_EQUAL("b", arr[1].c_str());
 }
 
 TEST(FirstTestGroup, TestCafeFamilyNew)
