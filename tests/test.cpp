@@ -76,8 +76,10 @@ TEST(FirstTestGroup, Tokenize)
 	char c[10];
 	c[0] = 0;
 	LONGS_EQUAL(0, tokenize(c).size());
+	strcpy(c, " ");
+	LONGS_EQUAL(0, tokenize(c).size());
 
-	strcpy(c, "a b");
+	strcpy(c, "a b\r\n");
 	std::vector<std::string> arr = tokenize(c);
 	LONGS_EQUAL(2, arr.size());
 	STRCMP_EQUAL("a", arr[0].c_str());

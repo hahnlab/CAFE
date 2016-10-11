@@ -18,15 +18,13 @@ using namespace std;
 vector<string> tokenize(string s)
 {
 	vector<string> result;
-	if (s.size() > 0)
-	{
-		istringstream iss(s);
+	istringstream iss(s);
 
+	while (iss.good()) {
 		string tmp;
-		while (iss.good()) {
-			iss >> tmp;
+		iss >> tmp;
+		if (tmp.size() > 0)
 			result.push_back(tmp);
-		}
 	}
 
 	return result;
