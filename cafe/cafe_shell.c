@@ -39,7 +39,6 @@ pArrayList cafe_pCD;
 */
 CafeShellCommand cafe_cmd[]  =
 {
-	{ "?", cafe_cmd_list },
 	{ "branchlength", cafe_cmd_branchlength },
 	{ "cgi", cafe_cmd_cgi }, 
 	{ "date", cafe_cmd_date },
@@ -827,17 +826,6 @@ int cafe_cmd_date(int argc, char* argv[])
 	cafe_log( cafe_param, "%s", get_current_time() );
 	return 0;
 }
-
-int cafe_cmd_list(int argc, char* argv[])
-{
-	int i;
-	for ( i = 0 ; cafe_cmd[i].command ; i++ )
-	{
-		printf("%s\n", cafe_cmd[i].command );
-	}
-	return 0;
-}
-
 
 int cafe_cmd_tree(int argc, char* argv[])
 {

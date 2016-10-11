@@ -4,6 +4,9 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <iterator>
+#include <algorithm>
+
 #include "lambda.h"
 #include <strings.h>
 #include "cafe_commands.h"
@@ -14,6 +17,17 @@ extern "C" {
 }
 
 using namespace std;
+
+typedef int(*cafe_command2)(vector<string>);
+
+map<string, cafe_command2> get_dispatcher()
+{
+	map<string, cafe_command2> dispatcher;
+	dispatcher["source"] = cafe_cmd_source;
+	dispatcher["lambda"] = cafe_cmd_lambda;
+	dispatcher["?"] = cafe_cmd_list;
+	return dispatcher;
+}
 
 vector<string> tokenize(string s)
 {
@@ -54,15 +68,37 @@ int cafe_cmd_source(vector<string> tokens)
 	return rtn;
 }
 
-typedef int(*cafe_command2)(vector<string>);
+void list_commands(std::ostream& ost)
+{
+	vector<string> commands;
+
+	int i;
+	for (i = 0; cafe_cmd[i].command; i++)
+	{
+		commands.push_back(cafe_cmd[i].command);
+	}
+	map<string, cafe_command2> d = get_dispatcher();
+	for (std::map<string, cafe_command2>::iterator iter = d.begin(); iter != d.end(); ++iter)
+	{
+		commands.push_back(iter->first);
+	}
+	sort(commands.begin(), commands.end());
+	copy(commands.begin(), commands.end(), std::ostream_iterator<string>(ost, "\n"));
+}
+
+int cafe_cmd_list(vector<string> tokens)
+{
+	list_commands(std::cout);
+	return 0;
+}
+
 
 int cafe_shell_dispatch_command(char* cmd)
 {
 	using namespace std;
 
-	map<string, cafe_command2> dispatcher;
-	dispatcher["source"] = cafe_cmd_source;
-	dispatcher["lambda"] = cafe_cmd_lambda;
+	map<string, cafe_command2> dispatcher = get_dispatcher();
+
 	vector<string> tokens = tokenize(cmd);
 
 	int i;

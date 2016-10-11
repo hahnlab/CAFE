@@ -1,6 +1,10 @@
+#include <stdexcept>
+#include <vector>
+#include <string>
+#include <sstream>
+
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
-#include <stdexcept>
 #include <math.h>
 
 extern "C" {
@@ -234,6 +238,15 @@ TEST(FirstTestGroup, cafe_set_prior_rfsize_empirical)
 	DOUBLES_EQUAL(0.5679, param.prior_rfsize[0], .001);
 }
 
+TEST(FirstTestGroup, list_commands)
+{
+	std::ostringstream ost;
+	list_commands(ost);
+	STRCMP_CONTAINS("lambda", ost.str().c_str());
+	STRCMP_CONTAINS("tree", ost.str().c_str());
+	STRCMP_CONTAINS("load", ost.str().c_str());
+	STRCMP_CONTAINS("branchlength", ost.str().c_str());
+}
 
 int main(int ac, char** av)
 {

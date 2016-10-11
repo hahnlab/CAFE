@@ -50,7 +50,6 @@ int cafe_cmd_tree(int argc, char* argv[]);
 int cafe_cmd_branchlength(int argc, char* argv[]);
 int cafe_cmd_echo(int argc, char* argv[]);
 int cafe_cmd_family(int argc, char* argv[]);
-int cafe_cmd_list(int argc, char* argv[]);
 int cafe_cmd_date(int argc, char* argv[]);
 int cafe_cmd_viterbi(int argc, char* argv[]);
 int cafe_cmd_print_param(int argc, char* argv[]);
