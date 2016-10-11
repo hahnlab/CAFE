@@ -33,6 +33,19 @@ int cafe_cmd_atoi(int argc, char* argv[])
 	return atoi(argv[1]);
 }
 
+pArrayList build_arraylist(const char *items[], int count)
+{
+	pArrayList psplit = arraylist_new(20);
+	for (int i = 0; i < count; ++i)
+	{
+		char *str = (char*)memory_new(strlen(items[i]) + 1, sizeof(char));
+		strcpy(str, items[i]);
+		arraylist_add(psplit, str);
+	}
+	return psplit;
+}
+
+
 CafeShellCommand cafe_cmd_test[] =
 {
 	{ "atoi", cafe_cmd_atoi },
@@ -156,7 +169,7 @@ TEST(FirstTestGroup, TestPhylogenyLoadFromString)
 	strcpy(outbuf, "(((1,1)1,(2,2)2)2,2)");
 	cafe_shell_init(1);
 	init_cafe_tree();
-	pTree tree = phylogeny_load_from_string(outbuf, tree_new, phylogeny_new_empty_node, phylogeny_lambda_parse_func);
+	pTree tree = phylogeny_load_from_string(outbuf, tree_new, phylogeny_new_empty_node, phylogeny_lambda_parse_func, 0);
 	CHECK(tree != 0);
 	LONGS_EQUAL(56, tree->size);
 
@@ -171,6 +184,77 @@ TEST(FirstTestGroup, Test_cafe_cmd_source)
 	strs.push_back("nonexistent");
 	LONGS_EQUAL(-1, cafe_cmd_source(strs));
 };
+
+TEST(FirstTestGroup, Test_cafe_get_posterior)
+{
+	CafeParam param;
+	CafeFamily family;
+	param.pfamily = &family;
+	//cafe_get_posterior(&param);
+};
+
+TEST(FirstTestGroup, cafe_family_set_size)
+{
+	CafeFamily family;
+	CafeTree tree;
+	tree.size_of_factor = 0;
+	family.flist = arraylist_new(11000);
+	pCafeFamilyItem pitem = (pCafeFamilyItem)memory_new(1, sizeof(CafeFamilyItem));
+	arraylist_add(family.flist, pitem);
+	printf("Tree size: %d\n", tree.super.size);
+	cafe_tree_new_empty_node((pTree)&tree);
+	//cafe_family_set_size(&family, 0, &tree);
+	//pCafeNode pcnode = (pCafeNode)tree.super.nlist->array[0];
+	//LONGS_EQUAL( pcnode->familysize, 5);
+
+};
+
+TEST(FirstTestGroup, cafe_family_init)
+{
+	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
+	pArrayList psplit = build_arraylist(species, 7);
+
+	pCafeFamily pcf = cafe_family_init(psplit);
+	arraylist_free(psplit, NULL);
+	LONGS_EQUAL(5, pcf->num_species);
+	STRCMP_EQUAL("dog", pcf->species[4]);
+	STRCMP_EQUAL("rat", pcf->species[3]);
+	LONGS_EQUAL(5, pcf->num_species);
+	LONGS_EQUAL(0, pcf->max_size);
+	LONGS_EQUAL(0, pcf->flist->size);
+	LONGS_EQUAL(-1, pcf->index[1]);
+	LONGS_EQUAL(-1, pcf->index[2]);
+
+}
+
+TEST(FirstTestGroup, cafe_family_add_item)
+{
+	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
+
+	pArrayList psplit = build_arraylist(species, 7);
+	pCafeFamily pcf = cafe_family_init(psplit);
+
+	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
+	cafe_family_add_item(pcf, build_arraylist(values, 7));
+	arraylist_free(psplit, NULL);
+	LONGS_EQUAL(1, pcf->flist->size);
+	pCafeFamilyItem pitem = (pCafeFamilyItem)arraylist_get(pcf->flist, 0);
+	STRCMP_EQUAL("description", pitem->desc);
+	STRCMP_EQUAL("id", pitem->id);
+	LONGS_EQUAL(3, pitem->count[0]);
+	LONGS_EQUAL(5, pitem->count[1]);
+	LONGS_EQUAL(7, pitem->count[2]);
+	LONGS_EQUAL(11, pitem->count[3]);
+	LONGS_EQUAL(13, pitem->count[4]);
+	LONGS_EQUAL(pitem->maxlh,-1);
+	LONGS_EQUAL(pitem->ref,-1);
+	LONGS_EQUAL(pitem->lambda, NULL);
+	LONGS_EQUAL(pitem->mu, NULL);
+	LONGS_EQUAL(pitem->pbdc_array, NULL);
+	LONGS_EQUAL(pitem->holder, 1);
+	LONGS_EQUAL(13, pcf->max_size);
+
+}
 
 int main(int ac, char** av)
 {

@@ -426,9 +426,62 @@ void cafe_family_read_validate_species(pCafeParam param, char* file)
 	return;
 }
 
+pCafeFamily cafe_family_init(pArrayList data)
+{
+	pCafeFamily pcf = (pCafeFamily)memory_new(1, sizeof(CafeFamily));
+	pcf->flist = arraylist_new(11000);
+	pcf->species = (char**)memory_new((data->size - 2), sizeof(char*));
+	for (int i = 2; i < data->size; i++)
+	{
+		pcf->species[i - 2] = (char*)data->array[i];
+	}
 
+	pcf->num_species = data->size - 2;
+	pcf->max_size = 0;
+	pcf->index = (int*)memory_new(pcf->num_species, sizeof(int));
+	for (int i = 0; i < pcf->num_species; ++i)
+	{
+		pcf->index[i] = -1;
+	}
 
+	return pcf;
+}
 
+void cafe_family_add_item(pCafeFamily pcf, pArrayList data)
+{
+	pCafeFamilyItem pitem = (pCafeFamilyItem)memory_new(1, sizeof(CafeFamilyItem));
+	if (data->size != (pcf->num_species + 2))
+	{
+		fprintf(stderr, "Inconsistency in column count: expected %d, but found %d", pcf->num_species + 2, data->size);
+	}
+	pitem->desc = (char*)data->array[0];
+	pitem->id = (char*)data->array[1];
+	pitem->count = (int*)memory_new(pcf->num_species, sizeof(int));
+	pitem->maxlh = -1;   // Maximum likelihood index
+	pitem->ref = -1;
+	pitem->lambda = NULL;
+	pitem->mu = NULL;
+	pitem->pbdc_array = NULL;
+	pitem->holder = 1;
+	for (int j = 0; j < pcf->num_species; j++)
+	{
+		if (data->array[j + 2])
+		{
+			pitem->count[j] = atoi((char*)data->array[j + 2]);
+			if (pcf->max_size < pitem->count[j])
+			{
+				pcf->max_size = pitem->count[j];
+			}
+			memory_free(data->array[j + 2]);
+			data->array[j + 2] = NULL;
+		}
+		else
+		{
+			pitem->count[j] = 0;
+		}
+	}
+	arraylist_add(pcf->flist, pitem);
+}
 
 pCafeFamily cafe_family_new(char* file, int bpatcheck)
 {
@@ -437,81 +490,29 @@ pCafeFamily cafe_family_new(char* file, int bpatcheck)
 	if ( fp == NULL )
 	{
 		fprintf( stderr, "Cannot open file: %s\n", file );
-//		print_error(__FILE__,(char*)__FUNCTION__,__LINE__, "Cannot open file: %s ", file );
 		return NULL;
 	}
-	pCafeFamily pcf = (pCafeFamily)memory_new( 1, sizeof(CafeFamily) );
 	int i, j;
 	if ( fgets(buf,STRING_BUF_SIZE,fp) == NULL )
 	{
 		fclose(fp);
 		fprintf( stderr, "Empty file: %s\n", file );
-//		print_error(__FILE__,(char*)__FUNCTION__,__LINE__, "Input file is empty" );
 		return NULL;
 	}
 	string_pchar_chomp(buf);
-	pcf->flist = arraylist_new(11000);
-
 	pArrayList data = string_pchar_split( buf, '\t');
-	pcf->species = (char**)memory_new((data->size-2), sizeof(char*));
-	for ( i = 2 ; i < data->size ; i++ )
-	{
-		pcf->species[i-2] = (char*)data->array[i];
-	}
+	pCafeFamily pcf = cafe_family_init(data);
 	memory_free(data->array[0]);
 	memory_free(data->array[1]);
 	data->array[0] = NULL;
 	data->array[1] = NULL;
-	
-	pcf->num_species = data->size - 2;
-	arraylist_free(data,NULL);
-	pcf->max_size = 0;
-	pcf->index = (int*)memory_new( pcf->num_species, sizeof(int));
-	//memset(pcf->index, -1, sizeof(pcf->index));	??
+	arraylist_free(data, NULL);
 
 	for(  i = 0 ; fgets(buf,STRING_BUF_SIZE,fp) ; i++ )	
 	{
-//		string_pchar_chomp(buf);
-		pCafeFamilyItem pitem = (pCafeFamilyItem)memory_new(1,sizeof(CafeFamilyItem));
-		data = string_pchar_split( buf, '\t');
-		if ( data->size != (pcf->num_species + 2) )
-		{
-			for ( j = 0 ; j < data->size ; j++ )
-			{
-				fprintf(stderr,"%d: %s\n", j, (char*)data->array[i] );
-			}
-			print_error(__FILE__,(char*)__FUNCTION__,__LINE__, 
-					"The number of column is not consistant(%d), but %d in line %d", 
-					pcf->num_species+2, data->size,  i+2);
-		}
-		pitem->desc = (char*)data->array[0];
-		pitem->id = (char*)data->array[1];		
-		pitem->count = (int*)memory_new(pcf->num_species, sizeof(int));
-		pitem->maxlh = -1;   // Maximum likelihood index
-		pitem->ref = -1;
-		pitem->lambda = NULL;
-		pitem->mu = NULL;
-		pitem->pbdc_array = NULL;
-		pitem->holder = 1;
-		for ( j = 0 ; j < pcf->num_species ; j++ )
-		{
-			if ( data->array[j+2] )
-			{
-				pitem->count[j] = atoi((char*)data->array[j+2]);
-				if ( pcf->max_size < pitem->count[j] )
-				{
-					pcf->max_size = pitem->count[j];
-				}
-				memory_free(data->array[j+2]);
-				data->array[j+2] = NULL;
-			}
-			else
-			{
-				pitem->count[j] = 0;
-			}
-		}
+		data = string_pchar_split(buf, '\t');
+		cafe_family_add_item(pcf, data);
 		arraylist_free(data,NULL);
-		arraylist_add(pcf->flist,pitem);
 	}
 	if ( bpatcheck )
 	{
@@ -624,23 +625,21 @@ void cafe_family_free(pCafeFamily pcf)
 
 void cafe_family_set_size(pCafeFamily pcf, int idx, pCafeTree pcafe)
 {
-	int sumoffamilysize = 0;
 	pTree ptree = (pTree)pcafe;
-	pCafeFamilyItem pitem = (pCafeFamilyItem)pcf->flist->array[idx];
-	int i;
-	for ( i = 0; i< ptree->nlist->size; i++) {
+	for (int i = 0; i< ptree->nlist->size; i++) {
 		((pCafeNode)ptree->nlist->array[i])->familysize = -1;
 	}
-	for ( i = 0 ; i < pcf->num_species ; i++ )
+	pCafeFamilyItem pitem = (pCafeFamilyItem)pcf->flist->array[idx];
+	for (int i = 0 ; i < pcf->num_species ; i++ )
 	{
 		if( pcf->index[i] < 0 ) continue;
+		if (pcf->index[i] >= ptree->size)
+		{
+			fprintf(stderr, "Inconsistency in tree size");
+			exit(-1);
+		}
 		pCafeNode pcnode = (pCafeNode)ptree->nlist->array[pcf->index[i]];
 		pcnode->familysize = pitem->count[i];
-		sumoffamilysize += pcnode->familysize;
-	}
-	if (sumoffamilysize == 0) 
-	{
-		//fprintf(stderr, "empty family\n");
 	}
 }
 
