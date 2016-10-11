@@ -638,7 +638,11 @@ void cafe_family_set_size(pCafeFamily pcf, int idx, pCafeTree pcafe)
 	pCafeFamilyItem pitem = (pCafeFamilyItem)pcf->flist->array[idx];
 	for (int i = 0 ; i < pcf->num_species ; i++ )
 	{
-		if( pcf->index[i] < 0 ) continue;
+		if (pcf->index[i] < 0)
+		{
+			fprintf(stderr, "Warning: Tree and family indices not synchronized\n");
+			continue;
+		}
 		if (pcf->index[i] >= ptree->size)
 		{
 			fprintf(stderr, "Inconsistency in tree size");

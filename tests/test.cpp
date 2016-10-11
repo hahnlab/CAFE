@@ -218,18 +218,21 @@ TEST(FirstTestGroup, Test_cafe_get_posterior)
 
 TEST(FirstTestGroup, cafe_family_set_size)
 {
-	CafeFamily family;
-	CafeTree tree;
-	tree.size_of_factor = 0;
-	family.flist = arraylist_new(11000);
-	pCafeFamilyItem pitem = (pCafeFamilyItem)memory_new(1, sizeof(CafeFamilyItem));
-	arraylist_add(family.flist, pitem);
-	printf("Tree size: %d\n", tree.super.size);
-	cafe_tree_new_empty_node((pTree)&tree);
-	//cafe_family_set_size(&family, 0, &tree);
-	//pCafeNode pcnode = (pCafeNode)tree.super.nlist->array[0];
-	//LONGS_EQUAL( pcnode->familysize, 5);
+	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
+	pCafeFamily pcf = cafe_family_init(build_arraylist(species, 7));
+	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
+	cafe_family_add_item(pcf, build_arraylist(values, 7));
 
+	pCafeTree ptree = create_tree();
+	cafe_family_set_species_index(pcf, ptree);
+	cafe_family_set_size(pcf, 0, ptree);
+
+	// leaf nodes are at 0,2,4,6,8. They should match the sizes given above
+	LONGS_EQUAL(3, ((pCafeNode)ptree->super.nlist->array[0])->familysize);
+	LONGS_EQUAL(5, ((pCafeNode)ptree->super.nlist->array[2])->familysize);
+	LONGS_EQUAL(7, ((pCafeNode)ptree->super.nlist->array[4])->familysize);
+	LONGS_EQUAL(11, ((pCafeNode)ptree->super.nlist->array[6])->familysize);
+	LONGS_EQUAL(13, ((pCafeNode)ptree->super.nlist->array[8])->familysize);
 };
 
 TEST(FirstTestGroup, cafe_family_init)
