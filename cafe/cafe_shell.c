@@ -14,7 +14,12 @@
 #include "cafe.h"
 #include<io.h>
 
+/**
+* \brief Holds the global program state that user commands act on.
+*
+*/
 pCafeParam cafe_param;
+
 pTree tmp_lambda_tree;
 pArrayList cafe_pCD;
 
@@ -779,6 +784,10 @@ double* cafe_shell_likelihood(int max)
 	return cafe_tree_likelihood(pcafe);
 }
 
+/**
+* \brief Initializes the global \ref cafe_param that holds the data acted upon by cafe. Called at program startup.
+* 
+*/
 void cafe_shell_init(int quiet)
 {
 	cafe_param = (pCafeParam)memory_new(1,sizeof(CafeParam));

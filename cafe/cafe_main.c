@@ -20,6 +20,11 @@ estimate gene numbers.
 *
 * The list of available commands are stored in the #cafe_cmd
 variable in cafe_shell.c .
+* 
+* The variable \ref cafe_param is a global singleton that holds general program state.
+* \ref cafe_param holds pcafe, a \ref CafeTree, and pfamily, a \ref CafeFamily . These are set
+* by the user via the commands "tree" and "load" respectively. When the user calls
+* the command "lambda" calculations are performed on the pcafe and pfamily variables.
 */
 #include "cafe.h"
 #include<stdlib.h>

@@ -71,13 +71,18 @@ typedef void (*param_func)(pCafeParam param, double* parameters);
 //typedef void (*lambda_func)(pCafeParam param, double* lambda);
 typedef void (*branchlength_func)(pCafeParam param, int* t);
 
+/**
+* \brief Singleton structure that holds all of the global data that Cafe acts on.
+*
+* Initialized at program startup by \ref cafe_shell_init
+*/
 struct tagCafeParam
 {
 	FILE *fout, *flog;
 	pString str_fdata, str_fout, str_log;
 
-	pCafeTree pcafe;
-	pCafeFamily pfamily;
+	pCafeTree pcafe;		/// tree information stored when the user calls the "tree" command
+	pCafeFamily pfamily;	/// family information stored when the user calls the "load" command
 	
 	// Deprecated
 	//double* lambda_scores;

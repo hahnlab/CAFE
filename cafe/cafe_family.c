@@ -543,7 +543,13 @@ void cafe_family_item_free(pCafeFamilyItem pitem )
 	pitem = NULL;
 }
 
-int cafe_family_set_species_index(pCafeFamily pcf, pCafeTree pcafe )
+/*! \brief Synchronize a family and tree together
+*
+*  Sets the value of index in pcf to the node index in the tree of the 
+*  leaf with the matching species ID. 
+*  \returns 0 on success, or -1 if there is a species in the tree with
+*  no matching species in the family
+*/int cafe_family_set_species_index(pCafeFamily pcf, pCafeTree pcafe )
 {
 	int i,j;
 	pTree ptree = (pTree)pcafe;
