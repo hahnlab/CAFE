@@ -102,14 +102,19 @@ TEST(FirstTestGroup, TestCafeFamilyNew)
 	LONGS_EQUAL(59, fam->flist->size);
 }
 
-TEST(FirstTestGroup, TestCafeTree)
+pCafeTree create_tree()
 {
 	const char *newick_tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)";
 	char tree[100];
 	strcpy(tree, newick_tree);
 	int family_sizes[2] = { 1,1 };
 	int rootfamily_sizes[2] = { 1,1 };
-	pCafeTree cafe_tree = cafe_tree_new(tree, family_sizes, rootfamily_sizes, 0, 0);
+	return cafe_tree_new(tree, family_sizes, rootfamily_sizes, 0, 0);
+}
+
+TEST(FirstTestGroup, TestCafeTree)
+{
+	pCafeTree cafe_tree = create_tree();
 	LONGS_EQUAL(128, cafe_tree->super.size);
 
 	// Find chimp in the tree after two branches of length 6,81,6
@@ -272,6 +277,26 @@ TEST(FirstTestGroup, cafe_family_add_item)
 	LONGS_EQUAL(pitem->holder, 1);
 	LONGS_EQUAL(13, pcf->max_size);
 
+}
+
+TEST(FirstTestGroup, cafe_family_set_species_index)
+{
+	pCafeTree tree = create_tree();
+	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
+	pCafeFamily pcf = cafe_family_init(build_arraylist(species, 7));
+
+	LONGS_EQUAL(-1, pcf->index[0]);
+	int errcode = cafe_family_set_species_index(pcf, tree);
+	LONGS_EQUAL(0, errcode);
+	LONGS_EQUAL(0, pcf->index[0]);
+	LONGS_EQUAL(2, pcf->index[1]);
+	LONGS_EQUAL(4, pcf->index[2]);
+	LONGS_EQUAL(6, pcf->index[3]);
+	LONGS_EQUAL(8, pcf->index[4]);
+
+	pcf = cafe_family_init(build_arraylist(species, 6));
+	errcode = cafe_family_set_species_index(pcf, tree);
+	LONGS_EQUAL(-1, errcode);	// Error because dog is missing from family list
 }
 
 int main(int ac, char** av)

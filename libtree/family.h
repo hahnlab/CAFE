@@ -54,14 +54,14 @@ typedef CafeNode*	pCafeNode;
 
 typedef struct
 {
-	char** species;
-	int   num_species;
-	int*  index;
-    pErrorStruct* error_ptr;    // array of ErrorStruct pointers in the same order as species. the pointers point to errors[]. 
+	char** species;				///< Names (ID's) of the species loaded into the family
+	int   num_species;			///< Total number of species loaded
+	int*  index;				///< indices of the species into the matching \ref CafeTree that was loaded by the user
+    pErrorStruct* error_ptr;    ///< array of ErrorStruct pointers in the same order as species. the pointers point to errors[]. 
 	int   max_size;
-	pArrayList flist;   // family sizes
-    pArrayList errors;  // list of actual ErrorStruct instances
-    int** countbackup;  // space to store the real counts while simulating error
+	pArrayList flist;   ///< family sizes
+    pArrayList errors;  ///< list of actual ErrorStruct instances
+    int** countbackup;  ///< space to store the real counts while simulating error
 }CafeFamily;
 typedef CafeFamily* pCafeFamily;
 

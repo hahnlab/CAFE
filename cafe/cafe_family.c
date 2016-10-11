@@ -575,7 +575,7 @@ void cafe_family_item_free(pCafeFamilyItem pitem )
 				}
 			}
 		}
-		printf("%d: %s => %d\n", i, pcf->species[i], pcf->index[i] );
+		//printf("%d: %s => %d\n", i, pcf->species[i], pcf->index[i] );
 	}
 
 	int err = 0;
