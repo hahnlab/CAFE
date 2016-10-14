@@ -41,8 +41,6 @@ CafeShellCommand cafe_cmd[]  =
 {
 	{ "branchlength", cafe_cmd_branchlength },
 	{ "cgi", cafe_cmd_cgi }, 
-	{ "date", cafe_cmd_date },
-	{ "echo", cafe_cmd_echo },
 	{ "extinct", cafe_cmd_extinct },
 	{ "exit", cafe_cmd_exit },
 	{ "family", cafe_cmd_family },
@@ -719,24 +717,6 @@ void cafe_shell_init(int quiet)
 	cafe_param->pvalue = 0.01;
 	cafe_param->quiet = quiet;
 	cafe_param->prior_rfsize_by_family = NULL;
-}
-
-int cafe_cmd_echo(int argc, char* argv[])
-{
-	if ( argc == 1 ) return 0;
-	int i;
-	for ( i = 1 ; i < argc ; i++ )
-	{
-		cafe_log( cafe_param, " %s", argv[i] );
-	}
-	cafe_log( cafe_param, "\n" );
-	return 0;
-}
-
-int cafe_cmd_date(int argc, char* argv[])
-{
-	cafe_log( cafe_param, "%s", get_current_time() );
-	return 0;
 }
 
 int cafe_cmd_tree(int argc, char* argv[])
