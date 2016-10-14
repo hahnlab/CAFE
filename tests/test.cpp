@@ -250,6 +250,33 @@ TEST(FirstTestGroup, list_commands)
 	STRCMP_CONTAINS("branchlength", ost.str().c_str());
 }
 
+TEST(FirstTestGroup, cafe_cmd_date)
+{
+	CafeParam param;
+	param.quiet = 1;
+	char outbuf[10000];
+	param.flog = fmemopen(outbuf, 999, "w");
+	cafe_cmd_date(&param, std::vector<std::string>());
+	STRCMP_CONTAINS("2016", outbuf);	// this will start to fail in 2017
+	fclose(param.flog);
+}
+
+TEST(FirstTestGroup, cafe_cmd_echo)
+{
+	CafeParam param;
+	param.quiet = 1;
+	char outbuf[10000];
+	param.flog = fmemopen(outbuf, 999, "w");
+	std::vector<std::string> tokens;
+	tokens.push_back("echo");
+	tokens.push_back("quick");
+	tokens.push_back("brown");
+	tokens.push_back("fox");
+	cafe_cmd_echo(&param, tokens);
+	STRCMP_EQUAL(" quick brown fox\n", outbuf);
+	fclose(param.flog);
+}
+
 int main(int ac, char** av)
 {
 	return CommandLineTestRunner::RunAllTests(ac, av);

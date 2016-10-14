@@ -15,7 +15,7 @@ extern "C" {
 #include "cafe_shell.h"
 
 	extern pCafeParam cafe_param;
-	extern void cafe_log(pCafeParam param, char* msg, ...);
+	extern void cafe_log(pCafeParam param, const char* msg, ...);
 }
 
 using namespace std;
@@ -53,15 +53,15 @@ int cafe_cmd_echo(pCafeParam param, vector<string> tokens)
 {
 	for (size_t i = 1; i < tokens.size(); i++)
 	{
-		cafe_log(cafe_param, " %s", tokens[i].c_str());
+		cafe_log(param, " %s", tokens[i].c_str());
 	}
-	cafe_log(cafe_param, "\n");
+	cafe_log(param, "\n");
 	return 0;
 }
 
 int cafe_cmd_date(pCafeParam param, vector<string> tokens)
 {
-	cafe_log(cafe_param, "%s", get_current_time());
+	cafe_log(param, "%s", get_current_time());
 	return 0;
 }
 

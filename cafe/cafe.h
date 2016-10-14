@@ -105,7 +105,7 @@ extern void cafe_family_read_query_family(pCafeParam param, char* file);
  * Cafe Main
 ****************************************************************************/
 
-extern void cafe_log(pCafeParam param, char* msg, ... );
+extern void cafe_log(pCafeParam param, const char* msg, ... );
 extern void cafe_set_birthdeath_cache(pCafeParam param);
 extern void cafe_set_birthdeath_cache_thread(pCafeParam param);
 extern double* cafe_best_lambda_by_fminsearch(pCafeParam param, int lambda_len, int k);
