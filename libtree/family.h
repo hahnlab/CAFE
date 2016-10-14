@@ -51,6 +51,14 @@ typedef struct
 }CafeNode;
 typedef CafeNode*	pCafeNode;
 
+typedef struct
+{
+	double** viterbiPvalues;
+	int** expandRemainDecrease;
+	int** viterbiNodeFamilysizes;
+	double* maximumPvalues;
+	double* averageExpansion;
+} viterbi_parameters;
 
 typedef struct
 {
@@ -144,11 +152,7 @@ struct tagCafeParam
 	int  num_threads;
 	int  num_random_samples;
 
-	double** viterbiPvalues;
-	int** expandRemainDecrease;
-	int** viterbiNodeFamilysizes;
-	double* maximumPvalues;
-	double* averageExpansion;
+	viterbi_parameters viterbi;
 	double** cutPvalues;
 	double** likelihoodRatios;
 

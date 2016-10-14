@@ -274,15 +274,15 @@ double cafe_tree_mp_annotation(pString pstr, pTreeNode pnode, pMetapostConfig pm
 		pCafeParam param = va_arg(ap,pCafeParam);
 		int fid = va_arg(ap,int);
 		string_fadd( pstr, "label.urt( btex %d ", pcnode->familysize, pnode->id );
-		if ( param && param->viterbiPvalues  && !tree_is_leaf( pnode )  )
+		if ( param && param->viterbi.viterbiPvalues  && !tree_is_leaf( pnode )  )
 		{
 			int bidx = 2*(pnode->id/2); 
-			if(  param->viterbiPvalues[bidx][fid] != -1 )
+			if(  param->viterbi.viterbiPvalues[bidx][fid] != -1 )
 			{
 //				string_fadd( pstr,"\\small{(%4.3f\\%%, %4.3f\\%%)} ", 
 				string_fadd( pstr,"\\small{(%4.3f, %4.3f)} ", 
-						    param->viterbiPvalues[bidx][fid], 
-							param->viterbiPvalues[bidx+1][fid] );
+						    param->viterbi.viterbiPvalues[bidx][fid],
+							param->viterbi.viterbiPvalues[bidx+1][fid] );
 			}
 		}
 		string_fadd( pstr, "etex, p[%d]);\n", pnode->id );

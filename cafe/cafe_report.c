@@ -14,7 +14,7 @@ void cafe_report_set_viterbi(pCafeParam param, int i)
 	for ( j = 1 ; j < nlist->size ; j+=2 )
 	{
 		pCafeNode pcnode = (pCafeNode)nlist->array[j];
-		pcnode->familysize = param->viterbiNodeFamilysizes[j/2][i];
+		pcnode->familysize = param->viterbi.viterbiNodeFamilysizes[j/2][i];
 	}
 }
 
@@ -87,49 +87,29 @@ void cafe_report_text(pCafeParam param)
 	fprintf(param->fout, "Average Expansion:");
 	for ( b = 0 ; b < nnodes ; b++ )
 	{
-		fprintf(param->fout,"\t(%lf,%lf)", param->averageExpansion[2*b], 
-						param->averageExpansion[2*b+1] );
+		fprintf(param->fout,"\t(%lf,%lf)", param->viterbi.averageExpansion[2*b],
+						param->viterbi.averageExpansion[2*b+1] );
 	}
 	fprintf(param->fout,"\nExpansion :");
 	for ( b = 0 ; b < nnodes ; b++ )
 	{
-		fprintf(param->fout,"\t(%d,%d)", param->expandRemainDecrease[0][2*b], 
-						param->expandRemainDecrease[0][2*b+1] );
+		fprintf(param->fout,"\t(%d,%d)", param->viterbi.expandRemainDecrease[0][2*b],
+						param->viterbi.expandRemainDecrease[0][2*b+1] );
 	}
 	fprintf(param->fout,"\nRemain :");
 	for ( b = 0 ; b < nnodes ; b++ )
 	{
-		fprintf(param->fout,"\t(%d,%d)", param->expandRemainDecrease[1][2*b], 
-						param->expandRemainDecrease[1][2*b+1] );
+		fprintf(param->fout,"\t(%d,%d)", param->viterbi.expandRemainDecrease[1][2*b],
+						param->viterbi.expandRemainDecrease[1][2*b+1] );
 	}
 	fprintf(param->fout,"\nDecrease:");
 	for ( b = 0 ; b < nnodes ; b++ )
 	{
-		fprintf(param->fout,"\t(%d,%d)", param->expandRemainDecrease[2][2*b], 
-						param->expandRemainDecrease[2][2*b+1] );
+		fprintf(param->fout,"\t(%d,%d)", param->viterbi.expandRemainDecrease[2][2*b],
+						param->viterbi.expandRemainDecrease[2][2*b+1] );
 	}
 	fprintf(param->fout,"\n");
-/*
-	fprintf(param->fout,"# cut P-value and Likelihodd ratio : ");
-	for ( i = 0 ; i < nlist->size ; i++ )
-	{
-		pPhylogenyNode pnode = (pPhylogenyNode)nlist->array[i];
-		if ( pnode->name ) 
-		{
-			fprintf(param->fout,"   %s:", pnode->name );
-		}
-		else if ( tree_is_root( (pTree)param->pcafe, (pTreeNode)pnode ) )
-		{
-			fprintf(param->fout,"    root:" );
-		}
-		else
-		{
-			fprintf(param->fout,"   ");
-		}
-		fprintf(param->fout,"%d", pnode->super.id );
-	}
-	fprintf(param->fout,"\n");
-*/
+
 	fprintf(param->fout, "'ID'\t'Newick'\t'Family-wide P-value'\t'Viterbi P-values'");
 	if ( param->cutPvalues )
 	{
@@ -147,16 +127,16 @@ void cafe_report_text(pCafeParam param)
 		pString pstr = cafe_tree_string(param->pcafe);	
 		fprintf(param->fout,"%s\t", pstr->buf );
 		string_free(pstr);
-		fprintf(param->fout,"%lf\t(", param->maximumPvalues[i] );
+		fprintf(param->fout,"%lf\t(", param->viterbi.maximumPvalues[i] );
 		for ( b = 0 ; b < nnodes ; b++ )
 		{
-			if ( param->viterbiPvalues[2*b][i] == -1 )
+			if ( param->viterbi.viterbiPvalues[2*b][i] == -1 )
 			{
 				fprintf(param->fout,"(-,-)");
 			}
 			else
 			{
-				fprintf(param->fout,"(%lf,%lf)", param->viterbiPvalues[2*b][i], param->viterbiPvalues[2*b+1][i]);
+				fprintf(param->fout,"(%lf,%lf)", param->viterbi.viterbiPvalues[2*b][i], param->viterbi.viterbiPvalues[2*b+1][i]);
 			}
 			if ( b < nnodes - 1 ) fprintf( param->fout, "," );
 		}
@@ -216,7 +196,7 @@ double cafe_report_mp_remark(pString pstr, pTree ptree, pMetapostConfig pmc, va_
 	pCafeParam param = va_arg(ap, pCafeParam );
 	int fid = va_arg(ap,int);
 	string_fadd( pstr, "label(btex Max p-value = %4.3f etex, (0.1u, %fu));\n", 
-			    param->maximumPvalues[fid],  last - 0.2 );
+			    param->viterbi.maximumPvalues[fid],  last - 0.2 );
   va_end(ap);
 	return 0;
 }
@@ -270,7 +250,7 @@ double cafe_report_mp_summary(pString pstr, pTreeNode pnode, pMetapostConfig pmc
     string_fadd( pstr, "xpart mid[%d] = xpart(p[%d]);\n", pnode->id, pnode->id );
     string_fadd( pstr, "ypart mid[%d] = (ypart(p[%d])+ypart(p[%d]))/2;\n", pnode->id, pnode->id, pnode->parent->id );
     last -= 0.15;
-    string_fadd( pstr, "label.rt( btex %1.6f ", param->averageExpansion[idx] );
+    string_fadd( pstr, "label.rt( btex %1.6f ", param->viterbi.averageExpansion[idx] );
     string_fadd( pstr, "etex, mid[%d] + (0,%fu));\n",  pnode->id, last ); 
     last -= 0.15;
     string_fadd( pstr, "label.rt( btex %4.1f ", ((pCafeNode)pnode)->super.branchlength );    
@@ -434,7 +414,7 @@ int cafe_report_retrieve_data(char* file, pCafeParam param)
 	}
 	pString pstr = string_new();
 	int nnodes = 0;
-	param->expandRemainDecrease = (int**)memory_new(3,sizeof(int*));
+	param->viterbi.expandRemainDecrease = (int**)memory_new(3,sizeof(int*));
 
 	int bexist[2] = { 0 , 0 };
 					
@@ -487,19 +467,19 @@ int cafe_report_retrieve_data(char* file, pCafeParam param)
 		}
 		else if ( strncasecmp( pstr->buf, "average", 7) == 0 )
 		{
-			param->averageExpansion = cafe_report_load_data_double_pairs(data, '\t');
+			param->viterbi.averageExpansion = cafe_report_load_data_double_pairs(data, '\t');
 		}
 		else if ( strncasecmp( pstr->buf, "expansion", 9 ) == 0 )
 		{
-			param->expandRemainDecrease[0] = cafe_report_load_data_int_pairs(data,'\t');
+			param->viterbi.expandRemainDecrease[0] = cafe_report_load_data_int_pairs(data,'\t');
 		}
 		else if ( strncasecmp( pstr->buf, "remain", 6 ) == 0 )
 		{
-			param->expandRemainDecrease[1] = cafe_report_load_data_int_pairs(data,'\t');
+			param->viterbi.expandRemainDecrease[1] = cafe_report_load_data_int_pairs(data,'\t');
 		}
 		else if ( strncasecmp( pstr->buf, "decrease", 8 ) == 0 )
 		{
-			param->expandRemainDecrease[2] = cafe_report_load_data_int_pairs(data,'\t');
+			param->viterbi.expandRemainDecrease[2] = cafe_report_load_data_int_pairs(data,'\t');
 		}
 	}
 	param->param_set_func(param,param->lambda);
@@ -512,9 +492,9 @@ int cafe_report_retrieve_data(char* file, pCafeParam param)
 		arraylist_add(plines, line); 				
 	}
 
-	param->viterbiPvalues = (double**)memory_new_2dim( nnodes-1,num_families, sizeof(double) );
-	param->maximumPvalues = (double*)memory_new( num_families, sizeof(double) );
-	param->viterbiNodeFamilysizes = (int**)memory_new_2dim( nnodes-1, num_families, sizeof(double) );
+	param->viterbi.viterbiPvalues = (double**)memory_new_2dim( nnodes-1,num_families, sizeof(double) );
+	param->viterbi.maximumPvalues = (double*)memory_new( num_families, sizeof(double) );
+	param->viterbi.viterbiNodeFamilysizes = (int**)memory_new_2dim( nnodes-1, num_families, sizeof(double) );
 
 	param->pfamily = (pCafeFamily)memory_new(1, sizeof(CafeFamily) );
 	pCafeFamily pcf = param->pfamily;
@@ -554,7 +534,7 @@ int cafe_report_retrieve_data(char* file, pCafeParam param)
 		pitem->lambda = NULL;
 		pitem->pbdc_array = NULL;
 		arraylist_add(pcf->flist,pitem);
-		sscanf((char*)data->array[2], "%lf", &param->maximumPvalues[i]); 
+		sscanf((char*)data->array[2], "%lf", &param->viterbi.maximumPvalues[i]);
 
 		pCafeTree ptree = cafe_tree_new( (char*)data->array[1], fs, rs, 0, 0 );
 		pArrayList nlist = ptree->super.nlist;
@@ -571,10 +551,10 @@ int cafe_report_retrieve_data(char* file, pCafeParam param)
 		for ( j = 1 ; j < nlist->size ; j+= 2 )
 		{
 			pCafeNode pcnode = (pCafeNode)nlist->array[j];
-			param->viterbiNodeFamilysizes[j/2][i] = pcnode->familysize;
+			param->viterbi.viterbiNodeFamilysizes[j/2][i] = pcnode->familysize;
 		}
 
-		cafe_report_load_viterbi_pvalue((char*)data->array[3], param->viterbiPvalues, i, nnodes );
+		cafe_report_load_viterbi_pvalue((char*)data->array[3], param->viterbi.viterbiPvalues, i, nnodes );
 		if ( bexist[0] )
 		{
 			cafe_report_load_bc_or_lhr_list((char*)data->array[4], 

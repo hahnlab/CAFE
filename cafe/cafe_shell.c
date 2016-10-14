@@ -121,19 +121,19 @@ void cafe_shell_update_branchlength(pCafeParam param, int* t );
 
 void cafe_shell_clear_interal_data()
 {
-	if ( cafe_param->viterbiPvalues )
+	if ( cafe_param->viterbi.viterbiPvalues )
 	{
 		int nnodes = ((pTree)cafe_param->pcafe)->nlist->size;
 		int num = (nnodes - 1 )/2;
-		memory_free_2dim((void**)cafe_param->viterbiPvalues,num,0,NULL);
-		memory_free_2dim((void**)cafe_param->expandRemainDecrease,3,0,NULL);
-		memory_free_2dim((void**)cafe_param->viterbiNodeFamilysizes,num, 0, NULL);
-		memory_free(cafe_param->averageExpansion);
-		cafe_param->averageExpansion = NULL;
-		if ( cafe_param->maximumPvalues )
+		memory_free_2dim((void**)cafe_param->viterbi.viterbiPvalues,num,0,NULL);
+		memory_free_2dim((void**)cafe_param->viterbi.expandRemainDecrease,3,0,NULL);
+		memory_free_2dim((void**)cafe_param->viterbi.viterbiNodeFamilysizes,num, 0, NULL);
+		memory_free(cafe_param->viterbi.averageExpansion);
+		cafe_param->viterbi.averageExpansion = NULL;
+		if ( cafe_param->viterbi.maximumPvalues )
 		{
-			memory_free(cafe_param->maximumPvalues);
-			cafe_param->maximumPvalues = NULL;
+			memory_free(cafe_param->viterbi.maximumPvalues);
+			cafe_param->viterbi.maximumPvalues = NULL;
 		}
 	}
 	if ( cafe_param->cutPvalues )
@@ -141,11 +141,11 @@ void cafe_shell_clear_interal_data()
 		int nnodes = ((pTree)cafe_param->pcafe)->nlist->size;
 		memory_free_2dim((void**)cafe_param->cutPvalues,nnodes,0,NULL);
 	}
-	cafe_param->viterbiPvalues = NULL;
-	cafe_param->expandRemainDecrease = NULL;
-	cafe_param->viterbiNodeFamilysizes = NULL;
+	cafe_param->viterbi.viterbiPvalues = NULL;
+	cafe_param->viterbi.expandRemainDecrease = NULL;
+	cafe_param->viterbi.viterbiNodeFamilysizes = NULL;
 	cafe_param->cutPvalues = NULL;
-	cafe_param->maximumPvalues = NULL;
+	cafe_param->viterbi.maximumPvalues = NULL;
 }
 
 void cafe_shell_clear_param(pCafeParam param, int btree_skip)
@@ -2417,7 +2417,7 @@ int cafe_cmd_gainloss(int argc, char* argv[] )
 	STDERR_IF( cafe_param->pcafe == NULL, "ERROR(gainloss): You did not specify tree: command 'tree'\n" );
 	STDERR_IF( cafe_param->lambda == NULL, "ERROR(gainloss): You did not set the parameters: command 'lambda' or 'lambdamu'\n" );
 
-	if ( cafe_param->viterbiNodeFamilysizes == NULL )
+	if ( cafe_param->viterbi.viterbiNodeFamilysizes == NULL )
 	{
 		cafe_pCD = cafe_viterbi(cafe_param, cafe_pCD );
 	}
@@ -2427,7 +2427,7 @@ int cafe_cmd_gainloss(int argc, char* argv[] )
 	FILE* fout = fopen(name,"w");
 
 	int i,j;
-	int** nodefs = cafe_param->viterbiNodeFamilysizes;
+	int** nodefs = cafe_param->viterbi.viterbiNodeFamilysizes;
 	pCafeTree pcafe = cafe_param->pcafe;
 	int fsize = cafe_param->pfamily->flist->size;
 	int nnodes = (pcafe->super.nlist->size-1)/2;

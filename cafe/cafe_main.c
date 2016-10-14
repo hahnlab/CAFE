@@ -35,7 +35,7 @@ variable in cafe_shell.c .
 #include<memalloc.h>
 #include<utils.h>
 
-void cafe_log(pCafeParam param, char* msg, ... )
+void cafe_log(pCafeParam param, const char* msg, ... )
 {
   va_list ap;
   va_start(ap, msg);
@@ -1225,7 +1225,7 @@ void* __cafe_viterbi_thread_func(void* ptr)
 //		cafe_family_set_size(param->pfamily,i, pcafe);
 		
 		cafe_tree_p_values(pcafe, cP, pCD, param->num_random_samples);
-		param->maximumPvalues[i] = __max(cP,pcafe->rfsize);
+		param->viterbi.maximumPvalues[i] = __max(cP,pcafe->rfsize);
 		cafe_tree_viterbi(pcafe);
 		/* check family size for all nodes first */
 		for ( j = 0 ; j < nnodes ; j++ )
@@ -1241,26 +1241,26 @@ void* __cafe_viterbi_thread_func(void* ptr)
 		for ( j = 0 ; j < nnodes ; j++ )
 		{
 			pCafeNode pcnode = (pCafeNode)ptree->nlist->array[2*j+1];
-			param->viterbiNodeFamilysizes[j][i] = pcnode->familysize;
+			param->viterbi.viterbiNodeFamilysizes[j][i] = pcnode->familysize;
 			pCafeNode child[2] = { (pCafeNode)((pTreeNode)pcnode)->children->head->data, 
 							       (pCafeNode)((pTreeNode)pcnode)->children->tail->data };
 			for ( k = 0 ; k < 2 ; k++ )
 			{
 				m = j*2 + k;
-				if ( child[k]->familysize > pcnode->familysize ) param->expandRemainDecrease[0][m]++;		
-				else if ( child[k]->familysize == pcnode->familysize ) param->expandRemainDecrease[1][m]++;		
-				else param->expandRemainDecrease[2][m]++;		
+				if ( child[k]->familysize > pcnode->familysize ) param->viterbi.expandRemainDecrease[0][m]++;
+				else if ( child[k]->familysize == pcnode->familysize ) param->viterbi.expandRemainDecrease[1][m]++;
+				else param->viterbi.expandRemainDecrease[2][m]++;
 pthread_mutex_lock( &mutex_cafe_viterbi );
-				param->averageExpansion[m] += child[k]->familysize - pcnode->familysize;
+				param->viterbi.averageExpansion[m] += child[k]->familysize - pcnode->familysize;
 pthread_mutex_unlock( &mutex_cafe_viterbi );
 			}
 		}
 
-		if ( param->maximumPvalues[i] > param->pvalue ) 
+		if ( param->viterbi.maximumPvalues[i] > param->pvalue )
 		{
 			for ( j = 0 ; j < ptree->nlist->size-1 ; j++ )
 			{
-				param->viterbiPvalues[j][i] = -1;
+				param->viterbi.viterbiPvalues[j][i] = -1;
 			}
 			continue;
 		}
@@ -1279,11 +1279,11 @@ pthread_mutex_unlock( &mutex_cafe_viterbi );
 				{
 					if ( pbdc[pcnode->familysize][m] == p )
 					{
-						param->viterbiPvalues[n][i] += pbdc[pcnode->familysize][m]/2.0;
+						param->viterbi.viterbiPvalues[n][i] += pbdc[pcnode->familysize][m]/2.0;
 					}
 					else if ( pbdc[pcnode->familysize][m] < p )
 					{
-						param->viterbiPvalues[n][i] += pbdc[pcnode->familysize][m];
+						param->viterbi.viterbiPvalues[n][i] += pbdc[pcnode->familysize][m];
 					}
 				}
 			}
@@ -1312,11 +1312,12 @@ pArrayList cafe_viterbi(pCafeParam param, pArrayList pCD)
 
 	int nrows = param->pfamily->flist->size;
 	int nnodes = ptree->nlist->size - 1;
-	param->viterbiPvalues = (double**)memory_new_2dim(nnodes,nrows,sizeof(double));
-	param->expandRemainDecrease = (int**)memory_new_2dim(3,nnodes,sizeof(int));
-	param->viterbiNodeFamilysizes = (int**)memory_new_2dim(nnodes,nrows,sizeof(int));
-	param->maximumPvalues = (double*)memory_new(nrows, sizeof(double));
-	param->averageExpansion = (double*)memory_new(nnodes, sizeof(double));
+
+	param->viterbi.viterbiPvalues = (double**)memory_new_2dim(nnodes,nrows,sizeof(double));
+	param->viterbi.expandRemainDecrease = (int**)memory_new_2dim(3,nnodes,sizeof(int));
+	param->viterbi.viterbiNodeFamilysizes = (int**)memory_new_2dim(nnodes,nrows,sizeof(int));
+	param->viterbi.maximumPvalues = (double*)memory_new(nrows, sizeof(double));
+	param->viterbi.averageExpansion = (double*)memory_new(nnodes, sizeof(double));
 
 	int i;
 	for ( i = 0 ; i < param->num_threads; i++ )
@@ -1329,7 +1330,7 @@ pArrayList cafe_viterbi(pCafeParam param, pArrayList pCD)
 
 	for ( i = 0 ; i < ptree->nlist->size - 1; i++ )
 	{
-		param->averageExpansion[i] /= param->pfamily->flist->size;
+		param->viterbi.averageExpansion[i] /= param->pfamily->flist->size;
 	}
 
 	memory_free(ptparam);	
@@ -1349,7 +1350,7 @@ void cafe_viterbi_print(pCafeParam param)
 		for ( j = 1 ; j < ptree->nlist->size ; j+=2 )
 		{
 			pCafeNode pcnode = (pCafeNode)ptree->nlist->array[j];
-			pcnode->familysize = param->viterbiNodeFamilysizes[j/2][i];
+			pcnode->familysize = param->viterbi.viterbiNodeFamilysizes[j/2][i];
 		}
 		cafe_tree_string_print(pcafe);
 	}
@@ -1399,7 +1400,7 @@ void* __cafe_branch_cutting_thread_func(void* ptr)
 		{
 			pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
 			if ( pitem->ref >= 0 && pitem->ref != i ) continue;
-			if ( param->maximumPvalues[i] > param->pvalue ) 
+			if ( param->viterbi.maximumPvalues[i] > param->pvalue )
 			{
 				param->cutPvalues[b][i] = -1;
 				continue;
@@ -1576,7 +1577,7 @@ void* __cafe_likelihood_ratio_test_thread_func(void* ptr)
 	{
 		pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
 		if ( pitem->ref >= 0 &&  pitem->ref != i ) continue;
-		if ( param->maximumPvalues[i] > param->pvalue ) 
+		if ( param->viterbi.maximumPvalues[i] > param->pvalue )
 		{
 			for( b = 0 ; b < nnodes ; b++ ) param->likelihoodRatios[b][i] = -1;
 			continue;
@@ -1863,11 +1864,11 @@ pCafeParam cafe_copy_parameters(pCafeParam psrc)
 	//param->branchlengths_sorted = (int*)memory_new(psrc->num_branches,sizeof(int));
 	//memcpy( param->branchlengths_sorted, psrc->branchlengths_sorted, psrc->num_branches * sizeof(int));
 
-	param->viterbiPvalues = NULL;
-	param->expandRemainDecrease = NULL;
-	param->viterbiNodeFamilysizes = NULL;
-	param->maximumPvalues = NULL;
-	param->averageExpansion = NULL;
+	param->viterbi.viterbiPvalues = NULL;
+	param->viterbi.expandRemainDecrease = NULL;
+	param->viterbi.viterbiNodeFamilysizes = NULL;
+	param->viterbi.maximumPvalues = NULL;
+	param->viterbi.averageExpansion = NULL;
 	param->cutPvalues = NULL;
 
 	return param;
