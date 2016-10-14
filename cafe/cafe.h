@@ -62,10 +62,6 @@ extern double** cafe_tree_p_values_of_two_trees(pCafeTree pcafe1, pCafeTree pcaf
 		                                   pArrayList pconddist1, pArrayList pconddist2,
 										   int cdlen );
 
-extern pCafeParam cafe_load_parameters(char* fconf);
-extern void cafe_save_parameters(pCafeParam param, char* file);
-extern void cafe_free_parameters(pCafeParam param);
-
 extern pCafeParam cafe_copy_parameters(pCafeParam psrc);
 extern void cafe_free_copy_parameters(pCafeParam param);
 
