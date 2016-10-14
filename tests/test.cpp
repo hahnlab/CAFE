@@ -180,12 +180,14 @@ TEST(FirstTestGroup, TestPhylogenyLoadFromString)
 
 TEST(FirstTestGroup, Test_cafe_cmd_source)
 {
+	CafeParam param;
+
 	std::vector<std::string> strs;
 	strs.push_back("source");
-	LONGS_EQUAL( -1, cafe_cmd_source(strs));
+	LONGS_EQUAL( -1, cafe_cmd_source(&param, strs));
 
 	strs.push_back("nonexistent");
-	LONGS_EQUAL(-1, cafe_cmd_source(strs));
+	LONGS_EQUAL(-1, cafe_cmd_source(&param, strs));
 };
 
 static pArrayList build_arraylist(const char *items[], int count)

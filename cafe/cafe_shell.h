@@ -42,7 +42,6 @@ typedef struct
 typedef ErrorMeasure* pErrorMeasure;
  
 pArrayList cafe_shell_build_argument(int argc, char* argv[]);
-int cafe_shell_dispatch_command(char* cmd);
 void cafe_shell_prompt(char* prompt, char* format, ... );
 void cafe_shell_init(int quiet);
 double cafe_shell_score();

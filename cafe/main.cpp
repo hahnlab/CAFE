@@ -1,14 +1,17 @@
-extern "C" {
-#include "cafe_shell.h"
-#include <utils_string.h>
-}
-
-#include "cafe_commands.h"
-#include <time.h>
 #include <iostream>
 #include <sstream>
 #include <vector>
 #include <string>
+#include <time.h>
+
+#include "cafe_commands.h"
+
+extern "C" {
+#include "cafe_shell.h"
+#include <utils_string.h>
+
+	extern pCafeParam cafe_param;
+}
 
 const char* __date__ = __DATE__;
 
@@ -26,7 +29,7 @@ int main(int argc, char* argv[])
 		std::vector<std::string> tokens;
 		tokens.push_back(argv[0]);
 		tokens.push_back(argv[1]);
-		cafe_cmd_source(tokens);
+		cafe_cmd_source(cafe_param, tokens);
 		cafe_cmd_exit(0,NULL);
 	}
 	else

@@ -36,7 +36,7 @@ struct lambda_args
 
 lambda_args get_arguments(std::vector<Argument> pargs);
 std::vector<Argument> lambda_build_argument(std::vector<std::string> tokens);
-int cafe_cmd_lambda(std::vector<std::string> tokens);
+int cafe_cmd_lambda(pCafeParam param, std::vector<std::string> tokens);
 void prepare_cafe_param(pCafeParam param);
 void set_all_lambdas(pCafeParam param, double value);
 void write_lambda_distribution(pArgument parg, FILE* fp);

@@ -2,6 +2,7 @@
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
+#include "cafe_commands.h"
 #include "lambda.h"
 
 extern "C" {
@@ -28,7 +29,7 @@ int lambda_cmd_helper()
 	strs.push_back("-s");
 	strs.push_back("-t");
 	strs.push_back("(((2,2)1,(1,1)1)1,1)");
-	return cafe_cmd_lambda(strs);
+	return cafe_cmd_lambda(cafe_param, strs);
 }
 
 

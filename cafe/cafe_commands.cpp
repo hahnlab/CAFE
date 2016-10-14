@@ -8,17 +8,18 @@
 #include <algorithm>
 
 #include "lambda.h"
-#include <strings.h>
 #include "cafe_commands.h"
 
 extern "C" {
 #include <utils_string.h>
 #include "cafe_shell.h"
+
+	extern pCafeParam cafe_param;
 }
 
 using namespace std;
 
-typedef int(*cafe_command2)(vector<string>);
+typedef int(*cafe_command2)(pCafeParam cafe_param, vector<string>);
 
 map<string, cafe_command2> get_dispatcher()
 {
@@ -44,7 +45,7 @@ vector<string> tokenize(string s)
 	return result;
 }
 
-int cafe_cmd_source(vector<string> tokens)
+int cafe_cmd_source(pCafeParam param, vector<string> tokens)
 {
 	if ( tokens.size() != 2 )
 	{
@@ -86,11 +87,12 @@ void list_commands(std::ostream& ost)
 	copy(commands.begin(), commands.end(), std::ostream_iterator<string>(ost, "\n"));
 }
 
-int cafe_cmd_list(vector<string> tokens)
+int cafe_cmd_list(pCafeParam, vector<string> tokens)
 {
 	list_commands(std::cout);
 	return 0;
 }
+
 
 
 int cafe_shell_dispatch_command(char* cmd)
@@ -111,7 +113,7 @@ int cafe_shell_dispatch_command(char* cmd)
 	{
 		rtn = CAFE_SHELL_NO_COMMAND;
 		if (dispatcher.find(tokens[0]) != dispatcher.end())
-			rtn = dispatcher[tokens[0]](tokens);
+			rtn = dispatcher[tokens[0]](cafe_param, tokens);
 		else
 		{
 			pArrayList parg = string_pchar_space_split(cmd);
