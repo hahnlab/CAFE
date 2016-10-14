@@ -111,7 +111,7 @@ void cafe_report_text(pCafeParam param)
 	fprintf(param->fout,"\n");
 
 	fprintf(param->fout, "'ID'\t'Newick'\t'Family-wide P-value'\t'Viterbi P-values'");
-	if ( param->cutPvalues )
+	if ( param->viterbi.cutPvalues )
 	{
 		fprintf(param->fout, "\t'cut P-value'");
 	}
@@ -142,18 +142,18 @@ void cafe_report_text(pCafeParam param)
 		}
 		fprintf(param->fout,")\t" );
 
-		if ( param->cutPvalues )
+		if ( param->viterbi.cutPvalues )
 		{
 			fprintf(param->fout,"(" );
 			for ( b = 0 ; b < nlist->size; b++ )
 			{
-				if ( param->cutPvalues[b][i] == -1 )
+				if ( param->viterbi.cutPvalues[b][i] == -1 )
 				{
 					fprintf(param->fout,"-");
 				}
 				else
 				{
-					fprintf(param->fout,"%f", param->cutPvalues[b][i]);
+					fprintf(param->fout,"%f", param->viterbi.cutPvalues[b][i]);
 				}
 				if ( b < nlist->size - 1 ) fprintf( param->fout, "," );
 			}
@@ -213,10 +213,10 @@ double cafe_report_mp_annotation(pString pstr, pTreeNode pnode, pMetapostConfig 
 	pCafeParam  param = va_arg(ap, pCafeParam );
 	int fid = va_arg(ap,int);
 
-	if ( param->cutPvalues && param->cutPvalues[idx][fid] != -1 )
+	if ( param->viterbi.cutPvalues && param->viterbi.cutPvalues[idx][fid] != -1 )
 	{
 		last -= 0.15;
-		string_fadd( pstr, "label.rt( btex bc = %4.3f ", param->cutPvalues[idx][fid] );
+		string_fadd( pstr, "label.rt( btex bc = %4.3f ", param->viterbi.cutPvalues[idx][fid] );
 		string_fadd( pstr, "etex, mid[%d] + (0,%fu));\n",  pnode->id, last );
 	}
 	if ( param->likelihoodRatios && param->likelihoodRatios[idx][fid] != -1 )
@@ -515,7 +515,7 @@ int cafe_report_retrieve_data(char* file, pCafeParam param)
 
 	if ( bexist[0] )
 	{
-		param->cutPvalues = (double**)memory_new_2dim(nnodes, num_families, sizeof(double) );		
+		param->viterbi.cutPvalues = (double**)memory_new_2dim(nnodes, num_families, sizeof(double) );
 	}	
 	if ( bexist[1] )
 	{
@@ -558,8 +558,8 @@ int cafe_report_retrieve_data(char* file, pCafeParam param)
 		if ( bexist[0] )
 		{
 			cafe_report_load_bc_or_lhr_list((char*)data->array[4], 
-					    param->cutPvalues, i, nnodes );
-			param->cutPvalues[param->pcafe->super.root->id][i] = -1.0;
+					    param->viterbi.cutPvalues, i, nnodes );
+			param->viterbi.cutPvalues[param->pcafe->super.root->id][i] = -1.0;
 		}
 		if ( bexist[1] )
 		{

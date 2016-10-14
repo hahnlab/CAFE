@@ -42,7 +42,6 @@ CafeShellCommand cafe_cmd[]  =
 	{ "branchlength", cafe_cmd_branchlength },
 	{ "cgi", cafe_cmd_cgi }, 
 	{ "extinct", cafe_cmd_extinct },
-	{ "exit", cafe_cmd_exit },
 	{ "family", cafe_cmd_family },
 	{ "gainloss", cafe_cmd_gainloss },
 	{ "genfamily", cafe_cmd_generate_random_family },
@@ -52,7 +51,6 @@ CafeShellCommand cafe_cmd[]  =
 	{ "load", cafe_cmd_load },
 	{ "log", cafe_cmd_log },
 	{ "pvalue", cafe_cmd_pvalue },
-	{ "quit", cafe_cmd_exit },
 	{ "report", cafe_cmd_report },
 	{ "retrieve", cafe_cmd_retrieve },
 	{ "rootdist", cafe_cmd_root_dist}, 
@@ -119,33 +117,32 @@ void cafe_shell_set_lambda(pCafeParam param, double* lambda);
 void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters);
 void cafe_shell_update_branchlength(pCafeParam param, int* t );
 
-void cafe_shell_clear_interal_data()
+void viterbi_parameters_clear(viterbi_parameters* viterbi, int nnodes)
 {
-	if ( cafe_param->viterbi.viterbiPvalues )
+//	viterbi_parameters* viterbi = &param->viterbi;
+	if ( viterbi->viterbiPvalues )
 	{
-		int nnodes = ((pTree)cafe_param->pcafe)->nlist->size;
 		int num = (nnodes - 1 )/2;
-		memory_free_2dim((void**)cafe_param->viterbi.viterbiPvalues,num,0,NULL);
-		memory_free_2dim((void**)cafe_param->viterbi.expandRemainDecrease,3,0,NULL);
-		memory_free_2dim((void**)cafe_param->viterbi.viterbiNodeFamilysizes,num, 0, NULL);
-		memory_free(cafe_param->viterbi.averageExpansion);
-		cafe_param->viterbi.averageExpansion = NULL;
-		if ( cafe_param->viterbi.maximumPvalues )
+		memory_free_2dim((void**)viterbi->viterbiPvalues,num,0,NULL);
+		memory_free_2dim((void**)viterbi->expandRemainDecrease,3,0,NULL);
+		memory_free_2dim((void**)viterbi->viterbiNodeFamilysizes,num, 0, NULL);
+		memory_free(viterbi->averageExpansion);
+		viterbi->averageExpansion = NULL;
+		if ( viterbi->maximumPvalues )
 		{
-			memory_free(cafe_param->viterbi.maximumPvalues);
-			cafe_param->viterbi.maximumPvalues = NULL;
+			memory_free(viterbi->maximumPvalues);
+			viterbi->maximumPvalues = NULL;
 		}
 	}
-	if ( cafe_param->cutPvalues )
+	if ( viterbi->cutPvalues )
 	{
-		int nnodes = ((pTree)cafe_param->pcafe)->nlist->size;
-		memory_free_2dim((void**)cafe_param->cutPvalues,nnodes,0,NULL);
+		memory_free_2dim((void**)viterbi->cutPvalues,nnodes,0,NULL);
 	}
-	cafe_param->viterbi.viterbiPvalues = NULL;
-	cafe_param->viterbi.expandRemainDecrease = NULL;
-	cafe_param->viterbi.viterbiNodeFamilysizes = NULL;
-	cafe_param->cutPvalues = NULL;
-	cafe_param->viterbi.maximumPvalues = NULL;
+	viterbi->viterbiPvalues = NULL;
+	viterbi->expandRemainDecrease = NULL;
+	viterbi->viterbiNodeFamilysizes = NULL;
+	viterbi->cutPvalues = NULL;
+	viterbi->maximumPvalues = NULL;
 }
 
 void cafe_shell_clear_param(pCafeParam param, int btree_skip)
@@ -176,7 +173,8 @@ void cafe_shell_clear_param(pCafeParam param, int btree_skip)
 		param->prior_rfsize_by_family = NULL;
 	}
 	
-	cafe_shell_clear_interal_data();
+	int nnodes = param->pcafe ? ((pTree)param->pcafe)->nlist->size : 0;
+	viterbi_parameters_clear(&param->viterbi, nnodes);
 	if ( !btree_skip && param->pcafe ) 
 	{
 		if ( param->pcafe->pbdc_array )
@@ -1323,27 +1321,6 @@ int cafe_cmd_viterbi(int argc, char* argv[])
 	return 0;
 }
 
-int cafe_cmd_exit(int argc, char* argv[])
-{
-	if ( cafe_param->str_log )
-	{
-		string_free( cafe_param->str_log );
-		fclose( cafe_param->flog );
-		cafe_param->str_log = NULL;
-	}
-	if ( tmp_lambda_tree ) phylogeny_free( tmp_lambda_tree );
-	tmp_lambda_tree = NULL;
-	cafe_shell_clear_param(cafe_param, 0);
-	if ( cafe_pCD ) arraylist_free( cafe_pCD, free );
-	memory_free( cafe_param );
-	cafe_param = NULL;
-	return CAFE_SHELL_EXIT;
-}
-
-
-
-
-
 int cafe_cmd_reconstruction_accuracy(int argc, char* argv[])
 {
 	int i, j;
@@ -2233,7 +2210,8 @@ int cafe_cmd_report(int argc, char* argv[] )
 	if ( !just_save )
 	{
 		cafe_shell_set_sizes();
-		cafe_shell_clear_interal_data();
+		int nnodes = ((pTree)cafe_param->pcafe)->nlist->size;
+		viterbi_parameters_clear(&cafe_param->viterbi, nnodes);
 	}
 
 	if ( bc || lh )

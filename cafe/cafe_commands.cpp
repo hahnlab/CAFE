@@ -16,6 +16,11 @@ extern "C" {
 
 	extern pCafeParam cafe_param;
 	extern void cafe_log(pCafeParam param, const char* msg, ...);
+	void cafe_shell_clear_param(pCafeParam param, int btree_skip);
+
+	extern pTree tmp_lambda_tree;
+	extern pArrayList cafe_pCD;
+
 }
 
 using namespace std;
@@ -30,6 +35,8 @@ map<string, cafe_command2> get_dispatcher()
 	dispatcher["?"] = cafe_cmd_list;
 	dispatcher["date"] = cafe_cmd_date;
 	dispatcher["echo"] = cafe_cmd_echo;
+	dispatcher["quit"] = cafe_cmd_exit;
+	dispatcher["exit"] = cafe_cmd_exit;
 
 	return dispatcher;
 }
@@ -63,6 +70,22 @@ int cafe_cmd_date(pCafeParam param, vector<string> tokens)
 {
 	cafe_log(param, "%s", get_current_time());
 	return 0;
+}
+
+int cafe_cmd_exit(pCafeParam param, vector<string> tokens)
+{
+	if (param->str_log)
+	{
+		string_free(param->str_log);
+		fclose(param->flog);
+		param->str_log = NULL;
+	}
+	if (tmp_lambda_tree) phylogeny_free(tmp_lambda_tree);
+	tmp_lambda_tree = NULL;
+	cafe_shell_clear_param(param, 0);
+	if (cafe_pCD) arraylist_free(cafe_pCD, free);
+	memory_free(param);
+	return CAFE_SHELL_EXIT;
 }
 
 int cafe_cmd_source(pCafeParam param, vector<string> tokens)

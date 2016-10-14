@@ -73,7 +73,6 @@ int cafe_cmd_simerror(int argc, char* argv[]);
 int cafe_cmd_reconstruction_accuracy(int argc, char* argv[]);
 int cafe_cmd_crossvalidation_by_species(int argc, char* argv[]);
 int cafe_cmd_crossvalidation_by_family(int argc, char* argv[]);
-int cafe_cmd_exit(int argc, char* argv[]);
 
 
 

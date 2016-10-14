@@ -1402,7 +1402,7 @@ void* __cafe_branch_cutting_thread_func(void* ptr)
 			if ( pitem->ref >= 0 && pitem->ref != i ) continue;
 			if ( param->viterbi.maximumPvalues[i] > param->pvalue )
 			{
-				param->cutPvalues[b][i] = -1;
+				param->viterbi.cutPvalues[b][i] = -1;
 				continue;
 			}
 			if ( tree_is_leaf( psub->super.root ) || tree_is_leaf(pcafe->super.root) )
@@ -1410,7 +1410,7 @@ void* __cafe_branch_cutting_thread_func(void* ptr)
 				pCafeTree pct = tree_is_leaf ( psub->super.root ) ? pcafe : psub;
 				cafe_family_set_size_for_split(param->pfamily,i, pct);
 				cafe_tree_p_values( pct,p1,pCDSs[b][0], param->num_random_samples  );
-				param->cutPvalues[b][i] = __max(p1, pcafe->rfsize );
+				param->viterbi.cutPvalues[b][i] = __max(p1, pcafe->rfsize );
 			}
 			else
 			{
@@ -1418,15 +1418,15 @@ void* __cafe_branch_cutting_thread_func(void* ptr)
 				cafe_family_set_size_for_split(param->pfamily,i, psub);
 				cafe_tree_p_values_of_two_trees(pcafe,psub, p2,
 										pCDSs[b][0], pCDSs[b][1], param->num_random_samples/10 );
-				param->cutPvalues[b][i] = 0;
+				param->viterbi.cutPvalues[b][i] = 0;
 				int m,n;
 				for ( m = 0 ; m < pcafe->rfsize ; m++ )
 				{
 					for( n = 0 ; n < pcafe->rfsize ; n++ )
 					{
-						if ( p2[m][n] > param->cutPvalues[b][i] )
+						if ( p2[m][n] > param->viterbi.cutPvalues[b][i] )
 						{
-							param->cutPvalues[b][i] = p2[m][n];
+							param->viterbi.cutPvalues[b][i] = p2[m][n];
 						}
 					}
 				}
@@ -1504,11 +1504,11 @@ void cafe_branch_cutting(pCafeParam param)
 	pBranchCuttingParam ptparam = (pBranchCuttingParam)memory_new(param->num_threads,sizeof(BranchCuttingParam));
 
 	int nrows = param->pfamily->flist->size;
-	param->cutPvalues = (double**)memory_new_2dim(nnodes,nrows,sizeof(double));
+	param->viterbi.cutPvalues = (double**)memory_new_2dim(nnodes,nrows,sizeof(double));
 	int rid = ptree->root->id;
 	for ( i = 0 ; i < nrows; i++ )
 	{
-		param->cutPvalues[rid][i] = -1;
+		param->viterbi.cutPvalues[rid][i] = -1;
 	}
 
 	int r = 0;
@@ -1528,7 +1528,7 @@ void cafe_branch_cutting(pCafeParam param)
 		if ( pitem->ref < 0 || pitem->ref == i ) continue;
 		for( b = 0 ; b < nnodes ; b++ )
 		{
-			param->cutPvalues[b][i] = param->cutPvalues[b][pitem->ref];
+			param->viterbi.cutPvalues[b][i] = param->viterbi.cutPvalues[b][pitem->ref];
 		}
 	}
 
@@ -1869,7 +1869,7 @@ pCafeParam cafe_copy_parameters(pCafeParam psrc)
 	param->viterbi.viterbiNodeFamilysizes = NULL;
 	param->viterbi.maximumPvalues = NULL;
 	param->viterbi.averageExpansion = NULL;
-	param->cutPvalues = NULL;
+	param->viterbi.cutPvalues = NULL;
 
 	return param;
 }

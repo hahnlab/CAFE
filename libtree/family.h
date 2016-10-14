@@ -58,6 +58,7 @@ typedef struct
 	int** viterbiNodeFamilysizes;
 	double* maximumPvalues;
 	double* averageExpansion;
+	double** cutPvalues;
 } viterbi_parameters;
 
 typedef struct
@@ -153,7 +154,6 @@ struct tagCafeParam
 	int  num_random_samples;
 
 	viterbi_parameters viterbi;
-	double** cutPvalues;
 	double** likelihoodRatios;
 
 	int quiet;

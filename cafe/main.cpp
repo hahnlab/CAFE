@@ -30,7 +30,7 @@ int main(int argc, char* argv[])
 		tokens.push_back(argv[0]);
 		tokens.push_back(argv[1]);
 		cafe_cmd_source(cafe_param, tokens);
-		cafe_cmd_exit(0,NULL);
+		cafe_cmd_exit(cafe_param, tokens);
 	}
 	else
 	{
