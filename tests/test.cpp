@@ -277,6 +277,29 @@ TEST(FirstTestGroup, cafe_cmd_echo)
 	fclose(param.flog);
 }
 
+TEST(FirstTestGroup, cafe_cmd_exit)
+{
+	// all of these are values that could potentially be freed on exit
+	pCafeParam param = (pCafeParam)memory_new(1, sizeof(CafeParam)); // exit frees this value from the heap
+	param->str_log = NULL;
+	param->mu_tree = NULL;
+	param->lambda_tree = NULL;
+	param->parameters = (double *)memory_new(10, sizeof(double));
+	param->pfamily = NULL;
+	param->pcafe = NULL;
+	param->prior_rfsize_by_family = NULL;
+	param->prior_rfsize = NULL;
+	param->MAP = NULL;
+	param->ML = (double *)memory_new(10, sizeof(double));;
+	param->str_fdata = NULL;
+	param->viterbi.viterbiPvalues = NULL;
+	param->viterbi.cutPvalues = NULL;
+	std::vector<std::string> tokens;
+	cafe_cmd_exit(param, tokens);
+	LONGS_EQUAL(0, param->parameters);
+	LONGS_EQUAL(0, param->ML);
+}
+
 int main(int ac, char** av)
 {
 	return CommandLineTestRunner::RunAllTests(ac, av);

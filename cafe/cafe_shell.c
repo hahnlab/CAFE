@@ -4,15 +4,16 @@
 * Command list is found in the #cafe_cmd function
 */
 
-#include "cafe_shell.h"
 #include<mathfunc.h>
 #include<ctype.h>
 #include <assert.h>
 #include <float.h>
 #include<stdarg.h>
 #include<stdio.h>
-#include "cafe.h"
 #include<io.h>
+#include "cafe.h"
+#include "cafe_shell.h"
+#include "viterbi.h"
 
 extern int cafe_shell_dispatch_commandf(char* format, ...);
 
@@ -117,6 +118,17 @@ void cafe_shell_set_lambda(pCafeParam param, double* lambda);
 void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters);
 void cafe_shell_update_branchlength(pCafeParam param, int* t );
 
+void viterbi_parameters_init(viterbi_parameters *viterbi, int nnodes, int nrows)
+{
+	viterbi->num_nodes = nnodes;
+	viterbi->num_rows = nrows;
+	viterbi->viterbiPvalues = (double**)memory_new_2dim(nnodes, nrows, sizeof(double));
+	viterbi->expandRemainDecrease = (int**)memory_new_2dim(3, nnodes, sizeof(int));
+	viterbi->viterbiNodeFamilysizes = (int**)memory_new_2dim(nnodes, nrows, sizeof(int));
+	viterbi->maximumPvalues = (double*)memory_new(nrows, sizeof(double));
+	viterbi->averageExpansion = (double*)memory_new(nnodes, sizeof(double));
+}
+
 void viterbi_parameters_clear(viterbi_parameters* viterbi, int nnodes)
 {
 //	viterbi_parameters* viterbi = &param->viterbi;
@@ -144,6 +156,13 @@ void viterbi_parameters_clear(viterbi_parameters* viterbi, int nnodes)
 	viterbi->cutPvalues = NULL;
 	viterbi->maximumPvalues = NULL;
 }
+
+void viterbi_set_max_pvalue(viterbi_parameters* viterbi, int index, double val)
+{
+	assert(index < viterbi->num_rows);
+	viterbi->maximumPvalues[index] = val;
+}
+
 
 void cafe_shell_clear_param(pCafeParam param, int btree_skip)
 {

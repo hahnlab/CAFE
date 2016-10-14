@@ -137,3 +137,22 @@ TEST(FamilyTests, cafe_family_set_species_index)
 	errcode = cafe_family_set_species_index(pcf, tree);
 	LONGS_EQUAL(-1, errcode);	// Error because dog is missing from family list
 }
+
+TEST(FamilyTests, cafe_family_set_size_with_family_forced)
+{
+	// setup
+	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
+	pCafeFamily pcf = cafe_family_init(build_arraylist(species, 7));
+	pCafeTree cafe_tree = create_tree();
+	cafe_family_set_species_index(pcf, cafe_tree);
+	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
+	cafe_family_add_item(pcf, build_arraylist(values, 7));
+
+	// SUT
+	cafe_family_set_size_with_family_forced(pcf, 0, cafe_tree);
+	LONGS_EQUAL(1, cafe_tree->rootfamilysizes[0]);
+	LONGS_EQUAL(16, cafe_tree->rootfamilysizes[1]);
+	LONGS_EQUAL(63, cafe_tree->familysizes[1]);
+	LONGS_EQUAL(16, cafe_tree->rfsize);
+}
+

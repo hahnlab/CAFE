@@ -1,6 +1,7 @@
-#include "cafe.h"
 #include<io.h>
 #include <mathfunc.h>
+#include "cafe.h"
+#include "viterbi.h"
 
 /**************************************************************************
  * Save
@@ -492,9 +493,7 @@ int cafe_report_retrieve_data(char* file, pCafeParam param)
 		arraylist_add(plines, line); 				
 	}
 
-	param->viterbi.viterbiPvalues = (double**)memory_new_2dim( nnodes-1,num_families, sizeof(double) );
-	param->viterbi.maximumPvalues = (double*)memory_new( num_families, sizeof(double) );
-	param->viterbi.viterbiNodeFamilysizes = (int**)memory_new_2dim( nnodes-1, num_families, sizeof(double) );
+	viterbi_parameters_init(&param->viterbi, nnodes, num_families);
 
 	param->pfamily = (pCafeFamily)memory_new(1, sizeof(CafeFamily) );
 	pCafeFamily pcf = param->pfamily;

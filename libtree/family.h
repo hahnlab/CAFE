@@ -53,6 +53,8 @@ typedef CafeNode*	pCafeNode;
 
 typedef struct
 {
+	int num_nodes;
+	int num_rows;
 	double** viterbiPvalues;
 	int** expandRemainDecrease;
 	int** viterbiNodeFamilysizes;
