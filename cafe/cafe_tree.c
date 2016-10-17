@@ -1289,7 +1289,6 @@ void __cafe_tree_node_random_familysize(pTree ptree, pTreeNode pnode, va_list ap
 		
 	for ( c = 0 ; c < maxFamilysize ; c++ )
 	{
-		//cumul += pcnode->bd[s][c];
 		cumul += bd[s][c];
 		if ( cumul >= rnd ) break;
 	}
@@ -1349,14 +1348,12 @@ double* cafe_tree_random_probabilities(pCafeTree pcafe, int rootFamilysize, int 
 	int i;
 	for ( i = 0 ; i < trials ; i++ )
 	{
-		// if k > 0 point bd to k_bd[] before running cafe_tree_random_familysize to avoid EXC_BAD_ACCESS		
 		int max = cafe_tree_random_familysize(pcafe,rootFamilysize);		
 		if ( pcafe->super.nlist )
 		{
 			pcafe->familysizes[1] = MIN( max + MAX(50,max/5) , pcafe->familysizes[1] );
-	//		printf("%d: %d(%d)\n", i, pcafe->familysizes[1], max );
 		}
-		cafe_tree_likelihood(pcafe);
+		tree_traveral_postfix((pTree)pcafe, __cafe_tree_node_compute_likelihood);
 		probs[i] = ((pCafeNode)pcafe->super.root)->likelihoods[0];
 	}
 
@@ -1383,14 +1380,6 @@ pArrayList cafe_tree_conditional_distribution(pCafeTree pcafe, int range[], int 
 	return pal;
 }
 
-/*
- * cdlen: length of conddist : number of trials
- */
-double cafe_tree_p_value(pCafeTree pcafe, double lh, double* conddist, int cdlen)
-{
-	return pvalue(lh,conddist, cdlen);
-}
-
 double* cafe_tree_p_values(pCafeTree pcafe,double* pvalues, pArrayList pconddist, int cdlen)
 {
 	double* lh = cafe_tree_likelihood(pcafe);
@@ -1405,12 +1394,6 @@ double* cafe_tree_p_values(pCafeTree pcafe,double* pvalues, pArrayList pconddist
 /*
  * cdlen: length of conddist : number of trials
  */
-double* cafe_tree_p_values_without_p(pCafeTree pcafe, pArrayList pconddist, int cdlen)
-{
-	return cafe_tree_p_values(pcafe,
-				(double*)memory_new(pcafe->rfsize, sizeof(double)), pconddist, cdlen );
-}
-
 double** cafe_tree_p_values_of_two_trees(pCafeTree pcafe1, pCafeTree pcafe2,    
 										 double** pvalues,
 		                                   pArrayList pconddist1, pArrayList pconddist2,
@@ -1436,10 +1419,3 @@ double** cafe_tree_p_values_of_two_trees(pCafeTree pcafe1, pCafeTree pcafe2,
 	return pvalues;
 }
 
-double** cafe_tree_p_values_of_two_trees_without_p(pCafeTree pcafe1, pCafeTree pcafe2,
-							pArrayList pconddist1, pArrayList pconddist2, int cdlen )
-{
-	int size = pcafe1->rfsize;
-	double **pvalues = (double**)memory_new_2dim(size,size,sizeof(double));
-	return cafe_tree_p_values_of_two_trees(pcafe1, pcafe2, pvalues, pconddist1, pconddist2, cdlen );
-}

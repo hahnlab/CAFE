@@ -357,6 +357,32 @@ TEST(FirstTestGroup, tree_traversal_postfix)
 	LONGS_EQUAL(7, ids[8]);
 }
 
+TEST(FirstTestGroup, cafe_tree_random_probabilities)
+{
+	int num_families = 1;
+	pCafeTree tree = create_tree();
+	tree->pbdc_array = (pBirthDeathCacheArray)memory_new(num_families, sizeof(BirthDeathCacheArray));
+	tree->pbdc_array->maxFamilysize = num_families;
+	pArrayList node_list = tree->super.nlist;
+	double **bd = (double **)memory_new_2dim(tree->super.size, num_families, sizeof(double));
+	for (int i = 0; i < tree->super.size; ++i)
+	{
+		bd[i][0] = i;
+	}
+	for (int i = 0; i < node_list->size; ++i)
+	{
+		pCafeNode node = (pCafeNode)arraylist_get(node_list, i);
+		node->bd = bd;
+	}
+
+	double *trials = cafe_tree_random_probabilities(tree, 1, 5);
+	DOUBLES_EQUAL(0.0, trials[0], .001);
+	DOUBLES_EQUAL(0.0, trials[1], .001);
+	DOUBLES_EQUAL(0.0, trials[2], .001);
+	DOUBLES_EQUAL(0.0, trials[3], .001);
+	DOUBLES_EQUAL(0.0, trials[4], .001);
+}
+
 int main(int ac, char** av)
 {
 	return CommandLineTestRunner::RunAllTests(ac, av);
