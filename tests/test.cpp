@@ -300,6 +300,63 @@ TEST(FirstTestGroup, cafe_cmd_exit)
 	LONGS_EQUAL(0, param->ML);
 }
 
+void store_node_id(pTree ptree, pTreeNode ptnode, va_list ap1)
+{
+	va_list ap;
+	va_copy(ap, ap1);
+	std::vector<int> * ids = va_arg(ap, std::vector<int> *);
+	ids->push_back(ptnode->id);
+	va_end(ap);
+}
+
+TEST(FirstTestGroup, tree_traversal_prefix)
+{
+	std::vector<int> ids;
+	pCafeTree tree = create_tree();
+	tree_traveral_prefix(&tree->super, store_node_id, &ids);
+	LONGS_EQUAL(7, ids[0]);
+	LONGS_EQUAL(3, ids[1]);
+	LONGS_EQUAL(1, ids[2]);
+	LONGS_EQUAL(0, ids[3]);
+	LONGS_EQUAL(2, ids[4]);
+	LONGS_EQUAL(5, ids[5]);
+	LONGS_EQUAL(4, ids[6]);
+	LONGS_EQUAL(6, ids[7]);
+	LONGS_EQUAL(8, ids[8]);
+}
+
+TEST(FirstTestGroup, tree_traversal_infix)
+{
+	std::vector<int> ids;
+	pCafeTree tree = create_tree();
+	tree_traveral_infix(&tree->super, store_node_id, &ids);
+	LONGS_EQUAL(0, ids[0]);
+	LONGS_EQUAL(1, ids[1]);
+	LONGS_EQUAL(2, ids[2]);
+	LONGS_EQUAL(3, ids[3]);
+	LONGS_EQUAL(4, ids[4]);
+	LONGS_EQUAL(5, ids[5]);
+	LONGS_EQUAL(6, ids[6]);
+	LONGS_EQUAL(7, ids[7]);
+	LONGS_EQUAL(8, ids[8]);
+}
+
+TEST(FirstTestGroup, tree_traversal_postfix)
+{
+	std::vector<int> ids;
+	pCafeTree tree = create_tree();
+	tree_traveral_postfix(&tree->super, store_node_id, &ids);
+	LONGS_EQUAL(0, ids[0]);
+	LONGS_EQUAL(2, ids[1]);
+	LONGS_EQUAL(1, ids[2]);
+	LONGS_EQUAL(4, ids[3]);
+	LONGS_EQUAL(6, ids[4]);
+	LONGS_EQUAL(5, ids[5]);
+	LONGS_EQUAL(3, ids[6]);
+	LONGS_EQUAL(8, ids[7]);
+	LONGS_EQUAL(7, ids[8]);
+}
+
 int main(int ac, char** av)
 {
 	return CommandLineTestRunner::RunAllTests(ac, av);
