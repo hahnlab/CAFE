@@ -1,5 +1,5 @@
 CC=gcc
-OPTS= -O2 -ffast-math -funroll-loops -Wall -g -std=c99 # -pthread
+OPTS= -O2 -ffast-math -funroll-loops -Wall -g -std=c11 # -pthread
 CPP_OPTS= -O2 -ffast-math -funroll-loops -Wall -g 
 INCLUDE:=-I . -I ../libtree -I ../libcommon
 LINKS:=-lpthread -lm

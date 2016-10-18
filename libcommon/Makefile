@@ -1,6 +1,6 @@
 OBJS:=$(patsubst %.c,../lib/%.o,$(wildcard *.c))
 CC=gcc
-OPTS=-g -O2 -I. -ffast-math -funroll-loops  # -pthread
+OPTS=-g -O2 -I. -ffast-math -funroll-loops -std=c11 # -pthread
 LINKS=-lpthread -lm 
 ARFILE=../lib/libcommon.a
 
