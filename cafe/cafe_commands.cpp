@@ -10,6 +10,7 @@
 
 #include "lambda.h"
 #include "cafe_commands.h"
+#include "reports.h"
 
 extern "C" {
 #include <utils_string.h>
@@ -138,56 +139,6 @@ int cafe_cmd_list(pCafeParam, vector<string> tokens)
 	list_commands(std::cout);
 	return 0;
 }
-
-void get_report_parameters(report_parameters &params, std::vector<std::string> tokens)
-{
-	strcpy(params.name, tokens[1].c_str());
-
-	params.bc = 0;
-	params.lh = 0;
-	params.lh2 = 0;
-	params.just_save = 0;
-	for (size_t i = 2; i < tokens.size(); i++)
-	{
-		if (strcasecmp(tokens[i].c_str(), "branchcutting") == 0) params.bc = 1;
-		if (strcasecmp(tokens[i].c_str(), "likelihood") == 0) params.lh = 1;
-		if (strcasecmp(tokens[i].c_str(), "lh2") == 0) params.lh2 = 1;
-		if (strcasecmp(tokens[i].c_str(), "save") == 0)
-		{
-			params.bc = 0;
-			params.lh = 0;
-			params.lh2 = 0;
-			params.just_save = 1;
-			break;
-		}
-	}
-}
-
-int cafe_cmd_report(pCafeParam param, std::vector<std::string> tokens)
-{
-	if (param->pfamily == NULL)
-		throw std::runtime_error("ERROR(report): You did not load family: command 'load'\n");
-	if (param->pcafe == NULL)
-		throw std::runtime_error("ERROR(report): You did not specify tree: command 'tree'\n");
-	if (param->lambda == NULL)
-		throw std::runtime_error("ERROR(report): You did not set the parameters: command 'lambda' or 'lambdamu'\n");
-
-	report_parameters params;
-	get_report_parameters(params, tokens);
-
-	string name = string(params.name) + ".cafe";
-	param->fout = fopen(name.c_str(), "w");
-
-	if (param->fout == NULL)
-	{
-		throw std::runtime_error(string("ERROR(report) : Cannot open ") + name + " in write mode.\n");
-	}
-
-	cafe_do_report(&params);
-	return 0;
-}
-
-
 
 int cafe_shell_dispatch_command(char* cmd)
 {

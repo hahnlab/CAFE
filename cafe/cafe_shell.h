@@ -1,7 +1,9 @@
 #ifndef __CAFE_SHELL_H__
 #define __CAFE_SHELL_H__
 
-#include<utils.h>
+#include <utils.h>
+#include <utils_string.h>
+#include <family.h>
 
 typedef int (*cafe_command)(int argc, char* argv[]);
 
@@ -41,13 +43,7 @@ typedef struct
 } ErrorMeasure;
 typedef ErrorMeasure* pErrorMeasure;
  
-typedef struct
-{
-	int bc, lh, lh2, just_save;
-	char name[STRING_STEP_SIZE];
-} report_parameters;
-void cafe_do_report(report_parameters* params);
-
+void cafe_shell_set_sizes();
 pArrayList cafe_shell_build_argument(int argc, char* argv[]);
 void cafe_shell_prompt(char* prompt, char* format, ... );
 void cafe_shell_init(int quiet);

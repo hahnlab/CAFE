@@ -15,7 +15,8 @@ extern "C" {
 };
 
 #include <cafe_commands.h>
-#include "lambda.h"
+#include <lambda.h>
+#include <reports.h>
 
 extern "C" {
 	void show_sizes(FILE*, pCafeParam param, pCafeFamilyItem pitem, int i);
@@ -393,7 +394,7 @@ TEST(FirstTestGroup, get_report_parameters)
 	tokens.push_back("branchcutting");
 
 	get_report_parameters(params, tokens);
-	STRCMP_EQUAL("myreport", params.name);
+	STRCMP_EQUAL("myreport", params.name.c_str());
 	LONGS_EQUAL(1, params.bc);
 	LONGS_EQUAL(0, params.lh);
 

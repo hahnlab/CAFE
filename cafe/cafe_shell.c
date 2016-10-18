@@ -2184,68 +2184,6 @@ int cafe_cmd_score(int argc, char* argv[])
   return 0;
 }
 
-void cafe_do_report(pCafeParam param, report_parameters* params)
-{
-	char name[STRING_STEP_SIZE];
-
-	if (!params->just_save)
-	{
-		cafe_shell_set_sizes();
-		int nnodes = ((pTree)param->pcafe)->nlist->size;
-		viterbi_parameters_clear(&param->viterbi, nnodes);
-	}
-
-	if (params->bc || params->lh)
-	{
-		cafe_pCD = cafe_viterbi(param, cafe_pCD);
-		if (params->bc) cafe_branch_cutting(param);
-		if (params->lh) cafe_likelihood_ratio_test(param);
-		cafe_log(param, "Building Text report: %s\n", name);
-		cafe_report(param, CAFE_REPORT_TEXT);
-		fclose(param->fout);
-		strcpy(name, params->name); strcat(name, ".mp");
-		param->fout = fopen(name, "w");
-		cafe_log(param, "Building Metapost report: %s\n", name);
-		cafe_report(param, CAFE_REPORT_PDF);
-	}
-	else if (params->lh2)
-	{
-		cafe_lhr_for_diff_lambdas(param, tmp_lambda_tree, 2, cafe_shell_set_lambda);
-	}
-	else
-	{
-		if (!params->just_save)
-		{
-			cafe_pCD = cafe_viterbi(param, cafe_pCD);
-		}
-		cafe_report(param, CAFE_REPORT_TEXT);
-		fclose(param->fout);
-		strcpy(name, params->name); strcat(name, ".mp");
-		param->fout = fopen(name, "w");
-		cafe_log(param, "Building Metapost report: %s\n", name);
-		cafe_report(param, CAFE_REPORT_PDF);
-	}
-	fclose(param->fout);
-
-	// HTML
-	strcpy(name, params->name); strcat(name, ".html");
-	FILE* fhttp = fopen(name, "w");
-
-	cafe_log(param, "Building HTML report: %s\n", name);
-	fprintf(fhttp, "<html>\n<body>\n<table border=1>\n");
-	for (int i = 0; i < param->pfamily->flist->size; i++)
-	{
-		pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
-		fprintf(fhttp, "<tr><td><a href=pdf/%s-%d.pdf>%s</a></td><td>%s</td></tr>\n",
-			params->name, i + 1, pitem->id, pitem->desc ? pitem->desc : "NONE");
-	}
-	fprintf(fhttp, "</table>\n</body>\n</html>\n");
-	fclose(fhttp);
-
-	cafe_log(param, "Report Done\n");
-
-}
-
 int cafe_cmd_retrieve(int argc, char* argv[] )
 {
 	cafe_shell_clear_param(cafe_param, 1);
