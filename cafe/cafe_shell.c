@@ -52,7 +52,6 @@ CafeShellCommand cafe_cmd[]  =
 	{ "load", cafe_cmd_load },
 	{ "log", cafe_cmd_log },
 	{ "pvalue", cafe_cmd_pvalue },
-	{ "report", cafe_cmd_report },
 	{ "retrieve", cafe_cmd_retrieve },
 	{ "rootdist", cafe_cmd_root_dist}, 
     { "errormodel", cafe_cmd_error_model},  
@@ -2185,103 +2184,66 @@ int cafe_cmd_score(int argc, char* argv[])
   return 0;
 }
 
-
-
-
-
-int cafe_cmd_report(int argc, char* argv[] )
+void cafe_do_report(pCafeParam param, report_parameters* params)
 {
-	int i;
-
-	STDERR_IF( cafe_param->pfamily == NULL, "ERROR(report): You did not load family: command 'load'\n" );
-	STDERR_IF( cafe_param->pcafe == NULL, "ERROR(report): You did not specify tree: command 'tree'\n" );
-	STDERR_IF( cafe_param->lambda == NULL, "ERROR(report): You did not set the parameters: command 'lambda' or 'lambdamu'\n" );
-
 	char name[STRING_STEP_SIZE];
 
-
-	strcpy( name, argv[1] ); strcat( name, ".cafe" );
-	cafe_param->fout = fopen(name,"w");
-
-	if ( cafe_param->fout == NULL )
-	{
-		fprintf(stderr,"ERROR(report): Cannot open %s in write mode.\n", argv[1] );
-		return -1;
-	}
-	int bc, lh, lh2, just_save;
-	bc = 0;
-	lh = 0;
-	lh2 = 0;
-	just_save = 0;
-	for (  i = 2; i < argc ; i++ )
-	{
-		if ( strcasecmp( argv[i],"branchcutting") == 0 ) bc = 1;
-		if ( strcasecmp( argv[i],"likelihood") == 0 ) lh = 1;
-		if ( strcasecmp ( argv[i], "lh2" ) == 0 ) lh2 = 1;
-		if ( strcasecmp ( argv[i], "save" ) == 0 ) 
-		{
-			bc = 0; lh = 0; lh2 = 0;
-			just_save = 1;
-			break;
-		}
-	}
-	
-	if ( !just_save )
+	if (!params->just_save)
 	{
 		cafe_shell_set_sizes();
-		int nnodes = ((pTree)cafe_param->pcafe)->nlist->size;
-		viterbi_parameters_clear(&cafe_param->viterbi, nnodes);
+		int nnodes = ((pTree)param->pcafe)->nlist->size;
+		viterbi_parameters_clear(&param->viterbi, nnodes);
 	}
 
-	if ( bc || lh )
+	if (params->bc || params->lh)
 	{
-		cafe_pCD = cafe_viterbi(cafe_param, cafe_pCD );
-		if ( bc ) cafe_branch_cutting(cafe_param);
-		if ( lh ) cafe_likelihood_ratio_test(cafe_param);
-		cafe_log( cafe_param, "Building Text report: %s\n", name);
-		cafe_report(cafe_param, CAFE_REPORT_TEXT);
-		fclose( cafe_param->fout );
-		strcpy( name, argv[1] ); strcat( name, ".mp" );
-		cafe_param->fout = fopen(name,"w");
-		cafe_log( cafe_param, "Building Metapost report: %s\n", name);
-		cafe_report(cafe_param, CAFE_REPORT_PDF);
+		cafe_pCD = cafe_viterbi(param, cafe_pCD);
+		if (params->bc) cafe_branch_cutting(param);
+		if (params->lh) cafe_likelihood_ratio_test(param);
+		cafe_log(param, "Building Text report: %s\n", name);
+		cafe_report(param, CAFE_REPORT_TEXT);
+		fclose(param->fout);
+		strcpy(name, params->name); strcat(name, ".mp");
+		param->fout = fopen(name, "w");
+		cafe_log(param, "Building Metapost report: %s\n", name);
+		cafe_report(param, CAFE_REPORT_PDF);
 	}
-	else if ( lh2 )
+	else if (params->lh2)
 	{
-		cafe_lhr_for_diff_lambdas(cafe_param, tmp_lambda_tree, 2,cafe_shell_set_lambda );
+		cafe_lhr_for_diff_lambdas(param, tmp_lambda_tree, 2, cafe_shell_set_lambda);
 	}
 	else
 	{
-		if ( !just_save ) 
+		if (!params->just_save)
 		{
-			cafe_pCD = cafe_viterbi(cafe_param, cafe_pCD );
+			cafe_pCD = cafe_viterbi(param, cafe_pCD);
 		}
-		cafe_report(cafe_param, CAFE_REPORT_TEXT);
-		fclose( cafe_param->fout );
-		strcpy( name, argv[1] ); strcat( name, ".mp" );
-		cafe_param->fout = fopen(name,"w");
-		cafe_log( cafe_param, "Building Metapost report: %s\n", name);
-		cafe_report(cafe_param, CAFE_REPORT_PDF);
+		cafe_report(param, CAFE_REPORT_TEXT);
+		fclose(param->fout);
+		strcpy(name, params->name); strcat(name, ".mp");
+		param->fout = fopen(name, "w");
+		cafe_log(param, "Building Metapost report: %s\n", name);
+		cafe_report(param, CAFE_REPORT_PDF);
 	}
-	fclose( cafe_param->fout );
-	
-// HTML
-	strcpy( name, argv[1] ); strcat( name, ".html" );
-	FILE* fhttp = fopen(name,"w");
+	fclose(param->fout);
 
-	cafe_log( cafe_param, "Building HTML report: %s\n", name);
-	fprintf(fhttp,"<html>\n<body>\n<table border=1>\n");	
-	for ( i = 0 ; i < cafe_param->pfamily->flist->size ; i++ )
+	// HTML
+	strcpy(name, params->name); strcat(name, ".html");
+	FILE* fhttp = fopen(name, "w");
+
+	cafe_log(param, "Building HTML report: %s\n", name);
+	fprintf(fhttp, "<html>\n<body>\n<table border=1>\n");
+	for (int i = 0; i < param->pfamily->flist->size; i++)
 	{
-		pCafeFamilyItem pitem = (pCafeFamilyItem) cafe_param->pfamily->flist->array[i];
-		fprintf(fhttp,"<tr><td><a href=pdf/%s-%d.pdf>%s</a></td><td>%s</td></tr>\n", 
-				argv[1], i+1, pitem->id, pitem->desc ? pitem->desc : "NONE" );	
+		pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
+		fprintf(fhttp, "<tr><td><a href=pdf/%s-%d.pdf>%s</a></td><td>%s</td></tr>\n",
+			params->name, i + 1, pitem->id, pitem->desc ? pitem->desc : "NONE");
 	}
-	fprintf(fhttp,"</table>\n</body>\n</html>\n");	
+	fprintf(fhttp, "</table>\n</body>\n</html>\n");
 	fclose(fhttp);
 
-	cafe_log( cafe_param, "Report Done\n");
-	return 0;
+	cafe_log(param, "Report Done\n");
+
 }
 
 int cafe_cmd_retrieve(int argc, char* argv[] )

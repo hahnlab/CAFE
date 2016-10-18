@@ -41,13 +41,16 @@ TEST(LambdaTests, TestCmdLambda_FailsWithoutTree)
 {
 	cafe_shell_init(1);
 
-	char buf[1000];
-	setbuf(stderr, buf);
-
-	LONGS_EQUAL(-1, lambda_cmd_helper());
-	const char *expected = "ERROR(lambda): You did not specify tree: command 'tree'";
-	STRCMP_CONTAINS(expected, buf);
-	setbuf(stderr, NULL);
+	try
+	{ 
+		lambda_cmd_helper();
+		FAIL("Expected exception not thrown");
+	}
+	catch (std::runtime_error& ex)
+	{
+		const char *expected = "ERROR(lambda): You did not specify tree: command 'tree'";
+		STRCMP_CONTAINS(expected, ex.what());
+	}
 }
 
 TEST(LambdaTests, PrepareCafeParamFailsWithoutLoad)

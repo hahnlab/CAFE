@@ -226,14 +226,13 @@ void write_lambda_distribution(pArgument parg, FILE* fp)
 */
 int cafe_cmd_lambda(pCafeParam param, vector<string> tokens)
 {
-	try {
 		int i,j;
 
 		if(!param->pcafe)
 		{
-			fprintf( stderr, "ERROR(lambda): You did not specify tree: command 'tree'\n" );
-			return -1;
+			throw std::runtime_error("ERROR(lambda): You did not specify tree: command 'tree'\n" );
 		}
+
 		pCafeTree pcafe = param->pcafe;
 		vector<Argument> pargs = lambda_build_argument(tokens);
 
@@ -544,12 +543,6 @@ int cafe_cmd_lambda(pCafeParam param, vector<string> tokens)
 	if (params.search && (param->k > 0)) {
 		// print the cluster memberships
 		cafe_family_print_cluster_membership(param);
-	}
-	}
-	catch (const std::exception& ex)
-	{
-		fprintf(stderr, "%s\n", ex.what());
-		return -1;
 	}
 
 	return 0;

@@ -383,6 +383,43 @@ TEST(FirstTestGroup, cafe_tree_random_probabilities)
 	DOUBLES_EQUAL(0.0, trials[4], .001);
 }
 
+TEST(FirstTestGroup, get_report_parameters)
+{
+	report_parameters params;
+
+	std::vector<std::string> tokens;
+	tokens.push_back("report");
+	tokens.push_back("myreport");
+	tokens.push_back("branchcutting");
+
+	get_report_parameters(params, tokens);
+	STRCMP_EQUAL("myreport", params.name);
+	LONGS_EQUAL(1, params.bc);
+	LONGS_EQUAL(0, params.lh);
+
+	tokens[2] = "lh2";
+	get_report_parameters(params, tokens);
+	LONGS_EQUAL(1, params.lh2);
+	LONGS_EQUAL(0, params.lh);
+}
+
+
+TEST(FirstTestGroup, cafe_command_report_prereqs)
+{
+	CafeParam param;
+	CafeFamily fam;
+	CafeTree tree;
+	std::vector<std::string> tokens;
+	param.pfamily = NULL;
+	CHECK_THROWS(std::runtime_error, cafe_cmd_report(&param, tokens));
+	param.pfamily = &fam;
+	param.pcafe = NULL;
+	CHECK_THROWS(std::runtime_error, cafe_cmd_report(&param, tokens));
+	param.pcafe = &tree;
+	param.lambda = NULL;
+	CHECK_THROWS(std::runtime_error, cafe_cmd_report(&param, tokens));
+}
+
 int main(int ac, char** av)
 {
 	return CommandLineTestRunner::RunAllTests(ac, av);

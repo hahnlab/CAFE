@@ -41,6 +41,13 @@ typedef struct
 } ErrorMeasure;
 typedef ErrorMeasure* pErrorMeasure;
  
+typedef struct
+{
+	int bc, lh, lh2, just_save;
+	char name[STRING_STEP_SIZE];
+} report_parameters;
+void cafe_do_report(report_parameters* params);
+
 pArrayList cafe_shell_build_argument(int argc, char* argv[]);
 void cafe_shell_prompt(char* prompt, char* format, ... );
 void cafe_shell_init(int quiet);
@@ -56,7 +63,6 @@ int cafe_cmd_lambda_mu(int argc, char* argv[]);
 int cafe_cmd_version(int argc, char* argv[]);
 int cafe_cmd_pvalue(int argc, char* argv[]);
 int cafe_cmd_score(int argc, char* argv[]);
-int cafe_cmd_report(int argc, char* argv[] );
 int cafe_cmd_log(int argc, char* argv[] );
 int cafe_cmd_cgi(int argc, char* argv[] );
 int cafe_cmd_retrieve(int argc, char* argv[] );
