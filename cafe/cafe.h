@@ -48,6 +48,8 @@ extern pString cafe_tree_string(pCafeTree pcafe);
 extern pString cafe_tree_string_with_familysize_lambda(pCafeTree pcafe);
 extern pString cafe_tree_string_with_familysize(pCafeTree pcafe);
 extern void cafe_tree_string_print(pCafeTree pcafe);
+void __cafe_tree_node_compute_likelihood(pTree ptree, pTreeNode ptnode, va_list ap1);
+void compute_internal_node_likelihood(pTree ptree, pTreeNode ptnode);
 
 extern double* cafe_tree_likelihood(pCafeTree pcafe);
 extern void cafe_tree_node_free_clustered_likelihoods (pCafeParam param);

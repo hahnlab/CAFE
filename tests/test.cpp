@@ -88,8 +88,8 @@ static pCafeTree create_tree()
 	const char *newick_tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)";
 	char tree[100];
 	strcpy(tree, newick_tree);
-	int family_sizes[2] = { 1,1 };
-	int rootfamily_sizes[2] = { 1,1 };
+	int family_sizes[2] = { 1,2 };
+	int rootfamily_sizes[2] = { 1,2 };
 	return cafe_tree_new(tree, family_sizes, rootfamily_sizes, 0, 0);
 }
 
@@ -420,6 +420,42 @@ TEST(FirstTestGroup, cafe_command_report_prereqs)
 	param.lambda = NULL;
 	CHECK_THROWS(std::runtime_error, cafe_cmd_report(&param, tokens));
 }
+
+#if 0
+TEST(FirstTestGroup, cafe_tree_node_compute_likelihood)
+{
+	pCafeTree tree = create_tree();
+	pCafeNode node = (pCafeNode)tree->super.root;
+	__cafe_tree_node_compute_likelihood((pTree)tree, (pTreeNode)node, NULL);
+	DOUBLES_EQUAL(0, node->likelihoods[0], 0.01);
+}
+
+TEST(FirstTestGroup, birthdeath_likelihood_with_s_c)
+{
+	chooseln_cache_init(10);
+	double result = birthdeath_likelihood_with_s_c(1, 3, 5, 0.01, 0);
+	DOUBLES_EQUAL(1, result, 0.01);
+}
+
+TEST(FirstTestGroup, compute_internal_node_likelihood)
+{
+	chooseln_cache_init(10);
+	pTree tree = (pTree)create_tree();
+	pCafeNode node = (pCafeNode)tree->root;
+	node->lambda = 0.01;
+	node->mu = -1;
+	int factors = ((pCafeTree)tree)->size_of_factor;
+	for (int i = 0; i < factors; ++i)
+	{
+		((pCafeNode)tree_get_child(tree->root, 0))->likelihoods[i] = .5;
+		((pCafeNode)tree_get_child(tree->root, 1))->likelihoods[i] = .5;
+	}
+	tree_get_child(tree->root, 1);
+	compute_internal_node_likelihood(tree, tree->root);
+	DOUBLES_EQUAL(0.214, node->likelihoods[0], 0.001);
+	DOUBLES_EQUAL(0.192, node->likelihoods[1], 0.001);
+}
+#endif 
 
 int main(int ac, char** av)
 {

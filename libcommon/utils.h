@@ -79,7 +79,6 @@ extern int stack_is_empty(pStack pstack);
  * Etc
  ********************************************************************/
 extern void print_error(char* file, char* function, int line, char* message, ... );
-extern char* get_current_time();
 extern int __cmp_int(const void* a, const void* b);
 extern int __cmp_double(const void* a, const void* b);
 

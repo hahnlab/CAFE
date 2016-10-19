@@ -1,4 +1,5 @@
-#include<stdio.h>
+#include <stdio.h>
+#include <time.h>
 #include <map>
 #include <string>
 #include <iostream>
@@ -72,7 +73,11 @@ int cafe_cmd_echo(pCafeParam param, vector<string> tokens)
 
 int cafe_cmd_date(pCafeParam param, vector<string> tokens)
 {
-	cafe_log(param, "%s", get_current_time());
+	time_t now = time(NULL);
+	struct tm *tm = localtime(&now);
+	char buf[64];
+	strftime(buf, sizeof(buf), "%a %b %e %T %Y", tm);
+	cafe_log(param, "%s", buf);
 	return 0;
 }
 

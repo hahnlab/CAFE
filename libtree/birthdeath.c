@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include "birthdeath.h"
 #include<utils.h>
 #include<stdlib.h>
@@ -109,6 +111,7 @@ void chooseln_cache_free()
 
 double birthdeath_rate_with_log_alpha_beta(int s, int c, double log_alpha, double log_beta, double log_coeff )
 {
+	assert(chooseln_cache != 0);
 	int j;
 	int m = MIN(c,s);
 	double t, p = 0;
@@ -126,15 +129,17 @@ double birthdeath_rate_with_log_alpha_beta(int s, int c, double log_alpha, doubl
 
 double birthdeath_rate_with_log_alpha(int s, int c, double log_alpha, double coeff )
 {
-	int j;
+	assert(chooseln_cache != 0);
 	int m = MIN(c,s);
-	double t, p, lastterm = 1;
+
+	double lastterm = 1;
+	double p = 0.0;
 	int s_add_c = s + c;
 	int s_add_c_sub_1 = s_add_c - 1;
 	int s_sub_1 = s - 1;
-	for ( j = 0, p = 0 ; j <= m ; j++ )
+	for (int j = 0; j <= m ; j++ )
 	{
-		t = chooseln_cache[s][j] + chooseln_cache[s_add_c_sub_1-j][s_sub_1] + (s_add_c-2*j)*log_alpha;
+		double t = chooseln_cache[s][j] + chooseln_cache[s_add_c_sub_1-j][s_sub_1] + (s_add_c-2*j)*log_alpha;
 		//t = chooseln_get(s, j) + chooseln_get(s_add_c_sub_1-j,s_sub_1) + (s_add_c-2*j)*alpha;
 		p += (exp(t) * lastterm);
 		lastterm *= coeff;
@@ -142,13 +147,17 @@ double birthdeath_rate_with_log_alpha(int s, int c, double log_alpha, double coe
 	return MAX(MIN(p,1),0);
 }
 
-double birthdeath_likelihood_with_s_c(int s, int c, double branchlength, double lambda, double mu) 
+/**
+* \brief Calculates the probability of transitioning from root_family_size to family_size
+*
+* Given the branch length and the expected change rate lammbda
+*/double birthdeath_likelihood_with_s_c(int root_family_size, int family_size, double branchlength, double lambda, double mu)
 {	
 	double alpha, coeff, beta=0;
 	double denominator, numerator = 0;	
 	
-	if (s == 0) {
-		if (c == 0) {
+	if (root_family_size == 0) {
+		if (family_size == 0) {
 			return 1;
 		}
 		else {
@@ -156,14 +165,16 @@ double birthdeath_likelihood_with_s_c(int s, int c, double branchlength, double 
 		}
 	}
 	else {
-		if ((mu < 0) || (lambda == mu)) {
+		if ((mu < 0) || (lambda == mu)) {	// this is worrisome. Comparing two doubles is not an exact process
 			alpha = lambda*branchlength/(1+lambda*branchlength);
-			coeff = 1 - 2 * alpha;
+			coeff = 1 - 2*alpha;
 			if (coeff <= 0) {
+				printf("Negative coefficient found (lambda %f branchlength %f)\n", lambda, branchlength);
 				return 0;
 			}
 			else {
-				return birthdeath_rate_with_log_alpha(s,c,log(alpha),coeff);
+				double result = birthdeath_rate_with_log_alpha(root_family_size, family_size,log(alpha),coeff);
+				return result;
 			}
 		}
 		else {
@@ -176,7 +187,7 @@ double birthdeath_likelihood_with_s_c(int s, int c, double branchlength, double 
 				return 0;
 			}
 			else {
-				return birthdeath_rate_with_log_alpha_beta(s,c,log(alpha),log(beta),log(coeff));
+				return birthdeath_rate_with_log_alpha_beta(root_family_size, family_size, log(alpha),log(beta),log(coeff));
 			}
 		}
 	}

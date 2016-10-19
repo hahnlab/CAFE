@@ -28,14 +28,6 @@ void print_error(char* file, char* function, int line, char* message, ... )
 	exit(errno);
 }
 
-char* get_current_time()
-{
-	struct tm dtm;
-	time_t t;	
-	time(&t);
-	return asctime(localtime_r(&t,&dtm));
-}
-
 /********************************************************************
  * ArrayList
  ********************************************************************/
