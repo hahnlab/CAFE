@@ -421,7 +421,6 @@ TEST(FirstTestGroup, cafe_command_report_prereqs)
 	CHECK_THROWS(std::runtime_error, cafe_cmd_report(&param, tokens));
 }
 
-#if 0
 TEST(FirstTestGroup, cafe_tree_node_compute_likelihood)
 {
 	pCafeTree tree = create_tree();
@@ -455,7 +454,37 @@ TEST(FirstTestGroup, compute_internal_node_likelihood)
 	DOUBLES_EQUAL(0.214, node->likelihoods[0], 0.001);
 	DOUBLES_EQUAL(0.192, node->likelihoods[1], 0.001);
 }
-#endif 
+
+TEST(FirstTestGroup, compute_leaf_node_likelihood)
+{
+	chooseln_cache_init(10);
+	pTree tree = (pTree)create_tree();
+	pCafeNode leaf = (pCafeNode)tree_get_child(tree->root, 0);
+
+	// no family size set
+	compute_leaf_node_likelihood(tree, (pTreeNode)leaf);
+	DOUBLES_EQUAL(1.0, leaf->likelihoods[0], 0.001);
+	DOUBLES_EQUAL(1.0, leaf->likelihoods[1], 0.001);
+
+	leaf->familysize = 1;
+	compute_leaf_node_likelihood(tree, (pTreeNode)leaf);
+	DOUBLES_EQUAL(0.0, leaf->likelihoods[0], 0.001);
+	DOUBLES_EQUAL(1.0, leaf->likelihoods[1], 0.001);
+}
+
+TEST(FirstTestGroup, cafe_tree_new_empty_node)
+{
+	pTree tree = (pTree)create_tree();
+	pCafeNode node = (pCafeNode)cafe_tree_new_empty_node(tree);
+	POINTERS_EQUAL(NULL, node->errormodel);
+	POINTERS_EQUAL(NULL, node->bd);
+	POINTERS_EQUAL(NULL, node->k_bd);
+	POINTERS_EQUAL(NULL, node->k_likelihoods);
+	POINTERS_EQUAL(NULL, node->param_mus);
+	POINTERS_EQUAL(NULL, node->param_lambdas);
+	LONGS_EQUAL(-1, node->familysize);
+}
+
 
 int main(int ac, char** av)
 {
