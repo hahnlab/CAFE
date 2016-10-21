@@ -12,6 +12,7 @@ extern "C" {
 #include <cafe_shell.h>
 #include <tree.h>
 #include <cafe.h>
+#include <chooseln_cache.h>
 };
 
 #include <cafe_commands.h>
@@ -431,14 +432,12 @@ TEST(FirstTestGroup, cafe_tree_node_compute_likelihood)
 
 TEST(FirstTestGroup, birthdeath_likelihood_with_s_c)
 {
-	chooseln_cache_init(10);
 	double result = birthdeath_likelihood_with_s_c(1, 3, 5, 0.01, 0);
 	DOUBLES_EQUAL(1, result, 0.01);
 }
 
 TEST(FirstTestGroup, compute_internal_node_likelihood)
 {
-	chooseln_cache_init(10);
 	pTree tree = (pTree)create_tree();
 	pCafeNode node = (pCafeNode)tree->root;
 	node->lambda = 0.01;
@@ -457,7 +456,6 @@ TEST(FirstTestGroup, compute_internal_node_likelihood)
 
 TEST(FirstTestGroup, compute_leaf_node_likelihood)
 {
-	chooseln_cache_init(10);
 	pTree tree = (pTree)create_tree();
 	pCafeNode leaf = (pCafeNode)tree_get_child(tree->root, 0);
 
@@ -485,6 +483,20 @@ TEST(FirstTestGroup, cafe_tree_new_empty_node)
 	LONGS_EQUAL(-1, node->familysize);
 }
 
+TEST(FirstTestGroup, chooseln_cache)
+{
+	struct chooseln_cache cache;
+	cache.values = 0;
+	CHECK_FALSE(chooseln_is_init2(&cache));
+	chooseln_cache_init2(&cache, 10);
+	CHECK_TRUE(chooseln_is_init2(&cache));
+	LONGS_EQUAL(10, get_chooseln_cache_size2(&cache));
+	DOUBLES_EQUAL(4.025, chooseln_get2(&cache, 8, 5), .001);
+	DOUBLES_EQUAL(1.098, chooseln_get2(&cache, 3, 2), .001);
+	DOUBLES_EQUAL(1.791, chooseln_get2(&cache, 6, 5), .001);
+	DOUBLES_EQUAL(4.43, chooseln_get2(&cache, 9, 3), .001);
+	chooseln_cache_free2(&cache);
+}
 
 int main(int ac, char** av)
 {

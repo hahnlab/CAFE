@@ -8,102 +8,43 @@
 #include<family.h>
 #include<float.h>
 #include<mathfunc.h>
+#include "chooseln_cache.h"
 
 /*
 P(X(t) = c | X(0) = s)  = \sum_{j=0}^{\min(s,c)} \binom{s}{j}\binom{s+c-j-1}{s-1}
                                                  \alpha^{s+c-2j}(1-2\alpha)^j
  */
 
-int chooseln_cache_size;
-static double** chooseln_cache;
+struct chooseln_cache cache = { 0,0 };
 
 int chooseln_is_init()
 {
-	return chooseln_cache ? 1 : 0;
+	return chooseln_is_init2(&cache);
 }
 
 int get_chooseln_cache_size() 
 { 
-	return chooseln_cache_size; 
+	return get_chooseln_cache_size2(&cache);
 }
 
 double chooseln_get(int n, int x)
 {
-	if ( chooseln_cache[n] && chooseln_cache[n][x] >= 0 ) return chooseln_cache[n][x];
-	if ( chooseln_cache[n] == NULL )
-	{
-		int i;
-		chooseln_cache[n] = (double*)memory_new(chooseln_cache_size+1, sizeof(double) );
-		for( i = 0 ; i <= chooseln_cache_size ; i++ ) chooseln_cache[n][i] = -1.0;	
-	}
-	chooseln_cache[n][x] = chooseln(n,x);	
-	return chooseln_cache[n][x];
-}
-
-void chooseln_cache_preset(int maxFamilysize, int sfrom )
-{
-	int s, c, j;
-	for ( s = sfrom; s <= maxFamilysize; s++ )
-	{ 
-		for ( c = 0; c <= maxFamilysize ; c++ )
-		{
-			int m = MIN(s,c);
-			double s_add_c = s + c;
-			double s_add_c_sub_1 = s_add_c - 1;
-			double s_sub_1 = s - 1;
-			for ( j = 0 ; j <= m ; j++ )
-			{
-				chooseln_get(s,j); 
-				chooseln_get(s_add_c_sub_1-j,s_sub_1);
-			}
-		}
-	}
+	return chooseln_get2(&cache, n, x);
 }
 
 void chooseln_cache_resize(int resize)
 {
-	if ( chooseln_cache_size >= resize ) return;
-	int i;
-	if ( chooseln_cache )
-	{
-		chooseln_cache = (double**)memory_realloc(chooseln_cache,resize*2,sizeof(double*));
-	}
-	else
-	{
-		chooseln_cache = (double**)memory_new(resize*2,sizeof(double*));
-	}
-	for ( i = chooseln_cache_size*2 ; i < resize*2 ; i++ )
-	{
-		chooseln_cache[i] = NULL;
-	}
-	int oldsize = chooseln_cache_size;
-	chooseln_cache_size = resize;
-	chooseln_cache_preset( resize, oldsize+1);
-	fprintf(stderr, "** Cache resize: %d ==> %d\n", oldsize, resize );
+	chooseln_cache_resize2(&cache, resize);
 }
 
 void chooseln_cache_init(int size)
 {
-	chooseln_cache_size = size;
-	chooseln_cache = (double**)memory_new(size*2,sizeof(double*));
-	int i;
-	for( i = 0; i < size*2 ; i++ ) 
-	{
-		chooseln_cache[i] = NULL;
-	}
-	chooseln_cache_preset(size, 1);
+	chooseln_cache_init2(&cache, size);
 }
 
 void chooseln_cache_free()
 {
-	int i;
-	for( i = 0; i < chooseln_cache_size*2 ; i++ )
-	{
-		if ( chooseln_cache[i] ) memory_free(chooseln_cache[i]);
-		chooseln_cache[i] = NULL;
-	}
-	memory_free(chooseln_cache);
-	chooseln_cache = NULL;
+	chooseln_cache_free2(&cache);
 }
 
 
@@ -111,7 +52,7 @@ void chooseln_cache_free()
 
 double birthdeath_rate_with_log_alpha_beta(int s, int c, double log_alpha, double log_beta, double log_coeff )
 {
-	assert(chooseln_cache != 0);
+	assert(cache.values != 0);
 	int j;
 	int m = MIN(c,s);
 	double t, p = 0;
@@ -120,7 +61,7 @@ double birthdeath_rate_with_log_alpha_beta(int s, int c, double log_alpha, doubl
 	int s_sub_1 = s - 1;
 	for ( j = 0, p = 0 ; j <= m ; j++ )
 	{
-		t = chooseln_cache[s][j] + chooseln_cache[s_add_c_sub_1-j][s_sub_1] + (s-j)*log_alpha + (c-j)*log_beta + j*log_coeff;
+		t = cache.values[s][j] + cache.values[s_add_c_sub_1-j][s_sub_1] + (s-j)*log_alpha + (c-j)*log_beta + j*log_coeff;
 		//t = chooseln_get(s, j) + chooseln_get(s_add_c_sub_1-j,s_sub_1) + (s-j)*log_alpha + (c-j)*log_beta + j*log_coeff;
 		p += exp(t);
 	}
@@ -129,7 +70,7 @@ double birthdeath_rate_with_log_alpha_beta(int s, int c, double log_alpha, doubl
 
 double birthdeath_rate_with_log_alpha(int s, int c, double log_alpha, double coeff )
 {
-	assert(chooseln_cache != 0);
+	assert(cache.values != 0);
 	int m = MIN(c,s);
 
 	double lastterm = 1;
@@ -139,7 +80,7 @@ double birthdeath_rate_with_log_alpha(int s, int c, double log_alpha, double coe
 	int s_sub_1 = s - 1;
 	for (int j = 0; j <= m ; j++ )
 	{
-		double t = chooseln_cache[s][j] + chooseln_cache[s_add_c_sub_1-j][s_sub_1] + (s_add_c-2*j)*log_alpha;
+		double t = cache.values[s][j] + cache.values[s_add_c_sub_1-j][s_sub_1] + (s_add_c-2*j)*log_alpha;
 		//t = chooseln_get(s, j) + chooseln_get(s_add_c_sub_1-j,s_sub_1) + (s_add_c-2*j)*alpha;
 		p += (exp(t) * lastterm);
 		lastterm *= coeff;
@@ -342,9 +283,7 @@ pBirthDeathCache birthdeath_cach_resize(pBirthDeathCache pbdc, int remaxFamilysi
 	int s,c;
 	double lambda = pbdc->attrib.lambda;
 	double branchlength = pbdc->attrib.branchlength;
-#ifdef __DEBUG__
-	fprintf(stderr, "Increae Branch family size from %d -> %d in cache %d, %f\n", pbdc->attrib.maxFamilysize, remaxFamilysize, branchlength, lambda);
-#endif
+
 	double alpha = lambda*branchlength/(1+lambda*branchlength);
 	double coeff = 1 - 2 * alpha;
 	int old = pbdc->attrib.maxFamilysize;
@@ -459,11 +398,11 @@ void cafe_set_birthdeath_cache_thread(pCafeParam param)
 	
 	if ( !chooseln_is_init() ) 
 	{
-		chooseln_cache_init( pbdc_array->maxFamilysize );
+		chooseln_cache_init2(&cache, pbdc_array->maxFamilysize );
 	}
-	else if ( chooseln_cache_size < pbdc_array->maxFamilysize ) 
+	else if ( cache.size < pbdc_array->maxFamilysize ) 
 	{
-		chooseln_cache_resize( pbdc_array->maxFamilysize );
+		chooseln_cache_resize2(&cache, pbdc_array->maxFamilysize );
 	}
 	
 	int i,j,k,l = 0;
@@ -648,8 +587,10 @@ void cafe_set_birthdeath_cache(pCafeParam param)
     pbdc_array->table = hash_table_new(MODE_VALUEREF);
 	pbdc_array->maxFamilysize = MAX(param->family_sizes[1], param->rootfamily_sizes[1]);
 
-	if ( !chooseln_is_init() ) chooseln_cache_init( pbdc_array->maxFamilysize );
-	else if ( chooseln_cache_size < pbdc_array->maxFamilysize ) chooseln_cache_resize( pbdc_array->maxFamilysize );
+	if ( !chooseln_is_init2(&cache) ) 
+		chooseln_cache_init2(&cache, pbdc_array->maxFamilysize );
+	else if ( cache.size < pbdc_array->maxFamilysize ) 
+		chooseln_cache_resize2(&cache, pbdc_array->maxFamilysize );
 
 	/*for ( i = bl[0]; i <= bl[size-1]; i++ )
 	{
@@ -691,18 +632,8 @@ void cafe_resize_birthdeath_cache(pCafeParam param)
 	pBirthDeathCacheArray pbdc_array = param->pcafe->pbdc_array;
 	int remaxFamilysize = MAX(param->family_sizes[1], param->rootfamily_sizes[1]);
 	if ( pbdc_array->maxFamilysize >= remaxFamilysize ) return;
-	chooseln_cache_resize(remaxFamilysize);
+	chooseln_cache_resize2(&cache, remaxFamilysize);
 	int i,j;
-	/*for( i = 0 ; i < pbdc_array->list->size ; i++ )
-	{
-		pArrayList plist = (pArrayList)pbdc_array->list->array[i];
-		if ( plist == NULL ) continue;
-		for ( j = 0 ; j < plist->size ; j++ )
-		{
-			pBirthDeathCache pbdc = (pBirthDeathCache)plist->array[j];
-			birthdeath_cach_resize(pbdc, remaxFamilysize);
-		}
-	}*/
     void** keys = NULL;
     int num = (int)hash_table_get_keys(pbdc_array->table, &keys);
     for (i=0; i<num; i++) {
@@ -721,16 +652,6 @@ void cafe_resize_birthdeath_cache(pCafeParam param)
 void birthdeath_cache_array_free(pBirthDeathCacheArray pbdc_array)
 {
 	int i ;
-	/*for ( i = 0 ; i <  pbdc_array->list->size ; i++ )
-	{
-		if ( pbdc_array->list->array[i] )
-		{
-			arraylist_free( (pArrayList)pbdc_array->list->array[i], birthdeath_cache_free );
-            pbdc_array->list->array[i] = NULL;
-		}
-	}
-	arraylist_free( pbdc_array->list, NULL );
-    pbdc_array->list = NULL;*/
     void** keys = NULL;
     int num = (int)hash_table_get_keys(pbdc_array->table, &keys);
     for (i=0; i<num; i++) {
@@ -745,38 +666,27 @@ void birthdeath_cache_array_free(pBirthDeathCacheArray pbdc_array)
 
 double** eq_birthdeath_cache_get_matrix(pBirthDeathCacheArray pbdc_array, double branchlength, double lambda )
 {
-	//int i = branchlength - pbdc_array->base_bl;
 	pArrayList plist;
 	pBirthDeathCache pbdc = NULL;
-	//if ( i < pbdc_array->list->size && i >= 0 )
-	//{
-		//plist = (pArrayList)pbdc_array->list->array[i];
     double* key = &branchlength;
     plist = (pArrayList)hash_table_lookup(pbdc_array->table, key, sizeof(double));
-		if ( plist == NULL )
-		{
-			plist = (pArrayList)arraylist_new(10);
-			pbdc = eq_birthdeath_cache_new( branchlength , lambda, pbdc_array->maxFamilysize );
-			arraylist_add(plist, pbdc);
-			//pbdc_array->list->array[i] = plist;
-            hash_table_add(pbdc_array->table, key, sizeof(double), plist, sizeof(ArrayList));
-		}
-		else if ( (pbdc = eq_birthdeath_search_list_for_lambda(plist,lambda)) == NULL )
-		{
-			pbdc = eq_birthdeath_cache_new(branchlength, lambda, pbdc_array->maxFamilysize );
-			arraylist_add( plist, pbdc );
-		}
-	//}
-	if ( pbdc == NULL )
+	if ( plist == NULL )
 	{
-		/*for ( i = pbdc_array->base_bl + pbdc_array->list->size ;  i <= branchlength ; i++ )
-		{
-			arraylist_add(pbdc_array->list,NULL);
-		}*/
 		plist = (pArrayList)arraylist_new(10);
 		pbdc = eq_birthdeath_cache_new( branchlength , lambda, pbdc_array->maxFamilysize );
 		arraylist_add(plist, pbdc);
-		//pbdc_array->list->array[i - pbdc_array->base_bl - 1] = plist;
+        hash_table_add(pbdc_array->table, key, sizeof(double), plist, sizeof(ArrayList));
+	}
+	else if ( (pbdc = eq_birthdeath_search_list_for_lambda(plist,lambda)) == NULL )
+	{
+		pbdc = eq_birthdeath_cache_new(branchlength, lambda, pbdc_array->maxFamilysize );
+		arraylist_add( plist, pbdc );
+	}
+	if ( pbdc == NULL )
+	{
+		plist = (pArrayList)arraylist_new(10);
+		pbdc = eq_birthdeath_cache_new( branchlength , lambda, pbdc_array->maxFamilysize );
+		arraylist_add(plist, pbdc);
         hash_table_add(pbdc_array->table, key, sizeof(double), plist, sizeof(ArrayList));
 	}
 	return pbdc->matrix;
