@@ -16,6 +16,7 @@
 extern "C" {
 #include <utils_string.h>
 #include "cafe_shell.h"
+#include "cafe.h"
 
 	extern pCafeParam cafe_param;
 	extern void cafe_log(pCafeParam param, const char* msg, ...);
@@ -23,7 +24,9 @@ extern "C" {
 
 	extern pTree tmp_lambda_tree;
 	extern pArrayList cafe_pCD;
-
+	void __cafe_tree_string_gainloss(pString pstr, pPhylogenyNode ptnode);
+	void __cafe_tree_string_sum_gainloss(pString pstr, pPhylogenyNode ptnode);
+	pString __cafe_tree_gainloss_metapost(pCafeTree pcafe, int id, const char* title, double width, double height);
 }
 
 using namespace std;
@@ -33,6 +36,7 @@ typedef int(*cafe_command2)(pCafeParam cafe_param, vector<string>);
 map<string, cafe_command2> get_dispatcher()
 {
 	map<string, cafe_command2> dispatcher;
+	dispatcher["gainloss"] = cafe_cmd_gainloss;
 	dispatcher["source"] = cafe_cmd_source;
 	dispatcher["lambda"] = cafe_cmd_lambda;
 	dispatcher["?"] = cafe_cmd_list;
@@ -142,6 +146,102 @@ void list_commands(std::ostream& ost)
 int cafe_cmd_list(pCafeParam, vector<string> tokens)
 {
 	list_commands(std::cout);
+	return 0;
+}
+
+int cafe_cmd_gainloss(pCafeParam param, vector<string> tokens)
+{
+	if (param->pfamily == NULL)
+		throw runtime_error("ERROR(gainloss): You did not load family: command 'load'\n");
+	if (param->pcafe == NULL)
+		throw runtime_error("ERROR(gainloss): You did not specify tree: command 'tree'\n");
+	if (param->lambda == NULL)
+		throw runtime_error("ERROR(gainloss): You did not set the parameters: command 'lambda' or 'lambdamu'\n");
+
+	if (param->viterbi.viterbiNodeFamilysizes == NULL)
+	{
+		cafe_pCD = cafe_viterbi(param, cafe_pCD);
+	}
+
+	string name = tokens[1] + ".gs";
+	FILE* fout = fopen(name.c_str(), "w");
+
+	int i, j;
+	int** nodefs = param->viterbi.viterbiNodeFamilysizes;
+	pCafeTree pcafe = param->pcafe;
+	int fsize = param->pfamily->flist->size;
+	int nnodes = (pcafe->super.nlist->size - 1) / 2;
+
+	pCafeTree psum = cafe_tree_copy(pcafe);
+
+	for (i = 0; i < psum->super.nlist->size; i++)
+	{
+		pCafeNode pcnode = (pCafeNode)psum->super.nlist->array[i];
+		pcnode->familysize = 0;
+	}
+
+	pString pstr;
+	int sum = 0;
+	int totalsum = 0;
+	for (j = 0; j < psum->super.nlist->size; j++)
+	{
+		pCafeNode pcnode = (pCafeNode)psum->super.nlist->array[j];
+		pcnode->viterbi[0] = 0;
+		pcnode->viterbi[1] = 0;
+	}
+
+	for (i = 0; i < fsize; i++)
+	{
+		sum = 0;
+		pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
+		fprintf(fout, "%s\t", pitem->id);
+		cafe_family_set_size(param->pfamily, i, pcafe);
+		for (j = 0; j < nnodes; j++)
+		{
+			pCafeNode pnode = (pCafeNode)pcafe->super.nlist->array[2 * j + 1];
+			pnode->familysize = nodefs[j][i];
+		}
+		for (j = 0; j < pcafe->super.nlist->size; j++)
+		{
+			pCafeNode pcnode = (pCafeNode)pcafe->super.nlist->array[j];
+			pCafeNode pcsum = (pCafeNode)psum->super.nlist->array[j];
+			if (tree_is_root((pTree)pcafe, (pTreeNode)pcnode)) continue;
+			pCafeNode parent = (pCafeNode)((pTreeNode)pcnode)->parent;
+			int diff = pcnode->familysize - parent->familysize;
+			sum += diff;
+			pcsum->familysize += diff;
+			if (diff > 0)
+			{
+				pcsum->viterbi[0] += diff;
+			}
+			else if (diff <  0)
+			{
+				pcsum->viterbi[1] += diff;
+			}
+		}
+		totalsum += sum;
+		fprintf(fout, "%d\t", sum);
+		pstr = phylogeny_string((pTree)pcafe, __cafe_tree_string_gainloss);
+		fprintf(fout, "%s\n", pstr->buf);
+		string_free(pstr);
+	}
+	fprintf(fout, "SUM\t%d\t", totalsum);
+	pstr = phylogeny_string((pTree)psum, __cafe_tree_string_sum_gainloss);
+	fprintf(fout, "%s\n", pstr->buf);
+	string_free(pstr);
+
+	fclose(fout);
+
+	name = tokens[1] + ".mp";
+	fout = fopen(name.c_str(), "w");
+
+	ostringstream title;
+	title << "SUM: " << totalsum;
+	pstr = __cafe_tree_gainloss_metapost(psum, 0, title.str().c_str(), 10, 8);
+	fprintf(fout, "%s", pstr->buf);
+	string_free(pstr);
+	cafe_tree_free(psum);
+	fclose(fout);
 	return 0;
 }
 

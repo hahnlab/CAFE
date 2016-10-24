@@ -13,6 +13,7 @@ int cafe_cmd_list(pCafeParam param, std::vector<std::string> tokens);
 int cafe_cmd_echo(pCafeParam param, std::vector<std::string> tokens);
 int cafe_cmd_date(pCafeParam param, std::vector<std::string> tokens);
 int cafe_cmd_exit(pCafeParam param, std::vector<std::string> tokens);
+int cafe_cmd_gainloss(pCafeParam param, std::vector<std::string> tokens);
 
 int cafe_shell_dispatch_command(char* cmd);
 void list_commands(std::ostream& ost);

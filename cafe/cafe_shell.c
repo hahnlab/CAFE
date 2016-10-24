@@ -44,7 +44,6 @@ CafeShellCommand cafe_cmd[]  =
 	{ "cgi", cafe_cmd_cgi }, 
 	{ "extinct", cafe_cmd_extinct },
 	{ "family", cafe_cmd_family },
-	{ "gainloss", cafe_cmd_gainloss },
 	{ "genfamily", cafe_cmd_generate_random_family },
 	{ "info", cafe_cmd_print_param },
 	{ "lambdamu", cafe_cmd_lambda_mu },
@@ -2292,7 +2291,7 @@ double __cafe_tree_gainloss_mp_annotation(pString pstr, pTreeNode pnode, pMetapo
 
 extern double cafe_tree_mp_remark(pString pstr, pTree ptree, pMetapostConfig pmc, va_list ap1);
 
-pString __cafe_tree_gainloss_metapost(pCafeTree pcafe, int id, char* title, double width, double height )
+pString __cafe_tree_gainloss_metapost(pCafeTree pcafe, int id, const char* title, double width, double height )
 {
 	pMetapostConfig pmc = (pMetapostConfig) memory_new(1,sizeof(MetapostConfig));
 	pmc->id = id;
@@ -2307,98 +2306,6 @@ pString __cafe_tree_gainloss_metapost(pCafeTree pcafe, int id, char* title, doub
 	memory_free(pmc);
 	pmc = NULL;
 	return pstr;
-}
-
-int cafe_cmd_gainloss(int argc, char* argv[] )
-{
-	STDERR_IF( cafe_param->pfamily == NULL, "ERROR(gainloss): You did not load family: command 'load'\n" );
-	STDERR_IF( cafe_param->pcafe == NULL, "ERROR(gainloss): You did not specify tree: command 'tree'\n" );
-	STDERR_IF( cafe_param->lambda == NULL, "ERROR(gainloss): You did not set the parameters: command 'lambda' or 'lambdamu'\n" );
-
-	if ( cafe_param->viterbi.viterbiNodeFamilysizes == NULL )
-	{
-		cafe_pCD = cafe_viterbi(cafe_param, cafe_pCD );
-	}
-	
-	char name[STRING_STEP_SIZE];
-	strcpy( name, argv[1] ); strcat( name, ".gs" );
-	FILE* fout = fopen(name,"w");
-
-	int i,j;
-	int** nodefs = cafe_param->viterbi.viterbiNodeFamilysizes;
-	pCafeTree pcafe = cafe_param->pcafe;
-	int fsize = cafe_param->pfamily->flist->size;
-	int nnodes = (pcafe->super.nlist->size-1)/2;
-
-	pCafeTree psum = cafe_tree_copy(pcafe);
-
-	for ( i = 0 ; i < psum->super.nlist->size ; i++ )
-	{
-		pCafeNode pcnode = (pCafeNode)psum->super.nlist->array[i];
-		pcnode->familysize = 0;
-	}
-
-	pString pstr;
-	int sum = 0;
-	int totalsum = 0;
-	for ( j = 0 ; j < psum->super.nlist->size ; j++ )
-	{
-		pCafeNode pcnode = (pCafeNode)psum->super.nlist->array[j];
-		pcnode->viterbi[0] = 0;
-		pcnode->viterbi[1] = 0;
-	}
-
-	for( i = 0; i < fsize ; i++ )
-	{
-		sum = 0;
-		pCafeFamilyItem pitem = (pCafeFamilyItem)cafe_param->pfamily->flist->array[i];
-		fprintf( fout,"%s\t", pitem->id );
-		cafe_family_set_size(cafe_param->pfamily,i, pcafe);
-		for ( j = 0 ; j < nnodes; j++ )
-		{
-			pCafeNode pnode = (pCafeNode)pcafe->super.nlist->array[2*j+1];
-			pnode->familysize = nodefs[j][i];
-		}
-		for ( j = 0 ; j < pcafe->super.nlist->size ; j++ )
-		{
-			pCafeNode pcnode = (pCafeNode)pcafe->super.nlist->array[j];
-			pCafeNode pcsum = (pCafeNode)psum->super.nlist->array[j];
-			if ( tree_is_root( (pTree)pcafe, (pTreeNode)pcnode ) ) continue;
-			pCafeNode parent = (pCafeNode)((pTreeNode)pcnode)->parent;
-			int diff = pcnode->familysize - parent->familysize;
-			sum += diff;
-			pcsum->familysize += diff;
-			if ( diff > 0 )
-			{
-				pcsum->viterbi[0] += diff;
-			}
-			else if ( diff <  0 )
-			{
-				pcsum->viterbi[1] += diff;
-			}
-		}
-		totalsum += sum;
-		fprintf( fout, "%d\t", sum );
-		pstr = phylogeny_string((pTree)pcafe, __cafe_tree_string_gainloss );
-		fprintf( fout, "%s\n", pstr->buf );
-		string_free(pstr);
-	}
-	fprintf( fout,"SUM\t%d\t", totalsum );
-	pstr = phylogeny_string((pTree)psum, __cafe_tree_string_sum_gainloss );
-	fprintf( fout, "%s\n", pstr->buf );
-	string_free(pstr);
-
-	fclose(fout);
-
-	strcpy( name, argv[1] ); strcat( name, ".mp" );
-	fout = fopen(name,"w");
-	sprintf(name,"SUM: %d", totalsum );
-	pstr = __cafe_tree_gainloss_metapost(psum, 0, name,10, 8);
-	fprintf(fout, "%s", pstr->buf );
-	string_free(pstr);
-	cafe_tree_free(psum);
-	fclose(fout);
-	return 0;
 }
 
 int __cafe_cmd_extinct_count_zero()

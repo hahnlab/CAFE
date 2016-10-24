@@ -514,7 +514,36 @@ TEST(FirstTestGroup, birthdeath_likelihood_with_s_c)
 	DOUBLES_EQUAL(0.023, birthdeath_likelihood_with_s_c(41, 34, 0.54, 0.4, -1, &cache), .001);
 }
 
+void assert_gainloss_exception(CafeParam *param, std::string expected)
+{
+	try
+	{
+		cafe_cmd_gainloss(param, std::vector<std::string>());
+		FAIL("Expected exception not thrown");
+	}
+	catch (std::runtime_error& e)
+	{
+		STRCMP_EQUAL(expected.c_str(), e.what());
 
+	}
+}
+
+TEST(FirstTestGroup, cafe_cmd_gainloss_exceptions)
+{
+	CafeParam param;
+	param.pfamily = NULL;
+	assert_gainloss_exception(&param, "ERROR(gainloss): You did not load family: command 'load'\n");
+
+	CafeFamily fam;
+	param.pfamily = &fam;
+	param.pcafe = NULL;
+	assert_gainloss_exception(&param, "ERROR(gainloss): You did not specify tree: command 'tree'\n");
+
+	CafeTree tree;
+	param.pcafe = &tree;
+	param.lambda = NULL;
+	assert_gainloss_exception(&param, "ERROR(gainloss): You did not set the parameters: command 'lambda' or 'lambdamu'\n");
+}
 
 
 
