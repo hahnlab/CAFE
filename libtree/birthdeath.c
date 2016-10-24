@@ -68,9 +68,12 @@ double birthdeath_rate_with_log_alpha_beta(int s, int c, double log_alpha, doubl
 	return MAX(MIN(p,1),0);
 }
 
-double birthdeath_rate_with_log_alpha(int s, int c, double log_alpha, double coeff )
+double birthdeath_rate_with_log_alpha(int s, int c, double log_alpha, double coeff, struct chooseln_cache *cc )
 {
-	assert(cache.values != 0);
+	if (cc == NULL)
+		cc = &cache;
+
+	assert(cc->values != 0);
 	int m = MIN(c,s);
 
 	double lastterm = 1;
@@ -80,11 +83,11 @@ double birthdeath_rate_with_log_alpha(int s, int c, double log_alpha, double coe
 	int s_sub_1 = s - 1;
 	for (int j = 0; j <= m ; j++ )
 	{
-		double t = cache.values[s][j] + cache.values[s_add_c_sub_1-j][s_sub_1] + (s_add_c-2*j)*log_alpha;
-		//t = chooseln_get(s, j) + chooseln_get(s_add_c_sub_1-j,s_sub_1) + (s_add_c-2*j)*alpha;
+		double t = chooseln_get2(cc, s, j) + chooseln_get2(cc, s_add_c_sub_1-j,s_sub_1) + (s_add_c-2*j)*log_alpha;
 		p += (exp(t) * lastterm);
 		lastterm *= coeff;
 	}
+
 	return MAX(MIN(p,1),0);
 }
 
@@ -92,7 +95,7 @@ double birthdeath_rate_with_log_alpha(int s, int c, double log_alpha, double coe
 * \brief Calculates the probability of transitioning from root_family_size to family_size
 *
 * Given the branch length and the expected change rate lammbda
-*/double birthdeath_likelihood_with_s_c(int root_family_size, int family_size, double branchlength, double lambda, double mu)
+*/double birthdeath_likelihood_with_s_c(int root_family_size, int family_size, double branchlength, double lambda, double mu, struct chooseln_cache *cache)
 {	
 	double alpha, coeff, beta=0;
 	double denominator, numerator = 0;	
@@ -114,7 +117,7 @@ double birthdeath_rate_with_log_alpha(int s, int c, double log_alpha, double coe
 				return 0;
 			}
 			else {
-				double result = birthdeath_rate_with_log_alpha(root_family_size, family_size,log(alpha),coeff);
+				double result = birthdeath_rate_with_log_alpha(root_family_size, family_size,log(alpha),coeff, cache);
 				return result;
 			}
 		}
@@ -271,7 +274,7 @@ pBirthDeathCache eq_birthdeath_cache_new(double branchlength, double lambda, int
 		{ 
 			for ( c = 0 ; c <= maxFamilysize ; c++ )
 			{
-				pbdc->matrix[s][c] = birthdeath_rate_with_log_alpha(s,c,alpha,coeff);
+				pbdc->matrix[s][c] = birthdeath_rate_with_log_alpha(s,c,alpha,coeff, &cache);
 			}
 		}
 	}
@@ -307,14 +310,14 @@ pBirthDeathCache birthdeath_cach_resize(pBirthDeathCache pbdc, int remaxFamilysi
 	{
 		for ( c = old + 1 ; c <= remaxFamilysize ; c++ )
 		{
-			pbdc->matrix[s][c] = birthdeath_rate_with_log_alpha(s,c,alpha,coeff);
+			pbdc->matrix[s][c] = birthdeath_rate_with_log_alpha(s,c,alpha,coeff, &cache);
 		}
 	}
 	for ( s = old  + 1 ; s <= remaxFamilysize; s++ )
 	{ 
 		for ( c = 0; c <= remaxFamilysize ; c++ )
 		{
-			pbdc->matrix[s][c] = birthdeath_rate_with_log_alpha(s,c,alpha,coeff);
+			pbdc->matrix[s][c] = birthdeath_rate_with_log_alpha(s,c,alpha,coeff, &cache);
 		}
 	}
 	pbdc->attrib.maxFamilysize = remaxFamilysize;

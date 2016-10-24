@@ -422,22 +422,20 @@ TEST(FirstTestGroup, cafe_command_report_prereqs)
 	CHECK_THROWS(std::runtime_error, cafe_cmd_report(&param, tokens));
 }
 
-TEST(FirstTestGroup, cafe_tree_node_compute_likelihood)
+TEST(FirstTestGroup, compute_likelihood)
 {
+	chooseln_cache cache = { 0,0 };
 	pCafeTree tree = create_tree();
+	int maxFamilySize = MAX(tree->rootfamilysizes[1], tree->familysizes[1]);
+	chooseln_cache_init2(&cache, maxFamilySize);
 	pCafeNode node = (pCafeNode)tree->super.root;
-	__cafe_tree_node_compute_likelihood((pTree)tree, (pTreeNode)node, NULL);
+	compute_likelihood((pTree)tree, (pTreeNode)node, &cache);
 	DOUBLES_EQUAL(0, node->likelihoods[0], 0.01);
-}
-
-TEST(FirstTestGroup, birthdeath_likelihood_with_s_c)
-{
-	double result = birthdeath_likelihood_with_s_c(1, 3, 5, 0.01, 0);
-	DOUBLES_EQUAL(1, result, 0.01);
 }
 
 TEST(FirstTestGroup, compute_internal_node_likelihood)
 {
+	chooseln_cache_init(50);
 	pTree tree = (pTree)create_tree();
 	pCafeNode node = (pCafeNode)tree->root;
 	node->lambda = 0.01;
@@ -449,7 +447,7 @@ TEST(FirstTestGroup, compute_internal_node_likelihood)
 		((pCafeNode)tree_get_child(tree->root, 1))->likelihoods[i] = .5;
 	}
 	tree_get_child(tree->root, 1);
-	compute_internal_node_likelihood(tree, tree->root);
+	compute_internal_node_likelihood(tree, tree->root, NULL);
 	DOUBLES_EQUAL(0.214, node->likelihoods[0], 0.001);
 	DOUBLES_EQUAL(0.192, node->likelihoods[1], 0.001);
 }
@@ -497,6 +495,28 @@ TEST(FirstTestGroup, chooseln_cache)
 	DOUBLES_EQUAL(4.43, chooseln_get2(&cache, 9, 3), .001);
 	chooseln_cache_free2(&cache);
 }
+
+TEST(FirstTestGroup, birthdeath_rate_with_log_alpha	)
+{
+	struct chooseln_cache cache;
+	chooseln_cache_init2(&cache, 50);
+	DOUBLES_EQUAL(0.107, birthdeath_rate_with_log_alpha(40, 42, -1.37, 0.5, &cache), .001);
+	DOUBLES_EQUAL(0.006, birthdeath_rate_with_log_alpha(41, 34, -1.262, 0.4, &cache), .001);
+
+
+}
+
+TEST(FirstTestGroup, birthdeath_likelihood_with_s_c)
+{
+	struct chooseln_cache cache;
+	chooseln_cache_init2(&cache, 50);
+	DOUBLES_EQUAL(0.083, birthdeath_likelihood_with_s_c(40, 42, 0.42, 0.5, -1, &cache), .001);
+	DOUBLES_EQUAL(0.023, birthdeath_likelihood_with_s_c(41, 34, 0.54, 0.4, -1, &cache), .001);
+}
+
+
+
+
 
 int main(int ac, char** av)
 {

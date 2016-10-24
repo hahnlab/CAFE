@@ -2,7 +2,7 @@
 #define __BIRTHDEATH_H__
 
 #include "hashtable.h"
-
+#include "chooseln_cache.h"
 
 typedef struct
 {
@@ -31,7 +31,7 @@ typedef struct
 typedef BirthDeathCache* pBirthDeathCache;
 
 extern void birthdeath_cache_array_free(pBirthDeathCacheArray pbdc_array);
-extern double birthdeath_likelihood_with_s_c(int s, int c, double branchlength, double lambda, double mu);
+extern double birthdeath_likelihood_with_s_c(int s, int c, double branchlength, double lambda, double mu, struct chooseln_cache *cache);
 extern pBirthDeathCache eq_birthdeath_cache_new( double branchlength, double lambda, int maxFamilysize );
 extern pBirthDeathCache birthdeath_cache_new( double branchlength, double lambda, double mu, int maxFamilysize );
 double** eq_birthdeath_cache_get_matrix(pBirthDeathCacheArray pbdc_array, double branchlength, double lambda );
@@ -39,6 +39,7 @@ double** birthdeath_cache_get_matrix(pBirthDeathCacheArray pbdc_array, double br
 extern double birthdeath_cache_get(pBirthDeathCacheArray pbdc_array, int s, int c, int branchlength, double lambda, double mu );
 extern void thread_run(int numthreads, void* (*run)(void*), void* param, int size );
 extern pBirthDeathCacheArray birthdeath_cache_array_new_with_list_thread(int* bl, int size, int maxFamilysize, double lambda, int numthreads );
+double birthdeath_rate_with_log_alpha(int s, int c, double log_alpha, double coeff, struct chooseln_cache *cache);
 
 /**
 * \brief A cache of values of chooseln

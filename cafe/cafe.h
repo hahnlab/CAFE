@@ -3,6 +3,7 @@
 
 #include<family.h>
 #include<gmatrix.h>
+#include <chooseln_cache.h>
 
 typedef struct
 {
@@ -49,8 +50,9 @@ extern pString cafe_tree_string_with_familysize_lambda(pCafeTree pcafe);
 extern pString cafe_tree_string_with_familysize(pCafeTree pcafe);
 extern void cafe_tree_string_print(pCafeTree pcafe);
 void __cafe_tree_node_compute_likelihood(pTree ptree, pTreeNode ptnode, va_list ap1);
-void compute_internal_node_likelihood(pTree ptree, pTreeNode ptnode);
+void compute_internal_node_likelihood(pTree ptree, pTreeNode ptnode, struct chooseln_cache *cache);
 void compute_leaf_node_likelihood(pTree ptree, pTreeNode ptnode);
+void compute_likelihood(pTree ptree, pTreeNode ptnode, struct chooseln_cache* cache);
 
 extern double* cafe_tree_likelihood(pCafeTree pcafe);
 extern void cafe_tree_node_free_clustered_likelihoods (pCafeParam param);
