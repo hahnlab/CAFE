@@ -276,6 +276,11 @@ void cafe_shell_prompt(char* prompt, char* format, ... )
 	va_end(ap);
 }
 
+void reset_k_likelihoods(pCafeNode pcnode, int k, int num_factors)
+{
+	if (pcnode->k_likelihoods) { memory_free(pcnode->k_likelihoods); pcnode->k_likelihoods = NULL; }
+	pcnode->k_likelihoods = (double**)memory_new_2dim(k, num_factors, sizeof(double));
+}
 
 void cafe_shell_set_lambda(pCafeParam param, double* parameters)
 {
@@ -330,8 +335,7 @@ void cafe_shell_set_lambda(pCafeParam param, double* parameters)
 				//if (pcnode->param_weights) { memory_free(pcnode->param_weights); pcnode->param_weights=NULL;}
 				//pcnode->param_weights = (double*) memory_new_with_init(param->k, sizeof(double), param->k_weights);
 				
-				if (pcnode->k_likelihoods) { memory_free(pcnode->k_likelihoods); pcnode->k_likelihoods = NULL;}
-				pcnode->k_likelihoods = (double**)memory_new_2dim(param->k,param->pcafe->size_of_factor,sizeof(double));
+				reset_k_likelihoods(pcnode, param->k, param->pcafe->size_of_factor);
 				
 				if (pcnode->k_bd) { arraylist_free(pcnode->k_bd, NULL); }
 				pcnode->k_bd = arraylist_new(param->k);
@@ -366,9 +370,8 @@ void cafe_shell_set_lambda(pCafeParam param, double* parameters)
 				//if (pcnode->param_weights) { memory_free(pcnode->param_weights); pcnode->param_weights=NULL;}
 				//pcnode->param_weights = (double*) memory_new_with_init(param->k, sizeof(double), &param->k_weights[pnode->taxaid*param->k]);
 				
-				if (pcnode->k_likelihoods) { memory_free(pcnode->k_likelihoods); pcnode->k_likelihoods = NULL;}
-				pcnode->k_likelihoods = (double**)memory_new_2dim(param->k,param->pcafe->size_of_factor,sizeof(double));
-				
+				reset_k_likelihoods(pcnode, param->k, param->pcafe->size_of_factor);
+
 				if (pcnode->k_bd) { arraylist_free(pcnode->k_bd, NULL); }
 				pcnode->k_bd = arraylist_new(param->k);
 			}
@@ -452,9 +455,8 @@ void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters)
 				// (pcnode->param_weights) { memory_free(pcnode->param_weights); pcnode->param_weights=NULL;}
 				//pcnode->param_weights = (double*) memory_new_with_init(param->k, sizeof(double), param->k_weights);
 				
-				if (pcnode->k_likelihoods) { memory_free(pcnode->k_likelihoods); pcnode->k_likelihoods = NULL;}
-				pcnode->k_likelihoods = (double**)memory_new_2dim(param->k,param->pcafe->size_of_factor,sizeof(double));
-				
+				reset_k_likelihoods(pcnode, param->k, param->pcafe->size_of_factor);
+
 				if (pcnode->k_bd) { arraylist_free(pcnode->k_bd, NULL); }
 				pcnode->k_bd = arraylist_new(param->k);
 			}
@@ -517,9 +519,8 @@ void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters)
 				//if (pcnode->param_weights) { memory_free(pcnode->param_weights); pcnode->param_weights=NULL;}
 				//pcnode->param_weights = (double*) memory_new_with_init(param->k, sizeof(double), &param->k_weights[pnode->taxaid*param->k]);
 				
-				if (pcnode->k_likelihoods) { memory_free(pcnode->k_likelihoods); pcnode->k_likelihoods = NULL;}
-				pcnode->k_likelihoods = (double**)memory_new_2dim(param->k,param->pcafe->size_of_factor,sizeof(double));
-				
+				reset_k_likelihoods(pcnode, param->k, param->pcafe->size_of_factor);
+
 				if (pcnode->k_bd) { arraylist_free(pcnode->k_bd, NULL); }
 				pcnode->k_bd = arraylist_new(param->k);
 			}
