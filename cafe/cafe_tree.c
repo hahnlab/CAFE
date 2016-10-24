@@ -1129,7 +1129,7 @@ double** cafe_tree_clustered_likelihood(pCafeTree pcafe)
 			}
 		}
 		else {
-			tree_traveral_postfix((pTree)pcafe, __cafe_tree_node_compute_likelihood_using_cache);
+			tree_traveral_postfix((pTree)pcafe, __cafe_tree_node_compute_clustered_likelihood_using_cache);
 		}
 	}
 	else 	
@@ -1143,7 +1143,7 @@ double** cafe_tree_clustered_likelihood(pCafeTree pcafe)
 			}
 		}
 		else {
-			tree_traveral_postfix((pTree)pcafe, __cafe_tree_node_compute_likelihood);
+			tree_traveral_postfix((pTree)pcafe, __cafe_tree_node_compute_clustered_likelihood);
 		}
 	}
 	return ((pCafeNode)pcafe->super.root)->k_likelihoods;
