@@ -4,6 +4,7 @@
 #include<math.h>
 #include<mathfunc.h>
 #include <chooseln_cache.h>
+#include "time.h"
 
 extern void __phylogeny_free_node(pTree ptree, pTreeNode ptnode, va_list ap1);
 
@@ -691,6 +692,7 @@ void compute_internal_node_likelihood(pTree ptree, pTreeNode ptnode, struct choo
 	pCafeNode right_child = (pCafeNode)((pTreeNode)pcnode)->children->tail->data;
 
 	double* left_factors = (double *)memory_new(pcafe->size_of_factor, sizeof(double));
+
 	for (int s = root_start, i = 0; s <= root_end; s++, i++)
 	{
 		left_factors[i] = 0;
@@ -699,7 +701,6 @@ void compute_internal_node_likelihood(pTree ptree, pTreeNode ptnode, struct choo
 			left_factors[i] += birthdeath_likelihood_with_s_c(s, c, left_child->super.branchlength, pcnode->lambda, pcnode->mu, cache) * left_child->likelihoods[j];
 		}
 	}
-
 	double* right_factors = (double *)memory_new(pcafe->size_of_factor, sizeof(double));
 	for (int s = root_start, i = 0; s <= root_end; s++, i++)
 	{
@@ -766,8 +767,6 @@ void compute_leaf_node_likelihood(pTree ptree, pTreeNode ptnode)
  *******************************************************************************/
 void compute_likelihood(pTree ptree, pTreeNode ptnode, struct chooseln_cache* cache)
 {
-	pCafeTree pcafe = (pCafeTree)ptree;
-
 	if (tree_is_leaf(ptnode))
 	{
 		compute_leaf_node_likelihood(ptree, ptnode);
@@ -882,7 +881,7 @@ void __cafe_tree_node_compute_likelihood_using_cache(pTree ptree, pTreeNode ptno
 }
 
 
-void __cafe_tree_node_compute_clustered_likelihood(pTree ptree, pTreeNode ptnode )
+void __cafe_tree_node_compute_clustered_likelihood(pTree ptree, pTreeNode ptnode, va_list unused)
 {
 	pCafeTree pcafe = (pCafeTree)ptree;
 	pCafeNode pcnode = (pCafeNode)ptnode;
@@ -991,7 +990,7 @@ void __cafe_tree_node_compute_clustered_likelihood(pTree ptree, pTreeNode ptnode
 }
 
 
-void __cafe_tree_node_compute_clustered_likelihood_using_cache(pTree ptree, pTreeNode ptnode )
+void __cafe_tree_node_compute_clustered_likelihood_using_cache(pTree ptree, pTreeNode ptnode, va_list unused)
 {
 	pCafeTree pcafe = (pCafeTree)ptree;
 	pCafeNode pcnode = (pCafeNode)ptnode;
@@ -1124,11 +1123,11 @@ double** cafe_tree_clustered_likelihood(pCafeTree pcafe)
 			pArrayList postfix = ((pTree)pcafe)->postfix;
 			for ( i = 0 ; i < postfix->size; i++ )
 			{
-				__cafe_tree_node_compute_clustered_likelihood_using_cache((pTree)pcafe, (pTreeNode)postfix->array[i]);
+				__cafe_tree_node_compute_clustered_likelihood_using_cache((pTree)pcafe, (pTreeNode)postfix->array[i], NULL);
 			}
 		}
 		else {
-			tree_traveral_postfix((pTree)pcafe, __cafe_tree_node_compute_clustered_likelihood_using_cache);
+			tree_traveral_postfix((pTree)pcafe, __cafe_tree_node_compute_clustered_likelihood_using_cache, NULL);
 		}
 	}
 	else 	
@@ -1138,7 +1137,7 @@ double** cafe_tree_clustered_likelihood(pCafeTree pcafe)
 			pArrayList postfix = ((pTree)pcafe)->postfix;
 			for ( i = 0 ; i < postfix->size; i++ )
 			{
-				__cafe_tree_node_compute_clustered_likelihood((pTree)pcafe, (pTreeNode)postfix->array[i] );
+				__cafe_tree_node_compute_clustered_likelihood((pTree)pcafe, (pTreeNode)postfix->array[i], NULL);
 			}
 		}
 		else {
@@ -1398,14 +1397,14 @@ double* cafe_tree_random_probabilities(pCafeTree pcafe, int rootFamilysize, int 
 }
 
 /* conditional distribution on a range or root sizes */
-pArrayList cafe_tree_conditional_distribution(pCafeTree pcafe, int range[], int trial )
+pArrayList cafe_tree_conditional_distribution(pCafeTree pcafe, int range_start, int range_end, int num_trials )
 {
-	int s;
-	int size = range[1] - range[0]+1;
+	int size = range_end - range_start +1;
 	pArrayList pal = arraylist_new(size);
-	for ( s = range[0] ; s <= range[1]; s++ )
+	for (int s = range_start ; s <= range_end; s++ )
 	{
-		arraylist_add(pal, cafe_tree_random_probabilities(pcafe,s,trial) );
+		arraylist_add(pal, cafe_tree_random_probabilities(pcafe,s, num_trials) );
+		printf("Test %d complete\n", s);
 	}
 	return pal;
 }

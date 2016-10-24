@@ -70,7 +70,7 @@ extern double** cafe_tree_p_values_of_two_trees(pCafeTree pcafe1, pCafeTree pcaf
 extern pCafeParam cafe_copy_parameters(pCafeParam psrc);
 extern void cafe_free_copy_parameters(pCafeParam param);
 
-extern pArrayList cafe_tree_conditional_distribution(pCafeTree pcafe, int range[], int trial );
+pArrayList cafe_tree_conditional_distribution(pCafeTree pcafe, int range_start, int range_end, int num_trials);
 extern double cafe_tree_mp_remark(pString str, pTree ptree, pMetapostConfig pmc, va_list ap);
 extern double cafe_tree_mp_annotation(pString str, pTreeNode pnode, pMetapostConfig pmc, va_list ap);
 extern pMetapostConfig cafe_tree_get_default_mpconfig(int id, double width, double height );

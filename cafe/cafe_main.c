@@ -1148,7 +1148,7 @@ void* __cafe_conditional_distribution_thread_func(void* ptr)
 #ifdef __DEBUG__
 	printf("CD: %d ~ %d\n", param->range[0], param->range[1]);
 #endif
-	param->pCD = cafe_tree_conditional_distribution(pcafe, param->range, cafeparam->num_random_samples);
+	param->pCD = cafe_tree_conditional_distribution(pcafe, param->range[0], param->range[1], cafeparam->num_random_samples);
 	cafe_tree_free(pcafe);
 	return (NULL);
 }
@@ -1818,38 +1818,6 @@ void cafe_lhr_for_diff_lambdas(pCafeParam param, pTree lambda_tree2, int num_lam
 	lambda_cache = NULL;
 	memory_free(PBDC);
 	PBDC = NULL;
-}
-
-/*************************************************************************
- * Deprecated
- *************************************************************************/
-
-/**************************************************************************
- * Main
-**************************************************************************/
-
-void* cafe_run(void* ptr)
-{
-	pCafeParam param = (pCafeParam)ptr;
-	if ( param->lambda == NULL )
-	{
-		cafe_best_lambda_by_fminsearch(param, param->num_lambdas, 0);
-	}
-	else
-	{
-		param->param_set_func(param,param->lambda);
-		pString pstr = cafe_tree_string_with_lambda(param->pcafe);
-		cafe_log(param, "Lambda Value: %s\n", pstr->buf );
-		string_free(pstr);
-	}
-	cafe_set_birthdeath_cache(param);
-	pArrayList pCD = cafe_viterbi(param, NULL);
-//	cafe_branch_cutting(param);
-	cafe_likelihood_ratio_test(param);
-	cafe_free_birthdeath_cache(param->pcafe);
-	cafe_report(param, CAFE_REPORT_TEXT);
-	arraylist_free(pCD, free);
-	return (NULL);
 }
 
 /*******************************************************************************
