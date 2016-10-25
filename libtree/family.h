@@ -32,7 +32,9 @@ typedef struct
 typedef ErrorStruct* pErrorStruct;       
 
 
-
+/** Struct that holds information about a node in a CafeTree. It extends the 
+	PhylogenyNode structure which in turn extends the TreeNode structure.
+*/
 typedef struct
 {
 	PhylogenyNode super;
@@ -45,7 +47,11 @@ typedef struct
 	double* likelihoods;
 	int*    viterbi;
 	int	familysize;	
-	double** bd;
+
+	/** Matrix of precalculated values, indexed by the root family size
+		and the family size
+	*/
+	double** birthdeath_matrix;
 	pArrayList k_bd;
     pErrorStruct errormodel;
 }CafeNode;

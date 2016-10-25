@@ -374,7 +374,7 @@ TEST(FirstTestGroup, cafe_tree_random_probabilities)
 	for (int i = 0; i < node_list->size; ++i)
 	{
 		pCafeNode node = (pCafeNode)arraylist_get(node_list, i);
-		node->bd = bd;
+		node->birthdeath_matrix = bd;
 	}
 
 	double *trials = cafe_tree_random_probabilities(tree, 1, 5);
@@ -473,7 +473,7 @@ TEST(FirstTestGroup, cafe_tree_new_empty_node)
 	pTree tree = (pTree)create_tree();
 	pCafeNode node = (pCafeNode)cafe_tree_new_empty_node(tree);
 	POINTERS_EQUAL(NULL, node->errormodel);
-	POINTERS_EQUAL(NULL, node->bd);
+	POINTERS_EQUAL(NULL, node->birthdeath_matrix);
 	POINTERS_EQUAL(NULL, node->k_bd);
 	POINTERS_EQUAL(NULL, node->k_likelihoods);
 	POINTERS_EQUAL(NULL, node->param_mus);

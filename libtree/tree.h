@@ -18,6 +18,11 @@ typedef struct tagTree
 	pArrayList   postfix, prefix;
 }Tree;
 
+/**
+	Simple structure representing a generic node in a generic tree. Has an ID and
+	pointers to parent and children. Implementers of tree_func_node_new are
+	expected to return a value that can be cast to this structure.
+*/
 typedef struct tagTreeNode 
 {
 	pTreeNode 	parent;

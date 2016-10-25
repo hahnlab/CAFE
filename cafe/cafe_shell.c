@@ -2815,14 +2815,14 @@ int cafe_cmd_generate_random_family(int argc, char* argv[])
 			{
 				for ( j = 0 ; j < cafe_param->root_dist[i] ; j++ )
 				{
-					// cafe_tree_random_familysize uses bd to calculate the probabilities.
+					// cafe_tree_random_familysize uses birthdeath_matrix to calculate the probabilities.
 					// if k > 0 point bd to k_bd[] before running cafe_tree_random_familysize to avoid EXC_BAD_ACCESS		
 					if (cafe_param->k > 0) {
 						for ( n = 0 ; n < nlist->size ; n++ )
 						{
 							pCafeNode pcnode = (pCafeNode)nlist->array[n];
 							int* pK = (int*)k_arr->array[idx];
-							pcnode->bd = pcnode->k_bd->array[*pK]; // which k_bd to point to is determined by the randomly shuffled k_arr
+							pcnode->birthdeath_matrix = pcnode->k_bd->array[*pK]; // which k_bd to point to is determined by the randomly shuffled k_arr
 						}
 					}
 					// now randomly sample familysize

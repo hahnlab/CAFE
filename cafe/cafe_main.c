@@ -1245,8 +1245,8 @@ void viterbi_section(pCafeParam param, int i, pCafeTree pcafe, double *cP, pArra
 			(pCafeNode)((pTreeNode)pcnode)->children->tail->data };
 		for (int k = 0; k < 2; k++)
 		{
-			double p = child[k]->bd[pcnode->familysize][child[k]->familysize];
-			double** pbdc = child[k]->bd;
+			double p = child[k]->birthdeath_matrix[pcnode->familysize][child[k]->familysize];
+			double** pbdc = child[k]->birthdeath_matrix;
 			int n = 2 * j + k;
 			for (int m = 0; m <= pcafe->familysizes[1]; m++)
 			{
@@ -1580,7 +1580,7 @@ void* __cafe_likelihood_ratio_test_thread_func(void* ptr)
 				continue;
 			}
 			old_bl = pnode->branchlength;
-			double** old_bd = ((pCafeNode)pnode)->bd;
+			double** old_bd = ((pCafeNode)pnode)->birthdeath_matrix;
 			double prevlh = -1;
 			double nextlh = maxlh;
 			while( prevlh < nextlh )
@@ -1588,14 +1588,14 @@ void* __cafe_likelihood_ratio_test_thread_func(void* ptr)
 				prevlh = nextlh;
 				pnode->branchlength += rint(pnode->branchlength * 0.15);
 pthread_mutex_lock( &mutex_cafe_likelihood );
-				((pCafeNode)pnode)->bd = birthdeath_cache_get_matrix(pcafe->pbdc_array, pnode->branchlength, ((pCafeNode)pnode)->lambda,  ((pCafeNode)pnode)->mu );
+				((pCafeNode)pnode)->birthdeath_matrix = birthdeath_cache_get_matrix(pcafe->pbdc_array, pnode->branchlength, ((pCafeNode)pnode)->lambda,  ((pCafeNode)pnode)->mu );
 pthread_mutex_unlock( &mutex_cafe_likelihood);
 				nextlh = __max(cafe_tree_likelihood(pcafe), param->pcafe->rfsize );
 			}
 			param->likelihoodRatios[b][i] = (prevlh == maxlh) ? 1 : 1 - chi2cdf( 2*(log(prevlh) - log(maxlh)), 1);
 		//	param->likelihoodRatios[b][i] = (prevlh == maxlh) ? 1 : prevlh / maxlh ;
 			pnode->branchlength = old_bl;
-			((pCafeNode)pnode)->bd = old_bd;
+			((pCafeNode)pnode)->birthdeath_matrix = old_bd;
 		}
 	}
 	cafe_tree_free(pcafe);
