@@ -137,20 +137,52 @@ double birthdeath_rate_with_log_alpha(int s, int c, double log_alpha, double coe
 	}
 }
 
+void init_zero_matrix(double **matrix, int sz)
+{
+	for (int s = 1; s <= sz; s++)
+	{
+		for (int c = 0; c <= sz; c++)
+		{
+			matrix[s][c] = 0;
+		}
+	}
+}
+
+void init_identity_matrix(double **matrix, int sz)
+{
+	for (int s = 1; s <= sz; s++)
+	{
+		for (int c = 0; c <= sz; c++)
+		{
+			if (s == c) {
+				matrix[s][c] = 1;
+			}
+			else {
+				matrix[s][c] = 0;
+			}
+		}
+	}
+}
+
+void init_matrix(double **matrix, int sz, double coeff)
+{
+	for (int c = 1; c <= sz; c++)
+	{
+		matrix[0][c] = 0;
+	}
+	if (coeff <= 0)
+	{
+		init_zero_matrix(matrix, sz);
+	}
+	else if (coeff == 1)
+	{
+		init_identity_matrix(matrix, sz);
+	}
+}
 // THE FUNCTION!!!!!!!!!!
 // must add mu to calculate the transition probability 
 pBirthDeathCache birthdeath_cache_new(double branchlength, double lambda, double mu, int maxFamilysize )
 {
-	int s, c;
-	double alpha = 0;
-	double beta = 0;
-	double coeff = 1;
-	double denominator = 0;
-	double numerator = 0;
-
-	if (mu < 0) {
-		return eq_birthdeath_cache_new(branchlength, lambda, maxFamilysize);
-	}
 	pBirthDeathCache pbdc = (pBirthDeathCache)memory_new(1,sizeof(BirthDeathCache)  );
 	pbdc->matrix = (double**)memory_new_2dim( (maxFamilysize+1) , (maxFamilysize+1), sizeof(double) );
 	pbdc->branchlength = branchlength;
@@ -164,122 +196,47 @@ pBirthDeathCache birthdeath_cache_new(double branchlength, double lambda, double
 
 	pbdc->matrix[0][0] = 1;		//Once you are zero you are almost surely zero
 
-	if (lambda == mu) {
+	double alpha = 0;
+	double beta = 0;
+	double coeff = 1;
+
+	if (mu < 0 || lambda == mu) {
 		alpha = lambda*branchlength/(1+lambda*branchlength);
 		beta = alpha;
 		coeff = 1 - 2 * alpha;
 	}		
 	else {
-		denominator = lambda*(exp((lambda-mu)*branchlength))-mu;
-		numerator = exp((lambda-mu)*branchlength)-1;
+		double denominator = lambda*(exp((lambda-mu)*branchlength))-mu;
+		double numerator = exp((lambda-mu)*branchlength)-1;
 		alpha = (mu*numerator)/denominator;
 		beta = (lambda*numerator)/denominator;
 		coeff = 1 - alpha - beta;
 	}
 
-	for ( c = 1 ; c <= maxFamilysize; c++ )
+	init_matrix(pbdc->matrix, maxFamilysize, coeff);
+
+	if (coeff > 0 && coeff != 1)
 	{
-		pbdc->matrix[0][c] = 0;
-	}
-  if ( coeff <= 0 ) 
-  {
-    for ( s = 1 ; s <= maxFamilysize; s++ )
-    { 
-      for ( c = 0 ; c <= maxFamilysize ; c++ )
-      {
-        pbdc->matrix[s][c] = 0;
-      }
-    }
-  }
-  else if ( coeff == 1) 
-  {   
-    for ( s = 1 ; s <= maxFamilysize; s++ )
-    { 
-      for ( c = 0 ; c <= maxFamilysize ; c++ )
-      {
-        if (s == c) {
-          pbdc->matrix[s][c] = 1;
-        }
-        else {
-          pbdc->matrix[s][c] = 0;
-        }
-      }
-    }
-  }
-	else
-	{
-		for ( s = 1 ; s <= maxFamilysize; s++ )
+		for (int s = 1 ; s <= maxFamilysize; s++ )
 		{ 
-			for ( c = 0 ; c <= maxFamilysize ; c++ )
+			for (int c = 0 ; c <= maxFamilysize ; c++ )
 			{
-				pbdc->matrix[s][c] = birthdeath_rate_with_log_alpha_beta(s,c,log(alpha), log(beta), log(coeff));
+				if (mu < 0)
+					pbdc->matrix[s][c] = birthdeath_rate_with_log_alpha(s, c, log(alpha), coeff, &cache);
+				else
+					pbdc->matrix[s][c] = birthdeath_rate_with_log_alpha_beta(s,c,log(alpha), log(beta), log(coeff));
 			}
 		}
 	}
 	return pbdc;
 }
 
-pBirthDeathCache eq_birthdeath_cache_new(double branchlength, double lambda, int maxFamilysize )
+
+pBirthDeathCache eq_birthdeath_cache_new(double branchlength, double lambda, int maxFamilysize)
 {
-	pBirthDeathCache pbdc = (pBirthDeathCache)memory_new(1,sizeof(BirthDeathCache)  );
-	pbdc->matrix = (double**)memory_new_2dim( (maxFamilysize+1) , (maxFamilysize+1), sizeof(double) );
-	pbdc->branchlength = branchlength;
-	pbdc->maxFamilysize = maxFamilysize;
-	pbdc->lambda = lambda;
-	pbdc->mu = -1;
-
-#ifdef __DEBUG__
-//	fprintf(stderr, "ADD Branch in cache(%d): %d, %f\n", maxFamilysize, branchlength, lambda);
-#endif
-
-	int s, c;
-	pbdc->matrix[0][0] = 1;
-
-	double alpha = lambda*branchlength/(1+lambda*branchlength);
-	double coeff = 1 - 2 * alpha;
-
-	for ( c = 1 ; c <= maxFamilysize; c++ )
-	{
-		pbdc->matrix[0][c] = 0;
-	}
-	if ( coeff <= 0 ) 
-	{
-		for ( s = 1 ; s <= maxFamilysize; s++ )
-		{ 
-			for ( c = 0 ; c <= maxFamilysize ; c++ )
-			{
-				pbdc->matrix[s][c] = 0;
-			}
-		}
-	}
-  else if ( coeff == 1) 
-  {   
-    for ( s = 1 ; s <= maxFamilysize; s++ )
-    { 
-      for ( c = 0 ; c <= maxFamilysize ; c++ )
-      {
-        if (s == c) {
-          pbdc->matrix[s][c] = 1;
-        }
-        else {
-          pbdc->matrix[s][c] = 0;
-        }
-      }
-    }
-  }
-	else
-	{
-		alpha = log(alpha);
-		for ( s = 1 ; s <= maxFamilysize; s++ )
-		{ 
-			for ( c = 0 ; c <= maxFamilysize ; c++ )
-			{
-				pbdc->matrix[s][c] = birthdeath_rate_with_log_alpha(s,c,alpha,coeff, &cache);
-			}
-		}
-	}
-	return pbdc;
+	return birthdeath_cache_new(branchlength, lambda, -1, maxFamilysize);
 }
+
 
 pBirthDeathCache birthdeath_cach_resize(pBirthDeathCache pbdc, int remaxFamilysize)
 {

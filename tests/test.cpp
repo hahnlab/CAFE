@@ -546,6 +546,15 @@ TEST(FirstTestGroup, cafe_cmd_gainloss_exceptions)
 }
 
 
+TEST(FirstTestGroup, birthdeath_cache_new)
+{
+	pBirthDeathCache cache = birthdeath_cache_new(5, 0.2, 0.3, 3);
+	DOUBLES_EQUAL(0.2, cache->lambda, 0.0001);
+	DOUBLES_EQUAL(0.3, cache->mu, 0.0001);
+	DOUBLES_EQUAL(5, cache->branchlength, 0.0001);
+	LONGS_EQUAL(3, cache->maxFamilysize);
+	DOUBLES_EQUAL(1, cache->matrix[0][0], 0.001);
+}
 
 int main(int ac, char** av)
 {
