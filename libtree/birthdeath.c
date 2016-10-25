@@ -153,10 +153,10 @@ pBirthDeathCache birthdeath_cache_new(double branchlength, double lambda, double
 	}
 	pBirthDeathCache pbdc = (pBirthDeathCache)memory_new(1,sizeof(BirthDeathCache)  );
 	pbdc->matrix = (double**)memory_new_2dim( (maxFamilysize+1) , (maxFamilysize+1), sizeof(double) );
-	pbdc->attrib.branchlength = branchlength;
-	pbdc->attrib.maxFamilysize = maxFamilysize;
-	pbdc->attrib.lambda = lambda;
-	pbdc->attrib.mu = mu;
+	pbdc->branchlength = branchlength;
+	pbdc->maxFamilysize = maxFamilysize;
+	pbdc->lambda = lambda;
+	pbdc->mu = mu;
 
 #ifdef __DEBUG__
 //	fprintf(stderr, "ADD Branch in cache(%d): %d, %f\n", maxFamilysize, branchlength, lambda);
@@ -223,10 +223,10 @@ pBirthDeathCache eq_birthdeath_cache_new(double branchlength, double lambda, int
 {
 	pBirthDeathCache pbdc = (pBirthDeathCache)memory_new(1,sizeof(BirthDeathCache)  );
 	pbdc->matrix = (double**)memory_new_2dim( (maxFamilysize+1) , (maxFamilysize+1), sizeof(double) );
-	pbdc->attrib.branchlength = branchlength;
-	pbdc->attrib.maxFamilysize = maxFamilysize;
-	pbdc->attrib.lambda = lambda;
-	pbdc->attrib.mu = -1;
+	pbdc->branchlength = branchlength;
+	pbdc->maxFamilysize = maxFamilysize;
+	pbdc->lambda = lambda;
+	pbdc->mu = -1;
 
 #ifdef __DEBUG__
 //	fprintf(stderr, "ADD Branch in cache(%d): %d, %f\n", maxFamilysize, branchlength, lambda);
@@ -284,12 +284,12 @@ pBirthDeathCache eq_birthdeath_cache_new(double branchlength, double lambda, int
 pBirthDeathCache birthdeath_cach_resize(pBirthDeathCache pbdc, int remaxFamilysize)
 {
 	int s,c;
-	double lambda = pbdc->attrib.lambda;
-	double branchlength = pbdc->attrib.branchlength;
+	double lambda = pbdc->lambda;
+	double branchlength = pbdc->branchlength;
 
 	double alpha = lambda*branchlength/(1+lambda*branchlength);
 	double coeff = 1 - 2 * alpha;
-	int old = pbdc->attrib.maxFamilysize;
+	int old = pbdc->maxFamilysize;
 	alpha = log(alpha);
 	pbdc->matrix = (double**)memory_realloc( pbdc->matrix, remaxFamilysize + 1, sizeof(double*) );
 
@@ -320,7 +320,7 @@ pBirthDeathCache birthdeath_cach_resize(pBirthDeathCache pbdc, int remaxFamilysi
 			pbdc->matrix[s][c] = birthdeath_rate_with_log_alpha(s,c,alpha,coeff, &cache);
 		}
 	}
-	pbdc->attrib.maxFamilysize = remaxFamilysize;
+	pbdc->maxFamilysize = remaxFamilysize;
 	return pbdc;
 }
 
@@ -329,8 +329,8 @@ void birthdeath_cache_free(void* ptr)
 {
 	pBirthDeathCache pbdc = (pBirthDeathCache)ptr;
 	memory_free_2dim( (void**)pbdc->matrix, 
-			          pbdc->attrib.maxFamilysize + 1, 
-					  pbdc->attrib.maxFamilysize + 1, NULL );
+			          pbdc->maxFamilysize + 1, 
+					  pbdc->maxFamilysize + 1, NULL );
     pbdc->matrix = NULL;
 	memory_free(pbdc);	
 	pbdc = NULL;
@@ -342,7 +342,7 @@ pBirthDeathCache eq_birthdeath_search_list_for_lambda(pArrayList plist, double l
 	for ( i = 0 ; i < plist->size ; i++ )
 	{
 		pBirthDeathCache pbdc = (pBirthDeathCache)plist->array[i];
-		if ( pbdc->attrib.lambda == lambda ) return pbdc;
+		if ( pbdc->lambda == lambda ) return pbdc;
 	}
 	return NULL;
 }
@@ -356,7 +356,7 @@ pBirthDeathCache birthdeath_search_list_for_lambda_mu(pArrayList plist, double l
 	for ( i = 0 ; i < plist->size ; i++ )
 	{
 		pBirthDeathCache pbdc = (pBirthDeathCache)plist->array[i];
-		if ( pbdc->attrib.lambda == lambda && pbdc->attrib.mu == mu) {
+		if ( pbdc->lambda == lambda && pbdc->mu == mu) {
 			return pbdc;
 		}
 	}
@@ -380,15 +380,6 @@ void* __cafe_set_birthdeath_cache_thread_func(void* ptr)
 	pbdt->pbdc = birthdeath_cache_new(pbdt->branchlength, pbdt->lambda, pbdt->mu, pbdt->maxFamilysize);
 	return (NULL);
 }
-
-/* not needed 
-void* __cafe_set_eq_birthdeath_cache_thread_func(void* ptr)
-{
-	pBDCThread pbdt = (pBDCThread)ptr;
-	pbdt->pbdc = eq_birthdeath_cache_new(pbdt->branchlength, pbdt->lambda, pbdt->maxFamilysize);
-	return (NULL);
-}
-*/
 
 void cafe_set_birthdeath_cache_thread(pCafeParam param)
 {

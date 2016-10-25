@@ -6,27 +6,18 @@
 
 typedef struct
 {
-	int branchlength;
-	double lambda;
-	double mu;
-	int maxFamilysize;
-}BirthDeathCacheAttrib;
-
-typedef BirthDeathCacheAttrib* pBirthDeathCacheAttrib;
-
-typedef struct
-{
-	//pArrayList list;
     hash_table_t* table;
 	int maxFamilysize;
-	//int base_bl;
 }BirthDeathCacheArray;
 typedef BirthDeathCacheArray* pBirthDeathCacheArray;
 
 typedef struct 
 {
-	BirthDeathCacheAttrib attrib;
-	double** matrix;	
+	int branchlength;
+	double lambda;
+	double mu;
+	int maxFamilysize;
+	double** matrix;
 }BirthDeathCache;
 typedef BirthDeathCache* pBirthDeathCache;
 
