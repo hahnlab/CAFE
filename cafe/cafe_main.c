@@ -56,21 +56,6 @@ void cafe_log(pCafeParam param, const char* msg, ... )
   va_end(ap);
 }
 
-void cafe_add_birthdeath_cache(pCafeParam param, pCafeTree pcafe )
-{
-	int i;
-	for ( i = 0 ; i < pcafe->super.nlist->size ; i++ )
-	{
-		pPhylogenyNode pnode = (pPhylogenyNode)pcafe->super.nlist->array[i];
-		if ( pnode->branchlength > 0 )
-		{
-			birthdeath_cache_get_matrix(pcafe->pbdc_array, pnode->branchlength , ((pCafeNode)pnode)->lambda, ((pCafeNode)pnode)->mu );
-		}
-	}
-	cafe_tree_set_birthdeath(param->pcafe);
-}
-
-
 void cafe_free_birthdeath_cache(pCafeTree pcafe)
 {
 	birthdeath_cache_array_free(pcafe->pbdc_array);

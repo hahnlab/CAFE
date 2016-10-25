@@ -700,45 +700,29 @@ double** birthdeath_cache_get_matrix(pBirthDeathCacheArray pbdc_array, double br
 	if (mu < 0) {
 		return eq_birthdeath_cache_get_matrix(pbdc_array, branchlength, lambda);
 	}
-	//int i = branchlength - pbdc_array->base_bl;
 	pArrayList plist;
 	pBirthDeathCache pbdc = NULL;
-	//if ( i < pbdc_array->list->size && i >= 0 )
-	//{
     double* key = &branchlength;
     plist = (pArrayList) hash_table_lookup(pbdc_array->table, key, sizeof(double));
-		//plist = (pArrayList)pbdc_array->list->array[i];
-		if ( plist == NULL )
-		{
-			plist = (pArrayList)arraylist_new(10);
-			pbdc = birthdeath_cache_new( branchlength, lambda, mu, pbdc_array->maxFamilysize );
-			arraylist_add(plist, pbdc);
-			//pbdc_array->list->array[i] = plist;
-            hash_table_add(pbdc_array->table, key, sizeof(double), plist, sizeof(ArrayList));
-		}
-		else if ( (pbdc = birthdeath_search_list_for_lambda_mu(plist,lambda, mu)) == NULL )
-		{
-			pbdc = birthdeath_cache_new(branchlength, lambda, mu, pbdc_array->maxFamilysize );
-			arraylist_add( plist, pbdc );
-		}
-	//}
-	if ( pbdc == NULL )
+	if ( plist == NULL )
 	{
-		/*for ( i = pbdc_array->base_bl + pbdc_array->list->size ;  i <= branchlength ; i++ )
-		{
-			arraylist_add(pbdc_array->list,NULL);
-		}*/
 		plist = (pArrayList)arraylist_new(10);
 		pbdc = birthdeath_cache_new( branchlength, lambda, mu, pbdc_array->maxFamilysize );
 		arraylist_add(plist, pbdc);
-		//pbdc_array->list->array[i - pbdc_array->base_bl - 1] = plist;
+        hash_table_add(pbdc_array->table, key, sizeof(double), plist, sizeof(ArrayList));
+	}
+	else if ( (pbdc = birthdeath_search_list_for_lambda_mu(plist,lambda, mu)) == NULL )
+	{
+		pbdc = birthdeath_cache_new(branchlength, lambda, mu, pbdc_array->maxFamilysize );
+		arraylist_add( plist, pbdc );
+	}
+	if ( pbdc == NULL )
+	{
+		plist = (pArrayList)arraylist_new(10);
+		pbdc = birthdeath_cache_new( branchlength, lambda, mu, pbdc_array->maxFamilysize );
+		arraylist_add(plist, pbdc);
         hash_table_add(pbdc_array->table, key, sizeof(double), plist, sizeof(ArrayList));
 	}
 	return pbdc->matrix;
 }
 
-double birthdeath_cache_get(pBirthDeathCacheArray pbdc_array, 
-		                    int s, int c, int branchlength, double lambda, double mu )
-{
-	return birthdeath_cache_get_matrix(pbdc_array,branchlength,lambda,mu)[s][c];
-}
