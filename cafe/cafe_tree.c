@@ -1382,7 +1382,7 @@ double* cafe_tree_random_probabilities(pCafeTree pcafe, int rootFamilysize, int 
 		{
 			pcafe->familysizes[1] = MIN( max + MAX(50,max/5) , pcafe->familysizes[1] );
 		}
-		tree_traveral_postfix((pTree)pcafe, __cafe_tree_node_compute_likelihood, &cache);
+		cafe_tree_likelihood(pcafe);
 		probs[i] = ((pCafeNode)pcafe->super.root)->likelihoods[0];
 	}
 
