@@ -556,6 +556,19 @@ TEST(FirstTestGroup, birthdeath_cache_new)
 	DOUBLES_EQUAL(1, cache->matrix[0][0], 0.001);
 }
 
+TEST(FirstTestGroup, clear_tree_viterbis)
+{
+	pCafeTree tree = create_tree();
+	pCafeNode pcnode = (pCafeNode)tree->super.nlist->array[4];
+	pcnode->familysize = 5;
+	pcnode->viterbi[0] = 9;
+	pcnode->viterbi[1] = 13;
+	clear_tree_viterbis(tree);
+	DOUBLES_EQUAL(0.0, pcnode->viterbi[0], 0.0001);
+	DOUBLES_EQUAL(0.0, pcnode->viterbi[1], 0.0001);
+	LONGS_EQUAL(0, pcnode->familysize);
+}
+
 int main(int ac, char** av)
 {
 	return CommandLineTestRunner::RunAllTests(ac, av);

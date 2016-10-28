@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <vector>
 #include <iterator>
 #include <algorithm>
@@ -149,6 +150,62 @@ int cafe_cmd_list(pCafeParam, vector<string> tokens)
 	return 0;
 }
 
+void clear_node_viterbis(pTree ptree, pTreeNode ptnode, va_list ap1)
+{
+	pCafeNode pcnode = (pCafeNode)ptnode;
+	pcnode->familysize = 0;
+	pcnode->viterbi[0] = 0;
+	pcnode->viterbi[1] = 0;
+
+}
+
+void clear_tree_viterbis(pCafeTree ptree)
+{
+	tree_traveral_infix((pTree)ptree, clear_node_viterbis);
+}
+
+void set_node_familysize(pCafeTree tree, int** node_family_sizes, int i)
+{
+	int nnodes = (tree->super.nlist->size - 1) / 2;
+	for (int j = 0; j < nnodes; j++)
+	{
+		pCafeNode pnode = (pCafeNode)tree->super.nlist->array[2 * j + 1];
+		pnode->familysize = node_family_sizes[j][i];
+	}
+}
+
+int write_family_gainloss(ostream& ofst, std::string family_id, pCafeTree tree1, pCafeTree tree2)
+{
+	int sum = 0;
+	ofst << family_id << "\t";
+	for (int j = 0; j < tree1->super.nlist->size; j++)
+	{
+		pCafeNode pcnode = (pCafeNode)tree1->super.nlist->array[j];
+		if (tree_is_root((pTree)tree1, (pTreeNode)pcnode)) continue;
+		pCafeNode parent = (pCafeNode)((pTreeNode)pcnode)->parent;
+		int diff = pcnode->familysize - parent->familysize;
+		sum += diff;
+
+		pCafeNode pcsum = (pCafeNode)tree2->super.nlist->array[j];
+		pcsum->familysize += diff;
+		if (diff > 0)
+		{
+			pcsum->viterbi[0] += diff;
+		}
+		else if (diff <  0)
+		{
+			pcsum->viterbi[1] += diff;
+		}
+	}
+
+	ofst << sum << "\t";
+	pString pstr = phylogeny_string((pTree)tree1, __cafe_tree_string_gainloss);
+	ofst << pstr->buf << "\n";
+	string_free(pstr);
+
+	return sum;
+}
+
 int cafe_cmd_gainloss(pCafeParam param, vector<string> tokens)
 {
 	if (param->pfamily == NULL)
@@ -164,77 +221,33 @@ int cafe_cmd_gainloss(pCafeParam param, vector<string> tokens)
 	}
 
 	string name = tokens[1] + ".gs";
-	FILE* fout = fopen(name.c_str(), "w");
+	ofstream ofst(name.c_str());
+	//FILE* fout = fopen(name.c_str(), "w");
 
-	int i, j;
-	int** nodefs = param->viterbi.viterbiNodeFamilysizes;
 	pCafeTree pcafe = param->pcafe;
-	int fsize = param->pfamily->flist->size;
-	int nnodes = (pcafe->super.nlist->size - 1) / 2;
-
 	pCafeTree psum = cafe_tree_copy(pcafe);
 
-	for (i = 0; i < psum->super.nlist->size; i++)
-	{
-		pCafeNode pcnode = (pCafeNode)psum->super.nlist->array[i];
-		pcnode->familysize = 0;
-	}
+	clear_tree_viterbis(psum);
 
-	pString pstr;
-	int sum = 0;
 	int totalsum = 0;
-	for (j = 0; j < psum->super.nlist->size; j++)
-	{
-		pCafeNode pcnode = (pCafeNode)psum->super.nlist->array[j];
-		pcnode->viterbi[0] = 0;
-		pcnode->viterbi[1] = 0;
-	}
+	int** nodefs = param->viterbi.viterbiNodeFamilysizes;
+	int fsize = param->pfamily->flist->size;
 
-	for (i = 0; i < fsize; i++)
+	for (int i = 0; i < fsize; i++)
 	{
-		sum = 0;
-		pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
-		fprintf(fout, "%s\t", pitem->id);
 		cafe_family_set_size(param->pfamily, i, pcafe);
-		for (j = 0; j < nnodes; j++)
-		{
-			pCafeNode pnode = (pCafeNode)pcafe->super.nlist->array[2 * j + 1];
-			pnode->familysize = nodefs[j][i];
-		}
-		for (j = 0; j < pcafe->super.nlist->size; j++)
-		{
-			pCafeNode pcnode = (pCafeNode)pcafe->super.nlist->array[j];
-			pCafeNode pcsum = (pCafeNode)psum->super.nlist->array[j];
-			if (tree_is_root((pTree)pcafe, (pTreeNode)pcnode)) continue;
-			pCafeNode parent = (pCafeNode)((pTreeNode)pcnode)->parent;
-			int diff = pcnode->familysize - parent->familysize;
-			sum += diff;
-			pcsum->familysize += diff;
-			if (diff > 0)
-			{
-				pcsum->viterbi[0] += diff;
-			}
-			else if (diff <  0)
-			{
-				pcsum->viterbi[1] += diff;
-			}
-		}
-		totalsum += sum;
-		fprintf(fout, "%d\t", sum);
-		pstr = phylogeny_string((pTree)pcafe, __cafe_tree_string_gainloss);
-		fprintf(fout, "%s\n", pstr->buf);
-		string_free(pstr);
+		set_node_familysize(pcafe, nodefs, i);
+		pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
+		totalsum += write_family_gainloss(ofst, pitem->id, pcafe, psum);
 	}
-	fprintf(fout, "SUM\t%d\t", totalsum);
-	pstr = phylogeny_string((pTree)psum, __cafe_tree_string_sum_gainloss);
-	fprintf(fout, "%s\n", pstr->buf);
+	ofst << "SUM\t" << totalsum << "\t";
+	pString pstr = phylogeny_string((pTree)psum, __cafe_tree_string_sum_gainloss);
+	ofst << pstr->buf << "\n";
 	string_free(pstr);
 
-	fclose(fout);
-
 	name = tokens[1] + ".mp";
-	fout = fopen(name.c_str(), "w");
-
+	FILE *fout = fopen(name.c_str(), "w");
+	
 	ostringstream title;
 	title << "SUM: " << totalsum;
 	pstr = __cafe_tree_gainloss_metapost(psum, 0, title.str().c_str(), 10, 8);
