@@ -27,7 +27,6 @@ extern "C" {
 	extern pArrayList cafe_pCD;
 	void __cafe_tree_string_gainloss(pString pstr, pPhylogenyNode ptnode);
 	void __cafe_tree_string_sum_gainloss(pString pstr, pPhylogenyNode ptnode);
-	pString __cafe_tree_gainloss_metapost(pCafeTree pcafe, int id, const char* title, double width, double height);
 }
 
 using namespace std;
@@ -245,16 +244,8 @@ int cafe_cmd_gainloss(pCafeParam param, vector<string> tokens)
 	ofst << pstr->buf << "\n";
 	string_free(pstr);
 
-	name = tokens[1] + ".mp";
-	FILE *fout = fopen(name.c_str(), "w");
-	
-	ostringstream title;
-	title << "SUM: " << totalsum;
-	pstr = __cafe_tree_gainloss_metapost(psum, 0, title.str().c_str(), 10, 8);
-	fprintf(fout, "%s", pstr->buf);
-	string_free(pstr);
 	cafe_tree_free(psum);
-	fclose(fout);
+
 	return 0;
 }
 

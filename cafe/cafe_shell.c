@@ -2291,23 +2291,6 @@ double __cafe_tree_gainloss_mp_annotation(pString pstr, pTreeNode pnode, pMetapo
 
 extern double cafe_tree_mp_remark(pString pstr, pTree ptree, pMetapostConfig pmc, va_list ap1);
 
-pString __cafe_tree_gainloss_metapost(pCafeTree pcafe, int id, const char* title, double width, double height )
-{
-	pMetapostConfig pmc = (pMetapostConfig) memory_new(1,sizeof(MetapostConfig));
-	pmc->id = id;
-	pmc->unit = MP_UNIT_IN;
-	pmc->dir = MP_DIR_VERTICAL;
-	pmc->shape = MP_SHAPE_RECT | MP_SHAPE_MOST_CENTER;
-	pmc->fmod = __cafe_tree_gainloss_mp_annotation;
-	pmc->fremark = cafe_tree_mp_remark;
-	pmc->width = width;
-	pmc->height = height;
-	pString pstr = phylogeny_to_mp( (pTree)pcafe, pmc, title );
-	memory_free(pmc);
-	pmc = NULL;
-	return pstr;
-}
-
 int __cafe_cmd_extinct_count_zero()
 {
 	int n;
