@@ -60,7 +60,6 @@ int cafe_cmd_version(int argc, char* argv[]);
 int cafe_cmd_pvalue(int argc, char* argv[]);
 int cafe_cmd_score(int argc, char* argv[]);
 int cafe_cmd_log(int argc, char* argv[] );
-int cafe_cmd_cgi(int argc, char* argv[] );
 int cafe_cmd_retrieve(int argc, char* argv[] );
 int cafe_cmd_sim_extinct(int argc, char* argv[]);
 int cafe_cmd_extinct(int argc, char* argv[]);

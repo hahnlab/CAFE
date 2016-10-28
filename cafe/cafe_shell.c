@@ -41,7 +41,6 @@ pArrayList cafe_pCD;
 CafeShellCommand cafe_cmd[]  =
 {
 	{ "branchlength", cafe_cmd_branchlength },
-	{ "cgi", cafe_cmd_cgi }, 
 	{ "extinct", cafe_cmd_extinct },
 	{ "family", cafe_cmd_family },
 	{ "genfamily", cafe_cmd_generate_random_family },
@@ -2231,21 +2230,6 @@ int cafe_cmd_log(int argc, char* argv[] )
 	{
 		return __cafe_cmd_log(argc-1,&argv[1]);
 	}
-	return 0;
-}
-
-extern void cgi_set_type(char* type);
-extern void cgi_start_html(char* title);
-extern void cgi_end_html();
-
-int cafe_cmd_cgi(int argc, char* argv[] )
-{
-	cgi_set_type("text/html");
-	cgi_start_html("Cafe Shell test");
-	printf("<body>\n");
-	printf("Underconstruction\n");
-	printf("</body>\n");
-	cgi_end_html();
 	return 0;
 }
 
