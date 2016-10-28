@@ -1154,17 +1154,7 @@ double* cafe_tree_likelihood(pCafeTree pcafe)
 {
 	if (pcafe->pbdc_array)
 	{
-		if ( pcafe->super.postfix ) {
-			int i = 0;
-			pArrayList postfix = ((pTree)pcafe)->postfix;
-			for ( i = 0 ; i < postfix->size; i++ )
-			{
-				__cafe_tree_node_compute_likelihood_using_cache((pTree)pcafe, (pTreeNode)postfix->array[i], NULL );
-			}
-		}
-		else {
-			tree_traveral_postfix((pTree)pcafe, __cafe_tree_node_compute_likelihood_using_cache);
-		}
+		tree_traveral_postfix((pTree)pcafe, __cafe_tree_node_compute_likelihood_using_cache);
 	}
 	else 
 	{
@@ -1404,7 +1394,6 @@ pArrayList cafe_tree_conditional_distribution(pCafeTree pcafe, int range_start, 
 	for (int s = range_start ; s <= range_end; s++ )
 	{
 		arraylist_add(pal, cafe_tree_random_probabilities(pcafe,s, num_trials) );
-		printf("Test %d complete\n", s);
 	}
 	return pal;
 }
