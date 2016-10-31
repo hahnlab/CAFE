@@ -112,7 +112,7 @@ extern void cafe_family_read_query_family(pCafeParam param, char* file);
 
 extern void cafe_log(pCafeParam param, const char* msg, ... );
 extern void cafe_set_birthdeath_cache(pCafeParam param);
-extern void cafe_set_birthdeath_cache_thread(pCafeParam param);
+extern void cafe_set_birthdeath_cache_thread(pCafeTree tree, int k_value, int* family_sizes, int* rootfamily_sizes);
 extern double* cafe_best_lambda_by_fminsearch(pCafeParam param, int lambda_len, int k);
 extern double* cafe_best_lambda_mu_by_fminsearch(pCafeParam param, int lambda_len, int mu_len, int k );
 extern double* cafe_best_lambda_mu_eqbg_by_fminsearch(pCafeParam param, int lambda_len, int mu_len );

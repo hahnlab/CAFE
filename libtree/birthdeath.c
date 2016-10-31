@@ -338,14 +338,14 @@ void* __cafe_set_birthdeath_cache_thread_func(void* ptr)
 	return (NULL);
 }
 
-void cafe_set_birthdeath_cache_thread(pCafeParam param)
+void cafe_set_birthdeath_cache_thread(pCafeTree tree, int k_value, int* family_sizes, int* rootfamily_sizes)
 {
-	if ( param->pcafe->pbdc_array )
+	if ( tree->pbdc_array )
 	{
-		birthdeath_cache_array_free( param->pcafe->pbdc_array );
+		birthdeath_cache_array_free( tree->pbdc_array );
 	}
 	pBirthDeathCacheArray pbdc_array = (pBirthDeathCacheArray)memory_new(1,sizeof(BirthDeathCacheArray));
-	pbdc_array->maxFamilysize = MAX(param->family_sizes[1], param->rootfamily_sizes[1]);
+	pbdc_array->maxFamilysize = MAX(family_sizes[1], rootfamily_sizes[1]);
 	
 	if ( !chooseln_is_init() ) 
 	{
@@ -357,7 +357,7 @@ void cafe_set_birthdeath_cache_thread(pCafeParam param)
 	}
 	
 	int i,j,k,l = 0;
-	pArrayList nlist = ((pTree)param->pcafe)->nlist;
+	pArrayList nlist = ((pTree)tree)->nlist;
 	pArrayList thread_param = arraylist_new( nlist->size+1 );	// thread_param is an array of void* size of nodes(+1). 
 	
 	for( i = 0, j = 0 ; j < nlist->size; j++ )
@@ -370,7 +370,7 @@ void cafe_set_birthdeath_cache_thread(pCafeParam param)
 		// look for param_lambdas and param_mus 
 		if ( pcnode->param_lambdas ) {
 			if (pcnode->param_mus) {
-				for ( k=0; k < param->parameterized_k_value; k++) {
+				for ( k=0; k < k_value; k++) {
 					for ( l = 0 ; l < thread_param->size ; l++ )				// at first thread_param->size is zero, doesn't go into this loop
 					{
 						pBDCThread pbdt = (pBDCThread)thread_param->array[l];	// previously added thread
@@ -394,7 +394,7 @@ void cafe_set_birthdeath_cache_thread(pCafeParam param)
 				}
 			}
 			else {
-				for ( k=0; k < param->parameterized_k_value; k++) {
+				for ( k=0; k < k_value; k++) {
 					for ( l = 0 ; l < thread_param->size ; l++ )				// at first thread_param->size is zero, doesn't go into this loop
 					{
 						pBDCThread pbdt = (pBDCThread)thread_param->array[l];	// previously added thread
@@ -449,35 +449,6 @@ void cafe_set_birthdeath_cache_thread(pCafeParam param)
 	//qsort(param->branchlengths_sorted, param->num_branches, sizeof(int), __cmp_int );
 	int numthreads = thread_param->size;
 	thread_run_with_arraylist(numthreads, __cafe_set_birthdeath_cache_thread_func, thread_param ); // run function on array of threads
-	//int* bl = param->branchlengths_sorted;
-	//int size = param->num_branches;
-	//pbdc_array->base_bl = bl[0];
-	// here is where to fix integer branch length.
-	/*pbdc_array->list = arraylist_new(bl[size-1] - bl[0] + 1 + 100);
-    for ( i = bl[0]; i <= bl[size-1]; i++ )
-	{
-		arraylist_add(pbdc_array->list, NULL );
-	}
-    for ( i = 0 ; i < thread_param->size ; i++ )
-    {
-		pBDCThread pbdt = (pBDCThread)thread_param->array[i];
-		pArrayList plist;
-		int idx = pbdt->branchlength - bl[0];
-		if ( (plist=pbdc_array->list->array[idx]) == NULL )
-		{
-			plist = arraylist_new(10);
-			arraylist_add( plist, pbdt->pbdc );
-			pbdc_array->list->array[idx] = plist;
-		}
-		else
-		{
-			if ( birthdeath_search_list_for_lambda_mu(plist,pbdt->lambda, pbdt->mu) == NULL )
-			{
-				arraylist_add( plist, pbdt->pbdc );
-			}
-			
-		}
-	}*/
     pbdc_array->table = hash_table_new(MODE_VALUEREF);
     for ( i = 0 ; i < thread_param->size ; i++ )                // for each thread existing for all (branch lengths, parameters) combinations
 	{
@@ -502,8 +473,8 @@ void cafe_set_birthdeath_cache_thread(pCafeParam param)
 	}
 	
 	arraylist_free(thread_param,free);
-	param->pcafe->pbdc_array = pbdc_array;
-	cafe_tree_set_birthdeath(param->pcafe);
+	tree->pbdc_array = pbdc_array;
+	cafe_tree_set_birthdeath(tree);
 }
 
 void cafe_set_birthdeath_cache(pCafeParam param)
