@@ -130,7 +130,7 @@ lambda_args get_arguments(vector<Argument> pargs)
 		}
 		else if (!strcmp(parg->opt, "-k"))
 		{
-			sscanf(parg->argv[0], "%d", &result.tmp_param.k);
+			sscanf(parg->argv[0], "%d", &result.tmp_param.parameterized_k_value);
 		}
 		else if (!strcmp(parg->opt, "-f"))
 		{
@@ -156,7 +156,7 @@ void prepare_cafe_param(pCafeParam param)
 	}
 	param->num_lambdas = -1;
 	param->num_mus = -1;
-	param->k = 0;
+	param->parameterized_k_value = 0;
 	param->param_set_func = cafe_shell_set_lambda;
 
 	if (param->pfamily == NULL || param->pcafe == NULL)
@@ -285,17 +285,17 @@ int cafe_cmd_lambda(pCafeParam param, vector<string> tokens)
             // prepare parameters
 			if (params.tmp_param.lambda_tree != NULL) {
 				// param->num_lambdas determined by lambda tree.
-				if (params.tmp_param.k > 0) {
-					param->k = params.tmp_param.k;
+				if (params.tmp_param.parameterized_k_value > 0) {
+					param->parameterized_k_value = params.tmp_param.parameterized_k_value;
 					param->fixcluster0 = params.tmp_param.fixcluster0;
-					param->num_params = (params.tmp_param.num_lambdas*(params.tmp_param.k- params.tmp_param.fixcluster0))+(params.tmp_param.k-1);
+					param->num_params = (params.tmp_param.num_lambdas*(params.tmp_param.parameterized_k_value- params.tmp_param.fixcluster0))+(params.tmp_param.parameterized_k_value-1);
 
 					if( param->parameters ) memory_free(param->parameters);
 					param->parameters = NULL;
 					param->parameters = (double*)memory_new(param->num_params, sizeof(double));
 					if (param->k_weights) { memory_free(param->k_weights);}
 					param->k_weights = NULL;
-					param->k_weights = (double*) memory_new(param->k, sizeof(double));
+					param->k_weights = (double*) memory_new(param->parameterized_k_value, sizeof(double));
 
 					//param->lambda = param->parameters;
 				}
@@ -311,17 +311,17 @@ int cafe_cmd_lambda(pCafeParam param, vector<string> tokens)
 			}
 			else {
 				param->num_lambdas = params.tmp_param.num_lambdas = 1;
-				if (params.tmp_param.k > 0) {
-					param->k = params.tmp_param.k;
+				if (params.tmp_param.parameterized_k_value > 0) {
+					param->parameterized_k_value = params.tmp_param.parameterized_k_value;
 					param->fixcluster0 = params.tmp_param.fixcluster0;
-					param->num_params = (params.tmp_param.num_lambdas*(params.tmp_param.k- params.tmp_param.fixcluster0))+(params.tmp_param.k-1);
+					param->num_params = (params.tmp_param.num_lambdas*(params.tmp_param.parameterized_k_value- params.tmp_param.fixcluster0))+(params.tmp_param.parameterized_k_value-1);
 					
 					if( param->parameters ) memory_free(param->parameters);
 					param->parameters = NULL;
 					param->parameters = (double*)memory_new(param->num_params, sizeof(double));
 					if (param->k_weights) { memory_free(param->k_weights);}
 					param->k_weights = NULL;
-					param->k_weights = (double*) memory_new(param->k, sizeof(double));
+					param->k_weights = (double*) memory_new(param->parameterized_k_value, sizeof(double));
 					
 					//param->lambda = param->parameters;
 				}
@@ -343,7 +343,7 @@ int cafe_cmd_lambda(pCafeParam param, vector<string> tokens)
 			}
 			else
 			{
-				cafe_best_lambda_by_fminsearch(param, param->num_lambdas, param->k);
+				cafe_best_lambda_by_fminsearch(param, param->num_lambdas, param->parameterized_k_value);
 			}
             // scale back branch lengths by sum_branch_length.
             /*for( j = 0 ; j < ptree->nlist->size; j++ )
@@ -358,17 +358,17 @@ int cafe_cmd_lambda(pCafeParam param, vector<string> tokens)
 		else {
 			if (params.tmp_param.lambda_tree != NULL) {
 				// param->num_lambdas determined by lambda tree.
-				if (params.tmp_param.k > 0) {	// search clustered branch specific
-					param->k = params.tmp_param.k;
+				if (params.tmp_param.parameterized_k_value > 0) {	// search clustered branch specific
+					param->parameterized_k_value = params.tmp_param.parameterized_k_value;
 					param->fixcluster0 = params.tmp_param.fixcluster0;
-					param->num_params = (params.tmp_param.num_lambdas*(params.tmp_param.k- params.tmp_param.fixcluster0))+(params.tmp_param.k-1);
+					param->num_params = (params.tmp_param.num_lambdas*(params.tmp_param.parameterized_k_value- params.tmp_param.fixcluster0))+(params.tmp_param.parameterized_k_value-1);
 					
 					// check if the numbers of lambdas and proportions put in matches the number of parameters
 					if (param->num_params != params.tmp_param.num_params) {
 						fprintf( stderr, "ERROR(lambda): Number of parameters not correct. \n");
 						fprintf( stderr, "the number of -l lambdas and -p proportions are %d they need to be %d\n", params.tmp_param.num_params, param->num_params );
 						pString pstr = phylogeny_string(params.tmp_param.lambda_tree,NULL);
-						fprintf( stderr, "based on the tree %s and -k clusters %d.\n", pstr->buf, param->k );
+						fprintf( stderr, "based on the tree %s and -k clusters %d.\n", pstr->buf, param->parameterized_k_value );
 						string_free(pstr);
 						return -1;						
 					}
@@ -377,12 +377,12 @@ int cafe_cmd_lambda(pCafeParam param, vector<string> tokens)
 					if( param->parameters ) memory_free(param->parameters);
 					param->parameters = NULL;
 					param->parameters = (double*)memory_new(param->num_params, sizeof(double));
-					memcpy(param->parameters,params.tmp_param.lambda, sizeof(double)*params.tmp_param.num_lambdas*(params.tmp_param.k-params.tmp_param.fixcluster0));
-					memcpy(&param->parameters[param->num_lambdas*(param->k-params.tmp_param.fixcluster0)], params.tmp_param.k_weights, sizeof(double)*(params.tmp_param.k-1));
+					memcpy(param->parameters,params.tmp_param.lambda, sizeof(double)*params.tmp_param.num_lambdas*(params.tmp_param.parameterized_k_value-params.tmp_param.fixcluster0));
+					memcpy(&param->parameters[param->num_lambdas*(param->parameterized_k_value-params.tmp_param.fixcluster0)], params.tmp_param.k_weights, sizeof(double)*(params.tmp_param.parameterized_k_value-1));
 					// prepare space for k_weights
 					if ( param->k_weights ) memory_free(param->k_weights);
 					param->k_weights = NULL;
-					param->k_weights = (double*)memory_new(param->k-1, sizeof(double) );										
+					param->k_weights = (double*)memory_new(param->parameterized_k_value-1, sizeof(double) );										
 					
 				}
 				else {	// search whole dataset branch specific
@@ -407,16 +407,16 @@ int cafe_cmd_lambda(pCafeParam param, vector<string> tokens)
 			}
 			else {
 				param->num_lambdas = params.tmp_param.num_lambdas = 1;	
-				if (params.tmp_param.k > 0) {				// search clustered whole tree
-					param->k = params.tmp_param.k;
+				if (params.tmp_param.parameterized_k_value > 0) {				// search clustered whole tree
+					param->parameterized_k_value = params.tmp_param.parameterized_k_value;
 					param->fixcluster0 = params.tmp_param.fixcluster0;
-					param->num_params = (param->num_lambdas*(param->k-param->fixcluster0))+(param->k-1);
+					param->num_params = (param->num_lambdas*(param->parameterized_k_value-param->fixcluster0))+(param->parameterized_k_value-1);
 					
 					// check if the numbers of lambdas and proportions put in matches the number of parameters
 					if (param->num_params != params.tmp_param.num_params) {
 						fprintf( stderr, "ERROR(lambda): Number of parameters not correct. \n");
 						fprintf( stderr, "the number of -l lambdas and -p proportions are %d they need to be %d\n", params.tmp_param.num_params, param->num_params );
-						fprintf( stderr, "based on the -k clusters %d.\n", param->k );
+						fprintf( stderr, "based on the -k clusters %d.\n", param->parameterized_k_value );
 						return -1;						
 					}
 					
@@ -424,12 +424,12 @@ int cafe_cmd_lambda(pCafeParam param, vector<string> tokens)
 					if( param->parameters ) memory_free(param->parameters);
 					param->parameters = NULL;
 					param->parameters = (double*)memory_new(param->num_params, sizeof(double));
-					memcpy(param->parameters,params.tmp_param.lambda, sizeof(double)*params.tmp_param.num_lambdas*(params.tmp_param.k-params.tmp_param.fixcluster0));
-					memcpy(&param->parameters[param->num_lambdas*(param->k-params.tmp_param.fixcluster0)], params.tmp_param.k_weights, sizeof(double)*(params.tmp_param.k-1));
+					memcpy(param->parameters,params.tmp_param.lambda, sizeof(double)*params.tmp_param.num_lambdas*(params.tmp_param.parameterized_k_value-params.tmp_param.fixcluster0));
+					memcpy(&param->parameters[param->num_lambdas*(param->parameterized_k_value-params.tmp_param.fixcluster0)], params.tmp_param.k_weights, sizeof(double)*(params.tmp_param.parameterized_k_value-1));
 					// prepare space for k_weights
 					if ( param->k_weights ) memory_free(param->k_weights);
 					param->k_weights = NULL;
-					param->k_weights = (double*)memory_new(param->k-1, sizeof(double) );										
+					param->k_weights = (double*)memory_new(param->parameterized_k_value-1, sizeof(double) );										
 					
 				}
 				else {	// search whole dataset whole tree
@@ -540,7 +540,7 @@ int cafe_cmd_lambda(pCafeParam param, vector<string> tokens)
 		std::ostream_iterator<std::string>(cmd, " "));
 	cafe_log(param,"%s\n", cmd.str().c_str());
 	
-	if (params.search && (param->k > 0)) {
+	if (params.search && (param->parameterized_k_value > 0)) {
 		// print the cluster memberships
 		cafe_family_print_cluster_membership(param);
 	}

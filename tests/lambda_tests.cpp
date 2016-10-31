@@ -88,7 +88,7 @@ TEST(LambdaTests, PrepareCafeParam)
 	POINTERS_EQUAL(0, param.mu);
 	LONGS_EQUAL(-1, param.num_lambdas);
 	LONGS_EQUAL(-1, param.num_mus);
-	LONGS_EQUAL(0, param.k);
+	LONGS_EQUAL(0, param.parameterized_k_value);
 	POINTERS_EQUAL(cafe_shell_set_lambda, param.param_set_func);
 }
 
@@ -156,7 +156,7 @@ TEST(LambdaTests, Test_arguments)
 	strs.push_back("19");
 	pal = lambda_build_argument(strs);
 	args = get_arguments(pal);
-	LONGS_EQUAL(19, args.tmp_param.k);
+	LONGS_EQUAL(19, args.tmp_param.parameterized_k_value);
 
 	strs.push_back("-f");
 	pal = lambda_build_argument(strs);

@@ -240,7 +240,7 @@ void cafe_shell_clear_param(pCafeParam param, int btree_skip)
     param->num_params = 0;
 	param->num_lambdas = 0;
 	param->num_mus = 0;
-	param->k = 0;
+	param->parameterized_k_value = 0;
 	param->fixcluster0 = 0;
 	param->rootfamily_sizes[0] = 0;
 	param->rootfamily_sizes[1] = 1;
@@ -288,19 +288,19 @@ void cafe_shell_set_lambda(pCafeParam param, double* parameters)
 	// set lambda
 	param->lambda = param->parameters;
 	// set k_weights
-	if (param->k > 0) {
+	if (param->parameterized_k_value > 0) {
 		double sumofweights = 0;
-		for (i = 0; i < (param->k-1); i++) {
-			param->k_weights[i] = param->parameters[param->num_lambdas*(param->k-param->fixcluster0)+i];
+		for (i = 0; i < (param->parameterized_k_value-1); i++) {
+			param->k_weights[i] = param->parameters[param->num_lambdas*(param->parameterized_k_value-param->fixcluster0)+i];
 			sumofweights += param->k_weights[i];
 		}
 		param->k_weights[i] = 1 - sumofweights;
 		if( param->p_z_membership == NULL) {
-			param->p_z_membership = (double**) memory_new_2dim(param->pfamily->flist->size,param->num_lambdas*param->k,sizeof(double));
+			param->p_z_membership = (double**) memory_new_2dim(param->pfamily->flist->size,param->num_lambdas*param->parameterized_k_value,sizeof(double));
 			// assign based on param->k_weights (prior)
 			for ( i = 0 ; i < param->pfamily->flist->size ; i++ )
 			{
-				for (k=0; k<param->k; k++) {
+				for (k=0; k<param->parameterized_k_value; k++) {
 					param->p_z_membership[i][k] = param->k_weights[k];
 				}
 			}
@@ -308,7 +308,7 @@ void cafe_shell_set_lambda(pCafeParam param, double* parameters)
 	}
 
 	
-	param->pcafe->k = param->k;
+	param->pcafe->k = param->parameterized_k_value;
 	pArrayList nlist = param->pcafe->super.nlist;
 	pTree tlambda = param->lambda_tree;
 	if ( tlambda == NULL )
@@ -316,27 +316,27 @@ void cafe_shell_set_lambda(pCafeParam param, double* parameters)
 		for ( i = 0 ; i < nlist->size ; i++ )
 		{
 			pCafeNode pcnode = (pCafeNode)nlist->array[i];
-			if (param->k > 0) {
+			if (param->parameterized_k_value > 0) {
 				pcnode->lambda = -1;
 				pcnode->mu = -1;
 				
 				if (pcnode->param_lambdas) { memory_free(pcnode->param_lambdas); pcnode->param_lambdas=NULL;}
-				pcnode->param_lambdas = (double*) memory_new(param->k, sizeof(double));
+				pcnode->param_lambdas = (double*) memory_new(param->parameterized_k_value, sizeof(double));
 				if (! param->fixcluster0) {
-					memcpy(&pcnode->param_lambdas[0], &parameters[0],(param->k)*sizeof(double));
+					memcpy(&pcnode->param_lambdas[0], &parameters[0],(param->parameterized_k_value)*sizeof(double));
 				}
 				else {
 					pcnode->param_lambdas[0] = 0;
-					memcpy(&pcnode->param_lambdas[1], &parameters[0],(param->k-1)*sizeof(double));
+					memcpy(&pcnode->param_lambdas[1], &parameters[0],(param->parameterized_k_value-1)*sizeof(double));
 				}
 				
 				//if (pcnode->param_weights) { memory_free(pcnode->param_weights); pcnode->param_weights=NULL;}
 				//pcnode->param_weights = (double*) memory_new_with_init(param->k, sizeof(double), param->k_weights);
 				
-				reset_k_likelihoods(pcnode, param->k, param->pcafe->size_of_factor);
+				reset_k_likelihoods(pcnode, param->parameterized_k_value, param->pcafe->size_of_factor);
 				
 				if (pcnode->k_bd) { arraylist_free(pcnode->k_bd, NULL); }
-				pcnode->k_bd = arraylist_new(param->k);
+				pcnode->k_bd = arraylist_new(param->parameterized_k_value);
 			}
 			else {
 				pcnode->lambda = parameters[0];
@@ -351,27 +351,27 @@ void cafe_shell_set_lambda(pCafeParam param, double* parameters)
 		{
 			pPhylogenyNode pnode = (pPhylogenyNode)lambda_nlist->array[i];
 			pCafeNode pcnode = (pCafeNode)nlist->array[i];
-			if (param->k > 0) {
+			if (param->parameterized_k_value > 0) {
 				pcnode->lambda = -1;
 				pcnode->mu = -1;
 				
 				if (pcnode->param_lambdas) { memory_free(pcnode->param_lambdas); pcnode->param_lambdas=NULL;}
-				pcnode->param_lambdas = (double*) memory_new(param->k, sizeof(double));
+				pcnode->param_lambdas = (double*) memory_new(param->parameterized_k_value, sizeof(double));
 				if (! param->fixcluster0) {
-					memcpy(&pcnode->param_lambdas[0], &parameters[pnode->taxaid*param->k],(param->k)*sizeof(double));
+					memcpy(&pcnode->param_lambdas[0], &parameters[pnode->taxaid*param->parameterized_k_value],(param->parameterized_k_value)*sizeof(double));
 				}
 				else {
 					pcnode->param_lambdas[0] = 0;
-					memcpy(&pcnode->param_lambdas[1], &parameters[pnode->taxaid*(param->k-1)],(param->k-1)*sizeof(double));
+					memcpy(&pcnode->param_lambdas[1], &parameters[pnode->taxaid*(param->parameterized_k_value-1)],(param->parameterized_k_value-1)*sizeof(double));
 				}
 				
 				//if (pcnode->param_weights) { memory_free(pcnode->param_weights); pcnode->param_weights=NULL;}
-				//pcnode->param_weights = (double*) memory_new_with_init(param->k, sizeof(double), &param->k_weights[pnode->taxaid*param->k]);
+				//pcnode->param_weights = (double*) memory_new_with_init(param->parameterized_k_value, sizeof(double), &param->k_weights[pnode->taxaid*param->parameterized_k_value]);
 				
-				reset_k_likelihoods(pcnode, param->k, param->pcafe->size_of_factor);
+				reset_k_likelihoods(pcnode, param->parameterized_k_value, param->pcafe->size_of_factor);
 
 				if (pcnode->k_bd) { arraylist_free(pcnode->k_bd, NULL); }
-				pcnode->k_bd = arraylist_new(param->k);
+				pcnode->k_bd = arraylist_new(param->parameterized_k_value);
 			}
 			else {
 				pcnode->lambda = parameters[pnode->taxaid];
@@ -392,33 +392,33 @@ void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters)
 	}
 	// set lambda and mu
 	cafe_param->lambda = cafe_param->parameters;
-	if (param->k > 0) {
-		cafe_param->mu = &(cafe_param->parameters[param->num_lambdas*(param->k-param->fixcluster0)]);
+	if (param->parameterized_k_value > 0) {
+		cafe_param->mu = &(cafe_param->parameters[param->num_lambdas*(param->parameterized_k_value-param->fixcluster0)]);
 	}
 	else {
 		cafe_param->mu = &(cafe_param->parameters[param->num_lambdas]);
 	}
 	// set k_weights
-	if (param->k > 0) {
+	if (param->parameterized_k_value > 0) {
 		double sumofweights = 0;
-		for (i = 0; i < (param->k-1); i++) {
-			param->k_weights[i] = param->parameters[param->num_lambdas*(param->k-param->fixcluster0)+(param->num_mus-param->eqbg)*(param->k-param->fixcluster0)+i];
+		for (i = 0; i < (param->parameterized_k_value-1); i++) {
+			param->k_weights[i] = param->parameters[param->num_lambdas*(param->parameterized_k_value-param->fixcluster0)+(param->num_mus-param->eqbg)*(param->parameterized_k_value-param->fixcluster0)+i];
 			sumofweights += param->k_weights[i];
 		}
 		param->k_weights[i] = 1 - sumofweights;
 		if( param->p_z_membership == NULL) {
-			param->p_z_membership = (double**) memory_new_2dim(param->pfamily->flist->size,param->num_lambdas*param->k,sizeof(double));
+			param->p_z_membership = (double**) memory_new_2dim(param->pfamily->flist->size,param->num_lambdas*param->parameterized_k_value,sizeof(double));
 			// assign based on param->k_weights (prior)
 			for ( i = 0 ; i < param->pfamily->flist->size ; i++ )
 			{
-				for (k=0; k<param->k; k++) {
+				for (k=0; k<param->parameterized_k_value; k++) {
 					param->p_z_membership[i][k] = param->k_weights[k];
 				}
 			}
 		}
 	}
 	
-	param->pcafe->k = param->k;
+	param->pcafe->k = param->parameterized_k_value;
 	pArrayList nlist = param->pcafe->super.nlist;
 	pTree tlambda = param->lambda_tree;
 	if ( tlambda == NULL )
@@ -426,37 +426,37 @@ void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters)
 		for ( i = 0 ; i < nlist->size ; i++ )
 		{
 			pCafeNode pcnode = (pCafeNode)nlist->array[i];
-			if (param->k > 0) {
+			if (param->parameterized_k_value > 0) {
 				pcnode->lambda = -1;
 				pcnode->mu = -1;
 				
 				if (pcnode->param_lambdas) { memory_free(pcnode->param_lambdas); pcnode->param_lambdas=NULL;}
-				pcnode->param_lambdas = (double*) memory_new(param->k, sizeof(double));
+				pcnode->param_lambdas = (double*) memory_new(param->parameterized_k_value, sizeof(double));
 				if (! param->fixcluster0) {
-					memcpy(&pcnode->param_lambdas[0], &parameters[0],(param->k)*sizeof(double));
+					memcpy(&pcnode->param_lambdas[0], &parameters[0],(param->parameterized_k_value)*sizeof(double));
 				}
 				else {
 					pcnode->param_lambdas[0] = 0;
-					memcpy(&pcnode->param_lambdas[1], &parameters[0],(param->k-param->fixcluster0)*sizeof(double));
+					memcpy(&pcnode->param_lambdas[1], &parameters[0],(param->parameterized_k_value-param->fixcluster0)*sizeof(double));
 				}
 				
 				if (pcnode->param_mus) { memory_free(pcnode->param_mus); pcnode->param_mus = NULL;}
-				pcnode->param_mus = (double*) memory_new(param->k, sizeof(double));
+				pcnode->param_mus = (double*) memory_new(param->parameterized_k_value, sizeof(double));
 				if (! param->fixcluster0) {
-					memcpy(&pcnode->param_mus[0], &parameters[param->num_lambdas*param->k],(param->k)*sizeof(double));
+					memcpy(&pcnode->param_mus[0], &parameters[param->num_lambdas*param->parameterized_k_value],(param->parameterized_k_value)*sizeof(double));
 				}
 				else {
 					pcnode->param_mus[0] = 0;
-					memcpy(&pcnode->param_mus[1], &parameters[param->num_lambdas*(param->k-param->fixcluster0)],(param->k-param->fixcluster0)*sizeof(double));
+					memcpy(&pcnode->param_mus[1], &parameters[param->num_lambdas*(param->parameterized_k_value-param->fixcluster0)],(param->parameterized_k_value-param->fixcluster0)*sizeof(double));
 				}
 				
 				// (pcnode->param_weights) { memory_free(pcnode->param_weights); pcnode->param_weights=NULL;}
-				//pcnode->param_weights = (double*) memory_new_with_init(param->k, sizeof(double), param->k_weights);
+				//pcnode->param_weights = (double*) memory_new_with_init(param->parameterized_k_value, sizeof(double), param->k_weights);
 				
-				reset_k_likelihoods(pcnode, param->k, param->pcafe->size_of_factor);
+				reset_k_likelihoods(pcnode, param->parameterized_k_value, param->pcafe->size_of_factor);
 
 				if (pcnode->k_bd) { arraylist_free(pcnode->k_bd, NULL); }
-				pcnode->k_bd = arraylist_new(param->k);
+				pcnode->k_bd = arraylist_new(param->parameterized_k_value);
 			}
 			else {
 				pcnode->lambda = parameters[0];
@@ -472,55 +472,55 @@ void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters)
 			pPhylogenyNode pnode = (pPhylogenyNode)lambda_nlist->array[i];
 			pCafeNode pcnode = (pCafeNode)nlist->array[i];
 			
-			if (param->k > 0) {
+			if (param->parameterized_k_value > 0) {
 				pcnode->lambda = -1;
 				pcnode->mu = -1;
 				
 				// set lambdas
 				if (pcnode->param_lambdas) { memory_free(pcnode->param_lambdas); pcnode->param_lambdas=NULL;}
-				pcnode->param_lambdas = (double*) memory_new(param->k, sizeof(double));
+				pcnode->param_lambdas = (double*) memory_new(param->parameterized_k_value, sizeof(double));
 				if (! param->fixcluster0) {
-					memcpy(&pcnode->param_lambdas[0], &parameters[pnode->taxaid*param->k],(param->k)*sizeof(double));
+					memcpy(&pcnode->param_lambdas[0], &parameters[pnode->taxaid*param->parameterized_k_value],(param->parameterized_k_value)*sizeof(double));
 				}
 				else {
 					pcnode->param_lambdas[0] = 0;
-					memcpy(&pcnode->param_lambdas[1], &parameters[pnode->taxaid*(param->k-1)],(param->k-1)*sizeof(double));
+					memcpy(&pcnode->param_lambdas[1], &parameters[pnode->taxaid*(param->parameterized_k_value-1)],(param->parameterized_k_value-1)*sizeof(double));
 				}
 				
 				// set mus
 				if (pcnode->param_mus) { memory_free(pcnode->param_mus); pcnode->param_mus=NULL;}
-				pcnode->param_mus = (double*) memory_new(param->k, sizeof(double));
+				pcnode->param_mus = (double*) memory_new(param->parameterized_k_value, sizeof(double));
 				if (param->eqbg) {
 					if (pnode->taxaid == 0) {
-						memcpy(pcnode->param_mus, pcnode->param_lambdas, (param->k-param->fixcluster0)*sizeof(double));
+						memcpy(pcnode->param_mus, pcnode->param_lambdas, (param->parameterized_k_value-param->fixcluster0)*sizeof(double));
 					}
 					else {
 						if (! param->fixcluster0) {
-							memcpy(&pcnode->param_mus[0], &parameters[(param->num_lambdas)*param->k+(pnode->taxaid-param->eqbg)*param->k],(param->k)*sizeof(double));
+							memcpy(&pcnode->param_mus[0], &parameters[(param->num_lambdas)*param->parameterized_k_value+(pnode->taxaid-param->eqbg)*param->parameterized_k_value],(param->parameterized_k_value)*sizeof(double));
 						}
 						else {
 							pcnode->param_mus[0] = 0;
-							memcpy(&pcnode->param_mus[1], &parameters[(param->num_lambdas)*(param->k-1)+(pnode->taxaid-param->eqbg)*(param->k-1)],(param->k-1)*sizeof(double));
+							memcpy(&pcnode->param_mus[1], &parameters[(param->num_lambdas)*(param->parameterized_k_value-1)+(pnode->taxaid-param->eqbg)*(param->parameterized_k_value-1)],(param->parameterized_k_value-1)*sizeof(double));
 						}					
 					}
 				}
 				else {
 					if (! param->fixcluster0) {
-						memcpy(&pcnode->param_mus[0], &parameters[(param->num_lambdas)*param->k+pnode->taxaid*param->k],(param->k)*sizeof(double));
+						memcpy(&pcnode->param_mus[0], &parameters[(param->num_lambdas)*param->parameterized_k_value+pnode->taxaid*param->parameterized_k_value],(param->parameterized_k_value)*sizeof(double));
 					}
 					else {
 						pcnode->param_mus[0] = 0;
-						memcpy(&pcnode->param_mus[1], &parameters[(param->num_lambdas)*(param->k-1)+pnode->taxaid*(param->k-1)],(param->k-1)*sizeof(double));
+						memcpy(&pcnode->param_mus[1], &parameters[(param->num_lambdas)*(param->parameterized_k_value-1)+pnode->taxaid*(param->parameterized_k_value-1)],(param->parameterized_k_value-1)*sizeof(double));
 					}
 				}			
 				
 				//if (pcnode->param_weights) { memory_free(pcnode->param_weights); pcnode->param_weights=NULL;}
-				//pcnode->param_weights = (double*) memory_new_with_init(param->k, sizeof(double), &param->k_weights[pnode->taxaid*param->k]);
+				//pcnode->param_weights = (double*) memory_new_with_init(param->parameterized_k_value, sizeof(double), &param->k_weights[pnode->taxaid*param->parameterized_k_value]);
 				
-				reset_k_likelihoods(pcnode, param->k, param->pcafe->size_of_factor);
+				reset_k_likelihoods(pcnode, param->parameterized_k_value, param->pcafe->size_of_factor);
 
 				if (pcnode->k_bd) { arraylist_free(pcnode->k_bd, NULL); }
-				pcnode->k_bd = arraylist_new(param->k);
+				pcnode->k_bd = arraylist_new(param->parameterized_k_value);
 			}
 			else {
 				if (param->eqbg) {
@@ -892,7 +892,7 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 	}
 	cafe_param->num_lambdas = -1;
 	cafe_param->num_mus = -1;
-	cafe_param->k = 0;
+	cafe_param->parameterized_k_value = 0;
 	cafe_param->param_set_func = cafe_shell_set_lambda_mu;
 	
 	int bdone = 0;
@@ -967,7 +967,7 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 		}
 		else if ( !strcmp (parg->opt, "-k") ) 
 		{
-			sscanf( parg->argv[0], "%d", &tmp_param->k );	
+			sscanf( parg->argv[0], "%d", &tmp_param->parameterized_k_value );	
 		}
 		else if ( !strcmp (parg->opt, "-f") ) 
 		{
@@ -1000,19 +1000,19 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 			if (tmp_param->lambda_tree != NULL) {
 				// cafe_param->num_lambdas determined by lambda tree.
 				cafe_param->eqbg = tmp_param->eqbg;
-				if (tmp_param->k > 0) {
-					cafe_param->k = tmp_param->k;
+				if (tmp_param->parameterized_k_value > 0) {
+					cafe_param->parameterized_k_value = tmp_param->parameterized_k_value;
 					cafe_param->fixcluster0 = tmp_param->fixcluster0;
-					cafe_param->num_params = (tmp_param->num_lambdas*(tmp_param->k-tmp_param->fixcluster0))+
-					((tmp_param->num_mus-tmp_param->eqbg)*(tmp_param->k-tmp_param->fixcluster0))+
-					(tmp_param->k-1);
+					cafe_param->num_params = (tmp_param->num_lambdas*(tmp_param->parameterized_k_value-tmp_param->fixcluster0))+
+					((tmp_param->num_mus-tmp_param->eqbg)*(tmp_param->parameterized_k_value-tmp_param->fixcluster0))+
+					(tmp_param->parameterized_k_value-1);
 					
 					if( cafe_param->parameters ) memory_free(cafe_param->parameters);
 					cafe_param->parameters = NULL;
 					cafe_param->parameters = (double*)memory_new(cafe_param->num_params, sizeof(double));
 					if (cafe_param->k_weights) { memory_free(cafe_param->k_weights);}
 					cafe_param->k_weights = NULL;
-					cafe_param->k_weights = (double*) memory_new(cafe_param->k, sizeof(double));
+					cafe_param->k_weights = (double*) memory_new(cafe_param->parameterized_k_value, sizeof(double));
 				}
 				else {	// search whole dataset branch specific
 					cafe_param->num_params = tmp_param->num_lambdas+(tmp_param->num_mus-tmp_param->eqbg);
@@ -1029,19 +1029,19 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 					fprintf( stderr, "ERROR(lambdamu): Cannot use option eqbg without specifying a lambda tree. \n");
 					return -1;											
 				}
-				if (tmp_param->k > 0) {
-					cafe_param->k = tmp_param->k;
+				if (tmp_param->parameterized_k_value > 0) {
+					cafe_param->parameterized_k_value = tmp_param->parameterized_k_value;
 					cafe_param->fixcluster0 = tmp_param->fixcluster0;
-					cafe_param->num_params = (tmp_param->num_lambdas*(tmp_param->k-tmp_param->fixcluster0))+
-					(tmp_param->num_mus*(tmp_param->k-tmp_param->fixcluster0))+
-					(tmp_param->k-1);
+					cafe_param->num_params = (tmp_param->num_lambdas*(tmp_param->parameterized_k_value-tmp_param->fixcluster0))+
+					(tmp_param->num_mus*(tmp_param->parameterized_k_value-tmp_param->fixcluster0))+
+					(tmp_param->parameterized_k_value-1);
 					
 					if( cafe_param->parameters ) memory_free(cafe_param->parameters);
 					cafe_param->parameters = NULL;
 					cafe_param->parameters = (double*)memory_new(cafe_param->num_params, sizeof(double));
 					if (cafe_param->k_weights) { memory_free(cafe_param->k_weights);}
 					cafe_param->k_weights = NULL;
-					cafe_param->k_weights = (double*) memory_new(cafe_param->k, sizeof(double));
+					cafe_param->k_weights = (double*) memory_new(cafe_param->parameterized_k_value, sizeof(double));
 				}
 				else {	// search whole dataset whole tree
 					cafe_param->num_params = tmp_param->num_lambdas+tmp_param->num_mus;
@@ -1053,25 +1053,25 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 			}
 			// search
 			if (tmp_param->checkconv) { cafe_param->checkconv = 1; }
-			cafe_best_lambda_mu_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->num_mus, cafe_param->k);
+			cafe_best_lambda_mu_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->num_mus, cafe_param->parameterized_k_value);
 		}
 		else {
 			if (tmp_param->lambda_tree != NULL) {
 				// cafe_param->num_lambdas determined by lambda tree.
 				cafe_param->eqbg = tmp_param->eqbg;
-				if (tmp_param->k > 0) {	// search clustered branch specific
-					cafe_param->k = tmp_param->k;
+				if (tmp_param->parameterized_k_value > 0) {	// search clustered branch specific
+					cafe_param->parameterized_k_value = tmp_param->parameterized_k_value;
 					cafe_param->fixcluster0 = tmp_param->fixcluster0;
-					cafe_param->num_params = (tmp_param->num_lambdas*(tmp_param->k-tmp_param->fixcluster0))+
-					((tmp_param->num_mus-tmp_param->eqbg)*(tmp_param->k-tmp_param->fixcluster0))+
-					(tmp_param->k-1);
+					cafe_param->num_params = (tmp_param->num_lambdas*(tmp_param->parameterized_k_value-tmp_param->fixcluster0))+
+					((tmp_param->num_mus-tmp_param->eqbg)*(tmp_param->parameterized_k_value-tmp_param->fixcluster0))+
+					(tmp_param->parameterized_k_value-1);
 					
 					// check if the numbers of lambdas and proportions put in matches the number of parameters
 					if (cafe_param->num_params != tmp_param->num_params) {
 						fprintf( stderr, "ERROR(lambdamu): Number of parameters not correct. \n");
 						fprintf( stderr, "the number of -l lambdas -m mus and -p proportions are %d they need to be %d\n", tmp_param->num_params, cafe_param->num_params );
 						pString pstr = phylogeny_string(tmp_param->lambda_tree,NULL);
-						fprintf( stderr, "based on the tree %s and -k clusters %d.\n", pstr->buf, cafe_param->k );
+						fprintf( stderr, "based on the tree %s and -k clusters %d.\n", pstr->buf, cafe_param->parameterized_k_value );
 						string_free(pstr);
 						return -1;						
 					}
@@ -1080,13 +1080,13 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 					if( cafe_param->parameters ) memory_free(cafe_param->parameters);
 					cafe_param->parameters = NULL;
 					cafe_param->parameters = (double*)memory_new(cafe_param->num_params, sizeof(double));
-					memcpy(cafe_param->parameters,tmp_param->lambda, sizeof(double)*tmp_param->num_lambdas*(tmp_param->k-tmp_param->fixcluster0));
-					memcpy(&cafe_param->parameters[cafe_param->num_lambdas*(cafe_param->k-tmp_param->fixcluster0)],tmp_param->mu, sizeof(double)*((tmp_param->num_mus-tmp_param->eqbg)*(tmp_param->k-tmp_param->fixcluster0)));
-					memcpy(&cafe_param->parameters[(cafe_param->num_lambdas*(cafe_param->k-tmp_param->fixcluster0))+((tmp_param->num_mus-tmp_param->eqbg)*(tmp_param->k-tmp_param->fixcluster0))], tmp_param->k_weights, sizeof(double)*(tmp_param->k-1));
+					memcpy(cafe_param->parameters,tmp_param->lambda, sizeof(double)*tmp_param->num_lambdas*(tmp_param->parameterized_k_value-tmp_param->fixcluster0));
+					memcpy(&cafe_param->parameters[cafe_param->num_lambdas*(cafe_param->parameterized_k_value-tmp_param->fixcluster0)],tmp_param->mu, sizeof(double)*((tmp_param->num_mus-tmp_param->eqbg)*(tmp_param->parameterized_k_value-tmp_param->fixcluster0)));
+					memcpy(&cafe_param->parameters[(cafe_param->num_lambdas*(cafe_param->parameterized_k_value-tmp_param->fixcluster0))+((tmp_param->num_mus-tmp_param->eqbg)*(tmp_param->parameterized_k_value-tmp_param->fixcluster0))], tmp_param->k_weights, sizeof(double)*(tmp_param->parameterized_k_value-1));
 					// prepare space for k_weights
 					if ( cafe_param->k_weights ) memory_free(cafe_param->k_weights);
 					cafe_param->k_weights = NULL;
-					cafe_param->k_weights = (double*)memory_new(cafe_param->k-1, sizeof(double) );										
+					cafe_param->k_weights = (double*)memory_new(cafe_param->parameterized_k_value-1, sizeof(double) );										
 				}
 				else {	// search whole dataset branch specific
 					cafe_param->num_params = tmp_param->num_lambdas+(tmp_param->num_mus-tmp_param->eqbg);
@@ -1117,18 +1117,18 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 					fprintf( stderr, "ERROR(lambdamu): Cannot use option eqbg without specifying a lambda tree. \n");
 					return -1;											
 				}
-				if (tmp_param->k > 0) {				// search clustered whole tree
-					cafe_param->k = tmp_param->k;
+				if (tmp_param->parameterized_k_value > 0) {				// search clustered whole tree
+					cafe_param->parameterized_k_value = tmp_param->parameterized_k_value;
 					cafe_param->fixcluster0 = tmp_param->fixcluster0;
-					cafe_param->num_params = (tmp_param->num_lambdas*(tmp_param->k-tmp_param->fixcluster0))+
-					(tmp_param->num_mus*(tmp_param->k-tmp_param->fixcluster0))+
-					(tmp_param->k-1);
+					cafe_param->num_params = (tmp_param->num_lambdas*(tmp_param->parameterized_k_value-tmp_param->fixcluster0))+
+					(tmp_param->num_mus*(tmp_param->parameterized_k_value-tmp_param->fixcluster0))+
+					(tmp_param->parameterized_k_value-1);
 					
 					// check if the numbers of lambdas and proportions put in matches the number of parameters
 					if (cafe_param->num_params != tmp_param->num_params) {
 						fprintf( stderr, "ERROR(lambdamu): Number of parameters not correct. \n");
 						fprintf( stderr, "the number of -l lambdas -m mus and -p proportions are %d they need to be %d\n", tmp_param->num_params, cafe_param->num_params );
-						fprintf( stderr, "based on the -k clusters %d.\n", cafe_param->k );
+						fprintf( stderr, "based on the -k clusters %d.\n", cafe_param->parameterized_k_value );
 						return -1;						
 					}
 					
@@ -1136,13 +1136,13 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 					if( cafe_param->parameters ) memory_free(cafe_param->parameters);
 					cafe_param->parameters = NULL;
 					cafe_param->parameters = (double*)memory_new(cafe_param->num_params, sizeof(double));
-					memcpy(cafe_param->parameters,tmp_param->lambda, sizeof(double)*tmp_param->num_lambdas*(tmp_param->k-tmp_param->fixcluster0));
-					memcpy(&cafe_param->parameters[cafe_param->num_lambdas*(cafe_param->k-tmp_param->fixcluster0)], tmp_param->mu, sizeof(double)*tmp_param->num_mus*(cafe_param->k-tmp_param->fixcluster0));
-					memcpy(&cafe_param->parameters[cafe_param->num_lambdas*(cafe_param->k-tmp_param->fixcluster0)+tmp_param->num_mus*(cafe_param->k-tmp_param->fixcluster0)], tmp_param->k_weights, sizeof(double)*(tmp_param->k-1));
+					memcpy(cafe_param->parameters,tmp_param->lambda, sizeof(double)*tmp_param->num_lambdas*(tmp_param->parameterized_k_value-tmp_param->fixcluster0));
+					memcpy(&cafe_param->parameters[cafe_param->num_lambdas*(cafe_param->parameterized_k_value-tmp_param->fixcluster0)], tmp_param->mu, sizeof(double)*tmp_param->num_mus*(cafe_param->parameterized_k_value-tmp_param->fixcluster0));
+					memcpy(&cafe_param->parameters[cafe_param->num_lambdas*(cafe_param->parameterized_k_value-tmp_param->fixcluster0)+tmp_param->num_mus*(cafe_param->parameterized_k_value-tmp_param->fixcluster0)], tmp_param->k_weights, sizeof(double)*(tmp_param->parameterized_k_value-1));
 					// prepare space for k_weights
 					if ( cafe_param->k_weights ) memory_free(cafe_param->k_weights);
 					cafe_param->k_weights = NULL;
-					cafe_param->k_weights = (double*)memory_new(cafe_param->k-1, sizeof(double) );										
+					cafe_param->k_weights = (double*)memory_new(cafe_param->parameterized_k_value-1, sizeof(double) );										
 					
 				}
 				else {	// search whole dataset whole tree
@@ -1188,7 +1188,7 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 	string_pchar_join(buf," ",argc, argv);
 	cafe_log(cafe_param,"%s\n", buf);
 	
-	if (bsearch && (cafe_param->k > 0)) {
+	if (bsearch && (cafe_param->parameterized_k_value > 0)) {
 		// print the cluster memberships
 		cafe_family_print_cluster_membership(cafe_param);
 	}
@@ -1576,10 +1576,10 @@ int cafe_cmd_crossvalidation_by_family(int argc, char* argv[])
 		}
 		// re-train 
 		if (cafe_param->num_mus > 0) {
-			cafe_best_lambda_mu_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->num_mus, cafe_param->k);
+			cafe_best_lambda_mu_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->num_mus, cafe_param->parameterized_k_value);
 		}
 		else {
-			cafe_best_lambda_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->k);
+			cafe_best_lambda_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->parameterized_k_value);
 		}
 		
 		//cross-validate
@@ -1604,10 +1604,10 @@ int cafe_cmd_crossvalidation_by_family(int argc, char* argv[])
 	}
 	// re-train 
 	if (cafe_param->num_mus > 0) {
-		cafe_best_lambda_mu_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->num_mus, cafe_param->k);
+		cafe_best_lambda_mu_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->num_mus, cafe_param->parameterized_k_value);
 	}
 	else {
-		cafe_best_lambda_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->k);
+		cafe_best_lambda_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->parameterized_k_value);
 	}
 	
 	// remove training-validation set
@@ -1658,10 +1658,10 @@ int cafe_cmd_crossvalidation_by_species(int argc, char* argv[])
 			}
 			// re-train 
 			if (cafe_param->num_mus > 0) {
-				cafe_best_lambda_mu_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->num_mus, cafe_param->k);
+				cafe_best_lambda_mu_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->num_mus, cafe_param->parameterized_k_value);
 			}
 			else {
-				cafe_best_lambda_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->k);
+				cafe_best_lambda_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->parameterized_k_value);
 			}
 			
 			//cross-validate
@@ -1686,10 +1686,10 @@ int cafe_cmd_crossvalidation_by_species(int argc, char* argv[])
 		}
 		// re-train 
 		if (cafe_param->num_mus > 0) {
-			cafe_best_lambda_mu_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->num_mus, cafe_param->k);
+			cafe_best_lambda_mu_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->num_mus, cafe_param->parameterized_k_value);
 		}
 		else {
-			cafe_best_lambda_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->k);
+			cafe_best_lambda_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->parameterized_k_value);
 		}
 		
 		// remove training-validation set
@@ -2110,24 +2110,24 @@ double cafe_shell_score()
 {
 	int i=0;
 	double score = 0;
-	if (cafe_param->k > 0) {
+	if (cafe_param->parameterized_k_value > 0) {
 		if (cafe_param->num_mus > 0) {
 			score = -__cafe_cluster_lambda_mu_search(cafe_param->parameters, (void*)cafe_param);
 			// print
 			char buf[STRING_STEP_SIZE];
 			buf[0] = '\0';
 			for( i=0; i<cafe_param->num_lambdas; i++) {
-				string_pchar_join_double(buf,",", cafe_param->k, &cafe_param->parameters[i*cafe_param->k] );
+				string_pchar_join_double(buf,",", cafe_param->parameterized_k_value, &cafe_param->parameters[i*cafe_param->parameterized_k_value] );
 				cafe_log(cafe_param,"Lambda branch %d: %s\n", i, buf);
 				buf[0] = '\0';
 			}
 			for (i=0; i<cafe_param->num_mus; i++) {
-				string_pchar_join_double(buf,",", cafe_param->k, &cafe_param->parameters[cafe_param->num_lambdas*cafe_param->k+i*cafe_param->k]);
+				string_pchar_join_double(buf,",", cafe_param->parameterized_k_value, &cafe_param->parameters[cafe_param->num_lambdas*cafe_param->parameterized_k_value+i*cafe_param->parameterized_k_value]);
 				cafe_log(cafe_param,"Mu branch %d: %s \n", i, buf);
 				buf[0] = '\0';
 			}
-			if (cafe_param->k > 0) {
-				string_pchar_join_double(buf,",", cafe_param->k, cafe_param->k_weights );
+			if (cafe_param->parameterized_k_value > 0) {
+				string_pchar_join_double(buf,",", cafe_param->parameterized_k_value, cafe_param->k_weights );
 				cafe_log(cafe_param, "p : %s\n", buf);
 			}
 			cafe_log(cafe_param, "Score: %f\n", score);
@@ -2138,11 +2138,11 @@ double cafe_shell_score()
 			// print
 			char buf[STRING_STEP_SIZE];
 			buf[0] = '\0';
-			string_pchar_join_double(buf,",", cafe_param->num_lambdas*cafe_param->k, cafe_param->parameters );
+			string_pchar_join_double(buf,",", cafe_param->num_lambdas*cafe_param->parameterized_k_value, cafe_param->parameters );
 			cafe_log(cafe_param,"Lambda : %s\n", buf);
 			buf[0] = '\0';
-			if (cafe_param->k > 0) {
-				string_pchar_join_double(buf,",", cafe_param->k, cafe_param->k_weights );
+			if (cafe_param->parameterized_k_value > 0) {
+				string_pchar_join_double(buf,",", cafe_param->parameterized_k_value, cafe_param->k_weights );
 				cafe_log(cafe_param, "p : %s\n", buf);
 			}
 			cafe_log(cafe_param, "Score: %f\n", score);		
@@ -2176,7 +2176,7 @@ int cafe_cmd_score(int argc, char* argv[])
 {
   double score = cafe_shell_score();
   cafe_log(cafe_param,"%lf\n",  score);
-  if (cafe_param->k > 0) {
+  if (cafe_param->parameterized_k_value > 0) {
     cafe_family_print_cluster_membership(cafe_param);
   }
   cafe_shell_set_sizes();
@@ -2682,7 +2682,7 @@ int cafe_cmd_generate_random_family(int argc, char* argv[])
 				printf("%d ...\n", i );
 			}
 			cafe_family_set_size(cafe_param->pfamily,i, pcafe);
-			if (cafe_param->k > 0) {
+			if (cafe_param->parameterized_k_value > 0) {
 				cafe_tree_clustered_viterbi(pcafe);
 			}
 			else {
@@ -2754,10 +2754,10 @@ int cafe_cmd_generate_random_family(int argc, char* argv[])
 		
 		int idx = 0;
 		pArrayList k_arr = arraylist_new(num_families);
-		if (cafe_param->k > 0) {
+		if (cafe_param->parameterized_k_value > 0) {
 			// assign clusters based on proportion (k_weights)
 			int k_i = 0;
-			for ( k_i = 0; k_i<cafe_param->k-1; k_i++) {
+			for ( k_i = 0; k_i<cafe_param->parameterized_k_value-1; k_i++) {
 				for ( j = 0; j<cafe_param->k_weights[i]*num_families; j++) {
 					int* newk = memory_new(1, sizeof(int));
 					*newk = k_i;
@@ -2784,7 +2784,7 @@ int cafe_cmd_generate_random_family(int argc, char* argv[])
 				{
 					// cafe_tree_random_familysize uses birthdeath_matrix to calculate the probabilities.
 					// if k > 0 point bd to k_bd[] before running cafe_tree_random_familysize to avoid EXC_BAD_ACCESS		
-					if (cafe_param->k > 0) {
+					if (cafe_param->parameterized_k_value > 0) {
 						for ( n = 0 ; n < nlist->size ; n++ )
 						{
 							pCafeNode pcnode = (pCafeNode)nlist->array[n];
@@ -2796,7 +2796,7 @@ int cafe_cmd_generate_random_family(int argc, char* argv[])
 					cafe_tree_random_familysize(cafe_param->pcafe, i);
 					
 					// print test leaves
-					if (cafe_param->k > 0) {
+					if (cafe_param->parameterized_k_value > 0) {
 						int* pK = (int*)k_arr->array[idx];
 						fprintf(fout, "k%d_root%d\t%d", *pK, i, id );
 					}
@@ -2811,7 +2811,7 @@ int cafe_cmd_generate_random_family(int argc, char* argv[])
 					fprintf(fout,"\n");
 
 					// print true leaves and inner nodes
-					if (cafe_param->k > 0) {
+					if (cafe_param->parameterized_k_value > 0) {
 						int* pK = (int*)k_arr->array[idx];
 						fprintf(ftruth, "k%d_root%d\t%d",*pK, i, id );
 					}
@@ -4478,10 +4478,10 @@ double _cafe_simerror(char* prefix, int repeat)
         
         // search parameters
 /*        if (cafe_param->num_mus > 0) {
-            cafe_best_lambda_mu_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->num_mus, cafe_param->k);
+            cafe_best_lambda_mu_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->num_mus, cafe_param->parameterized_k_value);
         }
         else {
-            cafe_best_lambda_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->k);
+            cafe_best_lambda_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->parameterized_k_value);
         }*/
         __restore_original_count();
 

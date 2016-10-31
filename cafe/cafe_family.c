@@ -492,7 +492,6 @@ pCafeFamily cafe_family_new(char* file, int bpatcheck)
 		fprintf( stderr, "Cannot open file: %s\n", file );
 		return NULL;
 	}
-	int i, j;
 	if ( fgets(buf,STRING_BUF_SIZE,fp) == NULL )
 	{
 		fclose(fp);
@@ -508,7 +507,7 @@ pCafeFamily cafe_family_new(char* file, int bpatcheck)
 	data->array[1] = NULL;
 	arraylist_free(data, NULL);
 
-	for(  i = 0 ; fgets(buf,STRING_BUF_SIZE,fp) ; i++ )	
+	for(int i = 0 ; fgets(buf,STRING_BUF_SIZE,fp) ; i++ )	
 	{
 		data = string_pchar_split(buf, '\t');
 		cafe_family_add_item(pcf, data);
@@ -1121,7 +1120,7 @@ int cafe_family_print_cluster_membership(pCafeParam param)
 	{
 		pCafeFamilyItem pitem = (pCafeFamilyItem)pcf->flist->array[i];
 		cafe_log( param, "family %s:", pitem->id);
-		for (k = 0; k<param->k; k++) {
+		for (k = 0; k<param->parameterized_k_value; k++) {
 			cafe_log( param, " %f", param->p_z_membership[i][k]);
 		}
 		cafe_log( param, "\n");

@@ -134,7 +134,7 @@ struct tagCafeParam
 	pTree mu_tree;
 	int num_mus;
 	
-	int k;
+	int parameterized_k_value;
 	double* k_weights;
 	double** p_z_membership;
 	int fixcluster0;

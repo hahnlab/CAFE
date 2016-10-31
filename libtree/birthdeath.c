@@ -370,7 +370,7 @@ void cafe_set_birthdeath_cache_thread(pCafeParam param)
 		// look for param_lambdas and param_mus 
 		if ( pcnode->param_lambdas ) {
 			if (pcnode->param_mus) {
-				for ( k=0; k < param->k; k++) {
+				for ( k=0; k < param->parameterized_k_value; k++) {
 					for ( l = 0 ; l < thread_param->size ; l++ )				// at first thread_param->size is zero, doesn't go into this loop
 					{
 						pBDCThread pbdt = (pBDCThread)thread_param->array[l];	// previously added thread
@@ -394,7 +394,7 @@ void cafe_set_birthdeath_cache_thread(pCafeParam param)
 				}
 			}
 			else {
-				for ( k=0; k < param->k; k++) {
+				for ( k=0; k < param->parameterized_k_value; k++) {
 					for ( l = 0 ; l < thread_param->size ; l++ )				// at first thread_param->size is zero, doesn't go into this loop
 					{
 						pBDCThread pbdt = (pBDCThread)thread_param->array[l];	// previously added thread
