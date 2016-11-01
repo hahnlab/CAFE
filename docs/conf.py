@@ -35,6 +35,10 @@ if on_rtd:
 # ones.
 extensions = ['breathe']
 
+breathe_projects = {
+    "CAFE":"xml/",
+    }
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
