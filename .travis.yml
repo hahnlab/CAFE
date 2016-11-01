@@ -1,5 +1,10 @@
 language: c
-script:
+sudo: required
+dist: trusty
+before_install:
+  - sudo apt-get install CppUTest
+  
+  script:
   - cd cafe
   - make
   - cd ../tests
