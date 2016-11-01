@@ -1,0 +1,8 @@
+language: c
+script:
+  - cd cafe
+  - make
+  - cd ../tests
+  - make
+  - ./runtests
+
