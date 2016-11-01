@@ -2,12 +2,14 @@ language: c
 sudo: required
 dist: trusty
 before_install:
-  - sudo apt-get install CppUTest
+- sudo apt-get install CppUTest
   
-  script:
-  - cd cafe
-  - make
-  - cd ../tests
-  - make
-  - ./runtests
+script:
+- cd cafe
+- make
+- cd ../tests
+- make
+- ./runtests
 
+notifications:
+  slack: hahnlab-cafe:qWd7TTjmDiENiF99zgek98Rr
