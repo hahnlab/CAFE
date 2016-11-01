@@ -24,7 +24,7 @@ import os
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if on_rtd:
   from subprocess import call 
-  call('doxygen doxygen.cfg')
+  call('doxygen doxygen.cfg', shell=True)
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
