@@ -38,6 +38,7 @@ extensions = ['breathe']
 breathe_projects = {
     "CAFE":"xml/",
     }
+breathe_default_project = 'CAFE'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
