@@ -11,7 +11,7 @@ script:
 - ./runtests
 - cd ../docs
 - doxygen doxygen.cfg
-after-success:
+after_success:
 - ./docs/publish.sh
 notifications:
   slack: hahnlab-cafe:qWd7TTjmDiENiF99zgek98Rr
