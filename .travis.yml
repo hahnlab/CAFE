@@ -4,14 +4,15 @@ dist: trusty
 before_install:
 - sudo apt-get install CppUTest doxygen graphviz
 script:
-- cd cafe
+- cd $TRAVIS_BUILD_DIR/cafe
 - make
-- cd ../tests
+- cd $TRAVIS_BUILD_DIR/tests
 - make
 - ./runtests
-- cd ../docs
+- cd $TRAVIS_BUILD_DIR/docs
 - doxygen doxygen.cfg
 after_success:
-- ./docs/publish.sh
+- cd $TRAVIS_BUILD_DIR/docs
+- ./publish.sh
 notifications:
   slack: hahnlab-cafe:qWd7TTjmDiENiF99zgek98Rr
