@@ -34,3 +34,14 @@
 # Debug files
 *.dSYM/
 *.su
+.idea
+.gdb_history
+
+# Generated Documentation
+docs/html
+docs/xml
+docs/latex
+
+# Testing
+example/resultfile.*
+

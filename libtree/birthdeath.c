@@ -181,6 +181,11 @@ void init_matrix(double **matrix, int sz, double coeff)
 }
 // THE FUNCTION!!!!!!!!!!
 // must add mu to calculate the transition probability 
+/**
+	returns a structure representing a matrix of precalculated transition probabilites from one family
+	size to another, given the specified values of branch length, lambda, and mu. Values are calculated
+	from 0 to the given maxFamilySize. All relevant values are stored in the structure.
+**/
 pBirthDeathCache birthdeath_cache_new(double branchlength, double lambda, double mu, int maxFamilysize )
 {
 	pBirthDeathCache pbdc = (pBirthDeathCache)memory_new(1,sizeof(BirthDeathCache)  );
@@ -189,10 +194,6 @@ pBirthDeathCache birthdeath_cache_new(double branchlength, double lambda, double
 	pbdc->maxFamilysize = maxFamilysize;
 	pbdc->lambda = lambda;
 	pbdc->mu = mu;
-
-#ifdef __DEBUG__
-//	fprintf(stderr, "ADD Branch in cache(%d): %d, %f\n", maxFamilysize, branchlength, lambda);
-#endif
 
 	pbdc->matrix[0][0] = 1;		//Once you are zero you are almost surely zero
 
@@ -492,20 +493,6 @@ void cafe_set_birthdeath_cache(pCafeParam param)
 	int i;
 	pArrayList nlist = ((pTree)param->pcafe)->nlist;
 
-	/*for( i = 0, j = 0 ; j < nlist->size; j++ )
-	{
-		pPhylogenyNode pnode = (pPhylogenyNode)nlist->array[j];
-		if ( pnode->branchlength > 0 )
-		{
-			param->branchlengths_sorted[i++] = pnode->branchlength;
-		}
-	}
-	qsort(param->branchlengths_sorted, param->num_branches, sizeof(int), __cmp_int );
-     */
-	//int* bl = param->branchlengths_sorted;
-	//int size = param->num_branches;
-	//pbdc_array->base_bl = bl[0];
-	//pbdc_array->list = arraylist_new(bl[size-1] - bl[0] + 1 + 100);
     pbdc_array->table = hash_table_new(MODE_VALUEREF);
 	pbdc_array->maxFamilysize = MAX(param->family_sizes[1], param->rootfamily_sizes[1]);
 
@@ -513,11 +500,6 @@ void cafe_set_birthdeath_cache(pCafeParam param)
 		chooseln_cache_init2(&cache, pbdc_array->maxFamilysize );
 	else if ( cache.size < pbdc_array->maxFamilysize ) 
 		chooseln_cache_resize2(&cache, pbdc_array->maxFamilysize );
-
-	/*for ( i = bl[0]; i <= bl[size-1]; i++ )
-	{
-		arraylist_add(pbdc_array->list, NULL );
-	}*/
 
 	for ( i = 0 ; i < nlist->size ; i++ )
 	{
@@ -528,19 +510,19 @@ void cafe_set_birthdeath_cache(pCafeParam param)
 			pArrayList plist = hash_table_lookup(pbdc_array->table, key, sizeof(double));
 			double lambda = ((pCafeNode)pnode)->lambda;
 			double mu = ((pCafeNode)pnode)->mu;
-			//if ( (plist=pbdc_array->list->array[(int)pnode->branchlength-bl[0]]) == NULL )
 			if (plist == NULL)
             {
 				plist = arraylist_new(10);
-				arraylist_add( plist, birthdeath_cache_new(pnode->branchlength, lambda, mu, pbdc_array->maxFamilysize));
-				//pbdc_array->list->array[(int)pnode->branchlength-bl[0]] = plist;
+				pBirthDeathCache cache = birthdeath_cache_new(pnode->branchlength, lambda, mu, pbdc_array->maxFamilysize);
+				arraylist_add( plist, cache);
                 hash_table_add(pbdc_array->table, key, sizeof(double), plist, sizeof(ArrayList));
 			}
 			else
 			{
 				if ( birthdeath_search_list_for_lambda_mu(plist, lambda, mu) == NULL )
 				{
-					arraylist_add( plist, birthdeath_cache_new(pnode->branchlength, lambda, mu, pbdc_array->maxFamilysize));
+					pBirthDeathCache cache = birthdeath_cache_new(pnode->branchlength, lambda, mu, pbdc_array->maxFamilysize);
+					arraylist_add( plist, cache);
 				}
 			}
 		}
@@ -614,6 +596,10 @@ double** eq_birthdeath_cache_get_matrix(pBirthDeathCacheArray pbdc_array, double
 	return pbdc->matrix;
 }
 
+/** 
+	Returns square matrix of doubles, rows and columns representing the transition probability in birthdeath rate
+	in a change of one family size to another, with the given values of branch length, lambda, and mu
+**/
 double** birthdeath_cache_get_matrix(pBirthDeathCacheArray pbdc_array, double branchlength, double lambda, double mu )
 {
 	if (mu < 0) {
