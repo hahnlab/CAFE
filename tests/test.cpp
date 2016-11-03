@@ -580,13 +580,6 @@ TEST(FirstTestGroup, clear_tree_viterbis)
 	LONGS_EQUAL(0, pcnode->familysize);
 }
 
-void set_family_size(pTree ptree, pTreeNode pnode, va_list ap)
-{
-	((pCafeNode)pnode)->familysize = 0;
-	((pCafeNode)pnode)->lambda = 0.5;
-	((pCafeNode)pnode)->mu = 0.2;
-}
-
 int get_family_size(pTree ptree, int id)
 {
 	for (int i = 0; i < ptree->nlist->size; ++i)
@@ -603,17 +596,22 @@ TEST(FirstTestGroup, cafe_tree_random_familysize)
 	tree->pbdc_array = NULL;
 	CafeParam param;
 	param.pcafe = tree;
-	param.family_sizes[0] = 0;
-	param.rootfamily_sizes[0] = 0;
+	param.family_sizes[0] = 1;
+	param.rootfamily_sizes[0] = 1;
 	param.family_sizes[1] = 10;
-	param.rootfamily_sizes[1] = 10;
+	param.rootfamily_sizes[1] = 3;
+
 	cafe_set_birthdeath_cache(&param);
-	tree_traveral_prefix((pTree)tree, set_family_size);
+	pCafeNode node5 = (pCafeNode)tree->super.nlist->array[5];
+	for (int i = 0; i <= 10; ++i)
+		for (int j = 0; j <= 10; ++j)
+			node5->birthdeath_matrix[i][j] = .1;
+
 	int max = cafe_tree_random_familysize(tree, 10);
 	LONGS_EQUAL(10, max);
 	LONGS_EQUAL(10, get_family_size((pTree)tree, 3));
 	LONGS_EQUAL(10, get_family_size((pTree)tree, 7));
-	LONGS_EQUAL(10, get_family_size((pTree)tree, 5));
+	LONGS_EQUAL(8, get_family_size((pTree)tree, 5));
 }
 
 TEST(FirstTestGroup, cafe_set_birthdeath_cache)

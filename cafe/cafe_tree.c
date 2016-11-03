@@ -1188,6 +1188,9 @@ void __cafe_tree_set_birthdeath(pTree ptree, pTreeNode ptnode, va_list ap1 )
 	pcnode->birthdeath_matrix = birthdeath_cache_get_matrix(((pCafeTree)ptree)->pbdc_array, pcnode->super.branchlength, pcnode->lambda, pcnode->mu);
 }
 
+/**
+*	Set each node's birthdeath matrix based on its values of branchlength, lambdas, and mus
+**/
 void cafe_tree_set_birthdeath(pCafeTree pcafe)
 {
 	if ( pcafe->super.nlist )
@@ -1290,6 +1293,11 @@ pCafeTree cafe_tree_split(pCafeTree pcafe, int idx )
 
 void __cafe_tree_node_random_familysize(pTree ptree, pTreeNode pnode, va_list ap1)
 {
+	va_list ap;
+	va_copy(ap, ap1);
+	int *max = va_arg(ap, int*);
+	va_end(ap);
+
 	if ( tree_is_root(ptree,pnode) ) return;
 
 	double rnd = unifrnd();					
@@ -1298,51 +1306,29 @@ void __cafe_tree_node_random_familysize(pTree ptree, pTreeNode pnode, va_list ap
 	pCafeNode pcnode = (pCafeNode)pnode;
 	int maxFamilysize = pcafe->pbdc_array->maxFamilysize;
 	int s = ((pCafeNode)pnode->parent)->familysize;
-	int c;
-	double** bd = pcnode->birthdeath_matrix;
-	//double** bd = pcnode->k_bd->array[0];
-		
-	for ( c = 0 ; c < maxFamilysize ; c++ )
+	int c = 0;
+	for (; c < maxFamilysize ; c++ )
 	{
-		cumul += bd[s][c];
+		cumul += pcnode->birthdeath_matrix[s][c];
 		if ( cumul >= rnd ) break;
 	}
 	pcnode->familysize = c;
+	if (*max < pcnode->familysize)
+	{
+		*max = pcnode->familysize;
+	}
 }
 
+/**
+*	Sets the family size of each node to random value between 0 and the tree's pbdc_array maxFamilySize.
+**/
 int cafe_tree_random_familysize(pCafeTree pcafe, int rootFamilysize )
 {
 	int max = 0;
 	((pCafeNode)pcafe->super.root)->familysize = rootFamilysize;
-	if ( pcafe->super.prefix )
-	{
-		pArrayList prefix = pcafe->super.prefix;
-		int i;
-		for ( i = 0 ; i < prefix->size ; i++ )
-		{
-			pCafeNode pnode = (pCafeNode)prefix->array[i];
-			__cafe_tree_node_random_familysize((pTree)pcafe,(pTreeNode)pnode ,NULL);
-			if ( max < pnode->familysize )
-			{
-				max = pnode->familysize;
-			}
-		}
-	}
-	else
-	{
-		tree_traveral_prefix( (pTree)pcafe, __cafe_tree_node_random_familysize);
-	}
+	tree_traveral_prefix( (pTree)pcafe, __cafe_tree_node_random_familysize, &max);
 	return max;
 }
-
-/*
-int __cmp_double(const void* a, const void* b)
-{
-	if ( *(double*)a > *(double*)b ) return 1;
-	if ( *(double*)a == *(double*)b ) return 0;
-	return -1;
-}
-*/
 
 /* get likelihood values conditioned on the rootFamilysize for a number of randomly generated families */
 double* cafe_tree_random_probabilities(pCafeTree pcafe, int rootFamilysize, int trials )
