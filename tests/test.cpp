@@ -548,12 +548,23 @@ TEST(FirstTestGroup, cafe_cmd_gainloss_exceptions)
 
 TEST(FirstTestGroup, birthdeath_cache_new)
 {
-	pBirthDeathCache cache = birthdeath_cache_new(5, 0.2, 0.3, 3);
-	DOUBLES_EQUAL(0.2, cache->lambda, 0.0001);
-	DOUBLES_EQUAL(0.3, cache->mu, 0.0001);
-	DOUBLES_EQUAL(5, cache->branchlength, 0.0001);
+	chooseln_cache_init(3);
+	pBirthDeathCache cache = birthdeath_cache_new(10, 0.02, 0.01, 3);
+	DOUBLES_EQUAL(0.02, cache->lambda, 0.0001);
+	DOUBLES_EQUAL(0.01, cache->mu, 0.0001);
+	DOUBLES_EQUAL(10, cache->branchlength, 0.0001);
 	LONGS_EQUAL(3, cache->maxFamilysize);
+
+	// matrix should be set to a 3x3 array of doubles
 	DOUBLES_EQUAL(1, cache->matrix[0][0], 0.001);
+	DOUBLES_EQUAL(0, cache->matrix[0][1], 0.001);
+	DOUBLES_EQUAL(0, cache->matrix[0][2], 0.001);
+	DOUBLES_EQUAL(.086, cache->matrix[1][0], 0.001);
+	DOUBLES_EQUAL(.754, cache->matrix[1][1], 0.001);
+	DOUBLES_EQUAL(.131, cache->matrix[1][2], 0.001);
+	DOUBLES_EQUAL(.007, cache->matrix[2][0], 0.001);
+	DOUBLES_EQUAL(.131, cache->matrix[2][1], 0.001);
+	DOUBLES_EQUAL(.591, cache->matrix[2][2], 0.001);
 }
 
 TEST(FirstTestGroup, clear_tree_viterbis)
@@ -567,6 +578,61 @@ TEST(FirstTestGroup, clear_tree_viterbis)
 	DOUBLES_EQUAL(0.0, pcnode->viterbi[0], 0.0001);
 	DOUBLES_EQUAL(0.0, pcnode->viterbi[1], 0.0001);
 	LONGS_EQUAL(0, pcnode->familysize);
+}
+
+void set_family_size(pTree ptree, pTreeNode pnode, va_list ap)
+{
+	((pCafeNode)pnode)->familysize = 0;
+	((pCafeNode)pnode)->lambda = 0.5;
+	((pCafeNode)pnode)->mu = 0.2;
+}
+
+int get_family_size(pTree ptree, int id)
+{
+	for (int i = 0; i < ptree->nlist->size; ++i)
+	{
+		pCafeNode node = (pCafeNode)ptree->nlist->array[i];
+		if (node->super.super.id == id)
+			return node->familysize;
+	}
+	return -1;
+}
+TEST(FirstTestGroup, cafe_tree_random_familysize)
+{
+	pCafeTree tree = create_tree();
+	tree->pbdc_array = NULL;
+	CafeParam param;
+	param.pcafe = tree;
+	param.family_sizes[0] = 0;
+	param.rootfamily_sizes[0] = 0;
+	param.family_sizes[1] = 10;
+	param.rootfamily_sizes[1] = 10;
+	cafe_set_birthdeath_cache(&param);
+	tree_traveral_prefix((pTree)tree, set_family_size);
+	int max = cafe_tree_random_familysize(tree, 10);
+	LONGS_EQUAL(10, max);
+	LONGS_EQUAL(10, get_family_size((pTree)tree, 3));
+	LONGS_EQUAL(10, get_family_size((pTree)tree, 7));
+	LONGS_EQUAL(10, get_family_size((pTree)tree, 5));
+}
+
+TEST(FirstTestGroup, cafe_set_birthdeath_cache)
+{
+	pCafeTree tree = create_tree();
+	tree->pbdc_array = NULL;
+	CafeParam param;
+	param.pcafe = tree;
+	param.family_sizes[0] = 0;
+	param.rootfamily_sizes[0] = 0;
+	param.family_sizes[1] = 10;
+	param.rootfamily_sizes[1] = 10;
+	cafe_set_birthdeath_cache(&param);
+	CHECK_FALSE(tree->pbdc_array == NULL);
+	// every node should have its birthdeath_matrix set to an entry in the cache
+	// matching its branch length, lambda and mu values
+	pCafeNode node = (pCafeNode)tree->super.nlist->array[3];
+	double** expected = birthdeath_cache_get_matrix(tree->pbdc_array, node->super.branchlength, node->lambda, node->mu);
+	POINTERS_EQUAL(expected, node->birthdeath_matrix);
 }
 
 int main(int ac, char** av)

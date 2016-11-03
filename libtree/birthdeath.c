@@ -50,9 +50,9 @@ void chooseln_cache_free()
 
 
 
-double birthdeath_rate_with_log_alpha_beta(int s, int c, double log_alpha, double log_beta, double log_coeff )
+double birthdeath_rate_with_log_alpha_beta(int s, int c, double log_alpha, double log_beta, double log_coeff, struct chooseln_cache *cache)
 {
-	assert(cache.values != 0);
+	assert(cache->values != 0);
 	int j;
 	int m = MIN(c,s);
 	double t, p = 0;
@@ -61,7 +61,7 @@ double birthdeath_rate_with_log_alpha_beta(int s, int c, double log_alpha, doubl
 	int s_sub_1 = s - 1;
 	for ( j = 0, p = 0 ; j <= m ; j++ )
 	{
-		t = cache.values[s][j] + cache.values[s_add_c_sub_1-j][s_sub_1] + (s-j)*log_alpha + (c-j)*log_beta + j*log_coeff;
+		t = cache->values[s][j] + cache->values[s_add_c_sub_1-j][s_sub_1] + (s-j)*log_alpha + (c-j)*log_beta + j*log_coeff;
 		//t = chooseln_get(s, j) + chooseln_get(s_add_c_sub_1-j,s_sub_1) + (s-j)*log_alpha + (c-j)*log_beta + j*log_coeff;
 		p += exp(t);
 	}
@@ -131,7 +131,7 @@ double birthdeath_rate_with_log_alpha(int s, int c, double log_alpha, double coe
 				return 0;
 			}
 			else {
-				return birthdeath_rate_with_log_alpha_beta(root_family_size, family_size, log(alpha),log(beta),log(coeff));
+				return birthdeath_rate_with_log_alpha_beta(root_family_size, family_size, log(alpha),log(beta),log(coeff), cache);
 			}
 		}
 	}
@@ -185,8 +185,12 @@ void init_matrix(double **matrix, int sz, double coeff)
 	returns a structure representing a matrix of precalculated transition probabilites from one family
 	size to another, given the specified values of branch length, lambda, and mu. Values are calculated
 	from 0 to the given maxFamilySize. All relevant values are stored in the structure.
+
+	lambda is the probability of both gene gain and loss per gene per unit time in the phylogeny 
+	[CAFE assumes that gene birth and death are equally probable, see Hahn et al. (2005)].
+	If mu is provided, lambda and mu represent the probability of gene birth and gene death, respectively.
 **/
-pBirthDeathCache birthdeath_cache_new(double branchlength, double lambda, double mu, int maxFamilysize )
+pBirthDeathCache birthdeath_cache_new(double branchlength, double lambda, double mu, int maxFamilysize)
 {
 	pBirthDeathCache pbdc = (pBirthDeathCache)memory_new(1,sizeof(BirthDeathCache)  );
 	pbdc->matrix = (double**)memory_new_2dim( (maxFamilysize+1) , (maxFamilysize+1), sizeof(double) );
@@ -207,8 +211,9 @@ pBirthDeathCache birthdeath_cache_new(double branchlength, double lambda, double
 		coeff = 1 - 2 * alpha;
 	}		
 	else {
-		double denominator = lambda*(exp((lambda-mu)*branchlength))-mu;
-		double numerator = exp((lambda-mu)*branchlength)-1;
+		double e_diff = exp((lambda - mu)*branchlength);
+		double numerator = e_diff - 1;
+		double denominator = lambda*(e_diff) - mu;
 		alpha = (mu*numerator)/denominator;
 		beta = (lambda*numerator)/denominator;
 		coeff = 1 - alpha - beta;
@@ -225,7 +230,7 @@ pBirthDeathCache birthdeath_cache_new(double branchlength, double lambda, double
 				if (mu < 0)
 					pbdc->matrix[s][c] = birthdeath_rate_with_log_alpha(s, c, log(alpha), coeff, &cache);
 				else
-					pbdc->matrix[s][c] = birthdeath_rate_with_log_alpha_beta(s,c,log(alpha), log(beta), log(coeff));
+					pbdc->matrix[s][c] = birthdeath_rate_with_log_alpha_beta(s,c,log(alpha), log(beta), log(coeff), &cache);
 			}
 		}
 	}
