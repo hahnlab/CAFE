@@ -557,15 +557,15 @@ TEST(FirstTestGroup, birthdeath_cache_new)
 	LONGS_EQUAL(3, cache->maxFamilysize);
 
 	// matrix.values should be set to a 3x3 array of doubles
-	DOUBLES_EQUAL(1, cache->matrix.values[0][0], 0.001);
-	DOUBLES_EQUAL(0, cache->matrix.values[0][1], 0.001);
-	DOUBLES_EQUAL(0, cache->matrix.values[0][2], 0.001);
-	DOUBLES_EQUAL(.086, cache->matrix.values[1][0], 0.001);
-	DOUBLES_EQUAL(.754, cache->matrix.values[1][1], 0.001);
-	DOUBLES_EQUAL(.131, cache->matrix.values[1][2], 0.001);
-	DOUBLES_EQUAL(.007, cache->matrix.values[2][0], 0.001);
-	DOUBLES_EQUAL(.131, cache->matrix.values[2][1], 0.001);
-	DOUBLES_EQUAL(.591, cache->matrix.values[2][2], 0.001);
+	DOUBLES_EQUAL(1, square_matrix_get(&cache->matrix, 0, 0), 0.001);
+	DOUBLES_EQUAL(0, square_matrix_get(&cache->matrix, 0, 1), 0.001);
+	DOUBLES_EQUAL(0, square_matrix_get(&cache->matrix, 0, 2), 0.001);
+	DOUBLES_EQUAL(.086, square_matrix_get(&cache->matrix, 1, 0), 0.001);
+	DOUBLES_EQUAL(.754, square_matrix_get(&cache->matrix, 1, 1), 0.001);
+	DOUBLES_EQUAL(.131, square_matrix_get(&cache->matrix, 1, 2), 0.001);
+	DOUBLES_EQUAL(.007, square_matrix_get(&cache->matrix, 2, 0), 0.001);
+	DOUBLES_EQUAL(.131, square_matrix_get(&cache->matrix, 2, 1), 0.001);
+	DOUBLES_EQUAL(.591, square_matrix_get(&cache->matrix, 2, 2), 0.001);
 }
 
 TEST(FirstTestGroup, clear_tree_viterbis)

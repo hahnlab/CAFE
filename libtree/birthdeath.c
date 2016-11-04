@@ -139,7 +139,7 @@ double birthdeath_rate_with_log_alpha(int s, int c, double log_alpha, double coe
 
 void square_matrix_init(struct square_matrix* matrix, int sz)
 {
-	matrix->values = (double**)memory_new_2dim(sz, sz, sizeof(double));
+	matrix->values = (double*)memory_new(sz * sz, sizeof(double));
 	matrix->size = sz;
 }
 
@@ -147,17 +147,27 @@ void square_matrix_set(struct square_matrix* matrix, int x, int y, double val)
 {
 	assert(x < matrix->size);
 	assert(y < matrix->size);
-	matrix->values[x][y] = val;
+	matrix->values[x*matrix->size+y] = val;
 }
 
 void square_matrix_delete(struct square_matrix* matrix)
 {
-	memory_free_2dim((void**)matrix->values, matrix->size, matrix->size, NULL);
+	memory_free((void*)matrix->values);
 }
 
 void square_matrix_resize(struct square_matrix* matrix, int new_size)
 {
-	matrix->values = (double**)memory_realloc(matrix->values, new_size, sizeof(double*));
+#if 1
+	int n = new_size < matrix->size ? new_size : matrix->size;
+	double *new_values = memory_new(new_size*new_size, sizeof(double*));
+	for (int i = 0; i < n; ++i)
+		for (int j = 0; j < n; ++j)
+			new_values[i*new_size + j] = matrix->values[i*matrix->size + j];
+	memory_free(matrix->values);
+	matrix->values = new_values;
+	matrix->size = new_size;
+#else
+	matrix->values = (double**)memory_realloc(matrix->values, new_size*new_size, sizeof(double*));
 
 	for (int s = 0; s < matrix->size; s++)
 	{
@@ -167,6 +177,7 @@ void square_matrix_resize(struct square_matrix* matrix, int new_size)
 	{
 		matrix->values[s] = (double*)memory_new(new_size, sizeof(double));
 	}
+#endif
 }
 
 void init_zero_matrix(struct square_matrix *matrix)

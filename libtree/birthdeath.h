@@ -6,7 +6,7 @@
 #include "chooseln_cache.h"
 
 struct square_matrix {
-	double **values;
+	double *values;
 	int size;
 };
 void square_matrix_init(struct square_matrix* matrix, int sz);
@@ -15,7 +15,7 @@ static inline double square_matrix_get(struct square_matrix *matrix, int x, int 
 {
 	assert(x < matrix->size);
 	assert(y < matrix->size);
-	return matrix->values[x][y];
+	return matrix->values[x*matrix->size+y];
 }
 
 typedef struct
