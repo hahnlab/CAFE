@@ -157,7 +157,6 @@ void square_matrix_delete(struct square_matrix* matrix)
 
 void square_matrix_resize(struct square_matrix* matrix, int new_size)
 {
-#if 1
 	int n = new_size < matrix->size ? new_size : matrix->size;
 	double *new_values = memory_new(new_size*new_size, sizeof(double*));
 	for (int i = 0; i < n; ++i)
@@ -166,18 +165,6 @@ void square_matrix_resize(struct square_matrix* matrix, int new_size)
 	memory_free(matrix->values);
 	matrix->values = new_values;
 	matrix->size = new_size;
-#else
-	matrix->values = (double**)memory_realloc(matrix->values, new_size*new_size, sizeof(double*));
-
-	for (int s = 0; s < matrix->size; s++)
-	{
-		matrix->values[s] = (double*)memory_realloc(matrix->values[s], new_size, sizeof(double));
-	}
-	for (int s = matrix->size; s < new_size; s++)
-	{
-		matrix->values[s] = (double*)memory_new(new_size, sizeof(double));
-	}
-#endif
 }
 
 void init_zero_matrix(struct square_matrix *matrix)

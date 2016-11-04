@@ -546,7 +546,22 @@ TEST(FirstTestGroup, cafe_cmd_gainloss_exceptions)
 	assert_gainloss_exception(&param, "ERROR(gainloss): You did not set the parameters: command 'lambda' or 'lambdamu'\n");
 }
 
-
+TEST(FirstTestGroup, square_matrix_resize)
+{
+	square_matrix matrix;
+	square_matrix_init(&matrix, 2);
+	square_matrix_set(&matrix, 0, 0, 1);
+	square_matrix_set(&matrix, 0, 1, 2);
+	square_matrix_set(&matrix, 1, 0, 3);
+	square_matrix_set(&matrix, 1, 1, 4);
+	square_matrix_resize(&matrix, 3);
+	LONGS_EQUAL(1, square_matrix_get(&matrix, 0, 0));
+	LONGS_EQUAL(2, square_matrix_get(&matrix, 0, 1));
+	LONGS_EQUAL(3, square_matrix_get(&matrix, 1, 0));
+	LONGS_EQUAL(4, square_matrix_get(&matrix, 1, 1));
+	square_matrix_resize(&matrix, 1);
+	LONGS_EQUAL(1, square_matrix_get(&matrix, 0, 0));
+}
 TEST(FirstTestGroup, birthdeath_cache_new)
 {
 	chooseln_cache_init(3);

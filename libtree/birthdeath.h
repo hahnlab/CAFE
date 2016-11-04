@@ -11,6 +11,7 @@ struct square_matrix {
 };
 void square_matrix_init(struct square_matrix* matrix, int sz);
 void square_matrix_set(struct square_matrix* matrix, int x, int y, double val);
+void square_matrix_resize(struct square_matrix* matrix, int new_size);
 static inline double square_matrix_get(struct square_matrix *matrix, int x, int y)
 {
 	assert(x < matrix->size);
