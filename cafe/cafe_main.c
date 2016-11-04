@@ -1245,18 +1245,17 @@ void viterbi_section(pCafeParam param, int i, pCafeTree pcafe, double *cP, pArra
 			(pCafeNode)((pTreeNode)pcnode)->children->tail->data };
 		for (int k = 0; k < 2; k++)
 		{
-			double p = child[k]->birthdeath_matrix[pcnode->familysize][child[k]->familysize];
-			double** pbdc = child[k]->birthdeath_matrix;
+			double p = square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, child[k]->familysize);
 			int n = 2 * j + k;
 			for (int m = 0; m <= pcafe->familysizes[1]; m++)
 			{
-				if (pbdc[pcnode->familysize][m] == p)
+				if (square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, m) == p)
 				{
-					param->viterbi.viterbiPvalues[n][i] += pbdc[pcnode->familysize][m] / 2.0;
+					param->viterbi.viterbiPvalues[n][i] += square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, m) / 2.0;
 				}
-				else if (pbdc[pcnode->familysize][m] < p)
+				else if (square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, m) < p)
 				{
-					param->viterbi.viterbiPvalues[n][i] += pbdc[pcnode->familysize][m];
+					param->viterbi.viterbiPvalues[n][i] += square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, m);
 				}
 			}
 		}

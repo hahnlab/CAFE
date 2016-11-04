@@ -51,7 +51,7 @@ typedef struct
 	/** Matrix of precalculated values, indexed by the root family size
 		and the family size
 	*/
-	double** birthdeath_matrix;
+	struct square_matrix* birthdeath_matrix;
 	pArrayList k_bd;
     pErrorStruct errormodel;
 }CafeNode;

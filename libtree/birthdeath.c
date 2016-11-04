@@ -137,48 +137,81 @@ double birthdeath_rate_with_log_alpha(int s, int c, double log_alpha, double coe
 	}
 }
 
-void init_zero_matrix(double **matrix, int sz)
+void square_matrix_init(struct square_matrix* matrix, int sz)
 {
-	for (int s = 1; s <= sz; s++)
+	matrix->values = (double**)memory_new_2dim(sz, sz, sizeof(double));
+	matrix->size = sz;
+}
+
+void square_matrix_set(struct square_matrix* matrix, int x, int y, double val)
+{
+	assert(x < matrix->size);
+	assert(y < matrix->size);
+	matrix->values[x][y] = val;
+}
+
+void square_matrix_delete(struct square_matrix* matrix)
+{
+	memory_free_2dim((void**)matrix->values, matrix->size, matrix->size, NULL);
+}
+
+void square_matrix_resize(struct square_matrix* matrix, int new_size)
+{
+	matrix->values = (double**)memory_realloc(matrix->values, new_size, sizeof(double*));
+
+	for (int s = 0; s < matrix->size; s++)
 	{
-		for (int c = 0; c <= sz; c++)
+		matrix->values[s] = (double*)memory_realloc(matrix->values[s], new_size, sizeof(double));
+	}
+	for (int s = matrix->size; s < new_size; s++)
+	{
+		matrix->values[s] = (double*)memory_new(new_size, sizeof(double));
+	}
+}
+
+void init_zero_matrix(struct square_matrix *matrix)
+{
+	for (int s = 1; s < matrix->size; s++)
+	{
+		for (int c = 0; c < matrix->size; c++)
 		{
-			matrix[s][c] = 0;
+			square_matrix_set(matrix, s, c, 0);
 		}
 	}
 }
 
-void init_identity_matrix(double **matrix, int sz)
+void init_identity_matrix(struct square_matrix* matrix)
 {
-	for (int s = 1; s <= sz; s++)
+	for (int s = 1; s < matrix->size; s++)
 	{
-		for (int c = 0; c <= sz; c++)
+		for (int c = 0; c < matrix->size; c++)
 		{
 			if (s == c) {
-				matrix[s][c] = 1;
+				square_matrix_set(matrix, s, c, 1);
 			}
 			else {
-				matrix[s][c] = 0;
+				square_matrix_set(matrix, s, c, 0);
 			}
 		}
 	}
 }
 
-void init_matrix(double **matrix, int sz, double coeff)
+void init_matrix(struct square_matrix* matrix, double coeff)
 {
-	for (int c = 1; c <= sz; c++)
+	for (int c = 1; c < matrix->size; c++)
 	{
-		matrix[0][c] = 0;
+		square_matrix_set(matrix, 0, c, 0);
 	}
 	if (coeff <= 0)
 	{
-		init_zero_matrix(matrix, sz);
+		init_zero_matrix(matrix);
 	}
 	else if (coeff == 1)
 	{
-		init_identity_matrix(matrix, sz);
+		init_identity_matrix(matrix);
 	}
 }
+
 // THE FUNCTION!!!!!!!!!!
 // must add mu to calculate the transition probability 
 /**
@@ -193,13 +226,14 @@ void init_matrix(double **matrix, int sz, double coeff)
 pBirthDeathCache birthdeath_cache_new(double branchlength, double lambda, double mu, int maxFamilysize)
 {
 	pBirthDeathCache pbdc = (pBirthDeathCache)memory_new(1,sizeof(BirthDeathCache)  );
-	pbdc->matrix = (double**)memory_new_2dim( (maxFamilysize+1) , (maxFamilysize+1), sizeof(double) );
+	int sz = maxFamilysize + 1;
+	square_matrix_init(&pbdc->matrix, sz);
 	pbdc->branchlength = branchlength;
 	pbdc->maxFamilysize = maxFamilysize;
 	pbdc->lambda = lambda;
 	pbdc->mu = mu;
 
-	pbdc->matrix[0][0] = 1;		//Once you are zero you are almost surely zero
+	square_matrix_set(&pbdc->matrix, 0, 0, 1);		//Once you are zero you are almost surely zero
 
 	double alpha = 0;
 	double beta = 0;
@@ -219,7 +253,7 @@ pBirthDeathCache birthdeath_cache_new(double branchlength, double lambda, double
 		coeff = 1 - alpha - beta;
 	}
 
-	init_matrix(pbdc->matrix, maxFamilysize, coeff);
+	init_matrix(&pbdc->matrix, coeff);
 
 	if (coeff > 0 && coeff != 1)
 	{
@@ -228,9 +262,9 @@ pBirthDeathCache birthdeath_cache_new(double branchlength, double lambda, double
 			for (int c = 0 ; c <= maxFamilysize ; c++ )
 			{
 				if (mu < 0)
-					pbdc->matrix[s][c] = birthdeath_rate_with_log_alpha(s, c, log(alpha), coeff, &cache);
+					square_matrix_set(&pbdc->matrix, s, c, birthdeath_rate_with_log_alpha(s, c, log(alpha), coeff, &cache));
 				else
-					pbdc->matrix[s][c] = birthdeath_rate_with_log_alpha_beta(s,c,log(alpha), log(beta), log(coeff), &cache);
+					square_matrix_set(&pbdc->matrix, s, c, birthdeath_rate_with_log_alpha_beta(s, c, log(alpha), log(beta), log(coeff), &cache));
 			}
 		}
 	}
@@ -254,33 +288,24 @@ pBirthDeathCache birthdeath_cach_resize(pBirthDeathCache pbdc, int remaxFamilysi
 	double coeff = 1 - 2 * alpha;
 	int old = pbdc->maxFamilysize;
 	alpha = log(alpha);
-	pbdc->matrix = (double**)memory_realloc( pbdc->matrix, remaxFamilysize + 1, sizeof(double*) );
-
-	for ( s = 0 ; s <= old ; s++ )
-	{
-		pbdc->matrix[s] = (double*)memory_realloc( pbdc->matrix[s], remaxFamilysize + 1, sizeof(double));
-	}
-	for ( s = old + 1 ; s <= remaxFamilysize; s++ )
-	{
-		pbdc->matrix[s] = (double*)memory_new( remaxFamilysize + 1, sizeof(double));
-	}
+	square_matrix_resize(&pbdc->matrix, remaxFamilysize + 1);
 
 	for ( c = old + 1 ; c <= remaxFamilysize ; c++ )
 	{
-		pbdc->matrix[0][c] = 0;
+		square_matrix_set(&pbdc->matrix, 0, c, 0);
 	}
 	for ( s = 1 ; s <= remaxFamilysize; s++ )
 	{
 		for ( c = old + 1 ; c <= remaxFamilysize ; c++ )
 		{
-			pbdc->matrix[s][c] = birthdeath_rate_with_log_alpha(s,c,alpha,coeff, &cache);
+			square_matrix_set(&pbdc->matrix, s, c, birthdeath_rate_with_log_alpha(s,c,alpha,coeff, &cache));
 		}
 	}
 	for ( s = old  + 1 ; s <= remaxFamilysize; s++ )
 	{ 
 		for ( c = 0; c <= remaxFamilysize ; c++ )
 		{
-			pbdc->matrix[s][c] = birthdeath_rate_with_log_alpha(s,c,alpha,coeff, &cache);
+			square_matrix_set(&pbdc->matrix, s, c, birthdeath_rate_with_log_alpha(s, c, alpha, coeff, &cache));
 		}
 	}
 	pbdc->maxFamilysize = remaxFamilysize;
@@ -291,10 +316,8 @@ pBirthDeathCache birthdeath_cach_resize(pBirthDeathCache pbdc, int remaxFamilysi
 void birthdeath_cache_free(void* ptr)
 {
 	pBirthDeathCache pbdc = (pBirthDeathCache)ptr;
-	memory_free_2dim( (void**)pbdc->matrix, 
-			          pbdc->maxFamilysize + 1, 
-					  pbdc->maxFamilysize + 1, NULL );
-    pbdc->matrix = NULL;
+	square_matrix_delete(&pbdc->matrix);
+    pbdc->matrix.values = NULL;
 	memory_free(pbdc);	
 	pbdc = NULL;
 }
@@ -573,7 +596,7 @@ void birthdeath_cache_array_free(pBirthDeathCacheArray pbdc_array)
 }
 
 
-double** eq_birthdeath_cache_get_matrix(pBirthDeathCacheArray pbdc_array, double branchlength, double lambda )
+struct square_matrix* eq_birthdeath_cache_get_matrix(pBirthDeathCacheArray pbdc_array, double branchlength, double lambda )
 {
 	pArrayList plist;
 	pBirthDeathCache pbdc = NULL;
@@ -598,14 +621,14 @@ double** eq_birthdeath_cache_get_matrix(pBirthDeathCacheArray pbdc_array, double
 		arraylist_add(plist, pbdc);
         hash_table_add(pbdc_array->table, key, sizeof(double), plist, sizeof(ArrayList));
 	}
-	return pbdc->matrix;
+	return &pbdc->matrix;
 }
 
 /** 
 	Returns square matrix of doubles, rows and columns representing the transition probability in birthdeath rate
 	in a change of one family size to another, with the given values of branch length, lambda, and mu
 **/
-double** birthdeath_cache_get_matrix(pBirthDeathCacheArray pbdc_array, double branchlength, double lambda, double mu )
+struct square_matrix* birthdeath_cache_get_matrix(pBirthDeathCacheArray pbdc_array, double branchlength, double lambda, double mu )
 {
 	if (mu < 0) {
 		return eq_birthdeath_cache_get_matrix(pbdc_array, branchlength, lambda);
@@ -633,6 +656,6 @@ double** birthdeath_cache_get_matrix(pBirthDeathCacheArray pbdc_array, double br
 		arraylist_add(plist, pbdc);
         hash_table_add(pbdc_array->table, key, sizeof(double), plist, sizeof(ArrayList));
 	}
-	return pbdc->matrix;
+	return &pbdc->matrix;
 }
 
