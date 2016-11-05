@@ -649,6 +649,19 @@ TEST(FirstTestGroup, cafe_set_birthdeath_cache)
 	POINTERS_EQUAL(expected, node->birthdeath_matrix);
 }
 
+TEST(FirstTestGroup, cafe_likelihood_ratio_test)
+{
+	CafeParam param;
+	param.flog = stdout;
+	pCafeTree tree = create_tree();
+	param.pcafe = tree;
+	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
+	param.pfamily = cafe_family_init(build_arraylist(species, 7));
+
+	cafe_likelihood_ratio_test(&param);
+	DOUBLES_EQUAL(0, param.likelihoodRatios[0][0], .0001);
+}
+
 int main(int ac, char** av)
 {
 	return CommandLineTestRunner::RunAllTests(ac, av);

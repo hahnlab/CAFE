@@ -1579,7 +1579,7 @@ void* __cafe_likelihood_ratio_test_thread_func(void* ptr)
 				continue;
 			}
 			old_bl = pnode->branchlength;
-			double** old_bd = ((pCafeNode)pnode)->birthdeath_matrix;
+			struct square_matrix *old_bd = ((pCafeNode)pnode)->birthdeath_matrix;
 			double prevlh = -1;
 			double nextlh = maxlh;
 			while( prevlh < nextlh )
