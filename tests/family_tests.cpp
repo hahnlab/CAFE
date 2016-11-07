@@ -115,7 +115,6 @@ TEST(FamilyTests, cafe_family_add_item)
 	LONGS_EQUAL(pitem->ref, -1);
 	LONGS_EQUAL(pitem->lambda, NULL);
 	LONGS_EQUAL(pitem->mu, NULL);
-	LONGS_EQUAL(pitem->pbdc_array, NULL);
 	LONGS_EQUAL(pitem->holder, 1);
 	LONGS_EQUAL(13, pcf->max_size);
 

@@ -461,7 +461,6 @@ void cafe_family_add_item(pCafeFamily pcf, pArrayList data)
 	pitem->ref = -1;
 	pitem->lambda = NULL;
 	pitem->mu = NULL;
-	pitem->pbdc_array = NULL;
 	pitem->holder = 1;
 	for (int j = 0; j < pcf->num_species; j++)
 	{
@@ -533,10 +532,6 @@ void cafe_family_item_free(pCafeFamilyItem pitem )
 	{
 		if( pitem->lambda ) {memory_free(pitem->lambda); pitem->lambda = NULL;}
 		if( pitem->mu ) {memory_free(pitem->mu); pitem->mu = NULL; }
-		if( pitem->pbdc_array ) {
-            birthdeath_cache_array_free(pitem->pbdc_array);
-            pitem->pbdc_array = NULL;
-        }
 	}
 	memory_free(pitem);
 	pitem = NULL;

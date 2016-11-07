@@ -1030,7 +1030,6 @@ double* cafe_each_best_lambda_by_fminsearch(pCafeParam param, int lambda_len )
 			pCafeFamilyItem pref = (pCafeFamilyItem)param->pfamily->flist->array[pitem->ref];
 			pitem->lambda = pref->lambda;
 			pitem->mu = pref->mu;
-			pitem->pbdc_array = pref->pbdc_array;
 			param->param_set_func(param,pitem->lambda);
 
 			cafe_log(param,"%s: Lambda Search Result of %d/%d in %d iteration \n", pitem->id, i+1, fsize, pfm->iters );
@@ -1129,7 +1128,6 @@ void* __cafe_conditional_distribution_thread_func(void* ptr)
 	pCDParam param = (pCDParam)ptr;	
 	pCafeParam cafeparam = param->cafeparam;
 	pCafeTree pcafe = cafe_tree_copy(cafeparam->pcafe);
-	pcafe->pbdc_array = cafeparam->pcafe->pbdc_array;
 #ifdef __DEBUG__
 	printf("CD: %d ~ %d\n", param->range[0], param->range[1]);
 #endif
@@ -1269,7 +1267,6 @@ void* __cafe_viterbi_thread_func(void* ptr)
 	pCafeParam param = (pCafeParam)pv->cafeparam;
 	pArrayList pCD = pv->pCD;
 	pCafeTree pcafe = cafe_tree_copy(param->pcafe);
-	pcafe->pbdc_array = param->pcafe->pbdc_array;
 	int fsize = param->pfamily->flist->size;
 	double* cP = (double*)memory_new( pcafe->rfsize, sizeof(double));
 #ifdef __DEBUG__
@@ -1378,7 +1375,6 @@ void* __cafe_branch_cutting_thread_func(void* ptr)
 		}
 		
 		pCafeTree pcafe = cafe_tree_copy(param->pcafe);
-		pcafe->pbdc_array = param->pcafe->pbdc_array;
 		pCafeTree psub =  cafe_tree_split(pcafe,b);
 		psub->pbdc_array = param->pcafe->pbdc_array;
 
@@ -1445,7 +1441,6 @@ void cafe_branch_cutting(pCafeParam param)
 			continue;
 		}
 		pCafeTree pcafe = cafe_tree_copy(param->pcafe);
-		pcafe->pbdc_array = param->pcafe->pbdc_array;
 		pCafeTree psub =  cafe_tree_split(pcafe,b);
 		psub->pbdc_array = param->pcafe->pbdc_array;
 		
@@ -1552,7 +1547,6 @@ void* __cafe_likelihood_ratio_test_thread_func(void* ptr)
 	pCafeParam param  = plrt->cafeparam;
 	pTree ptree = (pTree)param->pcafe;
 	pCafeTree pcafe = cafe_tree_copy(param->pcafe);
-	pcafe->pbdc_array = param->pcafe->pbdc_array;
 	int nnodes = ptree->nlist->size;
 	int old_bl;
 	int fsize = param->pfamily->flist->size;

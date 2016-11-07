@@ -15,7 +15,6 @@ typedef struct
 	double*  lambda;
 	double*	 mu;
 	double*	 z_membership;
-	pBirthDeathCacheArray pbdc_array;
 	int   holder;
 }CafeFamilyItem;
 

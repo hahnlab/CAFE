@@ -1270,6 +1270,7 @@ pCafeTree cafe_tree_copy(pCafeTree psrc)
 							    cafe_tree_node_copy );
 	__cafe_tree_copy_new_fill(psrc,pcafe);
 	tree_build_node_list((pTree)pcafe);
+	pcafe->pbdc_array = psrc->pbdc_array;
 	return pcafe;
 }
 

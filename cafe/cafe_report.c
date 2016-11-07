@@ -531,7 +531,6 @@ int cafe_report_retrieve_data(char* file, pCafeParam param)
 		pitem->maxlh = -1;
 		pitem->ref = -1;
 		pitem->lambda = NULL;
-		pitem->pbdc_array = NULL;
 		arraylist_add(pcf->flist,pitem);
 		sscanf((char*)data->array[2], "%lf", &param->viterbi.maximumPvalues[i]);
 

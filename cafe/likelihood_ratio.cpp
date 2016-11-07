@@ -71,7 +71,7 @@ void update_branchlength(pCafeTree pcafe, pTree lambda_tree, double bl_augment, 
 }
 
 
-double __cafe_lhr_get_likelihood_for_diff_lambdas(pCafeParam param, int idx, int t, std::vector<double*> &lambda_cache, pBirthDeathCacheArray* PBDC)
+double __cafe_lhr_get_likelihood_for_diff_lambdas(pCafeParam param, int idx, int t, std::vector<double*> &lambda_cache, std::vector<pBirthDeathCacheArray>& PBDC)
 {
 	update_branchlength(param->pcafe, param->lambda_tree, param->bl_augment, param->old_branchlength, &t);
 	if (lambda_cache[t] == NULL)
@@ -110,7 +110,7 @@ void* __cafe_lhr_for_diff_lambdas_i(pCafeParam param,
 	pTree lambda_tree,
 	int    num_lambdas,
 	std::vector<double*> &lambda_cache,
-	pBirthDeathCacheArray* PBDC
+	std::vector<pBirthDeathCacheArray> &PBDC
 )
 {
 	int i, j;
@@ -148,12 +148,11 @@ void* __cafe_lhr_for_diff_lambdas_i(pCafeParam param,
 void cafe_lhr_for_diff_lambdas(pCafeParam param, pTree lambda_tree2, int num_lambdas, param_func lfunc)
 {
 	std::vector<double *> lambda_cache(100);
-	pBirthDeathCacheArray* PBDC;
 
 	cafe_log(param, "Running Likelihood Ratio Test 2....\n");
 	int i;
 
-	PBDC = (pBirthDeathCacheArray*)memory_new(100, sizeof(pBirthDeathCacheArray));
+	std::vector<pBirthDeathCacheArray> PBDC(100);
 	for (i = 0; i < 100; i++)
 	{
 		lambda_cache[i] = NULL;
@@ -189,6 +188,5 @@ void cafe_lhr_for_diff_lambdas(pCafeParam param, pTree lambda_tree2, int num_lam
 			birthdeath_cache_array_free(PBDC[i]);
 		}
 	}
-	memory_free(PBDC);
 }
 
