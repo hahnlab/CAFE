@@ -574,22 +574,19 @@ TEST(FirstTestGroup, square_matrix_resize)
 TEST(FirstTestGroup, birthdeath_cache_new)
 {
 	chooseln_cache_init(3);
-	pBirthDeathCache cache = birthdeath_cache_new(10, 0.02, 0.01, 3);
-	DOUBLES_EQUAL(0.02, cache->lambda, 0.0001);
-	DOUBLES_EQUAL(0.01, cache->mu, 0.0001);
-	DOUBLES_EQUAL(10, cache->branchlength, 0.0001);
-	LONGS_EQUAL(3, cache->maxFamilysize);
+	struct square_matrix* matrix = birthdeath_cache_new(10, 0.02, 0.01, 3);
+	LONGS_EQUAL(4, matrix->size);
 
 	// matrix.values should be set to a 3x3 array of doubles
-	DOUBLES_EQUAL(1, square_matrix_get(&cache->matrix, 0, 0), 0.001);
-	DOUBLES_EQUAL(0, square_matrix_get(&cache->matrix, 0, 1), 0.001);
-	DOUBLES_EQUAL(0, square_matrix_get(&cache->matrix, 0, 2), 0.001);
-	DOUBLES_EQUAL(.086, square_matrix_get(&cache->matrix, 1, 0), 0.001);
-	DOUBLES_EQUAL(.754, square_matrix_get(&cache->matrix, 1, 1), 0.001);
-	DOUBLES_EQUAL(.131, square_matrix_get(&cache->matrix, 1, 2), 0.001);
-	DOUBLES_EQUAL(.007, square_matrix_get(&cache->matrix, 2, 0), 0.001);
-	DOUBLES_EQUAL(.131, square_matrix_get(&cache->matrix, 2, 1), 0.001);
-	DOUBLES_EQUAL(.591, square_matrix_get(&cache->matrix, 2, 2), 0.001);
+	DOUBLES_EQUAL(1, square_matrix_get(matrix, 0, 0), 0.001);
+	DOUBLES_EQUAL(0, square_matrix_get(matrix, 0, 1), 0.001);
+	DOUBLES_EQUAL(0, square_matrix_get(matrix, 0, 2), 0.001);
+	DOUBLES_EQUAL(.086, square_matrix_get(matrix, 1, 0), 0.001);
+	DOUBLES_EQUAL(.754, square_matrix_get(matrix, 1, 1), 0.001);
+	DOUBLES_EQUAL(.131, square_matrix_get(matrix, 1, 2), 0.001);
+	DOUBLES_EQUAL(.007, square_matrix_get(matrix, 2, 0), 0.001);
+	DOUBLES_EQUAL(.131, square_matrix_get(matrix, 2, 1), 0.001);
+	DOUBLES_EQUAL(.591, square_matrix_get(matrix, 2, 2), 0.001);
 }
 
 TEST(FirstTestGroup, clear_tree_viterbis)

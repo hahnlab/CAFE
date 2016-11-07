@@ -221,17 +221,13 @@ void init_matrix(struct square_matrix* matrix, double coeff)
 	[CAFE assumes that gene birth and death are equally probable, see Hahn et al. (2005)].
 	If mu is provided, lambda and mu represent the probability of gene birth and gene death, respectively.
 **/
-pBirthDeathCache birthdeath_cache_new(double branchlength, double lambda, double mu, int maxFamilysize)
+struct square_matrix* birthdeath_cache_new(double branchlength, double lambda, double mu, int maxFamilysize)
 {
-	pBirthDeathCache pbdc = (pBirthDeathCache)memory_new(1,sizeof(BirthDeathCache)  );
+	struct square_matrix* matrix = (struct square_matrix*)memory_new(1,sizeof(struct square_matrix)  );
 	int sz = maxFamilysize + 1;
-	square_matrix_init(&pbdc->matrix, sz);
-	pbdc->branchlength = branchlength;
-	pbdc->maxFamilysize = maxFamilysize;
-	pbdc->lambda = lambda;
-	pbdc->mu = mu;
+	square_matrix_init(matrix, sz);
 
-	square_matrix_set(&pbdc->matrix, 0, 0, 1);		//Once you are zero you are almost surely zero
+	square_matrix_set(matrix, 0, 0, 1);		//Once you are zero you are almost surely zero
 
 	double alpha = 0;
 	double beta = 0;
@@ -251,7 +247,7 @@ pBirthDeathCache birthdeath_cache_new(double branchlength, double lambda, double
 		coeff = 1 - alpha - beta;
 	}
 
-	init_matrix(&pbdc->matrix, coeff);
+	init_matrix(matrix, coeff);
 
 	if (coeff > 0 && coeff != 1)
 	{
@@ -260,301 +256,64 @@ pBirthDeathCache birthdeath_cache_new(double branchlength, double lambda, double
 			for (int c = 0 ; c <= maxFamilysize ; c++ )
 			{
 				if (mu < 0)
-					square_matrix_set(&pbdc->matrix, s, c, birthdeath_rate_with_log_alpha(s, c, log(alpha), coeff, &cache));
+					square_matrix_set(matrix, s, c, birthdeath_rate_with_log_alpha(s, c, log(alpha), coeff, &cache));
 				else
-					square_matrix_set(&pbdc->matrix, s, c, birthdeath_rate_with_log_alpha_beta(s, c, log(alpha), log(beta), log(coeff), &cache));
+					square_matrix_set(matrix, s, c, birthdeath_rate_with_log_alpha_beta(s, c, log(alpha), log(beta), log(coeff), &cache));
 			}
 		}
 	}
-	return pbdc;
+	return matrix;
 }
 
-
-pBirthDeathCache eq_birthdeath_cache_new(double branchlength, double lambda, int maxFamilysize)
+void birthdeath_cache_resize(struct square_matrix* matrix, int remaxFamilysize, double branchlength, double lambda, double mu)
 {
-	return birthdeath_cache_new(branchlength, lambda, -1, maxFamilysize);
-}
-
-
-pBirthDeathCache birthdeath_cach_resize(pBirthDeathCache pbdc, int remaxFamilysize)
-{
-	int s,c;
-	double lambda = pbdc->lambda;
-	double branchlength = pbdc->branchlength;
-
 	double alpha = lambda*branchlength/(1+lambda*branchlength);
 	double coeff = 1 - 2 * alpha;
-	int old = pbdc->maxFamilysize;
+	int old = matrix->size;
 	alpha = log(alpha);
-	square_matrix_resize(&pbdc->matrix, remaxFamilysize + 1);
+	square_matrix_resize(matrix, remaxFamilysize + 1);
 
-	for ( c = old + 1 ; c <= remaxFamilysize ; c++ )
+	for (int c = old + 1 ; c <= remaxFamilysize ; c++ )
 	{
-		square_matrix_set(&pbdc->matrix, 0, c, 0);
+		square_matrix_set(matrix, 0, c, 0);
 	}
-	for ( s = 1 ; s <= remaxFamilysize; s++ )
+	for (int s = 1 ; s <= remaxFamilysize; s++ )
 	{
-		for ( c = old + 1 ; c <= remaxFamilysize ; c++ )
+		for (int c = old + 1 ; c <= remaxFamilysize ; c++ )
 		{
-			square_matrix_set(&pbdc->matrix, s, c, birthdeath_rate_with_log_alpha(s,c,alpha,coeff, &cache));
+			square_matrix_set(matrix, s, c, birthdeath_rate_with_log_alpha(s,c,alpha,coeff, &cache));
 		}
 	}
-	for ( s = old  + 1 ; s <= remaxFamilysize; s++ )
+	for (int s = old  + 1 ; s <= remaxFamilysize; s++ )
 	{ 
-		for ( c = 0; c <= remaxFamilysize ; c++ )
+		for (int c = 0; c <= remaxFamilysize ; c++ )
 		{
-			square_matrix_set(&pbdc->matrix, s, c, birthdeath_rate_with_log_alpha(s, c, alpha, coeff, &cache));
+			square_matrix_set(matrix, s, c, birthdeath_rate_with_log_alpha(s, c, alpha, coeff, &cache));
 		}
 	}
-	pbdc->maxFamilysize = remaxFamilysize;
-	return pbdc;
-}
-
-
-void birthdeath_cache_free(void* ptr)
-{
-	pBirthDeathCache pbdc = (pBirthDeathCache)ptr;
-	square_matrix_delete(&pbdc->matrix);
-    pbdc->matrix.values = NULL;
-	memory_free(pbdc);	
-	pbdc = NULL;
-}
-
-pBirthDeathCache eq_birthdeath_search_list_for_lambda(pArrayList plist, double lambda)
-{
-	int i;
-	for ( i = 0 ; i < plist->size ; i++ )
-	{
-		pBirthDeathCache pbdc = (pBirthDeathCache)plist->array[i];
-		if ( pbdc->lambda == lambda ) return pbdc;
-	}
-	return NULL;
-}
-
-pBirthDeathCache birthdeath_search_list_for_lambda_mu(pArrayList plist, double lambda, double mu)
-{
-	if (mu < 0) {
-		return eq_birthdeath_search_list_for_lambda(plist, lambda);
-	}
-	int i;
-	for ( i = 0 ; i < plist->size ; i++ )
-	{
-		pBirthDeathCache pbdc = (pBirthDeathCache)plist->array[i];
-		if ( pbdc->lambda == lambda && pbdc->mu == mu) {
-			return pbdc;
-		}
-	}
-	return NULL;
-}
-
-
-typedef struct
-{
-	double branchlength;
-	double lambda;
-	double mu;
-	int maxFamilysize;
-	pBirthDeathCache pbdc;
-}BDCThread;
-typedef BDCThread* pBDCThread;
-
-void* __cafe_set_birthdeath_cache_thread_func(void* ptr)
-{
-	pBDCThread pbdt = (pBDCThread)ptr;
-	pbdt->pbdc = birthdeath_cache_new(pbdt->branchlength, pbdt->lambda, pbdt->mu, pbdt->maxFamilysize);
-	return (NULL);
 }
 
 void cafe_set_birthdeath_cache_thread(pCafeTree tree, int k_value, int* family_sizes, int* rootfamily_sizes)
 {
-	if ( tree->pbdc_array )
+	if (tree->pbdc_array)
 	{
-		birthdeath_cache_array_free( tree->pbdc_array );
+		birthdeath_cache_array_free(tree->pbdc_array);
 	}
-	pBirthDeathCacheArray pbdc_array = (pBirthDeathCacheArray)memory_new(1,sizeof(BirthDeathCacheArray));
+	pBirthDeathCacheArray pbdc_array = (pBirthDeathCacheArray)memory_new(1, sizeof(BirthDeathCacheArray));
+	pbdc_array->table = hash_table_new(MODE_VALUEREF);
 	pbdc_array->maxFamilysize = MAX(family_sizes[1], rootfamily_sizes[1]);
-	
-	if ( !chooseln_is_init() ) 
-	{
-		chooseln_cache_init2(&cache, pbdc_array->maxFamilysize );
-	}
-	else if ( cache.size < pbdc_array->maxFamilysize ) 
-	{
-		chooseln_cache_resize2(&cache, pbdc_array->maxFamilysize );
-	}
-	
-	int i,j,k,l = 0;
-	pArrayList nlist = ((pTree)tree)->nlist;
-	pArrayList thread_param = arraylist_new( nlist->size+1 );	// thread_param is an array of void* size of nodes(+1). 
-	
-	for( i = 0, j = 0 ; j < nlist->size; j++ )
-	{
-		pPhylogenyNode pnode = (pPhylogenyNode)nlist->array[j];
-		pCafeNode pcnode = (pCafeNode)pnode;
-		if ( pnode->branchlength <= 0 ) continue;
-		//param->branchlengths_sorted[i++] = pnode->branchlength;
-		
-		// look for param_lambdas and param_mus 
-		if ( pcnode->param_lambdas ) {
-			if (pcnode->param_mus) {
-				for ( k=0; k < k_value; k++) {
-					for ( l = 0 ; l < thread_param->size ; l++ )				// at first thread_param->size is zero, doesn't go into this loop
-					{
-						pBDCThread pbdt = (pBDCThread)thread_param->array[l];	// previously added thread
-						if ( pbdt->branchlength == pnode->branchlength 
-							 && pbdt->lambda == pcnode->param_lambdas[k]
-							 && pbdt->mu == pcnode->param_mus[k] )	
-						{
-							break;		// if there exist a thread with branchlength and lambda of pnode already
-						}
-					}
-					if ( l == thread_param->size )	// if thread of pnode is not found make thread of pnode
-					{
-						pBDCThread pbdt = (pBDCThread)memory_new(1,sizeof(BDCThread));
-						pbdt->branchlength = pnode->branchlength;
-						pbdt->lambda = pcnode->param_lambdas[k];
-						pbdt->mu = pcnode->param_mus[k];
-						pbdt->maxFamilysize = pbdc_array->maxFamilysize;
-						pbdt->pbdc = NULL;
-						arraylist_add( thread_param, pbdt ); // add new thread to thread_param
-					}
-				}
-			}
-			else {
-				for ( k=0; k < k_value; k++) {
-					for ( l = 0 ; l < thread_param->size ; l++ )				// at first thread_param->size is zero, doesn't go into this loop
-					{
-						pBDCThread pbdt = (pBDCThread)thread_param->array[l];	// previously added thread
-						if ( pbdt->branchlength == pnode->branchlength 
-							 && pbdt->lambda == pcnode->param_lambdas[k]
-							 && pbdt->mu == pcnode->mu)
-						{
-							break;		// if there exist a thread with branchlength and lambda of pnode already
-						}
-					}
-					if ( l == thread_param->size )	// if thread of pnode is not found make thread of pnode
-					{
-						pBDCThread pbdt = (pBDCThread)memory_new(1,sizeof(BDCThread));
-						pbdt->branchlength = pnode->branchlength;
-						pbdt->lambda = pcnode->param_lambdas[k];
-						pbdt->mu = pcnode->mu;
-						pbdt->maxFamilysize = pbdc_array->maxFamilysize;
-						pbdt->pbdc = NULL;
-						arraylist_add( thread_param, pbdt ); // add new thread to thread_param
-					}
-				}
-			}
-		}
-    else 
-    {
-      // look for thread with branchlength and lambda and mu of pnode in the array of thread_param
-      for ( k = 0 ; k < thread_param->size ; k++ )				// at first thread_param->size is zero, doesn't go into this loop
-      {
-        pBDCThread pbdt = (pBDCThread)thread_param->array[k];	// previously added thread
-        if ( pbdt->branchlength == pnode->branchlength 
-             && pbdt->lambda == pcnode->lambda 
-             && pbdt->mu == pcnode->mu )	
-        {
-          break;		// if there exist a thread with branchlength and lambda of pnode already
-        }
-      }
-      if ( k == thread_param->size )	// if thread of pnode is not found make thread of pnode
-      {
-        pBDCThread pbdt = (pBDCThread)memory_new(1,sizeof(BDCThread));
-        pbdt->branchlength = pnode->branchlength;
-        pbdt->lambda = ((pCafeNode)pnode)->lambda;
-        pbdt->mu = ((pCafeNode)pnode)->mu;
-        pbdt->maxFamilysize = pbdc_array->maxFamilysize;
-        pbdt->pbdc = NULL;
-        arraylist_add( thread_param, pbdt ); // add new thread to thread_param
-      }
-    }
-		
-	}
-	// now there is thread for every node
-	
-	//qsort(param->branchlengths_sorted, param->num_branches, sizeof(int), __cmp_int );
-	int numthreads = thread_param->size;
-	thread_run_with_arraylist(numthreads, __cafe_set_birthdeath_cache_thread_func, thread_param ); // run function on array of threads
-    pbdc_array->table = hash_table_new(MODE_VALUEREF);
-    for ( i = 0 ; i < thread_param->size ; i++ )                // for each thread existing for all (branch lengths, parameters) combinations
-	{
-		pBDCThread pbdt = (pBDCThread)thread_param->array[i];
-        double* key = &pbdt->branchlength;
-		pArrayList plist = (pArrayList) hash_table_lookup(pbdc_array->table, key, sizeof(double));
-        if ( plist == NULL )
-		{
-            plist = arraylist_new(10);
-			arraylist_add( plist, pbdt->pbdc );
-			hash_table_add(pbdc_array->table, (void*)key, sizeof(double), (void *)plist, sizeof(ArrayList));
-			
-		}
-		else
-		{
-			if ( birthdeath_search_list_for_lambda_mu(plist,pbdt->lambda, pbdt->mu) == NULL )
-			{
-				arraylist_add( plist, pbdt->pbdc );
-			}
-			
-		}
-	}
-	
-	arraylist_free(thread_param,free);
+
+	if (!chooseln_is_init2(&cache))
+		chooseln_cache_init2(&cache, pbdc_array->maxFamilysize);
+	else if (cache.size < pbdc_array->maxFamilysize)
+		chooseln_cache_resize2(&cache, pbdc_array->maxFamilysize);
+
 	tree->pbdc_array = pbdc_array;
 	cafe_tree_set_birthdeath(tree);
 }
-
 void cafe_set_birthdeath_cache(pCafeParam param)
-/* 
- * Before: param->param_set_func(param, param->lambda);
- */
 {
-	if ( param->pcafe->pbdc_array )
-	{
-		birthdeath_cache_array_free( param->pcafe->pbdc_array );
-	}
-
-	pBirthDeathCacheArray pbdc_array = (pBirthDeathCacheArray)memory_new(1,sizeof(BirthDeathCacheArray));
-
-	int i;
-	pArrayList nlist = ((pTree)param->pcafe)->nlist;
-
-    pbdc_array->table = hash_table_new(MODE_VALUEREF);
-	pbdc_array->maxFamilysize = MAX(param->family_sizes[1], param->rootfamily_sizes[1]);
-
-	if ( !chooseln_is_init2(&cache) ) 
-		chooseln_cache_init2(&cache, pbdc_array->maxFamilysize );
-	else if ( cache.size < pbdc_array->maxFamilysize ) 
-		chooseln_cache_resize2(&cache, pbdc_array->maxFamilysize );
-
-	for ( i = 0 ; i < nlist->size ; i++ )
-	{
-		pPhylogenyNode pnode = (pPhylogenyNode)nlist->array[i];
-		if ( pnode->branchlength > 0 ) 
-		{	
-            double* key = &pnode->branchlength;
-			pArrayList plist = hash_table_lookup(pbdc_array->table, key, sizeof(double));
-			double lambda = ((pCafeNode)pnode)->lambda;
-			double mu = ((pCafeNode)pnode)->mu;
-			if (plist == NULL)
-            {
-				plist = arraylist_new(10);
-				pBirthDeathCache cache = birthdeath_cache_new(pnode->branchlength, lambda, mu, pbdc_array->maxFamilysize);
-				arraylist_add( plist, cache);
-                hash_table_add(pbdc_array->table, key, sizeof(double), plist, sizeof(ArrayList));
-			}
-			else
-			{
-				if ( birthdeath_search_list_for_lambda_mu(plist, lambda, mu) == NULL )
-				{
-					pBirthDeathCache cache = birthdeath_cache_new(pnode->branchlength, lambda, mu, pbdc_array->maxFamilysize);
-					arraylist_add( plist, cache);
-				}
-			}
-		}
-	}
-	param->pcafe->pbdc_array = pbdc_array;
-	cafe_tree_set_birthdeath(param->pcafe);
+	cafe_set_birthdeath_cache_thread(param->pcafe, 0, param->family_sizes, param->rootfamily_sizes);
 }
 
 void cafe_resize_birthdeath_cache(pCafeParam param)
@@ -563,17 +322,13 @@ void cafe_resize_birthdeath_cache(pCafeParam param)
 	int remaxFamilysize = MAX(param->family_sizes[1], param->rootfamily_sizes[1]);
 	if ( pbdc_array->maxFamilysize >= remaxFamilysize ) return;
 	chooseln_cache_resize2(&cache, remaxFamilysize);
-	int i,j;
     void** keys = NULL;
     int num = (int)hash_table_get_keys(pbdc_array->table, &keys);
-    for (i=0; i<num; i++) {
-        pArrayList plist = hash_table_lookup(pbdc_array->table, keys[i], sizeof(double));
-		if ( plist == NULL ) continue;
-		for ( j = 0 ; j < plist->size ; j++ )
-		{
-			pBirthDeathCache pbdc = (pBirthDeathCache)plist->array[j];
-			birthdeath_cach_resize(pbdc, remaxFamilysize);
-		}
+    for (int i=0; i<num; i++) {
+		struct square_matrix* matrix = hash_table_lookup(pbdc_array->table, keys[i], sizeof(struct BirthDeathCacheKey));
+		struct BirthDeathCacheKey* key = (struct BirthDeathCacheKey*)keys[i];
+		if (matrix == NULL ) continue;
+		birthdeath_cache_resize(matrix, remaxFamilysize, key->branchlength, key->lambda, key->mu);
     }
 	pbdc_array->maxFamilysize = remaxFamilysize;
 	cafe_tree_set_birthdeath(param->pcafe);
@@ -581,46 +336,16 @@ void cafe_resize_birthdeath_cache(pCafeParam param)
 
 void birthdeath_cache_array_free(pBirthDeathCacheArray pbdc_array)
 {
-	int i ;
     void** keys = NULL;
     int num = (int)hash_table_get_keys(pbdc_array->table, &keys);
-    for (i=0; i<num; i++) {
-        pArrayList plist = hash_table_lookup(pbdc_array->table, keys[i], sizeof(double));
-        arraylist_free( plist, birthdeath_cache_free );
+    for (int i=0; i<num; i++) {
+		struct square_matrix* matrix = hash_table_lookup(pbdc_array->table, keys[i], sizeof(struct BirthDeathCacheKey));
+		square_matrix_delete(matrix);
     }
     hash_table_delete(pbdc_array->table);
 	memory_free(pbdc_array);
-	pbdc_array = NULL;
 }
 
-
-struct square_matrix* eq_birthdeath_cache_get_matrix(pBirthDeathCacheArray pbdc_array, double branchlength, double lambda )
-{
-	pArrayList plist;
-	pBirthDeathCache pbdc = NULL;
-    double* key = &branchlength;
-    plist = (pArrayList)hash_table_lookup(pbdc_array->table, key, sizeof(double));
-	if ( plist == NULL )
-	{
-		plist = (pArrayList)arraylist_new(10);
-		pbdc = eq_birthdeath_cache_new( branchlength , lambda, pbdc_array->maxFamilysize );
-		arraylist_add(plist, pbdc);
-        hash_table_add(pbdc_array->table, key, sizeof(double), plist, sizeof(ArrayList));
-	}
-	else if ( (pbdc = eq_birthdeath_search_list_for_lambda(plist,lambda)) == NULL )
-	{
-		pbdc = eq_birthdeath_cache_new(branchlength, lambda, pbdc_array->maxFamilysize );
-		arraylist_add( plist, pbdc );
-	}
-	if ( pbdc == NULL )
-	{
-		plist = (pArrayList)arraylist_new(10);
-		pbdc = eq_birthdeath_cache_new( branchlength , lambda, pbdc_array->maxFamilysize );
-		arraylist_add(plist, pbdc);
-        hash_table_add(pbdc_array->table, key, sizeof(double), plist, sizeof(ArrayList));
-	}
-	return &pbdc->matrix;
-}
 
 /** 
 	Returns square matrix of doubles, rows and columns representing the transition probability in birthdeath rate
@@ -628,32 +353,17 @@ struct square_matrix* eq_birthdeath_cache_get_matrix(pBirthDeathCacheArray pbdc_
 **/
 struct square_matrix* birthdeath_cache_get_matrix(pBirthDeathCacheArray pbdc_array, double branchlength, double lambda, double mu )
 {
-	if (mu < 0) {
-		return eq_birthdeath_cache_get_matrix(pbdc_array, branchlength, lambda);
-	}
-	pArrayList plist;
-	pBirthDeathCache pbdc = NULL;
-    double* key = &branchlength;
-    plist = (pArrayList) hash_table_lookup(pbdc_array->table, key, sizeof(double));
-	if ( plist == NULL )
+	struct BirthDeathCacheKey key;
+	key.branchlength = branchlength;
+	key.lambda = lambda;
+	key.mu = mu;
+
+	struct square_matrix* matrix = hash_table_lookup(pbdc_array->table, &key, sizeof(struct BirthDeathCacheKey));
+	if (matrix == NULL)
 	{
-		plist = (pArrayList)arraylist_new(10);
-		pbdc = birthdeath_cache_new( branchlength, lambda, mu, pbdc_array->maxFamilysize );
-		arraylist_add(plist, pbdc);
-        hash_table_add(pbdc_array->table, key, sizeof(double), plist, sizeof(ArrayList));
+		matrix = birthdeath_cache_new(key.branchlength, key.lambda, key.mu, pbdc_array->maxFamilysize);
+		hash_table_add(pbdc_array->table, &key, sizeof(struct BirthDeathCacheKey), matrix, sizeof(struct square_matrix*));
 	}
-	else if ( (pbdc = birthdeath_search_list_for_lambda_mu(plist,lambda, mu)) == NULL )
-	{
-		pbdc = birthdeath_cache_new(branchlength, lambda, mu, pbdc_array->maxFamilysize );
-		arraylist_add( plist, pbdc );
-	}
-	if ( pbdc == NULL )
-	{
-		plist = (pArrayList)arraylist_new(10);
-		pbdc = birthdeath_cache_new( branchlength, lambda, mu, pbdc_array->maxFamilysize );
-		arraylist_add(plist, pbdc);
-        hash_table_add(pbdc_array->table, key, sizeof(double), plist, sizeof(ArrayList));
-	}
-	return &pbdc->matrix;
+	return matrix;
 }
 
