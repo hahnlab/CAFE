@@ -221,7 +221,7 @@ void init_matrix(struct square_matrix* matrix, double coeff)
 	[CAFE assumes that gene birth and death are equally probable, see Hahn et al. (2005)].
 	If mu is provided, lambda and mu represent the probability of gene birth and gene death, respectively.
 **/
-struct square_matrix* birthdeath_cache_new(double branchlength, double lambda, double mu, int maxFamilysize)
+struct square_matrix* compute_birthdeath_rates(double branchlength, double lambda, double mu, int maxFamilysize)
 {
 	struct square_matrix* matrix = (struct square_matrix*)memory_new(1,sizeof(struct square_matrix)  );
 	int sz = maxFamilysize + 1;
@@ -265,7 +265,7 @@ struct square_matrix* birthdeath_cache_new(double branchlength, double lambda, d
 	return matrix;
 }
 
-void birthdeath_cache_resize(struct square_matrix* matrix, int remaxFamilysize, double branchlength, double lambda, double mu)
+void birthdeath_cache_matrix_resize(struct square_matrix* matrix, int remaxFamilysize, double branchlength, double lambda, double mu)
 {
 	double alpha = lambda*branchlength/(1+lambda*branchlength);
 	double coeff = 1 - 2 * alpha;
@@ -293,45 +293,33 @@ void birthdeath_cache_resize(struct square_matrix* matrix, int remaxFamilysize, 
 	}
 }
 
-void cafe_set_birthdeath_cache_thread(pCafeTree tree, int k_value, int* family_sizes, int* rootfamily_sizes)
+void birthdeath_cache_resize(pBirthDeathCacheArray pbdc_array, int remaxFamilysize)
 {
-	if (tree->pbdc_array)
-	{
-		birthdeath_cache_array_free(tree->pbdc_array);
+	if (pbdc_array->maxFamilysize >= remaxFamilysize) return;
+	chooseln_cache_resize2(&cache, remaxFamilysize);
+	void** keys = NULL;
+	int num = (int)hash_table_get_keys(pbdc_array->table, &keys);
+	for (int i = 0; i<num; i++) {
+		struct square_matrix* matrix = hash_table_lookup(pbdc_array->table, keys[i], sizeof(struct BirthDeathCacheKey));
+		struct BirthDeathCacheKey* key = (struct BirthDeathCacheKey*)keys[i];
+		if (matrix == NULL) continue;
+		birthdeath_cache_matrix_resize(matrix, remaxFamilysize, key->branchlength, key->lambda, key->mu);
 	}
+	pbdc_array->maxFamilysize = remaxFamilysize;
+}
+
+pBirthDeathCacheArray birthdeath_cache_init(int size)
+{
 	pBirthDeathCacheArray pbdc_array = (pBirthDeathCacheArray)memory_new(1, sizeof(BirthDeathCacheArray));
 	pbdc_array->table = hash_table_new(MODE_VALUEREF);
-	pbdc_array->maxFamilysize = MAX(family_sizes[1], rootfamily_sizes[1]);
+	pbdc_array->maxFamilysize = size;
 
 	if (!chooseln_is_init2(&cache))
 		chooseln_cache_init2(&cache, pbdc_array->maxFamilysize);
 	else if (cache.size < pbdc_array->maxFamilysize)
 		chooseln_cache_resize2(&cache, pbdc_array->maxFamilysize);
 
-	tree->pbdc_array = pbdc_array;
-	cafe_tree_set_birthdeath(tree);
-}
-void cafe_set_birthdeath_cache(pCafeParam param)
-{
-	cafe_set_birthdeath_cache_thread(param->pcafe, 0, param->family_sizes, param->rootfamily_sizes);
-}
-
-void cafe_resize_birthdeath_cache(pCafeParam param)
-{
-	pBirthDeathCacheArray pbdc_array = param->pcafe->pbdc_array;
-	int remaxFamilysize = MAX(param->family_sizes[1], param->rootfamily_sizes[1]);
-	if ( pbdc_array->maxFamilysize >= remaxFamilysize ) return;
-	chooseln_cache_resize2(&cache, remaxFamilysize);
-    void** keys = NULL;
-    int num = (int)hash_table_get_keys(pbdc_array->table, &keys);
-    for (int i=0; i<num; i++) {
-		struct square_matrix* matrix = hash_table_lookup(pbdc_array->table, keys[i], sizeof(struct BirthDeathCacheKey));
-		struct BirthDeathCacheKey* key = (struct BirthDeathCacheKey*)keys[i];
-		if (matrix == NULL ) continue;
-		birthdeath_cache_resize(matrix, remaxFamilysize, key->branchlength, key->lambda, key->mu);
-    }
-	pbdc_array->maxFamilysize = remaxFamilysize;
-	cafe_tree_set_birthdeath(param->pcafe);
+	return pbdc_array;
 }
 
 void birthdeath_cache_array_free(pBirthDeathCacheArray pbdc_array)
@@ -361,7 +349,7 @@ struct square_matrix* birthdeath_cache_get_matrix(pBirthDeathCacheArray pbdc_arr
 	struct square_matrix* matrix = hash_table_lookup(pbdc_array->table, &key, sizeof(struct BirthDeathCacheKey));
 	if (matrix == NULL)
 	{
-		matrix = birthdeath_cache_new(key.branchlength, key.lambda, key.mu, pbdc_array->maxFamilysize);
+		matrix = compute_birthdeath_rates(key.branchlength, key.lambda, key.mu, pbdc_array->maxFamilysize);
 		hash_table_add(pbdc_array->table, &key, sizeof(struct BirthDeathCacheKey), matrix, sizeof(struct square_matrix*));
 	}
 	return matrix;

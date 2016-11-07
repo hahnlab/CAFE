@@ -571,10 +571,10 @@ TEST(FirstTestGroup, square_matrix_resize)
 	square_matrix_resize(&matrix, 1);
 	LONGS_EQUAL(1, square_matrix_get(&matrix, 0, 0));
 }
-TEST(FirstTestGroup, birthdeath_cache_new)
+TEST(FirstTestGroup, compute_birthdeath_rates)
 {
 	chooseln_cache_init(3);
-	struct square_matrix* matrix = birthdeath_cache_new(10, 0.02, 0.01, 3);
+	struct square_matrix* matrix = compute_birthdeath_rates(10, 0.02, 0.01, 3);
 	LONGS_EQUAL(4, matrix->size);
 
 	// matrix.values should be set to a 3x3 array of doubles

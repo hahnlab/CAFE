@@ -120,7 +120,6 @@ extern void cafe_report(pCafeParam param, int method);
 extern pArrayList cafe_conditional_distribution(pCafeParam param);
 extern void cafe_lambda_set_default(pCafeParam param, double* lambda);
 
-extern void cafe_resize_birthdeath_cache(pCafeParam param);
 extern void cafe_free_birthdeath_cache(pCafeTree pcafe);
 extern pArrayList cafe_viterbi(pCafeParam param, pArrayList pCD);
 extern void cafe_branch_cutting(pCafeParam param);

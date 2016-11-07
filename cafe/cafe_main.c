@@ -962,8 +962,20 @@ double* cafe_best_lambda_mu_by_fminsearch(pCafeParam param, int lambda_len, int 
 	return param->parameters;
 }
 
+void cafe_set_birthdeath_cache_thread(pCafeTree tree, int k_value, int* family_sizes, int* rootfamily_sizes)
+{
+	if (tree->pbdc_array)
+	{
+		birthdeath_cache_array_free(tree->pbdc_array);
+	}
+	tree->pbdc_array = birthdeath_cache_init(MAX(family_sizes[1], rootfamily_sizes[1]));
+	cafe_tree_set_birthdeath(tree);
+}
 
-
+void cafe_set_birthdeath_cache(pCafeParam param)
+{
+	cafe_set_birthdeath_cache_thread(param->pcafe, 0, param->family_sizes, param->rootfamily_sizes);
+}
 
 double __cafe_each_best_lambda_search(double* plambda, void* args)
 {

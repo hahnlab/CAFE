@@ -671,7 +671,9 @@ double* cafe_shell_likelihood(int max)
 		cafe_tree_set_parameters(pcafe, cafe_param->family_sizes, cafe_param->rootfamily_sizes, 0 );
 		if ( pcafe->pbdc_array )
 		{
-			cafe_resize_birthdeath_cache(cafe_param);
+			int remaxFamilysize = MAX(cafe_param->family_sizes[1], cafe_param->rootfamily_sizes[1]);
+			birthdeath_cache_resize(cafe_param->pcafe->pbdc_array, remaxFamilysize);
+			cafe_tree_set_birthdeath(cafe_param->pcafe);
 		}
 		else
 		{
