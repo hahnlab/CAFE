@@ -1,5 +1,6 @@
 #include <stdexcept>
 #include "reports.h"
+#include "likelihood_ratio.h"
 
 using namespace std;
 

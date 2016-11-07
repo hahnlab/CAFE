@@ -86,7 +86,6 @@ typedef struct tagCafeParam CafeParam;
 typedef CafeParam* pCafeParam;
 typedef void (*param_func)(pCafeParam param, double* parameters);
 //typedef void (*lambda_func)(pCafeParam param, double* lambda);
-typedef void (*branchlength_func)(pCafeParam param, int* t);
 
 /**
 * \brief Singleton structure that holds all of the global data that Cafe acts on.
@@ -122,7 +121,6 @@ struct tagCafeParam
 	double* parameters;
 	int num_params;
 	param_func param_set_func;
-	branchlength_func branchlength_update_func;
 	double bl_augment;
 	//lambda_func lambda_set_func;
 

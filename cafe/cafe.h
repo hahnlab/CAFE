@@ -126,7 +126,6 @@ extern void cafe_free_birthdeath_cache(pCafeTree pcafe);
 extern pArrayList cafe_viterbi(pCafeParam param, pArrayList pCD);
 extern void cafe_branch_cutting(pCafeParam param);
 extern void cafe_likelihood_ratio_test(pCafeParam param);
-extern void cafe_lhr_for_diff_lambdas(pCafeParam param, pTree lambda_tree2, int num_lambdas, param_func lfunc );
 extern pGMatrix cafe_lambda_distribution(pCafeParam param, int numrange, double** range );
 
 extern int cafe_report_retrieve_data(char* file, pCafeParam param);

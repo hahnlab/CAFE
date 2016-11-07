@@ -18,6 +18,7 @@ extern "C" {
 #include <cafe_commands.h>
 #include <lambda.h>
 #include <reports.h>
+#include <likelihood_ratio.h>
 
 extern "C" {
 	void show_sizes(FILE*, pCafeParam param, pCafeFamilyItem pitem, int i);
@@ -48,6 +49,14 @@ CafeShellCommand cafe_cmd_test[] =
 
 
 TEST_GROUP(FirstTestGroup)
+{
+	void setup()
+	{
+		srand(10);
+	}
+};
+
+TEST_GROUP(LikelihoodRatio)
 {
 	void setup()
 	{
@@ -649,7 +658,7 @@ TEST(FirstTestGroup, cafe_set_birthdeath_cache)
 	POINTERS_EQUAL(expected, node->birthdeath_matrix);
 }
 
-TEST(FirstTestGroup, cafe_likelihood_ratio_test)
+TEST(LikelihoodRatio, cafe_likelihood_ratio_test)
 {
 	CafeParam param;
 	param.flog = stdout;
@@ -657,9 +666,57 @@ TEST(FirstTestGroup, cafe_likelihood_ratio_test)
 	param.pcafe = tree;
 	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
 	param.pfamily = cafe_family_init(build_arraylist(species, 7));
-
+	param.num_threads = 1;
 	cafe_likelihood_ratio_test(&param);
 	DOUBLES_EQUAL(0, param.likelihoodRatios[0][0], .0001);
+}
+
+TEST(LikelihoodRatio, likelihood_ratio_report)
+{
+	pCafeTree tree = create_tree();
+	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
+	pCafeFamily pfamily = cafe_family_init(build_arraylist(species, 7));
+	const char *values[] = { "description", "family1", "3", "5", "7", "11", "13" };
+	cafe_family_add_item(pfamily, build_arraylist(values, 7));
+	cafe_family_set_species_index(pfamily, tree);
+
+	std::vector<double> pvalues(2);
+	pvalues[0] = 5;
+	pvalues[1] = 7;
+
+	std::vector<int> lambdas(1);
+	std::vector<double*> lambda_cache(2);
+
+	lambdas[0] = 0;
+	double num = 3;
+	lambda_cache[0] = &num;
+	lambda_cache[1] = &num;
+
+	char outbuf[1000];
+	FILE* out = fmemopen(outbuf, 999, "w");
+
+	likelihood_ratio_report(pfamily, tree, pvalues, lambdas, lambda_cache, out);
+
+	fclose(out);
+	STRCMP_EQUAL("family1\t(((chimp_3:6,human_5:6):81,(mouse_7:17,rat_11:17):70):6,dog_13:9)\t(0, 3.000000,0.000000)\t5\t0.025347\n", outbuf);
+}
+
+TEST(LikelihoodRatio, update_branchlength)
+{
+	int t = 5;
+	pCafeTree tree = create_tree();
+	int *old_branchlength = (int*)memory_new(tree->super.nlist->size-1, sizeof(int));
+	old_branchlength[0] = 97;
+
+	pPhylogenyNode pnode0 = (pPhylogenyNode)tree->super.nlist->array[0];
+	LONGS_EQUAL(-1, pnode0->taxaid);
+	pPhylogenyNode pnode1 = (pPhylogenyNode)tree->super.nlist->array[1];
+	pnode1->taxaid = 1;
+	update_branchlength(tree, (pTree)tree, 1.5, old_branchlength, &t);
+
+	DOUBLES_EQUAL(6.0, pnode0->branchlength, 0.0001);	// not updated since taxaid < 0
+	DOUBLES_EQUAL(688.5, pnode1->branchlength, 0.0001);	// equation applied since taxaid > 0
+	LONGS_EQUAL(6, old_branchlength[0]);		// branchlengths are copied here
 }
 
 int main(int ac, char** av)

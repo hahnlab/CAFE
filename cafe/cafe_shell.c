@@ -113,7 +113,6 @@ pArgument cafe_shell_get_argument(char* opt, pArrayList pal)
 
 void cafe_shell_set_lambda(pCafeParam param, double* lambda);
 void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters);
-void cafe_shell_update_branchlength(pCafeParam param, int* t );
 
 void viterbi_parameters_init(viterbi_parameters *viterbi, int nnodes, int nrows)
 {
@@ -247,7 +246,6 @@ void cafe_shell_clear_param(pCafeParam param, int btree_skip)
 	param->family_sizes[0] = 0;
 	param->family_sizes[1] = 1;
 	param->param_set_func = cafe_shell_set_lambda;
-	param->branchlength_update_func = cafe_shell_update_branchlength;
 	param->num_threads = 1;
 	param->num_random_samples = 1000;
 	param->pvalue = 0.01;
@@ -541,29 +539,6 @@ void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters)
 	}
 }
 
-
-void cafe_shell_update_branchlength(pCafeParam param, int* t)
-// t[0] is for lambda[1]
-// t[1] is for lambda[2]
-{
-	int i;
-	if ( param->lambda_tree )
-	{
-		pArrayList nlist = param->pcafe->super.nlist;
-		pArrayList lambda_nlist = param->lambda_tree->nlist;		
-		for ( i = 0 ; i < nlist->size ; i++ )
-		{
-			pPhylogenyNode lambda_pnode = (pPhylogenyNode)lambda_nlist->array[i];
-			pPhylogenyNode pnode = (pPhylogenyNode)nlist->array[i];
-			param->old_branchlength[i] = pnode->branchlength;
-			if (  lambda_pnode->taxaid > 0 ) 
-			{
-				pnode->branchlength += pnode->branchlength * param->bl_augment 
-					                   * t[lambda_pnode->taxaid-1];		
-			}
-		}
-	}
-}
 
 int cafe_shell_parse_familysize(int argc, char* argv[])
 {
