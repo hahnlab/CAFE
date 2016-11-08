@@ -2281,97 +2281,7 @@ int __cafe_cmd_extinct_count_zero()
 			cnt_zero++;
 		}
 	}
-/*
-	for ( n = 0 ; n < nlist->size ; n++ )
-	{
-		pTreeNode pnode = (pTreeNode)nlist->array[n];
-		pCafeNode pcnode = (pCafeNode)nlist->array[n];
-		printf("%d(%s): %d %d\n", n, n%2==0 ? pcnode->super.name : "null", pnode->reg, pcnode->familysize );
-	}
-	printf(  "--- : %d\n", cnt_zero );
-	return 0;
-*/
 	return cnt_zero;
-}
-
-int cafe_cmd_extinct_old(int argc, char* argv[] )
-{
-	int i, j;
-	STDERR_IF( cafe_param->pfamily == NULL, "ERROR(extinct): You did not load family: command 'load'\n" );
-	STDERR_IF( cafe_param->pcafe == NULL, "ERROR(extinct): You did not specify tree: command 'tree'\n" );
-	STDERR_IF( cafe_param->lambda == NULL, "ERROR(extinct): You did not set the parameters: command 'lambda' or 'lambdamu'\n" );
-
-	pCafeTree pcafe = cafe_param->pcafe;
-	int familysize = cafe_param->pfamily->flist->size;
-	double* roots_extinct = (double*) memory_new(familysize, sizeof(double));
-	int* roots_num = (int*) memory_new(pcafe->rfsize+1,sizeof(int));
-	int* roots_size = (int*) memory_new(familysize, sizeof(int));
-	cafe_log( cafe_param, "Extinction count from data:\n");
-
-	pCafeNode croot = (pCafeNode)pcafe->super.root;
-
-	for ( i = 0 ; i < familysize ; i++ )
-	{
-		cafe_family_set_size(cafe_param->pfamily,i, pcafe);
-		cafe_tree_viterbi(pcafe);
-		roots_extinct[i] = __cafe_cmd_extinct_count_zero();
-		roots_size[i] = croot->familysize;
-		roots_num[croot->familysize]++;
-	}
-
-	int maxsize = roots_num[1];
-	for ( i = 2 ; i <= pcafe->rfsize ; i++ )
-	{
-		if ( maxsize < roots_num[i] ) maxsize = roots_num[i];	
-	}
-
-	double* data = (double*) memory_new(maxsize,sizeof(double));
-
-	pHistogram phist = histogram_new(NULL,0,0);
-	pHistogram phist_accu = histogram_new( NULL, 0, 0);
-	unsigned int accu_sum  = 0;
-	for ( i = 1 ; i <= pcafe->rfsize; i++ )
-	{
-		if ( roots_num[i] )
-		{
-			int k = 0;
-			int sum = 0;
-			for ( j = 0 ; j < familysize ; j++ )
-			{
-				if ( roots_size[j] == i ) 
-				{
-					data[k++] = roots_extinct[j];
-					sum += roots_extinct[j];
-				}
-			}
-			histogram_set_sparse_data(phist,data,k);
-			cafe_log( cafe_param, "--------------------------------\n");
-			cafe_log( cafe_param, "Root Size: %d\n", i );
-			histogram_print(phist, cafe_param->flog);
-			if ( cafe_param->flog != stdout ) histogram_print(phist, NULL);
-			cafe_log( cafe_param, "Sum : %d\n", sum );
-			accu_sum += sum;
-		}
-	}
-	cafe_log( cafe_param, "--------------------------------\n");
-	cafe_log( cafe_param, "Total\n");
-	histogram_set_sparse_data(phist_accu, roots_extinct, familysize );
-	histogram_print(phist_accu, cafe_param->flog);
-	if ( cafe_param->flog != stdout ) histogram_print(phist_accu, NULL);
-	cafe_log( cafe_param, "Sum : %d\n", accu_sum );
-
-	histogram_free(phist);
-	histogram_free(phist_accu);
-	
-	memory_free(data);
-	data = NULL;
-	memory_free(roots_extinct);
-	roots_extinct = NULL;
-	memory_free(roots_size);
-	roots_size = NULL;
-	memory_free(roots_num);
-	roots_num = NULL;
-	return 0;
 }
 
 int cafe_cmd_sim_extinct(int argc, char* argv[])
@@ -2384,15 +2294,6 @@ int cafe_cmd_sim_extinct(int argc, char* argv[])
 	int range[2] = { 1, cafe_param->rootfamily_sizes[1] };
 	int num_trials = 10000;
 
-/*
-	if ( args->argc == 0 )
-	{
-		fprintf(stderr, "Usage: %s -t #[=10000]\n", argv[0] );
-		fprintf(stderr, "-t : number of trials, default 10000"\n);
-		arraylist_free(pargs, free);
-		return -1;
-	}
-*/
 	cafe_log( cafe_param, "Extinction count from Monte Carole:\n");
 	if ( (parg = cafe_shell_get_argument( "-r", pargs) ) )
 	{
@@ -4424,21 +4325,23 @@ int simulate_misclassification(char* filename)
 
 }
 
-// to check how simex is working 
-// generate data with additional error (Ystar) by applying the misclassification matrix to the true data
-// ( random sampling of true factors=f, with probabilities following the column=f of the misclassification matrix  )
-// then run simex on the variable with error (Ystar), and compare it with the true model (based on Y) and the naive model(based on Ystar). 
+/**
+ to check how simex is working 
+ generate data with additional error (Ystar) by applying the misclassification matrix to the true data
+ ( random sampling of true factors=f, with probabilities following the column=f of the misclassification matrix  )
+ then run simex on the variable with error (Ystar), and compare it with the true model (based on Y) and the naive model(based on Ystar). 
 
 
-// first find the naive estimator by assuming there is no error in the data.
-// then we will add even more error and store the estimates for each dataset with increasing error (k = 0.5, 1, 1.5, 2)
-// so in the end we have (1+number of lambda) * (number of parameters) estimates. 
-// for each i = k we run the estimate j = B number of times. 
-// each time add error by applying the misclassification matrix = errormatrix^k
-// update the estimates based on error added data, 
-// store the mean estimates for all B runs. 
-// then predict the estimates at k=-1 
-// 
+ first find the naive estimator by assuming there is no error in the data.
+ then we will add even more error and store the estimates for each dataset with increasing error (k = 0.5, 1, 1.5, 2)
+ so in the end we have (1+number of lambda) * (number of parameters) estimates. 
+ for each i = k we run the estimate j = B number of times. 
+ each time add error by applying the misclassification matrix = errormatrix^k
+ update the estimates based on error added data, 
+ store the mean estimates for all B runs. 
+ then predict the estimates at k=-1 
+ 
+**/
 double _cafe_simerror(char* prefix, int repeat) 
 {
 	int run;
@@ -4453,13 +4356,6 @@ double _cafe_simerror(char* prefix, int repeat)
             return -1;            
         }
         
-        // search parameters
-/*        if (cafe_param->num_mus > 0) {
-            cafe_best_lambda_mu_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->num_mus, cafe_param->parameterized_k_value);
-        }
-        else {
-            cafe_best_lambda_by_fminsearch(cafe_param, cafe_param->num_lambdas, cafe_param->parameterized_k_value);
-        }*/
         __restore_original_count();
 
     }
