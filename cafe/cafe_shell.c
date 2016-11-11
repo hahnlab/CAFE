@@ -43,7 +43,6 @@ CafeShellCommand cafe_cmd[]  =
 	{ "branchlength", cafe_cmd_branchlength },
 	{ "extinct", cafe_cmd_extinct },
 	{ "family", cafe_cmd_family },
-	{ "genfamily", cafe_cmd_generate_random_family },
 	{ "info", cafe_cmd_print_param },
 	{ "lambdamu", cafe_cmd_lambda_mu },
 	{ "lhtest", cafe_cmd_lh_test },
@@ -2197,6 +2196,11 @@ int __cafe_cmd_log(int argc ,char* argv[] )
 	return 0;
 }
 
+/**
+	\ingroup Commands
+	\brief Echoes parameters to the current output
+
+*/
 int cafe_cmd_log(int argc, char* argv[] )
 {
 	if ( argc == 1 ) 
@@ -2284,6 +2288,13 @@ int __cafe_cmd_extinct_count_zero()
 	return cnt_zero;
 }
 
+/**
+\ingroup Commands
+\brief Runs a Monte Carlo simulation against the data and reports the number of extinctions that occurred.
+
+	Arguments: -r range Can be specified as a max or a colon-separated range
+	           -t Number of trials to run
+*/
 int cafe_cmd_sim_extinct(int argc, char* argv[])
 {
 	STDERR_IF( cafe_param->pcafe == NULL, "ERROR(simextinct): You did not specify tree: command 'tree'\n" );
@@ -2294,7 +2305,7 @@ int cafe_cmd_sim_extinct(int argc, char* argv[])
 	int range[2] = { 1, cafe_param->rootfamily_sizes[1] };
 	int num_trials = 10000;
 
-	cafe_log( cafe_param, "Extinction count from Monte Carole:\n");
+	cafe_log( cafe_param, "Extinction count from Monte Carlo:\n");
 	if ( (parg = cafe_shell_get_argument( "-r", pargs) ) )
 	{
 		if ( index(parg->argv[0], ':' ) )	
@@ -2414,6 +2425,12 @@ void __hg_print_sim_extinct(pHistogram** phist_sim_n, pHistogram* phist_sim,
 	histogram_print( phist_tmp, cafe_param->flog );
 }
 
+/**
+\ingroup Commands
+\brief Specify root family size distribution for simulation
+
+Arguments: -i input file.
+*/
 int cafe_cmd_root_dist(int argc, char* argv[])
 {
 	pArrayList pargs = cafe_shell_build_argument(argc, argv);
@@ -2498,232 +2515,18 @@ int cafe_cmd_root_dist(int argc, char* argv[])
 	return 0;
 }
 
-int cafe_cmd_generate_random_family(int argc, char* argv[])
-{
-	if ( argc == 1 )
-	{
-		fprintf(stderr,"Usage: %s file\n", argv[0] );
-		return -1;
-	}
-	if ( argv[1] ) {    // check directory exists
-		char * dirprefix = strdup(argv[1]);
-		char * pch = NULL;
-		char * prevpch = NULL; 
-		char directory[STRING_BUF_SIZE];
-		directory[0] = '\0';
-		pch = strtok (dirprefix,"/\0");
-		while (pch != NULL)
-		{
-			if (prevpch) {
-				strcat(directory, prevpch);
-				strcat(directory, "/");
-			}
-			prevpch = pch;
-			pch = strtok (NULL, "/");
-		}
-		if (strlen(directory) != 0) {
-			struct stat st;
-			if(stat(directory,&st) != 0) {
-				perror(directory);
-				fprintf(stderr, "Please create directory %s before running genfamily.\n", directory);
-				return -1;
-			}
-		}
-	}
-	
-	int num_trials = 1;
-	pArrayList pargs = cafe_shell_build_argument(argc, argv);
-	pArgument parg;
-	if ( (parg = cafe_shell_get_argument( "-t", pargs) ) )
-	{
-		sscanf( parg->argv[0], "%d", &num_trials);	
-	}
-	arraylist_free(pargs, free);
-	pCafeTree pcafe = cafe_param->pcafe;
-	int i, j, n;
-	int num_families;
-	
-	STDERR_IF( cafe_param->pcafe == NULL, "ERROR(genfamily): You did not specify tree: command 'tree'\n" );
-	if (cafe_param->root_dist == NULL) {
-		STDERR_IF( cafe_param->pfamily == NULL, "ERROR(genfamily): You must either load family data or set root size distribution first: command 'load' or 'rootdist'\n");
-		cafe_param->root_dist = (int*)memory_new(pcafe->rfsize+1,sizeof(int));
-		num_families = cafe_param->pfamily->flist->size;
-		pCafeNode croot = (pCafeNode)pcafe->super.root;
-		cafe_param->param_set_func(cafe_param,cafe_param->parameters);
-		cafe_set_birthdeath_cache_thread(cafe_param->pcafe, cafe_param->parameterized_k_value, cafe_param->family_sizes, cafe_param->rootfamily_sizes);
-		printf("Viterbi\n");
-		
-		for ( i = 0 ; i < num_families; i++ )
-		{
-			if ( i % 1000 == 0 )
-			{
-				printf("%d ...\n", i );
-			}
-			cafe_family_set_size(cafe_param->pfamily,i, pcafe);
-			if (cafe_param->parameterized_k_value > 0) {
-				cafe_tree_clustered_viterbi(pcafe);
-			}
-			else {
-				cafe_tree_viterbi(pcafe);
-			}
-			/*		// use EM instead of viterbi to find maximum likelihood root size
-			 double* likelihood = cafe_tree_likelihood(pcafe);		// likelihood of the whole tree = multiplication of likelihood of all nodes
-			 cafe_param->ML[i] = __max(likelihood,pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family
-			 pCafeFamilyItem pitem = (pCafeFamilyItem)cafe_param->pfamily->flist->array[i];
-			 if ( pitem->maxlh < 0 )
-			 {
-			 pitem->maxlh = __maxidx(likelihood,pcafe->rfsize);	
-			 }
-			 croot->familysize = pcafe->rootfamilysizes[0]+pitem->maxlh;*/
-			cafe_param->root_dist[croot->familysize]++;
-		}
-	}
-	else {
-		num_families = 0;
-		for ( i = 1 ; i <= pcafe->rfsize ; i++ )
-		{
-			num_families += cafe_param->root_dist[i];
-		}					
-		STDERR_IF( cafe_param->lambda == NULL, "ERROR(genfamily): You did not specify lambda: command 'lambda'\n" );
-		cafe_log( cafe_param, "Using user defined root size distribution for simulation... \n");
-		cafe_param->param_set_func(cafe_param,cafe_param->parameters);
-		cafe_set_birthdeath_cache_thread(cafe_param->pcafe, cafe_param->parameterized_k_value, cafe_param->family_sizes, cafe_param->rootfamily_sizes);
-	}
-	
-	int t;
-	for ( t = 0 ; t < num_trials ; t++ )
-	{
-		int id = 1;	
-		char buf[STRING_BUF_SIZE];
-		sprintf(buf,"%s_%d.tab",argv[1], t+1 );
-		FILE* fout = fopen( buf, "w" );
-		if ( fout == NULL )
-		{
-			perror(argv[1]);
-			return -1;
-		}
-		sprintf(buf,"%s_%d.truth",argv[1], t+1 );
-		FILE* ftruth = fopen( buf, "w" );
-		if ( ftruth == NULL )
-		{
-			perror(argv[1]);
-			return -1;
-		}
-		fprintf(fout, "DESC\tFID" );
-		fprintf(ftruth, "DESC\tFID" );
-		pArrayList nlist = pcafe->super.nlist;
-		for ( i = 0 ; i < nlist->size ; i+=2 )
-		{
-			pPhylogenyNode pnode = (pPhylogenyNode)nlist->array[i];
-			fprintf(fout,"\t%s", pnode->name );
-		}
-		fprintf(fout,"\n");
-		for ( i = 0 ; i < nlist->size ; i++ )
-		{
-			pPhylogenyNode pnode = (pPhylogenyNode)nlist->array[i];
-			if (pnode->name) {
-				fprintf(ftruth,"\t%s", pnode->name );
-			}
-			else {
-				fprintf(ftruth,"\t-%d", i );
-			}
-		}
-		fprintf(ftruth,"\n");
-		
-		int idx = 0;
-		pArrayList k_arr = arraylist_new(num_families);
-		if (cafe_param->parameterized_k_value > 0) {
-			// assign clusters based on proportion (k_weights)
-			int k_i = 0;
-			for ( k_i = 0; k_i<cafe_param->parameterized_k_value-1; k_i++) {
-				for ( j = 0; j<cafe_param->k_weights[i]*num_families; j++) {
-					int* newk = memory_new(1, sizeof(int));
-					*newk = k_i;
-					arraylist_add(k_arr, (void*)newk);
-					idx++;
-				}
-			}
-			for (; idx<num_families; idx++) {
-				int* newk = memory_new(1, sizeof(int));
-				*newk = k_i;
-				arraylist_add(k_arr, (void*)newk);
-			}
-			// shuffle clusters
-			arraylist_shuffle(k_arr);
-		}
-		idx = 0;
-		for ( i = 1 ; i <= pcafe->rfsize ; i++ )
-		{
-			// iterates along root size distribution, and simulates as many families as the frequency of the root size.
-			// need to make it pick random k based on k_weights. 
-			if ( cafe_param->root_dist[i] ) 
-			{
-				for ( j = 0 ; j < cafe_param->root_dist[i] ; j++ )
-				{
-					// cafe_tree_random_familysize uses birthdeath_matrix to calculate the probabilities.
-					// if k > 0 point bd to k_bd[] before running cafe_tree_random_familysize to avoid EXC_BAD_ACCESS		
-					if (cafe_param->parameterized_k_value > 0) {
-						for ( n = 0 ; n < nlist->size ; n++ )
-						{
-							pCafeNode pcnode = (pCafeNode)nlist->array[n];
-							int* pK = (int*)k_arr->array[idx];
-							pcnode->birthdeath_matrix = pcnode->k_bd->array[*pK]; // which k_bd to point to is determined by the randomly shuffled k_arr
-						}
-					}
-					// now randomly sample familysize
-					cafe_tree_random_familysize(cafe_param->pcafe, i);
-					
-					// print test leaves
-					if (cafe_param->parameterized_k_value > 0) {
-						int* pK = (int*)k_arr->array[idx];
-						fprintf(fout, "k%d_root%d\t%d", *pK, i, id );
-					}
-					else {
-						fprintf(fout, "root%d\t%d", i, id );
-					}
-					for ( n = 0 ; n < nlist->size ; n+=2 )
-					{
-						pCafeNode pnode = (pCafeNode)nlist->array[n];
-						fprintf(fout,"\t%d",pnode->familysize );
-					}
-					fprintf(fout,"\n");
-
-					// print true leaves and inner nodes
-					if (cafe_param->parameterized_k_value > 0) {
-						int* pK = (int*)k_arr->array[idx];
-						fprintf(ftruth, "k%d_root%d\t%d",*pK, i, id );
-					}
-					else {
-						fprintf(ftruth, "root%d\t%d", i, id );
-					}
-					for ( n = 0 ; n < nlist->size ; n++ )
-					{
-						pCafeNode pnode = (pCafeNode)nlist->array[n];
-						fprintf(ftruth,"\t%d",pnode->familysize );
-					}
-					fprintf(ftruth,"\n");
-					id++;
-					idx++;
-				}
-			}
-		}
-		
-		arraylist_free(k_arr, free);
-		fclose(fout);
-		fclose(ftruth);
-	}
-	cafe_free_birthdeath_cache(pcafe);
-	//memory_free( cafe_param->root_dist );
-	//cafe_param->root_dist = NULL;
-	return 0;
-}
 
 
 
 
 
 
+/**
+\ingroup Commands
+\brief Runs a simulation to determine how many families are likely to have gone extinct
 
+Arguments: –t parameter gives the number of trials. Logs the total number of extinct families?
+*/
 int cafe_cmd_extinct(int argc, char* argv[])
 {
 	STDERR_IF( cafe_param->pfamily == NULL, "ERROR(extinct): You did not load family: command 'load'\n" );

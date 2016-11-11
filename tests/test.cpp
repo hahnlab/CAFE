@@ -2,7 +2,6 @@
 #include <vector>
 #include <string>
 #include <sstream>
-
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 #include <math.h>
@@ -653,6 +652,73 @@ TEST(FirstTestGroup, cafe_set_birthdeath_cache)
 	pCafeNode node = (pCafeNode)tree->super.nlist->array[3];
 	struct square_matrix* expected = birthdeath_cache_get_matrix(tree->pbdc_array, node->super.branchlength, node->lambda, node->mu);
 	POINTERS_EQUAL(expected, node->birthdeath_matrix);
+}
+
+TEST(FirstTestGroup, get_num_trials)
+{
+	std::vector<std::string> tokens;
+	LONGS_EQUAL(1, get_num_trials(tokens));
+	tokens.push_back("not much");
+	LONGS_EQUAL(1, get_num_trials(tokens));
+	tokens.push_back("-t");
+	tokens.push_back("17");
+	LONGS_EQUAL(17, get_num_trials(tokens));
+}
+
+TEST(FirstTestGroup, cafe_cmd_generate_random_family)
+{
+	CafeParam param;
+	param.pcafe = NULL;
+	std::vector<std::string> args;
+	args.push_back("genfamily");
+	CHECK_THROWS(std::runtime_error, cafe_cmd_generate_random_family(&param, args));
+	args.push_back("filename");
+	CHECK_THROWS(std::runtime_error, cafe_cmd_generate_random_family(&param, args));	// no tree
+	param.pcafe = create_tree();
+	param.root_dist = NULL;
+	param.pfamily = NULL;
+	CHECK_THROWS(std::runtime_error, cafe_cmd_generate_random_family(&param, args));	// no family or root dist
+}
+
+TEST(FirstTestGroup, get_clusters)
+{
+	double k_weights[3] = { 1,2,3 };
+	get_clusters(3, 1, k_weights);
+}
+
+TEST(FirstTestGroup, write_node_headers)
+{
+	pCafeTree tree = create_tree();
+	std::ostringstream ost1, ost2;
+	write_node_headers(ost1, ost2, tree);
+	STRCMP_EQUAL("DESC\tFID\tchimp\thuman\tmouse\trat\tdog\n", ost1.str().c_str());
+	STRCMP_EQUAL("DESC\tFID\tchimp\t-1\thuman\t-3\tmouse\t-5\trat\t-7\tdog\n", ost2.str().c_str());
+}
+
+void set_familysize_to_node_times_three(pTree ptree, pTreeNode pnode, va_list ap1)
+{
+	((pCafeNode)pnode)->familysize = pnode->id * 3;
+}
+
+TEST(FirstTestGroup, write_leaves)
+{
+	pCafeTree tree = create_tree();
+	tree_traveral_infix((pTree)tree, set_familysize_to_node_times_three, NULL);
+	std::ostringstream ost1, ost2;
+	int id = 1234;
+	int i = 42;
+	write_leaves(ost1, tree, NULL, i, id, true);
+	STRCMP_EQUAL("root42\t1234\t0\t6\t12\t18\t24\n", ost1.str().c_str());
+	write_leaves(ost2, tree, NULL, i, id, false);
+	STRCMP_EQUAL("root42\t1234\t0\t3\t6\t9\t12\t15\t18\t21\t24\n", ost2.str().c_str());
+
+	std::ostringstream ost3, ost4;
+	int k = 5;
+	write_leaves(ost3, tree, &k, i, id, true);
+	STRCMP_EQUAL("k5_root42\t1234\t0\t6\t12\t18\t24\n", ost3.str().c_str());
+
+	write_leaves(ost4, tree, &k, i, id, false);
+	STRCMP_EQUAL("k5_root42\t1234\t0\t3\t6\t9\t12\t15\t18\t21\t24\n", ost4.str().c_str());
 }
 
 TEST(LikelihoodRatio, cafe_likelihood_ratio_test)

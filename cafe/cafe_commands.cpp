@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <map>
 #include <string>
@@ -13,6 +14,10 @@
 #include "lambda.h"
 #include "cafe_commands.h"
 #include "reports.h"
+
+/**
+	\defgroup Commands Commands that are available in CAFE
+*/
 
 extern "C" {
 #include <utils_string.h>
@@ -45,6 +50,7 @@ map<string, cafe_command2> get_dispatcher()
 	dispatcher["report"] = cafe_cmd_report;
 	dispatcher["quit"] = cafe_cmd_exit;
 	dispatcher["exit"] = cafe_cmd_exit;
+	dispatcher["genfamily"] = cafe_cmd_generate_random_family;
 
 
 	return dispatcher;
@@ -310,3 +316,234 @@ extern "C" {
 	}
 }
 
+int get_num_trials(vector<string> args)
+{
+	vector<string>::iterator it = find(args.begin(), args.end(), "-t");
+	if (it == args.end())
+		return 1;
+	return atoi((++it)->c_str());
+}
+
+void verify_directory(string dir)
+{
+	if (dir.empty()) {    // check directory exists
+		char * dirprefix = strdup(dir.c_str());
+		char * pch = NULL;
+		char * prevpch = NULL;
+		char directory[STRING_BUF_SIZE];
+		directory[0] = '\0';
+		pch = strtok(dirprefix, "/\0");
+		while (pch != NULL)
+		{
+			if (prevpch) {
+				strcat(directory, prevpch);
+				strcat(directory, "/");
+			}
+			prevpch = pch;
+			pch = strtok(NULL, "/");
+		}
+		if (strlen(directory) != 0) {
+			struct stat st;
+			if (stat(directory, &st) != 0) {
+				perror(directory);
+				ostringstream ost;
+				ost << "Please create directory " << dir << " before running genfamily.\n";
+				throw std::runtime_error(ost.str().c_str());
+			}
+		}
+	}
+}
+
+int* get_root_dist(pCafeTree pcafe, pCafeFamily pfamily, int k_value, int* family_sizes, int* rootfamily_sizes)
+{
+	int *root_dist = (int*)memory_new(pcafe->rfsize + 1, sizeof(int));
+	int num_families = pfamily->flist->size;
+	pCafeNode croot = (pCafeNode)pcafe->super.root;
+	cafe_set_birthdeath_cache_thread(pcafe, k_value, family_sizes,rootfamily_sizes);
+	printf("Viterbi\n");
+
+	for (int i = 0; i < num_families; i++)
+	{
+		if (i % 1000 == 0)
+		{
+			printf("%d ...\n", i);
+		}
+		cafe_family_set_size(pfamily, i, pcafe);
+		if (k_value > 0) {
+			cafe_tree_clustered_viterbi(pcafe);
+		}
+		else {
+			cafe_tree_viterbi(pcafe);
+		}
+		root_dist[croot->familysize]++;
+	}
+
+	return root_dist;
+}
+
+vector<int> get_clusters(int parameterized_k_value, int num_families, double* k_weights)
+{
+	int idx = 0;
+	vector<int> result;
+	if (parameterized_k_value > 0) {
+		// assign clusters based on proportion (k_weights)
+		int k_i;
+		for (k_i = 0; k_i<parameterized_k_value - 1; k_i++) {
+			for (int j = 0; j<k_weights[k_i] * num_families; j++) {
+				result.push_back(k_i);
+				idx++;
+			}
+		}
+		for (; idx<num_families; idx++) {
+			result.push_back(k_i);
+		}
+		// shuffle clusters
+		random_shuffle(result.begin(), result.end());
+	}
+
+	return result;
+}
+
+void write_node_headers(ostream& s1, ostream& s2, pCafeTree pcafe)
+{
+	s1 << "DESC\tFID";
+	s2 << "DESC\tFID";
+	pArrayList nlist = pcafe->super.nlist;
+	for (int i = 0; i < nlist->size; i += 2)
+	{
+		pPhylogenyNode pnode = (pPhylogenyNode)nlist->array[i];
+		s1 << "\t" << pnode->name;
+	}
+	s1 << "\n";
+	for (int i = 0; i < nlist->size; i++)
+	{
+		pPhylogenyNode pnode = (pPhylogenyNode)nlist->array[i];
+		if (pnode->name) {
+			s2 << "\t" << pnode->name;
+		}
+		else {
+			s2 << "\t-" << i;
+		}
+	}
+	s2 << "\n";
+}
+
+void write_leaves(ostream& ofst, pCafeTree pcafe, int *k, int i, int id, bool evens)
+{
+	pArrayList nlist = pcafe->super.nlist;
+
+	// print test leaves
+	if (k) {
+		ofst << "k" << *k << "_";
+	}
+	ofst << "root" << i << "\t" << id;
+
+	for (int n = 0; n < nlist->size; n += (evens ? 2 : 1))
+	{
+		pCafeNode pnode = (pCafeNode)nlist->array[n];
+		ofst << "\t" << pnode->familysize;
+	}
+	ofst << "\n";
+}
+
+int cafe_cmd_generate_random_family(pCafeParam param, vector<string> tokens)
+{
+	if (tokens.size() == 1)
+	{
+		ostringstream ost;
+		ost << "Usage: " << tokens[0] << " file\n";
+		throw std::runtime_error(ost.str().c_str());
+	}
+
+	verify_directory(tokens[1]);
+
+	int num_trials = get_num_trials(tokens);
+
+	pCafeTree pcafe = param->pcafe;
+	int j, n;
+
+	if (param->pcafe == NULL)
+		throw std::runtime_error("ERROR(genfamily): You did not specify tree: command 'tree'\n");
+
+	int num_families = 0;
+	if (param->root_dist == NULL) {
+		if (param->pfamily == NULL) 
+			throw std::runtime_error("ERROR(genfamily): You must either load family data or set root size distribution first: command 'load' or 'rootdist'\n");
+
+		num_families = param->pfamily->flist->size;
+		param->param_set_func(param, param->parameters);
+		param->root_dist = get_root_dist(pcafe, param->pfamily, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
+	}
+	else {
+		num_families = 0;
+		for (int i = 1; i <= pcafe->rfsize; i++)
+		{
+			num_families += param->root_dist[i];
+		}
+		if (param->lambda == NULL)
+			throw std::runtime_error("ERROR(genfamily): You did not specify lambda: command 'lambda'\n");
+		cafe_log(param, "Using user defined root size distribution for simulation... \n");
+		param->param_set_func(param, param->parameters);
+		cafe_set_birthdeath_cache_thread(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
+	}
+
+	int t;
+	for (t = 0; t < num_trials; t++)
+	{
+		int id = 1;
+		ostringstream ost;
+		ost << tokens[1] << "_" << t + 1 << ".tab";
+		ofstream ofst(ost.str().c_str());
+		if (!ofst)
+		{
+			perror(tokens[1].c_str());
+			ost << " failed to open";
+			throw std::runtime_error(ost.str().c_str());
+		}
+		ostringstream tost;
+		tost << tokens[1] << "_" << t + 1 << ".truth";
+		ofstream truthst(tost.str().c_str());
+		if (!truthst)
+		{
+			perror(tokens[1].c_str());
+			tost << " failed to open";
+			throw std::runtime_error(tost.str().c_str());
+		}
+		write_node_headers(ofst, truthst, pcafe);
+
+		vector<int> k_arr = get_clusters(param->parameterized_k_value, num_families, param->k_weights);
+		int idx = 0;
+		for (int i = 1; i <= pcafe->rfsize; i++)
+		{
+			// iterates along root size distribution, and simulates as many families as the frequency of the root size.
+			// need to make it pick random k based on k_weights. 
+			if (param->root_dist[i])
+			{
+				pArrayList nlist = pcafe->super.nlist;
+				for (j = 0; j < param->root_dist[i]; j++)
+				{
+					// cafe_tree_random_familysize uses birthdeath_matrix to calculate the probabilities.
+					// if k > 0 point bd to k_bd[] before running cafe_tree_random_familysize to avoid EXC_BAD_ACCESS		
+					if (param->parameterized_k_value > 0) {
+						for (n = 0; n < nlist->size; n++)
+						{
+							pCafeNode pcnode = (pCafeNode)nlist->array[n];
+							pcnode->birthdeath_matrix = birthdeath_cache_get_matrix(pcafe->pbdc_array, pcnode->super.branchlength, pcnode->lambda, pcnode->mu);
+						}
+					}
+					// now randomly sample familysize
+					cafe_tree_random_familysize(param->pcafe, i);
+
+					int *k_value = param->parameterized_k_value > 0 ? &k_arr[idx] : NULL;
+					write_leaves(ofst, pcafe, k_value, i, id, true);
+					write_leaves(truthst, pcafe, k_value, i, id, false);
+
+					id++;
+					idx++;
+				}
+			}
+		}
+	}
+	cafe_free_birthdeath_cache(pcafe);
+	return 0;
+}

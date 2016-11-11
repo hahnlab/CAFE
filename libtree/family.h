@@ -95,7 +95,7 @@ typedef void (*param_func)(pCafeParam param, double* parameters);
 struct tagCafeParam
 {
 	FILE *fout, *flog;
-	pString str_fdata, str_fout, str_log;
+	pString str_fdata, str_log;
 
 	/// tree information stored when the user calls the "tree" command
 	pCafeTree pcafe;		

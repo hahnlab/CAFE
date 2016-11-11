@@ -63,7 +63,6 @@ int cafe_cmd_log(int argc, char* argv[] );
 int cafe_cmd_retrieve(int argc, char* argv[] );
 int cafe_cmd_sim_extinct(int argc, char* argv[]);
 int cafe_cmd_extinct(int argc, char* argv[]);
-int cafe_cmd_generate_random_family(int argc, char* argv[]);
 int cafe_cmd_lh_test(int argc, char* argv[]);
 int cafe_cmd_root_dist(int argc, char* argv[]);
 int cafe_cmd_esterror(int argc, char* argv[]);
