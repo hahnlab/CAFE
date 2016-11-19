@@ -13,7 +13,6 @@ typedef struct
 	double mu;
 	int branch_params_cnt;
 	int k;
-	double* factors[2];
 	int		size_of_factor;
 	int 	rfsize;
 	pBirthDeathCacheArray pbdc_array;

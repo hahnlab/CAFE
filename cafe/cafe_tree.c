@@ -37,15 +37,9 @@ void cafe_tree_set_parameters(pCafeTree pcafe, int familysizes[],
 	int rsize = rootfamilysizes[1] - rootfamilysizes[0]  + 1;
 	int fsize = familysizes[1] - familysizes[0]  + 1;
 	int max_size = rsize > fsize ? rsize : fsize;
-//	((pCafeNode)pcafe->super.root)->lambda = lambda;
 	if ( pcafe->size_of_factor < max_size )
 	{
 		pcafe->size_of_factor = max_size;
-		int idx;
-		for ( idx = 0 ; idx < 2 ;  idx++ )
-		{
-			pcafe->factors[idx] = (double*)memory_realloc(pcafe->factors[idx], pcafe->size_of_factor,sizeof(double));
-		}
 		for ( i = 0;  i < nlist->size ; i++ )
 		{
 			pCafeNode pcnode = (pCafeNode)nlist->array[i];
@@ -106,31 +100,9 @@ pCafeTree cafe_tree_new(char* sztree, int familysizes[],
 	pcafe->rfsize = rootfamilysizes[1] - rootfamilysizes[0] + 1;
 	((pCafeNode)pcafe->super.root)->lambda = lambda;
 	((pCafeNode)pcafe->super.root)->mu = mu;
-	int idx;
-	for ( idx = 0 ; idx < 2 ;  idx++ )
-	{
-		pcafe->factors[idx] = (double*)memory_new(pcafe->size_of_factor,sizeof(double));
-	}
 	tree_build_node_list((pTree)pcafe);
 	return pcafe;
 }
-
-/* not used anywhere 
-pCafeTree cafe_tree_new_from_file(char* fname, int familysizes[], 
-		                          int rootfamilysizes[], double lambda )
-{
-	int i;
-	char* sztree = file_read_all(fname);	
-	for( i = 0 ; i < sztree[i]; i++ )
-	{
-		if ( sztree[i] == '\n' ) sztree[i] = ' ';
-	}
-	pCafeTree ptree = cafe_tree_new(sztree, familysizes, rootfamilysizes, lambda );
-	memory_free(sztree);
-	sztree = NULL;
-	return ptree;
-}
-*/
 
 void __cafe_tree_free_node(pTree ptree, pTreeNode ptnode, va_list ap1)
 {
@@ -148,10 +120,6 @@ void __cafe_tree_free_node(pTree ptree, pTreeNode ptnode, va_list ap1)
 
 void cafe_tree_free(pCafeTree pcafe)
 {
-	memory_free(pcafe->factors[0]); 
-	pcafe->factors[0] = NULL;
-	memory_free(pcafe->factors[1]);
-	pcafe->factors[1] = NULL;
 	if ( pcafe->super.nlist )
 	{
 		int i;
@@ -339,6 +307,9 @@ void __cafe_tree_node_compute_viterbi(pTree ptree, pTreeNode ptnode, va_list ap1
 	pCafeNode pcnode = (pCafeNode)ptnode;
 	//double lambda = pcafe->lambda;
 
+	double *tree_factors[2];
+	tree_factors[0] = memory_new(pcafe->size_of_factor, sizeof(double));
+	tree_factors[1] = memory_new(pcafe->size_of_factor, sizeof(double));
 	int size;
 	int s,c,i,j; 
 	int* rootfamilysizes;
@@ -354,7 +325,7 @@ void __cafe_tree_node_compute_viterbi(pTree ptree, pTreeNode ptnode, va_list ap1
 		{
 			rootfamilysizes = pcafe->familysizes;
 		}
-		double* factors = pcafe->factors[0];
+		double* factors = tree_factors[0];
 		memset( factors, 0, pcafe->size_of_factor*sizeof(double));
 		for ( s = rootfamilysizes[0], i = 0; s <= rootfamilysizes[1] ; s++, i++ )
 		{
@@ -409,7 +380,7 @@ void __cafe_tree_node_compute_viterbi(pTree ptree, pTreeNode ptnode, va_list ap1
 		for ( idx = 0 ; idx < 2 ; idx++ )
 		{
 			{
-				factors[idx] = pcafe->factors[idx];
+				factors[idx] = tree_factors[idx];
 				memset( factors[idx], 0, pcafe->size_of_factor*sizeof(double));
 				for( s = rootfamilysizes[0], i = 0 ; s <= rootfamilysizes[1] ; s++, i++ )
 				{
@@ -433,6 +404,9 @@ void __cafe_tree_node_compute_viterbi(pTree ptree, pTreeNode ptnode, va_list ap1
 		}
 //		printf("%s : %d, %d\n", pcnode->super.name, pcnode->super.branchlength, i );
 	}
+
+	memory_free(tree_factors[0]);
+	memory_free(tree_factors[1]);
 }
 
 void __cafe_tree_node_backtrack_viterbi(pTree ptree, pTreeNode ptnode, va_list ap1 )
@@ -473,6 +447,10 @@ void __cafe_tree_node_compute_clustered_viterbi(pTree ptree, pTreeNode ptnode, v
 	pCafeTree pcafe = (pCafeTree)ptree;
 	pCafeNode pcnode = (pCafeNode)ptnode;
 	
+	double *tree_factors[2];
+	tree_factors[0] = memory_new(pcafe->size_of_factor, sizeof(double));
+	tree_factors[1] = memory_new(pcafe->size_of_factor, sizeof(double));
+
 	int size;
 	int s,c,i,j,k; 
 	int* rootfamilysizes;
@@ -549,7 +527,7 @@ void __cafe_tree_node_compute_clustered_viterbi(pTree ptree, pTreeNode ptnode, v
 			{
 				{	
 					if (k == 0) {
-						factors[idx] = pcafe->factors[idx];
+						factors[idx] = tree_factors[idx];
 						memset( factors[idx], 0, pcafe->size_of_factor*sizeof(double));
 					}
 					bd = child[idx]->k_bd->array[k];
@@ -790,6 +768,9 @@ void __cafe_tree_node_compute_likelihood_using_cache(pTree ptree, pTreeNode ptno
 {
 	pCafeTree pcafe = (pCafeTree)ptree;
 	pCafeNode pcnode = (pCafeNode)ptnode;
+	double *tree_factors[2];
+	tree_factors[0] = memory_new(pcafe->size_of_factor, sizeof(double));
+	tree_factors[1] = memory_new(pcafe->size_of_factor, sizeof(double));
 
 	int size;
 	int s,c,j;
@@ -854,7 +835,7 @@ void __cafe_tree_node_compute_likelihood_using_cache(pTree ptree, pTreeNode ptno
 		for ( idx = 0 ; idx < 2 ; idx++ )
 		{
 			{	
-				factors[idx] = pcafe->factors[idx];
+				factors[idx] = tree_factors[idx];
 				memset( factors[idx], 0, pcafe->size_of_factor*sizeof(double));
 				for( s = rootfamilysizes[0], i = 0 ; s <= rootfamilysizes[1] ; s++, i++ )
 				{
@@ -876,6 +857,9 @@ void __cafe_tree_node_compute_likelihood_using_cache(pTree ptree, pTreeNode ptno
 			}
 		}
 	}
+
+	memory_free(tree_factors[0]);
+	memory_free(tree_factors[1]);
 }
 
 
@@ -883,6 +867,9 @@ void __cafe_tree_node_compute_clustered_likelihood(pTree ptree, pTreeNode ptnode
 {
 	pCafeTree pcafe = (pCafeTree)ptree;
 	pCafeNode pcnode = (pCafeNode)ptnode;
+	double *tree_factors[2];
+	tree_factors[0] = memory_new(pcafe->size_of_factor, sizeof(double));
+	tree_factors[1] = memory_new(pcafe->size_of_factor, sizeof(double));
 
 	int size;
 	int s,c,i,j,k; 
@@ -966,7 +953,7 @@ void __cafe_tree_node_compute_clustered_likelihood(pTree ptree, pTreeNode ptnode
 			for ( idx = 0 ; idx < 2 ; idx++ )
 			{
 				{	
-					factors[idx] = pcafe->factors[idx];
+					factors[idx] = tree_factors[idx];
 					memset( factors[idx], 0, pcafe->size_of_factor*sizeof(double));
 					for( s = rootfamilysizes[0], i = 0 ; s <= rootfamilysizes[1] ; s++, i++ )
 					{
@@ -985,6 +972,8 @@ void __cafe_tree_node_compute_clustered_likelihood(pTree ptree, pTreeNode ptnode
 		}
 	}
 	
+	memory_free(tree_factors[0]);
+	memory_free(tree_factors[1]);
 }
 
 
@@ -992,6 +981,9 @@ void __cafe_tree_node_compute_clustered_likelihood_using_cache(pTree ptree, pTre
 {
 	pCafeTree pcafe = (pCafeTree)ptree;
 	pCafeNode pcnode = (pCafeNode)ptnode;
+	double *tree_factors[2];
+	tree_factors[0] = memory_new(pcafe->size_of_factor, sizeof(double));
+	tree_factors[1] = memory_new(pcafe->size_of_factor, sizeof(double));
 
 	int size;
 	int s,c,i,j,k; 
@@ -1067,7 +1059,7 @@ void __cafe_tree_node_compute_clustered_likelihood_using_cache(pTree ptree, pTre
 			for ( idx = 0 ; idx < 2 ; idx++ )
 			{
 				{	
-					factors[idx] = pcafe->factors[idx];
+					factors[idx] = tree_factors[idx];
 					memset( factors[idx], 0, pcafe->size_of_factor*sizeof(double));
 					bd = child[idx]->k_bd->array[k];
 					for( s = rootfamilysizes[0], i = 0 ; s <= rootfamilysizes[1] ; s++, i++ )
@@ -1086,6 +1078,9 @@ void __cafe_tree_node_compute_clustered_likelihood_using_cache(pTree ptree, pTre
 			}
 		}
 	}
+
+	memory_free(tree_factors[0]);
+	memory_free(tree_factors[1]);
 }
 
 
@@ -1255,12 +1250,6 @@ void __cafe_tree_copy_new_fill(pCafeTree psrc, pCafeTree pdest )
 	pdest->rootfamilysizes[1] = psrc->rootfamilysizes[1];
 	pdest->lambda = psrc->lambda;
 	pdest->rfsize = psrc->rfsize;
-
-	int idx;
-	for ( idx = 0 ; idx < 2 ;  idx++ )
-	{
-		pdest->factors[idx] = (double*)memory_new( pdest->size_of_factor, sizeof(double) );
-	}
 }
 
 pCafeTree cafe_tree_copy(pCafeTree psrc)

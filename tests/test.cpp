@@ -105,7 +105,7 @@ static pCafeTree create_tree()
 TEST(FirstTestGroup, TestCafeTree)
 {
 	pCafeTree cafe_tree = create_tree();
-	LONGS_EQUAL(128, cafe_tree->super.size);
+	LONGS_EQUAL(112, cafe_tree->super.size); // tracks the size of the structure for copying purposes, etc.
 
 	// Find chimp in the tree after two branches of length 6,81,6
 	pTreeNode ptnode = (pTreeNode)cafe_tree->super.root;
