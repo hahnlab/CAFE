@@ -51,6 +51,7 @@ map<string, cafe_command2> get_dispatcher()
 	dispatcher["quit"] = cafe_cmd_exit;
 	dispatcher["exit"] = cafe_cmd_exit;
 	dispatcher["genfamily"] = cafe_cmd_generate_random_family;
+	dispatcher["log"] = cafe_cmd_log;
 
 
 	return dispatcher;
@@ -105,6 +106,35 @@ int cafe_cmd_exit(pCafeParam param, vector<string> tokens)
 	if (cafe_pCD) arraylist_free(cafe_pCD, free);
 	memory_free(param);
 	return CAFE_SHELL_EXIT;
+}
+
+/**
+\ingroup Commands
+\brief Sets file to which data is logged
+*
+* With no arguments, writes the current log file to stdout
+* with the argument "stdout" the current log file is closed and log data goes to stdout
+*
+*/
+int cafe_cmd_log(pCafeParam param, std::vector<std::string> tokens)
+{
+	if (tokens.size() == 1)
+	{
+		printf("Log: %s\n", param->flog == stdout ? "stdout" : param->str_log->buf);
+	}
+	else
+	{
+		string file_name;
+		if (tokens[1] == "stdout")
+			file_name = "stdout";
+		else {
+			ostringstream ost;
+			copy(tokens.begin()+1, tokens.end(), std::ostream_iterator<string>(ost, " "));
+			file_name = ost.str().substr(0, ost.str().size() - 1);
+		}
+		return set_log_file(param, file_name.c_str());
+	}
+	return 0;
 }
 
 int cafe_cmd_source(pCafeParam param, vector<string> tokens)

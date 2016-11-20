@@ -771,6 +771,22 @@ TEST(FirstTestGroup, write_leaves)
 	STRCMP_EQUAL("k5_root42\t1234\t0\t3\t6\t9\t12\t15\t18\t21\t24\n", ost4.str().c_str());
 }
 
+TEST(FirstTestGroup, cafe_cmd_log)
+{
+	CafeParam param;
+	param.str_log = NULL;
+	std::vector<std::string> args;
+	args.push_back("log");
+	args.push_back("stdout");
+	param.flog = NULL;
+	cafe_cmd_log(&param, args);
+	LONGS_EQUAL(stdout, param.flog);
+
+	args[1] = "log.txt";
+	cafe_cmd_log(&param, args);
+	STRCMP_EQUAL("log.txt", param.str_log->buf);
+}
+
 TEST(LikelihoodRatio, cafe_likelihood_ratio_test)
 {
 	CafeParam param;

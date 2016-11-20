@@ -59,7 +59,6 @@ int cafe_cmd_lambda_mu(int argc, char* argv[]);
 int cafe_cmd_version(int argc, char* argv[]);
 int cafe_cmd_pvalue(int argc, char* argv[]);
 int cafe_cmd_score(int argc, char* argv[]);
-int cafe_cmd_log(int argc, char* argv[] );
 int cafe_cmd_retrieve(int argc, char* argv[] );
 int cafe_cmd_sim_extinct(int argc, char* argv[]);
 int cafe_cmd_extinct(int argc, char* argv[]);
@@ -73,6 +72,6 @@ int cafe_cmd_reconstruction_accuracy(int argc, char* argv[]);
 int cafe_cmd_crossvalidation_by_species(int argc, char* argv[]);
 int cafe_cmd_crossvalidation_by_family(int argc, char* argv[]);
 
-
+int set_log_file(pCafeParam param, const char *file_name);
 
 #endif 

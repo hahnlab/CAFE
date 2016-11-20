@@ -47,7 +47,6 @@ CafeShellCommand cafe_cmd[]  =
 	{ "lambdamu", cafe_cmd_lambda_mu },
 	{ "lhtest", cafe_cmd_lh_test },
 	{ "load", cafe_cmd_load },
-	{ "log", cafe_cmd_log },
 	{ "pvalue", cafe_cmd_pvalue },
 	{ "retrieve", cafe_cmd_retrieve },
 	{ "rootdist", cafe_cmd_root_dist}, 
@@ -66,9 +65,6 @@ CafeShellCommand cafe_cmd[]  =
 	{ "viterbi", cafe_cmd_viterbi},
 	{ NULL, NULL }
 };
-
-int __cafe_cmd_log(int argc ,char* argv[] );
-
 
 pArrayList cafe_shell_build_argument(int argc, char* argv[])
 {
@@ -1730,7 +1726,13 @@ int cafe_cmd_load(int argc, char* argv[])
 	}
 	if ((parg = cafe_shell_get_argument("-l", pargs)))
 	{
-		__cafe_cmd_log( parg->argc, parg->argv );
+		if (!strcmp(parg->argv[0], "stdout"))
+			return set_log_file(cafe_param, "stdout");
+		else {
+			pString file_name = string_join(" ", argc, argv);
+			set_log_file(cafe_param, file_name->buf);
+			string_free(file_name);
+		}
 	}
 	if ((parg = cafe_shell_get_argument("-filter", pargs)))
 	{
@@ -2185,47 +2187,29 @@ int cafe_cmd_retrieve(int argc, char* argv[] )
 	return 0;
 }
 
-int __cafe_cmd_log(int argc ,char* argv[] )
+int set_log_file(pCafeParam param, const char *log_file)
 {
-	if ( cafe_param->str_log )
+	if ( param->str_log )
 	{
-		string_free( cafe_param->str_log );
-		fclose( cafe_param->flog );
-		cafe_param->str_log = NULL;
+		string_free( param->str_log );
+		fclose( param->flog );
+		param->str_log = NULL;
 	}
-	if ( !strcmp( argv[0], "stdout" ) )
+	if ( !strcmp(log_file, "stdout" ) )
 	{
-		cafe_param->str_log = NULL;
-		cafe_param->flog = stdout;
+		param->str_log = NULL;
+		param->flog = stdout;
 	}
 	else
 	{
-		cafe_param->str_log = string_join(" ",argc, argv );
-		if (  ( cafe_param->flog = fopen( cafe_param->str_log->buf, "a" ) ) == NULL )
+		param->str_log = string_new_with_string(log_file);
+		if (  ( param->flog = fopen( param->str_log->buf, "a" ) ) == NULL )
 		{
-			fprintf(stderr, "ERROR(log): Cannot open log file: %s\n", cafe_param->str_log->buf );	
-			string_free( cafe_param->str_log );
-			cafe_param->flog = stdout;
+			fprintf(stderr, "ERROR(log): Cannot open log file: %s\n", param->str_log->buf );	
+			string_free( param->str_log );
+			param->flog = stdout;
 			return -1;
 		}
-	}
-	return 0;
-}
-
-/**
-	\ingroup Commands
-	\brief Echoes parameters to the current output
-
-*/
-int cafe_cmd_log(int argc, char* argv[] )
-{
-	if ( argc == 1 ) 
-	{
-		printf( "Log: %s\n", cafe_param->flog == stdout ? "stdout" : cafe_param->str_log->buf );
-	}
-	else
-	{
-		return __cafe_cmd_log(argc-1,&argv[1]);
 	}
 	return 0;
 }

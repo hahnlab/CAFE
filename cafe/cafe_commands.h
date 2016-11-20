@@ -16,6 +16,7 @@ int cafe_cmd_date(pCafeParam param, std::vector<std::string> tokens);
 int cafe_cmd_exit(pCafeParam param, std::vector<std::string> tokens);
 int cafe_cmd_gainloss(pCafeParam param, std::vector<std::string> tokens);
 int cafe_cmd_generate_random_family(pCafeParam param, std::vector<std::string> tokens);
+int cafe_cmd_log(pCafeParam param, std::vector<std::string> tokens);
 
 
 int cafe_shell_dispatch_command(char* cmd);
