@@ -528,7 +528,7 @@ int cafe_cmd_generate_random_family(pCafeParam param, vector<string> tokens)
 						for (n = 0; n < nlist->size; n++)
 						{
 							pCafeNode pcnode = (pCafeNode)nlist->array[n];
-							pcnode->birthdeath_matrix = birthdeath_cache_get_matrix(pcafe->pbdc_array, pcnode->super.branchlength, pcnode->lambda, pcnode->mu);
+							pcnode->birthdeath_matrix = birthdeath_cache_get_matrix(pcafe->pbdc_array, pcnode->super.branchlength, pcnode->birth_death_probabilities.lambda, pcnode->birth_death_probabilities.mu);
 						}
 					}
 					// now randomly sample familysize

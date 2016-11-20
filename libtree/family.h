@@ -30,22 +30,24 @@ typedef struct
 }ErrorStruct;
 typedef ErrorStruct* pErrorStruct;       
 
-
+struct probabilities
+{
+	double  lambda;
+	double	mu;
+	double* param_lambdas;
+	double* param_mus;
+};
 /** Struct that holds information about a node in a CafeTree. It extends the 
 	PhylogenyNode structure which in turn extends the TreeNode structure.
 */
 typedef struct
 {
 	PhylogenyNode super;
-	double  lambda;
-	double	mu;
-	double* param_lambdas;
-	double* param_mus;
-	//double* param_weights;
 	double** k_likelihoods;
 	double* likelihoods;
 	int*    viterbi;
 	int	familysize;	
+	struct probabilities birth_death_probabilities;
 
 	/** Matrix of precalculated values, indexed by the root family size
 		and the family size

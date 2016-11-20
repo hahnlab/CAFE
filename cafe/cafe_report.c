@@ -257,7 +257,7 @@ double cafe_report_mp_summary(pString pstr, pTreeNode pnode, pMetapostConfig pmc
     string_fadd( pstr, "label.rt( btex %4.1f ", ((pCafeNode)pnode)->super.branchlength );    
     string_fadd( pstr, "etex, mid[%d] + (0,%fu));\n",  pnode->id, last );
     last -= 0.15;    
-    string_fadd( pstr, "label.rt( btex %f ", ((pCafeNode)pnode)->lambda);
+    string_fadd( pstr, "label.rt( btex %f ", ((pCafeNode)pnode)->birth_death_probabilities.lambda);
     string_fadd( pstr, "etex, mid[%d] + (0,%fu));\n",  pnode->id, last );
   }
   va_end(ap);

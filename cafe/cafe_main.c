@@ -109,7 +109,7 @@ void cafe_lambda_set_default(pCafeParam param, double* lambda)
 	pTree ptree = (pTree)param->pcafe;
 	for ( i = 0 ; i < ptree->nlist->size; i++ )
 	{
-		((pCafeNode)ptree->nlist->array[i])->lambda = lambda[0];
+		((pCafeNode)ptree->nlist->array[i])->birth_death_probabilities.lambda = lambda[0];
 	}
 }
 
@@ -1593,7 +1593,7 @@ void* __cafe_likelihood_ratio_test_thread_func(void* ptr)
 				prevlh = nextlh;
 				pnode->branchlength += rint(pnode->branchlength * 0.15);
 pthread_mutex_lock( &mutex_cafe_likelihood );
-				((pCafeNode)pnode)->birthdeath_matrix = birthdeath_cache_get_matrix(pcafe->pbdc_array, pnode->branchlength, ((pCafeNode)pnode)->lambda,  ((pCafeNode)pnode)->mu );
+				((pCafeNode)pnode)->birthdeath_matrix = birthdeath_cache_get_matrix(pcafe->pbdc_array, pnode->branchlength, ((pCafeNode)pnode)->birth_death_probabilities.lambda,  ((pCafeNode)pnode)->birth_death_probabilities.mu );
 pthread_mutex_unlock( &mutex_cafe_likelihood);
 				nextlh = __max(cafe_tree_likelihood(pcafe), param->pcafe->rfsize );
 			}

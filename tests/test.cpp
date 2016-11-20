@@ -448,8 +448,8 @@ TEST(FirstTestGroup, compute_internal_node_likelihood)
 	chooseln_cache_init(50);
 	pTree tree = (pTree)create_tree();
 	pCafeNode node = (pCafeNode)tree->root;
-	node->lambda = 0.01;
-	node->mu = -1;
+	node->birth_death_probabilities.lambda = 0.01;
+	node->birth_death_probabilities.mu = -1;
 	int factors = ((pCafeTree)tree)->size_of_factor;
 	for (int i = 0; i < factors; ++i)
 	{
@@ -486,8 +486,8 @@ TEST(FirstTestGroup, cafe_tree_new_empty_node)
 	POINTERS_EQUAL(NULL, node->birthdeath_matrix);
 	POINTERS_EQUAL(NULL, node->k_bd);
 	POINTERS_EQUAL(NULL, node->k_likelihoods);
-	POINTERS_EQUAL(NULL, node->param_mus);
-	POINTERS_EQUAL(NULL, node->param_lambdas);
+	POINTERS_EQUAL(NULL, node->birth_death_probabilities.param_mus);
+	POINTERS_EQUAL(NULL, node->birth_death_probabilities.param_lambdas);
 	LONGS_EQUAL(-1, node->familysize);
 }
 
@@ -651,7 +651,7 @@ TEST(FirstTestGroup, cafe_set_birthdeath_cache)
 	// every node should have its birthdeath_matrix set to an entry in the cache
 	// matching its branch length, lambda and mu values
 	pCafeNode node = (pCafeNode)tree->super.nlist->array[3];
-	struct square_matrix* expected = birthdeath_cache_get_matrix(tree->pbdc_array, node->super.branchlength, node->lambda, node->mu);
+	struct square_matrix* expected = birthdeath_cache_get_matrix(tree->pbdc_array, node->super.branchlength, node->birth_death_probabilities.lambda, node->birth_death_probabilities.mu);
 	POINTERS_EQUAL(expected, node->birthdeath_matrix);
 }
 
