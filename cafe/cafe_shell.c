@@ -43,7 +43,6 @@ CafeShellCommand cafe_cmd[]  =
 	{ "branchlength", cafe_cmd_branchlength },
 	{ "extinct", cafe_cmd_extinct },
 	{ "family", cafe_cmd_family },
-	{ "info", cafe_cmd_print_param },
 	{ "lambdamu", cafe_cmd_lambda_mu },
 	{ "lhtest", cafe_cmd_lh_test },
 	{ "load", cafe_cmd_load },
@@ -61,7 +60,6 @@ CafeShellCommand cafe_cmd[]  =
 	{ "score", cafe_cmd_score },
 	{ "simextinct", cafe_cmd_sim_extinct },
 	{ "tree", cafe_cmd_tree },
-	{ "version", cafe_cmd_version },
 	{ "viterbi", cafe_cmd_viterbi},
 	{ NULL, NULL }
 };
@@ -1779,7 +1777,7 @@ int cafe_cmd_load(int argc, char* argv[])
 	{
 		cafe_set_birthdeath_cache_thread(cafe_param->pcafe, cafe_param->parameterized_k_value, cafe_param->family_sizes, cafe_param->rootfamily_sizes);
 	}
-	cafe_cmd_print_param(0,NULL);
+	log_param_values(cafe_param);
 	return 0;
 }
 
@@ -1817,36 +1815,31 @@ int cafe_cmd_save(int argc, char* argv[])
 	return 0;
 }
 
-int cafe_cmd_print_param(int argc, char* argv[])
+void log_param_values(pCafeParam param)
 {
-	cafe_log( cafe_param, "-----------------------------------------------------------\n");
-	cafe_log( cafe_param, "Family information: %s\n", cafe_param->str_fdata->buf );
-	cafe_log( cafe_param, "Log: %s\n", cafe_param->flog == stdout ? "stdout" : cafe_param->str_log->buf );
-	if( cafe_param->pcafe ) 
+	cafe_log(param, "-----------------------------------------------------------\n");
+	cafe_log(param, "Family information: %s\n", param->str_fdata->buf);
+	cafe_log(param, "Log: %s\n", param->flog == stdout ? "stdout" : param->str_log->buf);
+	if (param->pcafe)
 	{
-		pString pstr = phylogeny_string( (pTree)cafe_param->pcafe, NULL );
-		cafe_log( cafe_param, "Tree: %s\n", pstr->buf ); 
+		pString pstr = phylogeny_string((pTree)param->pcafe, NULL);
+		cafe_log(param, "Tree: %s\n", pstr->buf);
 		string_free(pstr);
 	}
-	cafe_log( cafe_param, "The number of families is %d\n", cafe_param->pfamily->flist->size );
-	cafe_log( cafe_param, "Root Family size : %d ~ %d\n", cafe_param->rootfamily_sizes[0], cafe_param->rootfamily_sizes[1]);
-	cafe_log( cafe_param, "Family size : %d ~ %d\n", cafe_param->family_sizes[0], cafe_param->family_sizes[1]);
-	cafe_log( cafe_param, "P-value: %f\n", cafe_param->pvalue);
-	cafe_log( cafe_param, "Num of Threads: %d\n", cafe_param->num_threads );
-	cafe_log( cafe_param, "Num of Random: %d\n", cafe_param->num_random_samples );
-	if ( cafe_param->lambda )
+	cafe_log(param, "The number of families is %d\n", param->pfamily->flist->size);
+	cafe_log(param, "Root Family size : %d ~ %d\n", param->rootfamily_sizes[0], param->rootfamily_sizes[1]);
+	cafe_log(param, "Family size : %d ~ %d\n", param->family_sizes[0], param->family_sizes[1]);
+	cafe_log(param, "P-value: %f\n", param->pvalue);
+	cafe_log(param, "Num of Threads: %d\n", param->num_threads);
+	cafe_log(param, "Num of Random: %d\n", param->num_random_samples);
+	if (param->lambda)
 	{
-		pString pstr = cafe_tree_string_with_lambda(cafe_param->pcafe);
-		cafe_log( cafe_param, "Lambda: %s\n", pstr->buf );
+		pString pstr = cafe_tree_string_with_lambda(param->pcafe);
+		cafe_log(param, "Lambda: %s\n", pstr->buf);
 		string_free(pstr);
 	}
 	return 0;
-}
 
-int cafe_cmd_version(int argc, char* argv[])
-{
-	printf("Version: %g, at %s\n", 3.1, __DATE__ );
-	return 0;
 }
 
 void __cafe_cmd_pvalue_print(int max)
@@ -2067,7 +2060,7 @@ int cafe_cmd_family(int argc, char* argv[])
 	{
 		STDERR_IF( cafe_param->pcafe == NULL, "ERROR(family): You did not specify tree: command 'tree'\n" );
 		cafe_family_filter( cafe_param );
-		cafe_cmd_print_param(0,NULL);
+		log_param_values(cafe_param);
 		return 0;
 	}
 	if ( idx < 0  )

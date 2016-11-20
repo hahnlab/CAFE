@@ -9,6 +9,9 @@ extern "C" {
 #include "family.h"
 }
 
+typedef int(*cafe_command2)(pCafeParam cafe_param, std::vector<std::string>);
+
+
 int cafe_cmd_source(pCafeParam param, std::vector<std::string> tokens);
 int cafe_cmd_list(pCafeParam param, std::vector<std::string> tokens);
 int cafe_cmd_echo(pCafeParam param, std::vector<std::string> tokens);
@@ -17,6 +20,8 @@ int cafe_cmd_exit(pCafeParam param, std::vector<std::string> tokens);
 int cafe_cmd_gainloss(pCafeParam param, std::vector<std::string> tokens);
 int cafe_cmd_generate_random_family(pCafeParam param, std::vector<std::string> tokens);
 int cafe_cmd_log(pCafeParam param, std::vector<std::string> tokens);
+int cafe_cmd_version(pCafeParam param, std::vector<std::string> tokens);
+int cafe_cmd_print_param(pCafeParam param, std::vector<std::string> tokens);
 
 
 int cafe_shell_dispatch_command(char* cmd);
@@ -32,6 +37,7 @@ void set_node_familysize(pCafeTree tree, int** node_family_sizes, int i);
 std::vector<int> get_clusters(int parameterized_k_value, int num_families, double* k_weights);
 void write_node_headers(std::ostream& s1, std::ostream& s2, pCafeTree pcafe);
 void write_leaves(std::ostream& ofst, pCafeTree pcafe, int *k, int i, int id, bool evens);
+void write_version(std::ostream &ost);
 
 #endif
 

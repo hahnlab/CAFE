@@ -592,6 +592,13 @@ TEST(FirstTestGroup, write_node_headers)
 	STRCMP_EQUAL("DESC\tFID\tchimp\t-1\thuman\t-3\tmouse\t-5\trat\t-7\tdog\n", ost2.str().c_str());
 }
 
+TEST(FirstTestGroup, write_version)
+{
+	std::ostringstream ost;
+	write_version(ost);
+	STRCMP_CONTAINS("Version: 3.2, built at", ost.str().c_str());
+}
+
 TEST(FirstTestGroup, compute_viterbis)
 {
 	square_matrix matrix;

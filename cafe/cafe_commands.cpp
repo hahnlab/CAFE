@@ -36,8 +36,6 @@ extern "C" {
 
 using namespace std;
 
-typedef int(*cafe_command2)(pCafeParam cafe_param, vector<string>);
-
 map<string, cafe_command2> get_dispatcher()
 {
 	map<string, cafe_command2> dispatcher;
@@ -52,6 +50,9 @@ map<string, cafe_command2> get_dispatcher()
 	dispatcher["exit"] = cafe_cmd_exit;
 	dispatcher["genfamily"] = cafe_cmd_generate_random_family;
 	dispatcher["log"] = cafe_cmd_log;
+	dispatcher["version"] = cafe_cmd_version;
+	dispatcher["info"] = cafe_cmd_print_param;
+
 
 
 	return dispatcher;
@@ -72,7 +73,12 @@ vector<string> tokenize(string s)
 	return result;
 }
 
-int cafe_cmd_echo(pCafeParam param, vector<string> tokens)
+/**
+\ingroup Commands
+\brief Echoes test to the log file
+*
+*/
+int cafe_cmd_echo(pCafeParam param, std::vector<std::string> tokens)
 {
 	for (size_t i = 1; i < tokens.size(); i++)
 	{
@@ -82,7 +88,12 @@ int cafe_cmd_echo(pCafeParam param, vector<string> tokens)
 	return 0;
 }
 
-int cafe_cmd_date(pCafeParam param, vector<string> tokens)
+/**
+\ingroup Commands
+\brief Writes the current date and time to log file
+*
+*/
+int cafe_cmd_date(pCafeParam param, std::vector<std::string> tokens)
 {
 	time_t now = time(NULL);
 	struct tm *tm = localtime(&now);
@@ -92,7 +103,12 @@ int cafe_cmd_date(pCafeParam param, vector<string> tokens)
 	return 0;
 }
 
-int cafe_cmd_exit(pCafeParam param, vector<string> tokens)
+/**
+\ingroup Commands
+\brief Close files, release memory and exit application
+*
+*/
+int cafe_cmd_exit(pCafeParam param, std::vector<std::string> tokens)
 {
 	if (param->str_log)
 	{
@@ -137,7 +153,40 @@ int cafe_cmd_log(pCafeParam param, std::vector<std::string> tokens)
 	return 0;
 }
 
-int cafe_cmd_source(pCafeParam param, vector<string> tokens)
+void write_version(ostream &ost)
+{
+	ost << "Version: " << CAFE_VERSION << ", built at " << __DATE__ << "\n";
+}
+
+/**
+\ingroup Commands
+\brief Prints CAFE version and date of build
+*
+*/
+int cafe_cmd_version(pCafeParam param, std::vector<std::string> tokens)
+{
+	write_version(cout);
+	return 0;
+}
+
+/**
+\ingroup Commands
+\brief Logs various pieces of information about the application state
+*
+*/
+int cafe_cmd_print_param(pCafeParam param, std::vector<std::string> tokens)
+{
+	log_param_values(param);
+	return 0;
+}
+
+
+/**
+\ingroup Commands
+\brief Executes a series of commands from a CAFE command file
+*
+*/
+int cafe_cmd_source(pCafeParam param, std::vector<std::string> tokens)
 {
 	if ( tokens.size() != 2 )
 	{
@@ -179,7 +228,12 @@ void list_commands(std::ostream& ost)
 	copy(commands.begin(), commands.end(), std::ostream_iterator<string>(ost, "\n"));
 }
 
-int cafe_cmd_list(pCafeParam, vector<string> tokens)
+/**
+\ingroup Commands
+\brief List all commands available in CAFE
+*
+*/
+int cafe_cmd_list(pCafeParam, std::vector<std::string> tokens)
 {
 	list_commands(std::cout);
 	return 0;
@@ -241,7 +295,12 @@ int write_family_gainloss(ostream& ofst, std::string family_id, pCafeTree tree1,
 	return sum;
 }
 
-int cafe_cmd_gainloss(pCafeParam param, vector<string> tokens)
+/**
+\ingroup Commands
+\brief Write gains and losses
+*
+*/
+int cafe_cmd_gainloss(pCafeParam param, std::vector<std::string> tokens)
 {
 	if (param->pfamily == NULL)
 		throw runtime_error("ERROR(gainloss): You did not load family: command 'load'\n");
@@ -476,7 +535,12 @@ void write_leaves(ostream& ofst, pCafeTree pcafe, int *k, int i, int id, bool ev
 	ofst << "\n";
 }
 
-int cafe_cmd_generate_random_family(pCafeParam param, vector<string> tokens)
+/**
+\ingroup Commands
+\brief Generates random families
+*
+*/
+int cafe_cmd_generate_random_family(pCafeParam param, std::vector<std::string> tokens)
 {
 	if (tokens.size() == 1)
 	{
@@ -577,3 +641,4 @@ int cafe_cmd_generate_random_family(pCafeParam param, vector<string> tokens)
 	cafe_free_birthdeath_cache(pcafe);
 	return 0;
 }
+

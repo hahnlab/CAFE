@@ -131,4 +131,6 @@ extern int cafe_report_retrieve_data(char* file, pCafeParam param);
 void initialize_leaf_likelihoods(double **matrix, int num_rows, int range, int familysize, int num_cols, pErrorStruct errormodel);
 void reset_k_likelihoods(pCafeNode pcnode, int k, int num_factors);
 
+#define CAFE_VERSION "3.2"
+
 #endif
