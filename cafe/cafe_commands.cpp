@@ -141,14 +141,14 @@ int cafe_cmd_source(pCafeParam param, vector<string> tokens)
 {
 	if ( tokens.size() != 2 )
 	{
-		fprintf( stderr, "Usage: source <file>\n");
-		return -1;
+		throw std::runtime_error("Usage: source <file>\n");
 	}
 	FILE* fp = fopen( tokens[1].c_str(), "r" );
 	if ( fp == NULL ) 
 	{
-		fprintf( stderr, "Error(source): Cannot open %s\n", tokens[1].c_str() );
-		return -1;
+		ostringstream ost;
+		ost << "Error(source): Cannot open " << tokens[1] << "\n";
+		throw std::runtime_error(ost.str().c_str());
 	}
 
 	char buf[STRING_BUF_SIZE];

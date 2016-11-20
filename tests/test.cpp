@@ -189,18 +189,6 @@ TEST(FirstTestGroup, TestPhylogenyLoadFromString)
 
 };
 
-TEST(FirstTestGroup, Test_cafe_cmd_source)
-{
-	CafeParam param;
-
-	std::vector<std::string> strs;
-	strs.push_back("source");
-	LONGS_EQUAL( -1, cafe_cmd_source(&param, strs));
-
-	strs.push_back("nonexistent");
-	LONGS_EQUAL(-1, cafe_cmd_source(&param, strs));
-};
-
 static pArrayList build_arraylist(const char *items[], int count)
 {
 	pArrayList psplit = arraylist_new(20);
@@ -259,56 +247,6 @@ TEST(FirstTestGroup, list_commands)
 	STRCMP_CONTAINS("tree", ost.str().c_str());
 	STRCMP_CONTAINS("load", ost.str().c_str());
 	STRCMP_CONTAINS("branchlength", ost.str().c_str());
-}
-
-TEST(FirstTestGroup, cafe_cmd_date)
-{
-	CafeParam param;
-	param.quiet = 1;
-	char outbuf[10000];
-	param.flog = fmemopen(outbuf, 999, "w");
-	cafe_cmd_date(&param, std::vector<std::string>());
-	STRCMP_CONTAINS("2016", outbuf);	// this will start to fail in 2017
-	fclose(param.flog);
-}
-
-TEST(FirstTestGroup, cafe_cmd_echo)
-{
-	CafeParam param;
-	param.quiet = 1;
-	char outbuf[10000];
-	param.flog = fmemopen(outbuf, 999, "w");
-	std::vector<std::string> tokens;
-	tokens.push_back("echo");
-	tokens.push_back("quick");
-	tokens.push_back("brown");
-	tokens.push_back("fox");
-	cafe_cmd_echo(&param, tokens);
-	STRCMP_EQUAL(" quick brown fox\n", outbuf);
-	fclose(param.flog);
-}
-
-TEST(FirstTestGroup, cafe_cmd_exit)
-{
-	// all of these are values that could potentially be freed on exit
-	pCafeParam param = (pCafeParam)memory_new(1, sizeof(CafeParam)); // exit frees this value from the heap
-	param->str_log = NULL;
-	param->mu_tree = NULL;
-	param->lambda_tree = NULL;
-	param->parameters = (double *)memory_new(10, sizeof(double));
-	param->pfamily = NULL;
-	param->pcafe = NULL;
-	param->prior_rfsize_by_family = NULL;
-	param->prior_rfsize = NULL;
-	param->MAP = NULL;
-	param->ML = (double *)memory_new(10, sizeof(double));;
-	param->str_fdata = NULL;
-	param->viterbi.viterbiPvalues = NULL;
-	param->viterbi.cutPvalues = NULL;
-	std::vector<std::string> tokens;
-	cafe_cmd_exit(param, tokens);
-	LONGS_EQUAL(0, param->parameters);
-	LONGS_EQUAL(0, param->ML);
 }
 
 void store_node_id(pTree ptree, pTreeNode ptnode, va_list ap1)
@@ -416,22 +354,6 @@ TEST(FirstTestGroup, get_report_parameters)
 }
 
 
-TEST(FirstTestGroup, cafe_command_report_prereqs)
-{
-	CafeParam param;
-	CafeFamily fam;
-	CafeTree tree;
-	std::vector<std::string> tokens;
-	param.pfamily = NULL;
-	CHECK_THROWS(std::runtime_error, cafe_cmd_report(&param, tokens));
-	param.pfamily = &fam;
-	param.pcafe = NULL;
-	CHECK_THROWS(std::runtime_error, cafe_cmd_report(&param, tokens));
-	param.pcafe = &tree;
-	param.lambda = NULL;
-	CHECK_THROWS(std::runtime_error, cafe_cmd_report(&param, tokens));
-}
-
 TEST(FirstTestGroup, compute_likelihood)
 {
 	chooseln_cache cache = { 0,0 };
@@ -522,37 +444,6 @@ TEST(FirstTestGroup, birthdeath_likelihood_with_s_c)
 	chooseln_cache_init2(&cache, 50);
 	DOUBLES_EQUAL(0.083, birthdeath_likelihood_with_s_c(40, 42, 0.42, 0.5, -1, &cache), .001);
 	DOUBLES_EQUAL(0.023, birthdeath_likelihood_with_s_c(41, 34, 0.54, 0.4, -1, &cache), .001);
-}
-
-void assert_gainloss_exception(CafeParam *param, std::string expected)
-{
-	try
-	{
-		cafe_cmd_gainloss(param, std::vector<std::string>());
-		FAIL("Expected exception not thrown");
-	}
-	catch (std::runtime_error& e)
-	{
-		STRCMP_EQUAL(expected.c_str(), e.what());
-
-	}
-}
-
-TEST(FirstTestGroup, cafe_cmd_gainloss_exceptions)
-{
-	CafeParam param;
-	param.pfamily = NULL;
-	assert_gainloss_exception(&param, "ERROR(gainloss): You did not load family: command 'load'\n");
-
-	CafeFamily fam;
-	param.pfamily = &fam;
-	param.pcafe = NULL;
-	assert_gainloss_exception(&param, "ERROR(gainloss): You did not specify tree: command 'tree'\n");
-
-	CafeTree tree;
-	param.pcafe = &tree;
-	param.lambda = NULL;
-	assert_gainloss_exception(&param, "ERROR(gainloss): You did not set the parameters: command 'lambda' or 'lambdamu'\n");
 }
 
 TEST(FirstTestGroup, square_matrix_resize)
@@ -666,21 +557,6 @@ TEST(FirstTestGroup, get_num_trials)
 	LONGS_EQUAL(17, get_num_trials(tokens));
 }
 
-TEST(FirstTestGroup, cafe_cmd_generate_random_family)
-{
-	CafeParam param;
-	param.pcafe = NULL;
-	std::vector<std::string> args;
-	args.push_back("genfamily");
-	CHECK_THROWS(std::runtime_error, cafe_cmd_generate_random_family(&param, args));
-	args.push_back("filename");
-	CHECK_THROWS(std::runtime_error, cafe_cmd_generate_random_family(&param, args));	// no tree
-	param.pcafe = create_tree();
-	param.root_dist = NULL;
-	param.pfamily = NULL;
-	CHECK_THROWS(std::runtime_error, cafe_cmd_generate_random_family(&param, args));	// no family or root dist
-}
-
 TEST(FirstTestGroup, initialize_leaf_likelihoods)
 {
 	int rows = 5;
@@ -769,22 +645,6 @@ TEST(FirstTestGroup, write_leaves)
 
 	write_leaves(ost4, tree, &k, i, id, false);
 	STRCMP_EQUAL("k5_root42\t1234\t0\t3\t6\t9\t12\t15\t18\t21\t24\n", ost4.str().c_str());
-}
-
-TEST(FirstTestGroup, cafe_cmd_log)
-{
-	CafeParam param;
-	param.str_log = NULL;
-	std::vector<std::string> args;
-	args.push_back("log");
-	args.push_back("stdout");
-	param.flog = NULL;
-	cafe_cmd_log(&param, args);
-	LONGS_EQUAL(stdout, param.flog);
-
-	args[1] = "log.txt";
-	cafe_cmd_log(&param, args);
-	STRCMP_EQUAL("log.txt", param.str_log->buf);
 }
 
 TEST(LikelihoodRatio, cafe_likelihood_ratio_test)
