@@ -370,7 +370,7 @@ int* get_root_dist(pCafeTree pcafe, pCafeFamily pfamily, int k_value, int* famil
 		}
 		cafe_family_set_size(pfamily, i, pcafe);
 		if (k_value > 0) {
-			cafe_tree_clustered_viterbi(pcafe);
+			cafe_tree_clustered_viterbi(pcafe, k_value);
 		}
 		else {
 			cafe_tree_viterbi(pcafe);

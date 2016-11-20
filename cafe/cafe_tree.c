@@ -440,22 +440,78 @@ void __cafe_tree_node_backtrack_viterbi(pTree ptree, pTreeNode ptnode, va_list a
 	}
 }
 
+/**
+* \brief Initialize matrix values according to the error model or to defaults
+* if familysize < 0, sets the first (range) values of each row to 1, ignoring the others
+* otherwise if errormodel is NULL, initializes all values of each row to 0 except for the one indexed by familysize, which is 1
+* otherwise, sets each row of matrix to the row of errormatrix indexed by familysize
+* I doubt this function is doing what was intended
+*/
+void initialize_leaf_likelihoods(double **matrix, int num_rows, int range, int familysize, int num_cols, pErrorStruct errormodel)
+{
+	for (int i = 0; i < range; i++)
+	{
+		for (int k = 0; k < num_rows; k++) {
+			if (familysize < 0) {
+				matrix[k][i] = 1;
+			}
+			else {
+				if (errormodel) {
+					memset((void*)matrix[k], 0, num_cols*sizeof(double));
+					for (int j = 0; j<num_cols; j++) {
+						// conditional probability of measuring i=familysize when true count is j
+						matrix[k][j] = errormodel->errormatrix[familysize][j];
+					}
 
+				}
+				else {
+					memset((void*)matrix[k], 0, num_cols*sizeof(double));
+					matrix[k][familysize] = 1;
+				}
+			}
+		}
+	}
+
+}
+
+void compute_viterbis(pCafeNode node, int k, double *factors, int rootfamilysize_start, int rootfamilysize_end, int familysize_start, int familysize_end)
+{
+	struct square_matrix *bd = node->k_bd->array[k];
+	for (int s = rootfamilysize_start, i = 0; s <= rootfamilysize_end; s++, i++)
+	{
+		double tmp = 0;
+		for (int c = familysize_start, j = 0; c <= familysize_end; c++, j++)
+		{
+			double val = square_matrix_get(bd, s, c);
+			tmp = val * node->k_likelihoods[k][j];
+			if (tmp > factors[i])
+			{
+				factors[i] = tmp;
+				node->viterbi[i] = j;
+			}
+
+		}
+	}
+}
 
 void __cafe_tree_node_compute_clustered_viterbi(pTree ptree, pTreeNode ptnode, va_list ap1 )
 {
+	va_list ap;
+	va_copy(ap, ap1);
+	int num_likelihoods = va_arg(ap, int);
+	va_end(ap);
+
 	pCafeTree pcafe = (pCafeTree)ptree;
-	pCafeNode pcnode = (pCafeNode)ptnode;
-	
 	double *tree_factors[2];
 	tree_factors[0] = memory_new(pcafe->size_of_factor, sizeof(double));
 	tree_factors[1] = memory_new(pcafe->size_of_factor, sizeof(double));
 
+	pCafeNode pcnode = (pCafeNode)ptnode;
+	
 	int size;
-	int s,c,i,j,k; 
+	int i,k; 
 	int* rootfamilysizes;
 	int* familysizes;
-	double** bd = NULL;
 	
 	int maxFamilySize =  MAX( pcafe->rootfamilysizes[1], pcafe->familysizes[1]);
 	if ( !chooseln_is_init() ) 
@@ -478,32 +534,9 @@ void __cafe_tree_node_compute_clustered_viterbi(pTree ptree, pTreeNode ptnode, v
 		{
 			rootfamilysizes = pcafe->familysizes;
 		}
-		for ( s = rootfamilysizes[0], i = 0; s <= rootfamilysizes[1] ; s++, i++ )
-		{
-			//			pcnode->likelihoods[i] = pcnode->bd[s][pcnode->familysize];
-			for (k = 0; k < pcafe->k; k++) { 
-				if (pcnode->familysize < 0) { 
-					//fprintf(stderr, "family size not set\n");
-					pcnode->k_likelihoods[k][i] = 1;					
-				}
-				else {					
-                    if (pcnode->errormodel) {
-                        memset((void*)pcnode->k_likelihoods[k], 0, pcafe->size_of_factor*sizeof(double));
-                        for( j=0; j<pcafe->size_of_factor; j++) {
-                            // conditional probability of measuring i=familysize when true count is j
-                            pcnode->k_likelihoods[k][j] = pcnode->errormodel->errormatrix[pcnode->familysize][j];
-                        }
 
-                    }
-                    else {
-					//bd = pcnode->k_bd->array[k];
-					//pcnode->k_likelihoods[k][i] = bd[s][pcnode->familysize];
-                    memset((void*)pcnode->k_likelihoods[k], 0, pcafe->size_of_factor*sizeof(double));
-                    pcnode->k_likelihoods[k][pcnode->familysize] = 1;	                    
-                    }
-				}
-			}
-		}
+		int range = rootfamilysizes[1] - rootfamilysizes[0] + 1;
+		initialize_leaf_likelihoods(pcnode->k_likelihoods, num_likelihoods, range, pcnode->familysize, pcafe->size_of_factor, pcnode->errormodel);
 	}
 	else
 	{
@@ -525,27 +558,11 @@ void __cafe_tree_node_compute_clustered_viterbi(pTree ptree, pTreeNode ptnode, v
 			// for each child
 			for ( idx = 0 ; idx < 2 ; idx++ )
 			{
-				{	
-					if (k == 0) {
-						factors[idx] = tree_factors[idx];
-						memset( factors[idx], 0, pcafe->size_of_factor*sizeof(double));
-					}
-					bd = child[idx]->k_bd->array[k];
-					for( s = rootfamilysizes[0], i = 0 ; s <= rootfamilysizes[1] ; s++, i++ )
-					{
-						double tmp = 0;
-						for( c = familysizes[0], j = 0 ; c <= familysizes[1] ; c++, j++ )
-						{
-							tmp = bd[s][c] * child[idx]->k_likelihoods[k][j];
-							if ( tmp > factors[idx][i] )
-							{
-								factors[idx][i] = tmp;
-								child[idx]->viterbi[i] = j;
-							}
-							
-						}
-					}
+				if (k == 0) {
+					factors[idx] = tree_factors[idx];
+					memset( factors[idx], 0, pcafe->size_of_factor*sizeof(double));
 				}
+				compute_viterbis(child[idx], k, factors[idx], rootfamilysizes[0], rootfamilysizes[1], familysizes[0], familysizes[1]);
 			}
 			size = rootfamilysizes[1] - rootfamilysizes[0] + 1;
 			for ( i = 0 ; i < size ; i++ )
@@ -584,28 +601,10 @@ void cafe_tree_viterbi(pCafeTree pcafe)
 }
 
 
-void cafe_tree_clustered_viterbi(pCafeTree pcafe)
+void cafe_tree_clustered_viterbi(pCafeTree pcafe, int num_likelihoods)
 {
-	if ( pcafe->super.postfix )
-	{
-		pArrayList postfix = pcafe->super.postfix;
-		pArrayList prefix = pcafe->super.prefix;
-		int i = 0;
-		for ( i = 0 ; i < postfix->size; i++ )
-		{
-			__cafe_tree_node_compute_clustered_viterbi((pTree)pcafe, (pTreeNode)postfix->array[i], NULL );
-		}
-		for ( i = 0 ; i < prefix->size; i++ )
-		{
-			__cafe_tree_node_backtrack_viterbi((pTree)pcafe, (pTreeNode)prefix->array[i], NULL );
-		}
-	}
-	else
-	{
-		tree_traveral_postfix((pTree)pcafe, __cafe_tree_node_compute_clustered_viterbi);
-		tree_traveral_prefix((pTree)pcafe, __cafe_tree_node_backtrack_viterbi);
-	}
-	
+	tree_traveral_postfix((pTree)pcafe, __cafe_tree_node_compute_clustered_viterbi, num_likelihoods);
+	tree_traveral_prefix((pTree)pcafe, __cafe_tree_node_backtrack_viterbi);
 }
 
 
@@ -971,7 +970,6 @@ void __cafe_tree_node_compute_clustered_likelihood(pTree ptree, pTreeNode ptnode
 			}
 		}
 	}
-	
 	memory_free(tree_factors[0]);
 	memory_free(tree_factors[1]);
 }

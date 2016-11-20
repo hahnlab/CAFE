@@ -12,6 +12,7 @@ extern "C" {
 #include <tree.h>
 #include <cafe.h>
 #include <chooseln_cache.h>
+#include <viterbi.h>
 };
 
 #include <cafe_commands.h>
@@ -680,6 +681,26 @@ TEST(FirstTestGroup, cafe_cmd_generate_random_family)
 	CHECK_THROWS(std::runtime_error, cafe_cmd_generate_random_family(&param, args));	// no family or root dist
 }
 
+TEST(FirstTestGroup, initialize_leaf_likelihoods)
+{
+	int rows = 5;
+	int cols = 3;
+	double **matrix = (double**)memory_new_2dim(rows, cols, sizeof(double));
+	initialize_leaf_likelihoods(matrix, rows, 3, 1, cols, NULL);
+	double expected[5][3] = { { 0, 1, 0},{0,1,0},{0,1,0},{0,1,0},{0,1,0}};
+	for (int i = 0; i < rows; ++i)
+		for (int j = 0; j < cols; ++j)
+			DOUBLES_EQUAL(expected[i][j], matrix[i][j], .001);
+
+
+	for (int i = 0; i < rows; ++i)
+		expected[i][0] = 1;
+	initialize_leaf_likelihoods(matrix, rows, 2, -1, cols, NULL);
+	for (int i = 0; i < rows; ++i)
+		for (int j = 0; j < cols; ++j)
+			DOUBLES_EQUAL(expected[i][j], matrix[i][j], .001);
+}
+
 TEST(FirstTestGroup, get_clusters)
 {
 	double k_weights[3] = { 1,2,3 };
@@ -695,6 +716,35 @@ TEST(FirstTestGroup, write_node_headers)
 	STRCMP_EQUAL("DESC\tFID\tchimp\t-1\thuman\t-3\tmouse\t-5\trat\t-7\tdog\n", ost2.str().c_str());
 }
 
+TEST(FirstTestGroup, compute_viterbis)
+{
+	square_matrix matrix;
+	square_matrix_init(&matrix, 6);
+	square_matrix_set(&matrix, 0, 0, 1);
+	square_matrix_set(&matrix, 0, 1, 2);
+	square_matrix_set(&matrix, 1, 0, 3);
+	square_matrix_set(&matrix, 1, 1, 4);
+	CafeNode node;
+	node.k_bd = arraylist_new(5);
+	arraylist_add(node.k_bd, &matrix);
+	arraylist_add(node.k_bd, &matrix);
+	node.k_likelihoods = NULL;
+	reset_k_likelihoods(&node, 5, 5);
+	node.k_likelihoods[0][0] = 5;
+	node.k_likelihoods[0][1] = 6;
+	node.k_likelihoods[0][2] = 7;
+	node.k_likelihoods[0][3] = 8;
+	double factors[5];
+	int viterbis[10];
+	node.viterbi = viterbis;
+	compute_viterbis(&node, 0, factors, 0, 1, 0, 1);
+
+	LONGS_EQUAL(1, node.viterbi[0]);
+	LONGS_EQUAL(1, node.viterbi[1]);
+
+	DOUBLES_EQUAL(12, factors[0], .001);
+	DOUBLES_EQUAL(24, factors[1], .001);
+}
 void set_familysize_to_node_times_three(pTree ptree, pTreeNode pnode, va_list ap1)
 {
 	((pCafeNode)pnode)->familysize = pnode->id * 3;

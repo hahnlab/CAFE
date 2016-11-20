@@ -7,4 +7,6 @@ void viterbi_set_max_pvalue(viterbi_parameters* viterbi, int index, double val);
 void viterbi_parameters_init(viterbi_parameters *viterbi, int nnodes, int nrows);
 void viterbi_parameters_clear(viterbi_parameters* viterbi, int nnodes);
 
+void compute_viterbis(pCafeNode node, int k, double *factors, int rootfamilysize_start, int rootfamilysize_end, int familysize_start, int familysize_end);
+
 #endif

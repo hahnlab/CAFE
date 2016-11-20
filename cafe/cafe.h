@@ -57,7 +57,7 @@ extern double* cafe_tree_likelihood(pCafeTree pcafe);
 extern void cafe_tree_node_free_clustered_likelihoods (pCafeParam param);
 extern double** cafe_tree_clustered_likelihood(pCafeTree pcafe); 
 extern void cafe_tree_viterbi(pCafeTree pcafe);
-extern void cafe_tree_clustered_viterbi(pCafeTree pcafe);
+extern void cafe_tree_clustered_viterbi(pCafeTree pcafe, int num_likelihoods);
 extern void cafe_tree_viterbi_posterior(pCafeTree pcafe, pCafeParam param);
 extern double* cafe_tree_random_probabilities(pCafeTree pcafe, int rootFamilysize, int trials );
 extern double* cafe_tree_p_values(pCafeTree pcafe, double* p,  pArrayList pconddist, int cdlen);
@@ -128,5 +128,7 @@ extern pGMatrix cafe_lambda_distribution(pCafeParam param, int numrange, double*
 
 extern int cafe_report_retrieve_data(char* file, pCafeParam param);
 
+void initialize_leaf_likelihoods(double **matrix, int num_rows, int range, int familysize, int num_cols, pErrorStruct errormodel);
+void reset_k_likelihoods(pCafeNode pcnode, int k, int num_factors);
 
 #endif
