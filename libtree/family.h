@@ -37,6 +37,9 @@ struct probabilities
 	double* param_lambdas;
 	double* param_mus;
 };
+
+void free_probabilities(struct probabilities *probs);
+
 /** Struct that holds information about a node in a CafeTree. It extends the 
 	PhylogenyNode structure which in turn extends the TreeNode structure.
 */

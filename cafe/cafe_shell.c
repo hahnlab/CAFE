@@ -277,6 +277,148 @@ void reset_k_likelihoods(pCafeNode pcnode, int k, int num_factors)
 	pcnode->k_likelihoods = (double**)memory_new_2dim(k, num_factors, sizeof(double));
 }
 
+void set_birth_death_probabilities(struct probabilities *probs, int num_lambdas, int num_lambdas2, int fix_cluster, double* parameters)
+{
+	if (num_lambdas < 1)
+	{
+		probs->lambda = parameters[0];
+		probs->mu = parameters[num_lambdas2];
+	}
+	else
+	{
+		probs->lambda = -1;
+		probs->mu = -1;
+		free_probabilities(probs);
+		probs->param_lambdas = (double*)memory_new(num_lambdas, sizeof(double));
+		if (!fix_cluster) {
+			memcpy(&probs->param_lambdas[0], &parameters[0], (num_lambdas)*sizeof(double));
+		}
+		else {
+			probs->param_lambdas[0] = 0;
+			memcpy(&probs->param_lambdas[1], &parameters[0], (num_lambdas - fix_cluster)*sizeof(double));
+		}
+
+		probs->param_mus = (double*)memory_new(num_lambdas, sizeof(double));
+		if (!fix_cluster) {
+			memcpy(&probs->param_mus[0], &parameters[num_lambdas2*num_lambdas], (num_lambdas)*sizeof(double));
+		}
+		else {
+			probs->param_mus[0] = 0;
+			memcpy(&probs->param_mus[1], &parameters[num_lambdas2*(num_lambdas - fix_cluster)], (num_lambdas - fix_cluster)*sizeof(double));
+		}
+	}
+}
+
+void set_birth_death_probabilities2(struct probabilities *probs, int num_lambdas, int num_lambdas2, int fix_cluster, int taxa_id, int eqbg, double* parameters)
+{
+	if (num_lambdas > 0) {
+		probs->lambda = -1;
+		probs->mu = -1;
+
+		free_probabilities(probs);
+		// set lambdas
+		probs->param_lambdas = (double*)memory_new(num_lambdas, sizeof(double));
+		if (!fix_cluster) {
+			memcpy(&probs->param_lambdas[0], &parameters[taxa_id*num_lambdas], (num_lambdas)*sizeof(double));
+		}
+		else {
+			probs->param_lambdas[0] = 0;
+			memcpy(&probs->param_lambdas[1], &parameters[taxa_id*(num_lambdas - 1)], (num_lambdas - 1)*sizeof(double));
+		}
+
+		// set mus
+		probs->param_mus = (double*)memory_new(num_lambdas, sizeof(double));
+		if (eqbg) {
+			if (taxa_id == 0) {
+				memcpy(probs->param_mus, probs->param_lambdas, (num_lambdas - fix_cluster)*sizeof(double));
+			}
+			else {
+				if (!fix_cluster) {
+					memcpy(&probs->param_mus[0], &parameters[(num_lambdas2)*num_lambdas + (taxa_id - eqbg)*num_lambdas], (num_lambdas)*sizeof(double));
+				}
+				else {
+					probs->param_mus[0] = 0;
+					memcpy(&probs->param_mus[1], &parameters[(num_lambdas2)*(num_lambdas - 1) + (taxa_id - eqbg)*(num_lambdas - 1)], (num_lambdas - 1)*sizeof(double));
+				}
+			}
+		}
+		else {
+			if (!fix_cluster) {
+				memcpy(&probs->param_mus[0], &parameters[(num_lambdas2)*num_lambdas + taxa_id*num_lambdas], (num_lambdas)*sizeof(double));
+			}
+			else {
+				probs->param_mus[0] = 0;
+				memcpy(&probs->param_mus[1], &parameters[(num_lambdas2)*(num_lambdas - 1) + taxa_id*(num_lambdas - 1)], (num_lambdas - 1)*sizeof(double));
+			}
+		}
+	}
+	else
+	{
+		if (eqbg) {
+			probs->lambda = parameters[taxa_id];
+			if (taxa_id == 0) {
+				probs->mu = probs->lambda;
+			}
+			else {
+				probs->mu = parameters[(num_lambdas2)+(taxa_id - eqbg)];
+			}
+		}
+		else {
+			probs->lambda = parameters[taxa_id];
+			probs->mu = parameters[(num_lambdas2)+taxa_id];
+		}
+
+	}
+}
+
+
+void set_birth_death_probabilities3(struct probabilities *probs, int num_lambdas, int num_lambdas2, int fix_cluster, double* parameters)
+{
+	if (num_lambdas > 0) {
+		probs->lambda = -1;
+		probs->mu = -1;
+		free_probabilities(probs);
+
+		probs->param_lambdas = (double*)memory_new(num_lambdas, sizeof(double));
+		if (!fix_cluster) {
+			memcpy(&probs->param_lambdas[0], &parameters[0], (num_lambdas)*sizeof(double));
+		}
+		else {
+			probs->param_lambdas[0] = 0;
+			memcpy(&probs->param_lambdas[1], &parameters[0], (num_lambdas - 1)*sizeof(double));
+		}
+
+	}
+	else {
+		probs->lambda = parameters[0];
+		probs->mu = -1;
+	}
+
+}
+
+void set_birth_death_probabilities4(struct probabilities *probs, int num_lambdas, int num_lambdas2, int fix_cluster, int taxa_id, int eqbg, double* parameters)
+{
+	if (num_lambdas > 0) {
+		probs->lambda = -1;
+		probs->mu = -1;
+		free_probabilities(probs);
+
+		probs->param_lambdas = (double*)memory_new(num_lambdas, sizeof(double));
+		if (!fix_cluster) {
+			memcpy(&probs->param_lambdas[0], &parameters[taxa_id*num_lambdas], (num_lambdas)*sizeof(double));
+		}
+		else {
+			probs->param_lambdas[0] = 0;
+			memcpy(&probs->param_lambdas[1], &parameters[taxa_id*(num_lambdas - 1)], (num_lambdas - 1)*sizeof(double));
+		}
+
+	}
+	else {
+		probs->lambda = parameters[taxa_id];
+		probs->mu = -1;
+	}
+}
+
 void cafe_shell_set_lambda(pCafeParam param, double* parameters)
 {
 	int i,k;
@@ -310,34 +452,15 @@ void cafe_shell_set_lambda(pCafeParam param, double* parameters)
 	pTree tlambda = param->lambda_tree;
 	if ( tlambda == NULL )
 	{
-		for ( i = 0 ; i < nlist->size ; i++ )
+		for (i = 0; i < nlist->size; i++)
 		{
 			pCafeNode pcnode = (pCafeNode)nlist->array[i];
+			set_birth_death_probabilities3(&pcnode->birth_death_probabilities, param->parameterized_k_value, param->num_lambdas, param->fixcluster0, parameters);
 			if (param->parameterized_k_value > 0) {
-				pcnode->birth_death_probabilities.lambda = -1;
-				pcnode->birth_death_probabilities.mu = -1;
-				
-				if (pcnode->birth_death_probabilities.param_lambdas) { memory_free(pcnode->birth_death_probabilities.param_lambdas); pcnode->birth_death_probabilities.param_lambdas=NULL;}
-				pcnode->birth_death_probabilities.param_lambdas = (double*) memory_new(param->parameterized_k_value, sizeof(double));
-				if (! param->fixcluster0) {
-					memcpy(&pcnode->birth_death_probabilities.param_lambdas[0], &parameters[0],(param->parameterized_k_value)*sizeof(double));
-				}
-				else {
-					pcnode->birth_death_probabilities.param_lambdas[0] = 0;
-					memcpy(&pcnode->birth_death_probabilities.param_lambdas[1], &parameters[0],(param->parameterized_k_value-1)*sizeof(double));
-				}
-				
-				//if (pcnode->param_weights) { memory_free(pcnode->param_weights); pcnode->param_weights=NULL;}
-				//pcnode->param_weights = (double*) memory_new_with_init(param->k, sizeof(double), param->k_weights);
-				
 				reset_k_likelihoods(pcnode, param->parameterized_k_value, param->pcafe->size_of_factor);
-				
+
 				if (pcnode->k_bd) { arraylist_free(pcnode->k_bd, NULL); }
 				pcnode->k_bd = arraylist_new(param->parameterized_k_value);
-			}
-			else {
-				pcnode->birth_death_probabilities.lambda = parameters[0];
-				pcnode->birth_death_probabilities.mu = -1;
 			}
 		}
 	}
@@ -348,37 +471,17 @@ void cafe_shell_set_lambda(pCafeParam param, double* parameters)
 		{
 			pPhylogenyNode pnode = (pPhylogenyNode)lambda_nlist->array[i];
 			pCafeNode pcnode = (pCafeNode)nlist->array[i];
+
 			if (param->parameterized_k_value > 0) {
-				pcnode->birth_death_probabilities.lambda = -1;
-				pcnode->birth_death_probabilities.mu = -1;
-				
-				if (pcnode->birth_death_probabilities.param_lambdas) { memory_free(pcnode->birth_death_probabilities.param_lambdas); pcnode->birth_death_probabilities.param_lambdas=NULL;}
-				pcnode->birth_death_probabilities.param_lambdas = (double*) memory_new(param->parameterized_k_value, sizeof(double));
-				if (! param->fixcluster0) {
-					memcpy(&pcnode->birth_death_probabilities.param_lambdas[0], &parameters[pnode->taxaid*param->parameterized_k_value],(param->parameterized_k_value)*sizeof(double));
-				}
-				else {
-					pcnode->birth_death_probabilities.param_lambdas[0] = 0;
-					memcpy(&pcnode->birth_death_probabilities.param_lambdas[1], &parameters[pnode->taxaid*(param->parameterized_k_value-1)],(param->parameterized_k_value-1)*sizeof(double));
-				}
-				
-				//if (pcnode->param_weights) { memory_free(pcnode->param_weights); pcnode->param_weights=NULL;}
-				//pcnode->param_weights = (double*) memory_new_with_init(param->parameterized_k_value, sizeof(double), &param->k_weights[pnode->taxaid*param->parameterized_k_value]);
-				
 				reset_k_likelihoods(pcnode, param->parameterized_k_value, param->pcafe->size_of_factor);
 
 				if (pcnode->k_bd) { arraylist_free(pcnode->k_bd, NULL); }
 				pcnode->k_bd = arraylist_new(param->parameterized_k_value);
 			}
-			else {
-				pcnode->birth_death_probabilities.lambda = parameters[pnode->taxaid];
-				pcnode->birth_death_probabilities.mu = -1;
-			}
+			set_birth_death_probabilities4(&pcnode->birth_death_probabilities, param->parameterized_k_value, param->num_lambdas, param->fixcluster0, pnode->taxaid, param->eqbg, parameters);
 		}
 	}
 }
-
-
 
 void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters)
 {
@@ -423,41 +526,13 @@ void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters)
 		for ( i = 0 ; i < nlist->size ; i++ )
 		{
 			pCafeNode pcnode = (pCafeNode)nlist->array[i];
+			set_birth_death_probabilities(&pcnode->birth_death_probabilities, param->parameterized_k_value, param->num_lambdas, param->fixcluster0, parameters);
 			if (param->parameterized_k_value > 0) {
-				pcnode->birth_death_probabilities.lambda = -1;
-				pcnode->birth_death_probabilities.mu = -1;
-				
-				if (pcnode->birth_death_probabilities.param_lambdas) { memory_free(pcnode->birth_death_probabilities.param_lambdas); pcnode->birth_death_probabilities.param_lambdas=NULL;}
-				pcnode->birth_death_probabilities.param_lambdas = (double*) memory_new(param->parameterized_k_value, sizeof(double));
-				if (! param->fixcluster0) {
-					memcpy(&pcnode->birth_death_probabilities.param_lambdas[0], &parameters[0],(param->parameterized_k_value)*sizeof(double));
-				}
-				else {
-					pcnode->birth_death_probabilities.param_lambdas[0] = 0;
-					memcpy(&pcnode->birth_death_probabilities.param_lambdas[1], &parameters[0],(param->parameterized_k_value-param->fixcluster0)*sizeof(double));
-				}
-				
-				if (pcnode->birth_death_probabilities.param_mus) { memory_free(pcnode->birth_death_probabilities.param_mus); pcnode->birth_death_probabilities.param_mus = NULL;}
-				pcnode->birth_death_probabilities.param_mus = (double*) memory_new(param->parameterized_k_value, sizeof(double));
-				if (! param->fixcluster0) {
-					memcpy(&pcnode->birth_death_probabilities.param_mus[0], &parameters[param->num_lambdas*param->parameterized_k_value],(param->parameterized_k_value)*sizeof(double));
-				}
-				else {
-					pcnode->birth_death_probabilities.param_mus[0] = 0;
-					memcpy(&pcnode->birth_death_probabilities.param_mus[1], &parameters[param->num_lambdas*(param->parameterized_k_value-param->fixcluster0)],(param->parameterized_k_value-param->fixcluster0)*sizeof(double));
-				}
-				
-				// (pcnode->param_weights) { memory_free(pcnode->param_weights); pcnode->param_weights=NULL;}
-				//pcnode->param_weights = (double*) memory_new_with_init(param->parameterized_k_value, sizeof(double), param->k_weights);
 				
 				reset_k_likelihoods(pcnode, param->parameterized_k_value, param->pcafe->size_of_factor);
 
 				if (pcnode->k_bd) { arraylist_free(pcnode->k_bd, NULL); }
 				pcnode->k_bd = arraylist_new(param->parameterized_k_value);
-			}
-			else {
-				pcnode->birth_death_probabilities.lambda = parameters[0];
-				pcnode->birth_death_probabilities.mu = parameters[param->num_lambdas];
 			}
 		}
 	}
@@ -469,71 +544,12 @@ void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters)
 			pPhylogenyNode pnode = (pPhylogenyNode)lambda_nlist->array[i];
 			pCafeNode pcnode = (pCafeNode)nlist->array[i];
 			
-			if (param->parameterized_k_value > 0) {
-				pcnode->birth_death_probabilities.lambda = -1;
-				pcnode->birth_death_probabilities.mu = -1;
+			set_birth_death_probabilities2(&pcnode->birth_death_probabilities, param->parameterized_k_value, param->num_lambdas, param->fixcluster0, pnode->taxaid, param->eqbg, parameters);
 				
-				// set lambdas
-				if (pcnode->birth_death_probabilities.param_lambdas) { memory_free(pcnode->birth_death_probabilities.param_lambdas); pcnode->birth_death_probabilities.param_lambdas=NULL;}
-				pcnode->birth_death_probabilities.param_lambdas = (double*) memory_new(param->parameterized_k_value, sizeof(double));
-				if (! param->fixcluster0) {
-					memcpy(&pcnode->birth_death_probabilities.param_lambdas[0], &parameters[pnode->taxaid*param->parameterized_k_value],(param->parameterized_k_value)*sizeof(double));
-				}
-				else {
-					pcnode->birth_death_probabilities.param_lambdas[0] = 0;
-					memcpy(&pcnode->birth_death_probabilities.param_lambdas[1], &parameters[pnode->taxaid*(param->parameterized_k_value-1)],(param->parameterized_k_value-1)*sizeof(double));
-				}
-				
-				// set mus
-				if (pcnode->birth_death_probabilities.param_mus) { memory_free(pcnode->birth_death_probabilities.param_mus); pcnode->birth_death_probabilities.param_mus=NULL;}
-				pcnode->birth_death_probabilities.param_mus = (double*) memory_new(param->parameterized_k_value, sizeof(double));
-				if (param->eqbg) {
-					if (pnode->taxaid == 0) {
-						memcpy(pcnode->birth_death_probabilities.param_mus, pcnode->birth_death_probabilities.param_lambdas, (param->parameterized_k_value-param->fixcluster0)*sizeof(double));
-					}
-					else {
-						if (! param->fixcluster0) {
-							memcpy(&pcnode->birth_death_probabilities.param_mus[0], &parameters[(param->num_lambdas)*param->parameterized_k_value+(pnode->taxaid-param->eqbg)*param->parameterized_k_value],(param->parameterized_k_value)*sizeof(double));
-						}
-						else {
-							pcnode->birth_death_probabilities.param_mus[0] = 0;
-							memcpy(&pcnode->birth_death_probabilities.param_mus[1], &parameters[(param->num_lambdas)*(param->parameterized_k_value-1)+(pnode->taxaid-param->eqbg)*(param->parameterized_k_value-1)],(param->parameterized_k_value-1)*sizeof(double));
-						}					
-					}
-				}
-				else {
-					if (! param->fixcluster0) {
-						memcpy(&pcnode->birth_death_probabilities.param_mus[0], &parameters[(param->num_lambdas)*param->parameterized_k_value+pnode->taxaid*param->parameterized_k_value],(param->parameterized_k_value)*sizeof(double));
-					}
-					else {
-						pcnode->birth_death_probabilities.param_mus[0] = 0;
-						memcpy(&pcnode->birth_death_probabilities.param_mus[1], &parameters[(param->num_lambdas)*(param->parameterized_k_value-1)+pnode->taxaid*(param->parameterized_k_value-1)],(param->parameterized_k_value-1)*sizeof(double));
-					}
-				}			
-				
-				//if (pcnode->param_weights) { memory_free(pcnode->param_weights); pcnode->param_weights=NULL;}
-				//pcnode->param_weights = (double*) memory_new_with_init(param->parameterized_k_value, sizeof(double), &param->k_weights[pnode->taxaid*param->parameterized_k_value]);
-				
-				reset_k_likelihoods(pcnode, param->parameterized_k_value, param->pcafe->size_of_factor);
+			reset_k_likelihoods(pcnode, param->parameterized_k_value, param->pcafe->size_of_factor);
 
-				if (pcnode->k_bd) { arraylist_free(pcnode->k_bd, NULL); }
-				pcnode->k_bd = arraylist_new(param->parameterized_k_value);
-			}
-			else {
-				if (param->eqbg) {
-					pcnode->birth_death_probabilities.lambda = parameters[pnode->taxaid];
-					if (pnode->taxaid == 0) {
-						pcnode->birth_death_probabilities.mu = pcnode->birth_death_probabilities.lambda;
-					}
-					else {
-						pcnode->birth_death_probabilities.mu = parameters[(param->num_lambdas)+(pnode->taxaid-param->eqbg)];
-					}
-				}
-				else {
-					pcnode->birth_death_probabilities.lambda = parameters[pnode->taxaid];
-					pcnode->birth_death_probabilities.mu = parameters[(param->num_lambdas)+pnode->taxaid];
-				}
-			}
+			if (pcnode->k_bd) { arraylist_free(pcnode->k_bd, NULL); }
+			pcnode->k_bd = arraylist_new(param->parameterized_k_value);
 		}
 	}
 }

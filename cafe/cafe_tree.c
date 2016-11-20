@@ -1081,6 +1081,20 @@ void __cafe_tree_node_compute_clustered_likelihood_using_cache(pTree ptree, pTre
 	memory_free(tree_factors[1]);
 }
 
+void free_probabilities(struct probabilities *probs)
+{
+	if (probs->param_lambdas) 
+	{ 
+		memory_free(probs->param_lambdas); 
+		probs->param_lambdas = NULL; 
+	}
+	if (probs->param_mus) 
+	{ 
+		memory_free(probs->param_mus); 
+		probs->param_mus = NULL; 
+	}
+
+}
 
 
 void cafe_tree_node_free_clustered_likelihoods (pCafeParam param)
@@ -1093,9 +1107,7 @@ void cafe_tree_node_free_clustered_likelihoods (pCafeParam param)
 		for ( i = 0 ; i < nlist->size ; i++ )
 		{
 			pCafeNode pcnode = (pCafeNode)nlist->array[i];
-			if (pcnode->birth_death_probabilities.param_lambdas) { memory_free(pcnode->birth_death_probabilities.param_lambdas); pcnode->birth_death_probabilities.param_lambdas = NULL;}
-			if (pcnode->birth_death_probabilities.param_mus) { memory_free(pcnode->birth_death_probabilities.param_mus); pcnode->birth_death_probabilities.param_mus = NULL;}
-			//if (pcnode->param_weights) { memory_free(pcnode->param_weights); pcnode->param_weights = NULL;}
+			free_probabilities(&pcnode->birth_death_probabilities);
 			if (pcnode->k_likelihoods) { memory_free(pcnode->k_likelihoods); pcnode->k_likelihoods = NULL;}
 			if (pcnode->k_bd) { arraylist_free(pcnode->k_bd, NULL); pcnode->k_bd = NULL; }
 		}
