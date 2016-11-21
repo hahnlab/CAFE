@@ -14,6 +14,7 @@ extern "C" {
 #include <algorithm>
 
 #include "lambda.h"
+#include "cafe_commands.h"
 
 extern "C" {
 	extern pCafeParam cafe_param;
@@ -22,33 +23,6 @@ extern "C" {
 }
 
 using namespace std;
-
-vector<Argument> lambda_build_argument(vector<string> tokens)
-{
-	size_t i, j;
-	vector<Argument> result;
-	for (i = 1; i < tokens.size(); i++)
-	{
-		if (tokens[i][0] == '-' && !isdigit(tokens[i][1]))
-		{
-			Argument arg;
-			arg.argc = 0;
-			arg.opt = strdup(tokens[i].c_str());
-			for (j = i + 1; j < tokens.size(); j++)
-			{
-				if (tokens[j][0] == '-' && !isdigit(tokens[j][1])) break;
-				arg.argc++;
-			}
-			char ** argv = (char **)memory_new(tokens.size(), sizeof(char *));
-			for (size_t k = 0, kk = i + 1; kk < tokens.size(); ++kk, ++k)
-				argv[k] = strdup(tokens[kk].c_str());
-			arg.argv = argv;  
-			result.push_back(arg);
-			i = j - 1;
-		}
-	}
-	return result;
-}
 
 int get_doubles_array(double** loc, pArgument parg)
 {
@@ -234,7 +208,7 @@ int cafe_cmd_lambda(pCafeParam param, vector<string> tokens)
 		}
 
 		pCafeTree pcafe = param->pcafe;
-		vector<Argument> pargs = lambda_build_argument(tokens);
+		vector<Argument> pargs = build_argument_list(tokens);
 
 		prepare_cafe_param(param);
 

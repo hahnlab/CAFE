@@ -126,7 +126,7 @@ TEST(LambdaTests, Test_arguments)
 	strs.push_back("lambda");
 	strs.push_back("-t");
 	strs.push_back("(((2,2)1,(1,1)1)1,1)");
-	std::vector<Argument> pal = lambda_build_argument(strs);
+	std::vector<Argument> pal = build_argument_list(strs);
 	lambda_args args = get_arguments(pal);
 	CHECK_FALSE(args.search);
 	CHECK_FALSE(args.tmp_param.checkconv);
@@ -136,30 +136,30 @@ TEST(LambdaTests, Test_arguments)
 	LONGS_EQUAL(UNDEFINED_LAMBDA, args.lambda_type);
 
 	strs.push_back("-s");
-	pal = lambda_build_argument(strs);
+	pal = build_argument_list(strs);
 	args = get_arguments(pal);
 	CHECK_TRUE(args.search);
 
 	strs.push_back("-checkconv");
-	pal = lambda_build_argument(strs);
+	pal = build_argument_list(strs);
 	args = get_arguments(pal);
 	CHECK_TRUE(args.tmp_param.checkconv);
 
 	strs.push_back("-v");
 	strs.push_back("14.6");
-	pal = lambda_build_argument(strs);
+	pal = build_argument_list(strs);
 	args = get_arguments(pal);
 	DOUBLES_EQUAL(14.6, args.vlambda, .001);
 	LONGS_EQUAL(SINGLE_LAMBDA, args.lambda_type);
 
 	strs.push_back("-k");
 	strs.push_back("19");
-	pal = lambda_build_argument(strs);
+	pal = build_argument_list(strs);
 	args = get_arguments(pal);
 	LONGS_EQUAL(19, args.tmp_param.parameterized_k_value);
 
 	strs.push_back("-f");
-	pal = lambda_build_argument(strs);
+	pal = build_argument_list(strs);
 	args = get_arguments(pal);
 	LONGS_EQUAL(1, args.tmp_param.fixcluster0);
 };
@@ -175,7 +175,7 @@ TEST(LambdaTests, Test_l_argument)
 	strs.push_back("15.6");
 	strs.push_back("9.2");
 	strs.push_back("21.8");
-	std::vector<Argument> pal = lambda_build_argument(strs);
+	std::vector<Argument> pal = build_argument_list(strs);
 	lambda_args args = get_arguments(pal);
 	LONGS_EQUAL(3, args.tmp_param.num_params);
 	LONGS_EQUAL(MULTIPLE_LAMBDAS, args.lambda_type);
@@ -194,7 +194,7 @@ TEST(LambdaTests, Test_p_argument)
 	strs.push_back("15.6");
 	strs.push_back("9.2");
 	strs.push_back("21.8");
-	std::vector<Argument> pal = lambda_build_argument(strs);
+	std::vector<Argument> pal = build_argument_list(strs);
 	lambda_args args = get_arguments(pal);
 	LONGS_EQUAL(3, args.tmp_param.num_params);
 	DOUBLES_EQUAL(15.6, args.tmp_param.k_weights[0], .001);
@@ -211,7 +211,7 @@ TEST(LambdaTests, Test_r_argument)
 	strs.push_back("-r");
 	strs.push_back("-o");
 	strs.push_back("test.txt");
-	std::vector<Argument> pal = lambda_build_argument(strs);
+	std::vector<Argument> pal = build_argument_list(strs);
 	lambda_args args = get_arguments(pal);
 	STRCMP_EQUAL("-r", args.dist.opt);
 	LONGS_EQUAL(1, args.out.argc);

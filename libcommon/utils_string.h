@@ -19,7 +19,7 @@ typedef String* pString;
 
 extern pString string_new_step(size_t step);
 extern pString string_new();
-extern pString string_new_with_string(char* newstr );
+extern pString string_new_with_string(const char* newstr );
 extern void string_free(pString pstr);
 extern void string_free_without_data(pString pstr);
 extern void string_reset(pString pstr);
@@ -34,6 +34,6 @@ extern pArrayList string_pchar_split(char* buf, char delim);
 extern pArrayList string_pchar_space_split(char* buf);
 extern void string_pchar_join_double(char* rtn, char* sp, int argc, double* values);
 extern void string_pchar_join(char* buf, char* stuff, int num, char** list);
-extern pString string_join(char* stuff, int num, char** list);
+extern pString string_join(const char* stuff, int num, char** list);
 
 #endif

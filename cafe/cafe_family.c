@@ -482,7 +482,7 @@ void cafe_family_add_item(pCafeFamily pcf, pArrayList data)
 	arraylist_add(pcf->flist, pitem);
 }
 
-pCafeFamily cafe_family_new(char* file, int bpatcheck)
+pCafeFamily cafe_family_new(const char* file, int bpatcheck)
 {
 	FILE* fp = fopen(file,"r");
 	char buf[STRING_BUF_SIZE];
@@ -769,7 +769,7 @@ void cafe_family_reset_maxlh(pCafeFamily pcf)
 	}
 }
 
-int cafe_family_get_index(pCafeFamily pcf, char* szid)
+int cafe_family_get_index(pCafeFamily pcf, const char* szid)
 {
 	int i;
 	pArrayList flist = pcf->flist;

@@ -4,14 +4,14 @@
 #include <string>
 #include <time.h>
 
-#include "cafe_commands.h"
-
 extern "C" {
 #include "cafe_shell.h"
 #include <utils_string.h>
 
 	extern pCafeParam cafe_param;
 }
+#include "cafe_commands.h"
+
 
 const char* __date__ = __DATE__;
 

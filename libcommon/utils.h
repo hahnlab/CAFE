@@ -72,7 +72,7 @@ extern pStack stack_new();
 extern void stack_free(pStack pstack);
 extern void stack_push(pStack pstack, void* data);
 extern void* stack_pop(pStack pstack);
-extern int stack_is_empty(pStack pstack);
+extern int stack_has_items(pStack pstack);
 
 
 /********************************************************************

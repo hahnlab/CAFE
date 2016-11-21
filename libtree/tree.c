@@ -103,7 +103,7 @@ void tree_traveral_prefix(pTree ptree, tree_func_node func, ...)
 	va_start( ap, func );
 	pStack pstack = stack_new();
 	stack_push(pstack,ptree->root);	
-	while( stack_is_empty(pstack) )
+	while( stack_has_items(pstack) )
 	{
 		pTreeNode pnode = (pTreeNode)stack_pop(pstack);
 		// from right to left
@@ -128,7 +128,7 @@ void tree_traveral_postfix(pTree ptree, tree_func_node func, ...)
 	va_start( ap, func );
 	pStack pstack = stack_new();
 	stack_push(pstack,ptree->root);	
-	while( stack_is_empty(pstack) )
+	while( stack_has_items(pstack) )
 	{
 		pTreeNode pnode = (pTreeNode)pstack->head->data;
 		int visit_count = -1;
@@ -172,7 +172,7 @@ void tree_traveral_infix(pTree ptree, tree_func_node func, ... )
 	va_start( ap, func );
 	pStack pstack = stack_new();
 	stack_push(pstack,ptree->root);	
-	while( stack_is_empty(pstack) )
+	while( stack_has_items(pstack) )
 	{
 		pTreeNode pnode = (pTreeNode)pstack->head->data;
 		if ( pnode->children )

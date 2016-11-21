@@ -18,7 +18,7 @@ pString string_new()
 	return string_new_step(STRING_STEP_SIZE);
 }
 
-pString string_new_with_string(char* newstr )
+pString string_new_with_string(const char* newstr )
 {
 	size_t len = strlen(newstr);
 	pString pstr = string_new_step(len+1);		
@@ -247,7 +247,7 @@ void string_pchar_join(char* buf, char* stuff, int num, char** list)
 	}
 }
 
-pString string_join(char* stuff, int num, char** list)
+pString string_join(const char* stuff, int num, char** list)
 {
 	int i;
 	pString pstr = string_new_with_string(list[0]);

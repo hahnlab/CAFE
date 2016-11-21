@@ -7,6 +7,7 @@
 
 extern "C" {
 #include "family.h"
+#include "cafe_shell.h"
 }
 
 typedef int(*cafe_command2)(pCafeParam cafe_param, std::vector<std::string>);
@@ -22,12 +23,15 @@ int cafe_cmd_generate_random_family(pCafeParam param, std::vector<std::string> t
 int cafe_cmd_log(pCafeParam param, std::vector<std::string> tokens);
 int cafe_cmd_version(pCafeParam param, std::vector<std::string> tokens);
 int cafe_cmd_print_param(pCafeParam param, std::vector<std::string> tokens);
+int cafe_cmd_load(pCafeParam param, std::vector<std::string> tokens);
+int cafe_cmd_family(pCafeParam param, std::vector<std::string> tokens);
 
 
 int cafe_shell_dispatch_command(char* cmd);
 void list_commands(std::ostream& ost);
 
 std::vector<std::string> tokenize(std::string s);
+std::vector<Argument> build_argument_list(std::vector<std::string> tokens);
 
 // these functions should be moved to another file
 void clear_tree_viterbis(pCafeTree psum);
@@ -38,6 +42,17 @@ std::vector<int> get_clusters(int parameterized_k_value, int num_families, doubl
 void write_node_headers(std::ostream& s1, std::ostream& s2, pCafeTree pcafe);
 void write_leaves(std::ostream& ofst, pCafeTree pcafe, int *k, int i, int id, bool evens);
 void write_version(std::ostream &ost);
+
+struct load_args {
+	int num_threads;
+	int num_random_samples;
+	double pvalue;
+	bool filter;
+	std::string log_file_name;
+	std::string family_file_name;
+};
+
+struct load_args get_load_arguments(std::vector<Argument> pargs);
 
 #endif
 

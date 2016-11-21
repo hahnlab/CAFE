@@ -155,15 +155,15 @@ void assert_gainloss_exception(CafeParam *param, std::string expected)
 
 TEST(CommandTests, cafe_cmd_gainloss_exceptions)
 {
-	assert_gainloss_exception(&param, "ERROR(gainloss): You did not load family: command 'load'\n");
+	assert_gainloss_exception(&param, "ERROR: You did not load family: command 'load'\n");
 
 	CafeFamily fam;
 	param.pfamily = &fam;
-	assert_gainloss_exception(&param, "ERROR(gainloss): You did not specify tree: command 'tree'\n");
+	assert_gainloss_exception(&param, "ERROR: You did not specify tree: command 'tree'\n");
 
 	CafeTree tree;
 	param.pcafe = &tree;
-	assert_gainloss_exception(&param, "ERROR(gainloss): You did not set the parameters: command 'lambda' or 'lambdamu'\n");
+	assert_gainloss_exception(&param, "ERROR: You did not set the parameters: command 'lambda' or 'lambdamu'\n");
 }
 
 TEST(CommandTests, cafe_cmd_log)
@@ -178,3 +178,40 @@ TEST(CommandTests, cafe_cmd_log)
 	STRCMP_EQUAL("log.txt", param.str_log->buf);
 }
 
+TEST(CommandTests, get_load_arguments)
+{
+	vector<string> command = tokenize("load -t 1 -r 2 -p 0.05 -l log.txt -i fam.txt");
+	struct load_args args = get_load_arguments(build_argument_list(command));
+	LONGS_EQUAL(1, args.num_threads);
+	LONGS_EQUAL(2, args.num_random_samples);
+	DOUBLES_EQUAL(.05, args.pvalue, .000001);
+	STRCMP_EQUAL("log.txt", args.log_file_name.c_str());
+	STRCMP_EQUAL("fam.txt", args.family_file_name.c_str());
+	CHECK(!args.filter);
+}
+
+TEST(CommandTests, cafe_cmd_load)
+{
+	try
+	{
+		tokens.push_back("load");
+		cafe_cmd_load(&param, tokens);
+		FAIL("Expected exception not thrown");
+	}
+	catch (std::runtime_error& e)
+	{
+		STRCMP_EQUAL("Usage(load): load <family file>\n", e.what());
+	}
+
+	try
+	{
+		tokens.push_back("-t");
+		tokens.push_back("5");
+		cafe_cmd_load(&param, tokens);
+		FAIL("Expected exception not thrown");
+	}
+	catch (std::runtime_error& e)
+	{
+		STRCMP_EQUAL("ERROR(load): You must use -i option for input file\n", e.what());
+	}
+}

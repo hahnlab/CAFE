@@ -32,6 +32,7 @@ extern "C" {
 	extern pArrayList cafe_pCD;
 	void __cafe_tree_string_gainloss(pString pstr, pPhylogenyNode ptnode);
 	void __cafe_tree_string_sum_gainloss(pString pstr, pPhylogenyNode ptnode);
+	void __cafe_cmd_viterbi_family_print(int idx);
 }
 
 using namespace std;
@@ -52,8 +53,8 @@ map<string, cafe_command2> get_dispatcher()
 	dispatcher["log"] = cafe_cmd_log;
 	dispatcher["version"] = cafe_cmd_version;
 	dispatcher["info"] = cafe_cmd_print_param;
-
-
+	dispatcher["load"] = cafe_cmd_load;
+	dispatcher["family"] = cafe_cmd_family;
 
 	return dispatcher;
 }
@@ -295,6 +296,20 @@ int write_family_gainloss(ostream& ofst, std::string family_id, pCafeTree tree1,
 	return sum;
 }
 
+const int REQUIRES_FAMILY = 0x01;
+const int REQUIRES_TREE = 0x02;
+const int REQUIRES_LAMBDA = 0x04;
+
+void prereqs(pCafeParam param, int flags)
+{
+	if ((flags & REQUIRES_FAMILY) && param->pfamily == NULL)
+		throw runtime_error("ERROR: You did not load family: command 'load'\n");
+	if ((flags & REQUIRES_TREE) && param->pcafe == NULL)
+		throw runtime_error("ERROR: You did not specify tree: command 'tree'\n");
+	if ((flags & REQUIRES_LAMBDA) && param->lambda == NULL)
+		throw runtime_error("ERROR: You did not set the parameters: command 'lambda' or 'lambdamu'\n");
+}
+
 /**
 \ingroup Commands
 \brief Write gains and losses
@@ -302,12 +317,7 @@ int write_family_gainloss(ostream& ofst, std::string family_id, pCafeTree tree1,
 */
 int cafe_cmd_gainloss(pCafeParam param, std::vector<std::string> tokens)
 {
-	if (param->pfamily == NULL)
-		throw runtime_error("ERROR(gainloss): You did not load family: command 'load'\n");
-	if (param->pcafe == NULL)
-		throw runtime_error("ERROR(gainloss): You did not specify tree: command 'tree'\n");
-	if (param->lambda == NULL)
-		throw runtime_error("ERROR(gainloss): You did not set the parameters: command 'lambda' or 'lambdamu'\n");
+	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE | REQUIRES_LAMBDA);
 
 	if (param->viterbi.viterbiNodeFamilysizes == NULL)
 	{
@@ -343,6 +353,34 @@ int cafe_cmd_gainloss(pCafeParam param, std::vector<std::string> tokens)
 
 	return 0;
 }
+
+vector<Argument> build_argument_list(vector<string> tokens)
+{
+	size_t i, j;
+	vector<Argument> result;
+	for (i = 1; i < tokens.size(); i++)
+	{
+		if (tokens[i][0] == '-' && !isdigit(tokens[i][1]))
+		{
+			Argument arg;
+			arg.argc = 0;
+			arg.opt = strdup(tokens[i].c_str());
+			for (j = i + 1; j < tokens.size(); j++)
+			{
+				if (tokens[j][0] == '-' && !isdigit(tokens[j][1])) break;
+				arg.argc++;
+			}
+			char ** argv = (char **)memory_new(tokens.size(), sizeof(char *));
+			for (size_t k = 0, kk = i + 1; kk < tokens.size(); ++kk, ++k)
+				argv[k] = strdup(tokens[kk].c_str());
+			arg.argv = argv;
+			result.push_back(arg);
+			i = j - 1;
+		}
+	}
+	return result;
+}
+
 
 int cafe_shell_dispatch_command(char* cmd)
 {
@@ -556,13 +594,11 @@ int cafe_cmd_generate_random_family(pCafeParam param, std::vector<std::string> t
 	pCafeTree pcafe = param->pcafe;
 	int j, n;
 
-	if (param->pcafe == NULL)
-		throw std::runtime_error("ERROR(genfamily): You did not specify tree: command 'tree'\n");
+	prereqs(param, REQUIRES_TREE);
 
 	int num_families = 0;
 	if (param->root_dist == NULL) {
-		if (param->pfamily == NULL) 
-			throw std::runtime_error("ERROR(genfamily): You must either load family data or set root size distribution first: command 'load' or 'rootdist'\n");
+		prereqs(param, REQUIRES_FAMILY);
 
 		num_families = param->pfamily->flist->size;
 		param->param_set_func(param, param->parameters);
@@ -574,8 +610,7 @@ int cafe_cmd_generate_random_family(pCafeParam param, std::vector<std::string> t
 		{
 			num_families += param->root_dist[i];
 		}
-		if (param->lambda == NULL)
-			throw std::runtime_error("ERROR(genfamily): You did not specify lambda: command 'lambda'\n");
+		prereqs(param, REQUIRES_LAMBDA);
 		cafe_log(param, "Using user defined root size distribution for simulation... \n");
 		param->param_set_func(param, param->parameters);
 		cafe_set_birthdeath_cache_thread(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
@@ -640,5 +675,246 @@ int cafe_cmd_generate_random_family(pCafeParam param, std::vector<std::string> t
 	}
 	cafe_free_birthdeath_cache(pcafe);
 	return 0;
+}
+
+struct load_args get_load_arguments(vector<Argument> pargs)
+{
+	struct load_args args;
+	args.filter = false;
+	args.num_threads = 0;
+	args.num_random_samples = 0;
+	args.pvalue = -1;
+
+	for (size_t i = 0; i < pargs.size(); i++)
+	{
+		pArgument parg = &pargs[i];
+
+		if (!strcmp(parg->opt, "-t"))
+			sscanf(parg->argv[0], "%d", &args.num_threads);
+
+		if (!strcmp(parg->opt, "-r"))
+			sscanf(parg->argv[0], "%d", &args.num_random_samples);
+
+		if (!strcmp(parg->opt, "-p"))
+			sscanf(parg->argv[0], "%lf", &args.pvalue);
+
+		if (!strcmp(parg->opt, "-l"))
+		{
+			if (!strcmp(parg->argv[0], "stdout"))
+				args.log_file_name = "stdout";
+			else {
+				pString file_name = string_join(" ", parg->argc, parg->argv);
+				args.log_file_name = file_name->buf;
+				string_free(file_name);
+			}
+		}
+		if ((!strcmp(parg->opt, "-filter")))
+		{
+			args.filter = true;
+		}
+
+		if ((!strcmp(parg->opt, "-i")))
+		{
+			pString file_name = string_join(" ", parg->argc, parg->argv);
+			args.family_file_name = file_name->buf;
+			string_free(file_name);
+		}
+	}
+
+	return args;
+}
+
+void copy_args_to_param(pCafeParam param, struct load_args& args)
+{
+	if (args.num_threads > 0)
+		param->num_threads = args.num_threads;
+	if (args.num_random_samples > 0)
+		param->num_random_samples = args.num_random_samples;
+	if (args.pvalue > 0.0)
+		param->pvalue = args.pvalue;
+	if (!args.log_file_name.empty())
+		set_log_file(param, args.log_file_name.c_str());
+}
+
+/**
+\ingroup Commands
+\brief Loads families from a family file with a defined format
+*
+* Takes six arguments: -t, -r, -p, -l, -i, and -filter
+*/
+int cafe_cmd_load(pCafeParam param, std::vector<std::string> tokens)
+{
+	if (tokens.size() < 2)
+	{
+		throw runtime_error("Usage(load): load <family file>\n");
+	}
+	cafe_shell_clear_param(param, 1);
+
+	struct load_args args = get_load_arguments(build_argument_list(tokens));
+	copy_args_to_param(param, args);
+
+	if (args.filter && param->pcafe == NULL)
+	{
+		cerr << "Error(load): You did not specify tree. Skip filtering\n";
+	}
+
+	if (args.family_file_name.empty())
+	{
+		cafe_shell_clear_param(param, 1);
+		throw runtime_error("ERROR(load): You must use -i option for input file\n");
+	}
+
+	param->str_fdata = string_new_with_string(args.family_file_name.c_str());
+	param->pfamily = cafe_family_new(args.family_file_name.c_str(), 1);
+	if (param->pfamily == NULL) 
+		throw runtime_error("Failed to load file\n");
+
+	// this is very important!!!!!!!!!!!
+	param->rootfamily_sizes[0] = 1;
+	//param->rootfamily_sizes[0] = 0;
+	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	param->rootfamily_sizes[1] = MAX(30, rint(param->pfamily->max_size * 1.25));
+	param->family_sizes[1] = param->pfamily->max_size + MAX(50, param->pfamily->max_size / 5);
+	if (param->pcafe)
+	{
+		cafe_tree_set_parameters(param->pcafe, param->family_sizes, param->rootfamily_sizes, 0);
+		cafe_family_set_species_index(param->pfamily, param->pcafe);
+	}
+	param->ML = (double*)memory_new(param->pfamily->flist->size, sizeof(double));
+	param->MAP = (double*)memory_new(param->pfamily->flist->size, sizeof(double));
+
+	if (param->pcafe && args.filter)
+	{
+		cafe_family_filter(param);
+	}
+	if (param->lambda && param->pcafe)
+	{
+		cafe_set_birthdeath_cache_thread(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
+	}
+	log_param_values(param);
+	return 0;
+}
+
+struct family_args {
+	int idx;
+	string item_id;
+	string add_id;
+	vector<int> values;
+	bool filter;
+};
+
+struct family_args get_family_arguments(vector<Argument> pargs)
+{
+	struct family_args args;
+	args.idx = -1;
+	args.filter = false;
+
+	for (size_t i = 0; i < pargs.size(); i++)
+	{
+		pArgument parg = &pargs[i];
+
+		if (!strcmp(parg->opt, "-idx"))
+		{
+			sscanf(parg->argv[0], "%d", &args.idx);
+		}
+		if (!strcmp(parg->opt, "-id"))
+		{
+			args.item_id = parg->argv[0];
+		}
+		if (!strcmp(parg->opt, "-filter"))
+		{
+			args.filter = true;
+		}
+		if (!strcmp(parg->opt, "-add"))
+		{
+			args.add_id = parg->argv[0];
+			for (int j = 1; j <= parg->argc; j++)
+			{
+				int val;
+				sscanf(parg->argv[j], "%d", &val);
+				args.values.push_back(val);
+			}
+		}
+	}
+
+	return args;
+}
+
+int cafe_cmd_family(pCafeParam param, std::vector<std::string> tokens)
+{
+	prereqs(param, REQUIRES_FAMILY);
+
+	int i, idx = 0;
+	pCafeFamilyItem pitem = NULL;
+	struct family_args args = get_family_arguments(build_argument_list(tokens));
+
+	if (!args.item_id.empty())
+	{
+		args.idx = cafe_family_get_index(param->pfamily, args.item_id.c_str());
+	}
+	else if (!args.add_id.empty())
+	{
+		pCafeFamily pcf = param->pfamily;
+		if (pcf == NULL)
+		{
+			pcf = (pCafeFamily)memory_new(1, sizeof(CafeFamily));
+			pcf->flist = arraylist_new(11000);
+			pArrayList nlist = param->pcafe->super.nlist;
+			pcf->num_species = (nlist->size + 1) / 2;
+			pcf->species = (char**)memory_new(pcf->num_species, sizeof(char*));
+			pcf->index = (int*)memory_new(pcf->num_species, sizeof(int));
+			for (i = 0; i < nlist->size; i += 2)
+			{
+				pcf->index[i] = i;
+				pPhylogenyNode pnode = (pPhylogenyNode)nlist->array[i];
+				pcf->species[i] = (char*)memory_new(strlen(pnode->name) + 1, sizeof(char));
+				strcpy(pcf->species[i], pnode->name);
+			}
+			param->pfamily = pcf;
+		}
+		pCafeFamilyItem pitem = (pCafeFamilyItem)memory_new(1, sizeof(CafeFamilyItem));
+		pitem->id = (char*)memory_new(args.add_id.length() + 1, sizeof(char));
+		pitem->ref = -1;
+		pitem->count = (int*)memory_new(pcf->num_species, sizeof(int));
+		pitem->maxlh = -1;
+		pitem->desc = NULL;
+		strcpy(pitem->id, args.add_id.c_str());
+		for (i = 1; i <= pcf->num_species; i++)
+		{
+			pitem->count[pcf->index[i]] = args.values[i];
+		}
+		arraylist_add(pcf->flist, pitem);
+	}
+	else if (args.filter)
+	{
+		prereqs(param, REQUIRES_TREE);
+
+		cafe_family_filter(param);
+		log_param_values(param);
+		return 0;
+	}
+	if (idx < 0)
+	{
+		fprintf(stderr, "ERROR(family): your request not found\n");
+		return -1;
+	}
+	if (idx >= param->pfamily->flist->size)
+	{
+		fprintf(stderr, "ERROR(family): The index range is from 0 to %d\n", param->pfamily->flist->size);
+		return -1;
+	}
+	pitem = (pCafeFamilyItem)param->pfamily->flist->array[idx];
+	if (pitem)
+	{
+		printf("ID: %s\n", pitem->id);
+		printf("Desc: %s\n", pitem->desc);
+		for (i = 0; i < param->pfamily->num_species; i++)
+		{
+			printf("%s: %d\n", param->pfamily->species[i], pitem->count[i]);
+		}
+		if (param->pcafe && param->pcafe->pbdc_array) __cafe_cmd_viterbi_family_print(idx);
+	}
+
+	return pitem ? 0 : -1;
 }
 

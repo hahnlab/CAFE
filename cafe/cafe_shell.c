@@ -42,10 +42,8 @@ CafeShellCommand cafe_cmd[]  =
 {
 	{ "branchlength", cafe_cmd_branchlength },
 	{ "extinct", cafe_cmd_extinct },
-	{ "family", cafe_cmd_family },
 	{ "lambdamu", cafe_cmd_lambda_mu },
 	{ "lhtest", cafe_cmd_lh_test },
-	{ "load", cafe_cmd_load },
 	{ "pvalue", cafe_cmd_pvalue },
 	{ "retrieve", cafe_cmd_retrieve },
 	{ "rootdist", cafe_cmd_root_dist}, 
@@ -1697,90 +1695,6 @@ int cafe_cmd_crossvalidation_by_species(int argc, char* argv[])
 
 
 
-int cafe_cmd_load(int argc, char* argv[])
-{
-	if ( argc < 2 )
-	{
-		fprintf(stderr, "Usage(load): %s <famliy file>\n", argv[0] );
-		return -1;
-	}
-	cafe_shell_clear_param(cafe_param, 1);
-	int bfilter = 0;
-
-	pArrayList pargs = cafe_shell_build_argument(argc, argv);
-	pArgument parg;
-
-	if ((parg = cafe_shell_get_argument("-t", pargs)))
-	{
-		sscanf( parg->argv[0], "%d", &cafe_param->num_threads );
-	}
-	if ((parg = cafe_shell_get_argument("-r", pargs)))
-	{
-		sscanf( parg->argv[0], "%d", &cafe_param->num_random_samples );
-	}
-	if ((parg = cafe_shell_get_argument("-p", pargs)))
-	{
-		sscanf( parg->argv[0], "%lf", &cafe_param->pvalue );
-	}
-	if ((parg = cafe_shell_get_argument("-l", pargs)))
-	{
-		if (!strcmp(parg->argv[0], "stdout"))
-			return set_log_file(cafe_param, "stdout");
-		else {
-			pString file_name = string_join(" ", argc, argv);
-			set_log_file(cafe_param, file_name->buf);
-			string_free(file_name);
-		}
-	}
-	if ((parg = cafe_shell_get_argument("-filter", pargs)))
-	{
-		if ( cafe_param->pcafe == NULL )
-		{
-			fprintf(stderr,"Error(load): You did not specify tree. Skip filtering\n");
-		}
-		bfilter = 1;
-	}
-	if ((parg = cafe_shell_get_argument("-i", pargs)))
-	{
-		cafe_param->str_fdata = string_join(" ",parg->argc, parg->argv );
-		cafe_param->pfamily = cafe_family_new( cafe_param->str_fdata->buf, 1 );
-		if ( cafe_param->pfamily == NULL ) return -1;
-	}
-	arraylist_free(pargs, free);
-
-	if ( cafe_param->pfamily == NULL )
-	{
-		fprintf(stderr,"ERROR(load): You must use -i option for input file\n");
-		cafe_shell_clear_param(cafe_param, 1);
-		return -1;
-	}
-	
-	// this is very important!!!!!!!!!!!
-	cafe_param->rootfamily_sizes[0] = 1;
-	//cafe_param->rootfamily_sizes[0] = 0;
-	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	cafe_param->rootfamily_sizes[1] =  MAX(30,rint(cafe_param->pfamily->max_size * 1.25));
-	cafe_param->family_sizes[1] = cafe_param->pfamily->max_size + MAX(50,cafe_param->pfamily->max_size/5);
-	if ( cafe_param->pcafe )
-	{
-		cafe_tree_set_parameters(cafe_param->pcafe, cafe_param->family_sizes, cafe_param->rootfamily_sizes, 0 );
-		cafe_family_set_species_index(cafe_param->pfamily, cafe_param->pcafe);
-	}
-	cafe_param->ML = (double*)memory_new( cafe_param->pfamily->flist->size, sizeof(double));
-	cafe_param->MAP = (double*)memory_new( cafe_param->pfamily->flist->size, sizeof(double));
-	
-	if ( cafe_param->pcafe && bfilter )
-	{
-		cafe_family_filter(cafe_param);
-	}
-	if ( cafe_param->lambda && cafe_param->pcafe )
-	{
-		cafe_set_birthdeath_cache_thread(cafe_param->pcafe, cafe_param->parameterized_k_value, cafe_param->family_sizes, cafe_param->rootfamily_sizes);
-	}
-	log_param_values(cafe_param);
-	return 0;
-}
-
 int cafe_cmd_save(int argc, char* argv[])
 {
 	if ( argc != 2 )
@@ -2000,92 +1914,6 @@ int cafe_cmd_branchlength(int argc, char* argv[])
 		}
 	}
 	return err;
-}
-
-int cafe_cmd_family(int argc, char* argv[])
-{
-	STDERR_IF( cafe_param->pfamily == NULL, "ERROR(family): You must load family data first: command 'load'\n");
-
-	int i, idx=0;
-	pCafeFamilyItem pitem = NULL;
-	pArrayList pargs = cafe_shell_build_argument(argc, argv);
-	pArgument parg;
-
-	if ( ( parg = cafe_shell_get_argument("-idx", pargs) ) )
-	{
-		idx = -1; sscanf( parg->argv[0], "%d", &idx );
-	}
-	else if ( ( parg = cafe_shell_get_argument("-id", pargs) ) )
-	{
-		idx = cafe_family_get_index( cafe_param->pfamily, parg->argv[0]);
-	}
-	else if ( ( parg = cafe_shell_get_argument("-add", pargs) ) )
-	{
-		pCafeFamily pcf = cafe_param->pfamily;
-		if ( pcf == NULL )
-		{
-			pcf = (pCafeFamily)memory_new( 1, sizeof(CafeFamily));
-			pcf->flist = arraylist_new(11000);
-			pArrayList nlist = cafe_param->pcafe->super.nlist;
-			pcf->num_species = (nlist->size+1)/2;
-			pcf->species = (char**) memory_new( pcf->num_species, sizeof(char*));
-			pcf->index = (int*) memory_new( pcf->num_species, sizeof(int));
-			for ( i = 0 ; i < nlist->size ; i+= 2 )
-			{
-				pcf->index[i] = i;
-				pPhylogenyNode pnode = (pPhylogenyNode)nlist->array[i];
-				pcf->species[i] = (char*) memory_new( strlen(pnode->name)+1, sizeof(char) );
-				strcpy( pcf->species[i], pnode->name );
-			}
-			cafe_param->pfamily = pcf;
-		}
-		pCafeFamilyItem pitem = (pCafeFamilyItem) memory_new(1, sizeof(CafeFamilyItem) );
-		pitem->id = (char*) memory_new( strlen( parg->argv[0]) + 1, sizeof(char) );  
-		pitem->ref = -1;
-		pitem->count = (int*) memory_new( pcf->num_species, sizeof(int) );
-		pitem->maxlh = -1;
-		pitem->desc = NULL;
-		strcpy( pitem->id, parg->argv[0] );
-		for ( i = 1 ; i <= pcf->num_species ; i++ )
-		{
-			sscanf( parg->argv[i], "%d", &pitem->count[pcf->index[i]] );
-		}
-		arraylist_add( pcf->flist, pitem );
-	}
-	else if ( ( parg = cafe_shell_get_argument("-del", pargs) ) )
-	{
-								
-	}
-	else if ( ( parg = cafe_shell_get_argument("-filter", pargs) ) )
-	{
-		STDERR_IF( cafe_param->pcafe == NULL, "ERROR(family): You did not specify tree: command 'tree'\n" );
-		cafe_family_filter( cafe_param );
-		log_param_values(cafe_param);
-		return 0;
-	}
-	if ( idx < 0  )
-	{
-		fprintf(stderr, "ERROR(family): your request not found\n");
-		return -1;
-	}
-	if ( idx >= cafe_param->pfamily->flist->size )
-	{
-		fprintf(stderr, "ERROR(family): The index range is from 0 to %d\n", cafe_param->pfamily->flist->size );
-		return -1;
-	}
-	pitem = (pCafeFamilyItem)cafe_param->pfamily->flist->array[idx];
-	if ( pitem )
-	{
-		printf("ID: %s\n", pitem->id );
-		printf("Desc: %s\n", pitem->desc );
-		for ( i = 0 ; i < cafe_param->pfamily->num_species ; i++ )
-		{
-			printf("%s: %d\n", cafe_param->pfamily->species[i], pitem->count[i] );
-		}
-		if ( cafe_param->pcafe && cafe_param->pcafe->pbdc_array ) __cafe_cmd_viterbi_family_print(idx);
-	}
-	arraylist_free( pargs, free );
-	return pitem ? 0 : -1;
 }
 
 extern double __cafe_best_lambda_search(double* plambda, void* args);

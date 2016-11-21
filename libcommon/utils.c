@@ -1,9 +1,9 @@
-#include<utils.h>
 #include<stdlib.h>
 #include<stdio.h>
 #include<stdarg.h>
 #include<errno.h>
 #include<time.h>
+#include "utils.h"
 
 int __cmp_int(const void* a, const void* b)
 {
@@ -356,7 +356,7 @@ void* stack_pop(pStack pstack)
 	return data;	
 }
 
-int stack_is_empty(pStack pstack)
+int stack_has_items(pStack pstack)
 {
 	return pstack->size;
 }

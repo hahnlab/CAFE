@@ -502,7 +502,7 @@ pString phylogeny_string(pTree ptree, phylogeny_func_name_modify fmod)
 	pString pstr = string_new();
 	pStack pstack = stack_new();
 	stack_push(pstack,ptree->root);	
-	while( stack_is_empty(pstack) )
+	while( stack_has_items(pstack) )
 	{
 		pTreeNode ptnode = (pTreeNode)pstack->head->data;
 		pPhylogenyNode pnode = (pPhylogenyNode)ptnode;
