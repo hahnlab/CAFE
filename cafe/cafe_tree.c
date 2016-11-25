@@ -474,6 +474,26 @@ void initialize_leaf_likelihoods(double **matrix, int num_rows, int range, int f
 
 }
 
+void initialize_leaf_likelihoods2(pTree ptree, pTreeNode ptnode)
+{
+	pCafeTree pcafe = (pCafeTree)ptree;
+	pCafeNode pcnode = (pCafeNode)ptnode;
+
+	if (pcnode->errormodel) {
+		memset((void*)pcnode->likelihoods, 0, pcafe->size_of_factor*sizeof(double));
+		for (int j = 0; j<pcafe->size_of_factor; j++) {
+			// conditional probability of measuring i=familysize when true count is j
+			pcnode->likelihoods[j] = pcnode->errormodel->errormatrix[pcnode->familysize][j];
+		}
+
+	}
+	else {
+		memset((void*)pcnode->likelihoods, 0, pcafe->size_of_factor*sizeof(double));
+		pcnode->likelihoods[pcnode->familysize] = 1;
+	}
+}
+
+
 void compute_viterbis(pCafeNode node, int k, double *factors, int rootfamilysize_start, int rootfamilysize_end, int familysize_start, int familysize_end)
 {
 	struct square_matrix *bd = node->k_bd->array[k];
@@ -696,6 +716,66 @@ void compute_internal_node_likelihood(pTree ptree, pTreeNode ptnode, struct choo
 	memory_free(right_factors);
 }
 
+void compute_internal_node_likelihood_using_cache(pTree ptree, pTreeNode ptnode)
+{
+	pCafeTree pcafe = (pCafeTree)ptree;
+	pCafeNode pcnode = (pCafeNode)ptnode;
+
+	int root_start;
+	int root_end;
+	int family_start;
+	int family_end;
+	if (tree_is_root(ptree, ptnode))
+	{
+		root_start = pcafe->rootfamilysizes[0];
+		root_end = pcafe->rootfamilysizes[1];
+		family_start = pcafe->familysizes[0];
+		family_end = pcafe->familysizes[1];
+	}
+	else
+	{
+		root_start = pcafe->familysizes[0];
+		root_end = pcafe->familysizes[1];
+		family_start = pcafe->familysizes[0];
+		family_end = pcafe->familysizes[1];
+	}
+
+	double *tree_factors[2];
+	tree_factors[0] = memory_new(pcafe->size_of_factor, sizeof(double));
+	tree_factors[1] = memory_new(pcafe->size_of_factor, sizeof(double));
+
+	int idx;
+	int i = 0;
+	double *factors[2] = { NULL, NULL };
+	pCafeNode child[2] = { (pCafeNode)((pTreeNode)pcnode)->children->head->data,
+		(pCafeNode)((pTreeNode)pcnode)->children->tail->data };
+	for (idx = 0; idx < 2; idx++)
+	{
+		{
+			factors[idx] = tree_factors[idx];
+			memset(factors[idx], 0, pcafe->size_of_factor*sizeof(double));
+			for (int s = root_start, i = 0; s <= root_end; s++, i++)
+			{
+				for (int c = family_start, j = 0; c <= family_end; c++, j++)
+				{
+					factors[idx][i] += square_matrix_get(child[idx]->birthdeath_matrix, s, c) * child[idx]->likelihoods[j];		
+					// p(node=c,child|s) = p(node=c|s)p(child|node=c) integrated over all c
+					// remember child likelihood[c]'s never sum up to become 1 because they are likelihoods conditioned on c's.
+					// incoming nodes to don't sum to 1. outgoing nodes sum to 1
+				}
+			}
+		}
+	}
+	int size = root_end - root_start + 1;
+	for (i = 0; i < size; i++)
+	{
+		pcnode->likelihoods[i] = factors[0][i] * factors[1][i];
+	}
+	memory_free(tree_factors[0]);
+	memory_free(tree_factors[1]);
+
+}
+
 void compute_leaf_node_likelihood(pTree ptree, pTreeNode ptnode)
 {
 	pCafeTree pcafe = (pCafeTree)ptree;
@@ -721,19 +801,7 @@ void compute_leaf_node_likelihood(pTree ptree, pTreeNode ptnode)
 			pcnode->likelihoods[i] = 1;
 		}
 		else {
-			if (pcnode->errormodel) {
-				memset((void*)pcnode->likelihoods, 0, pcafe->size_of_factor*sizeof(double));
-				for (int j = 0; j<pcafe->size_of_factor; j++) {
-					// conditional probability of measuring i=familysize when true count is j
-					pcnode->likelihoods[j] = pcnode->errormodel->errormatrix[pcnode->familysize][j];
-				}
-
-			}
-			else {
-				for (int k = 0; k < pcafe->size_of_factor; ++k)
-					pcnode->likelihoods[k] = 0.0;
-				pcnode->likelihoods[pcnode->familysize] = 1;
-			}
+			initialize_leaf_likelihoods2(ptree, ptnode);
 		}
 	}
 }
@@ -765,100 +833,15 @@ void __cafe_tree_node_compute_likelihood(pTree ptree, pTreeNode ptnode, va_list 
 
 void __cafe_tree_node_compute_likelihood_using_cache(pTree ptree, pTreeNode ptnode, va_list ap1 )
 {
-	pCafeTree pcafe = (pCafeTree)ptree;
-	pCafeNode pcnode = (pCafeNode)ptnode;
-	double *tree_factors[2];
-	tree_factors[0] = memory_new(pcafe->size_of_factor, sizeof(double));
-	tree_factors[1] = memory_new(pcafe->size_of_factor, sizeof(double));
-
-	int size;
-	int s,c,j;
-	int* rootfamilysizes;
-	int* familysizes;
-    s = 0;
-
 	if ( tree_is_leaf(ptnode) )
 	{
-		if ( tree_is_root(ptree, ptnode->parent) )
-		{
-			rootfamilysizes = pcafe->rootfamilysizes;
-            familysizes = pcafe->familysizes;
-		}
-		else
-		{
-			rootfamilysizes = pcafe->familysizes;
-            familysizes = pcafe->familysizes;
-		}
-		//for ( s = rootfamilysizes[0], i = 0; s <= rootfamilysizes[1] ; s++, i++ )
-        {
-			if (pcnode->familysize < 0) { 
-				//fprintf(stderr, "family size not set\n");
-				pcnode->likelihoods[pcnode->familysize] = 1;					
-			}
-			else {
-                if (pcnode->errormodel) {
-                    memset((void*)pcnode->likelihoods, 0, pcafe->size_of_factor*sizeof(double));
-                    for( j=0; j<pcafe->size_of_factor; j++) {
-                        // conditional probability of measuring i=familysize when true count is j
-                        pcnode->likelihoods[j] = pcnode->errormodel->errormatrix[pcnode->familysize][j];
-                    }
-
-                }
-                else {
-                    //pcnode->likelihoods[i] = pcnode->bd[s][pcnode->familysize];
-                    memset((void*)pcnode->likelihoods, 0, pcafe->size_of_factor*sizeof(double));
-                    pcnode->likelihoods[pcnode->familysize] = 1;	                    
-                }
-			}
-			if(pcnode->likelihoods[pcnode->familysize]==0 && s!=0) {
-//				fprintf (stderr, "ERROR: likelihood value equals zero\n");
-			}
-		}
+		initialize_leaf_likelihoods2(ptree, ptnode);
 	}
 	else
 	{
-		if ( tree_is_root(ptree,ptnode) )
-		{
-			rootfamilysizes = pcafe->rootfamilysizes;
-			familysizes = pcafe->familysizes;
-		}
-		else
-		{
-			rootfamilysizes = familysizes = pcafe->familysizes;
-		}
-		int idx;
-        int i=0;
-		double *factors[2] = { NULL, NULL }; 
-		pCafeNode child[2] = { (pCafeNode)((pTreeNode)pcnode)->children->head->data, 
-							   (pCafeNode)((pTreeNode)pcnode)->children->tail->data };
-		for ( idx = 0 ; idx < 2 ; idx++ )
-		{
-			{	
-				factors[idx] = tree_factors[idx];
-				memset( factors[idx], 0, pcafe->size_of_factor*sizeof(double));
-				for( s = rootfamilysizes[0], i = 0 ; s <= rootfamilysizes[1] ; s++, i++ )
-				{
-					for( c = familysizes[0], j = 0 ; c <= familysizes[1] ; c++, j++ )
-					{
-						factors[idx][i] += square_matrix_get(child[idx]->birthdeath_matrix, s, c) * child[idx]->likelihoods[j];		// p(node=c,child|s) = p(node=c|s)p(child|node=c) integrated over all c
-						// remember child likelihood[c]'s never sum up to become 1 because they are likelihoods conditioned on c's.
-            // incoming nodes to don't sum to 1. outgoing nodes sum to 1
-					}
-				}
-			}
-		}
-		size = rootfamilysizes[1] - rootfamilysizes[0] + 1;
-		for ( i = 0 ; i < size ; i++ )
-		{
-			pcnode->likelihoods[i] = factors[0][i] * factors[1][i];
-			if(pcnode->likelihoods[i]==0) {
-//				fprintf (stderr, "ERROR: likelihood value equals zero\n");
-			}
-		}
+		compute_internal_node_likelihood_using_cache(ptree, ptnode);
 	}
 
-	memory_free(tree_factors[0]);
-	memory_free(tree_factors[1]);
 }
 
 
