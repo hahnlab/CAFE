@@ -17,6 +17,7 @@ pTreeNode cafe_tree_new_empty_node(pTree ptree)
 	pcnode->birth_death_probabilities.lambda = pcafe->lambda;
 	pcnode->birth_death_probabilities.mu = pcafe->mu;
 	pcnode->familysize = -1;
+	pcnode->errormodel = NULL;
 	phylogeny_clear_node((pPhylogenyNode)pcnode);
 	return (pTreeNode)pcnode;		
 }
@@ -474,6 +475,11 @@ void initialize_leaf_likelihoods(double **matrix, int num_rows, int range, int f
 
 }
 
+/**
+* \brief Set likelihood to 1 for actual value, 0 otherwise, or copy values from an existing errormodel
+* Copies likelihood values from an errormodel if one exists, 
+* otherwise sets all likelihoods to 0 except for familysize, which is set to 1
+*/
 void initialize_leaf_likelihoods2(pTree ptree, pTreeNode ptnode)
 {
 	pCafeTree pcafe = (pCafeTree)ptree;
@@ -488,6 +494,9 @@ void initialize_leaf_likelihoods2(pTree ptree, pTreeNode ptnode)
 
 	}
 	else {
+		// number of likelihoods should be set from the tree's size_of_factor, 
+		// therefore the familysize must be less than this
+		assert(pcnode->familysize < pcafe->size_of_factor);
 		memset((void*)pcnode->likelihoods, 0, pcafe->size_of_factor*sizeof(double));
 		pcnode->likelihoods[pcnode->familysize] = 1;
 	}
@@ -758,6 +767,9 @@ void compute_internal_node_likelihood_using_cache(pTree ptree, pTreeNode ptnode)
 			{
 				for (int c = family_start, j = 0; c <= family_end; c++, j++)
 				{
+					if (!child[idx]->birthdeath_matrix)
+						node_set_birthdeath_matrix(child[idx], pcafe->pbdc_array, pcafe->k);
+
 					factors[idx][i] += square_matrix_get(child[idx]->birthdeath_matrix, s, c) * child[idx]->likelihoods[j];		
 					// p(node=c,child|s) = p(node=c|s)p(child|node=c) integrated over all c
 					// remember child likelihood[c]'s never sum up to become 1 because they are likelihoods conditioned on c's.
@@ -773,7 +785,6 @@ void compute_internal_node_likelihood_using_cache(pTree ptree, pTreeNode ptnode)
 	}
 	memory_free(tree_factors[0]);
 	memory_free(tree_factors[1]);
-
 }
 
 void compute_leaf_node_likelihood(pTree ptree, pTreeNode ptnode)
@@ -841,7 +852,6 @@ void __cafe_tree_node_compute_likelihood_using_cache(pTree ptree, pTreeNode ptno
 	{
 		compute_internal_node_likelihood_using_cache(ptree, ptnode);
 	}
-
 }
 
 
@@ -1175,45 +1185,60 @@ void __cafe_tree_set_birthdeath(pTree ptree, pTreeNode ptnode, va_list ap1 )
 }
 
 /**
+* \brief Initialize node with probability values that it may need.
+* If multiple lambdas are set, k_bd is set to an arraylist of matrices with probability values
+* In this case, values are set up to the value of num_lambdas
+* otherwise the value birthdeath_matrix is used
+* probability values are drawn from the cache argument, which should hold a variety
+* of possible values
+*/
+void node_set_birthdeath_matrix(pCafeNode pcnode, pBirthDeathCacheArray cache, int num_lambdas)
+{
+	if (pcnode->super.branchlength <= 0)
+		return;
+
+	if (pcnode->birth_death_probabilities.param_lambdas) {
+		if (pcnode->birth_death_probabilities.param_mus) {
+			if (num_lambdas > 0) {
+				for (int k = 0; k<num_lambdas; k++) {
+					struct square_matrix* bd = birthdeath_cache_get_matrix(cache, pcnode->super.branchlength, pcnode->birth_death_probabilities.param_lambdas[k], pcnode->birth_death_probabilities.param_mus[k]);
+					arraylist_add(pcnode->k_bd, bd);
+				}
+			}
+			else {
+				pcnode->birthdeath_matrix = birthdeath_cache_get_matrix(cache, pcnode->super.branchlength, pcnode->birth_death_probabilities.param_lambdas[0], pcnode->birth_death_probabilities.param_mus[0]);
+			}
+		}
+		else {
+			if (num_lambdas > 0) {
+				for (int k = 0; k<num_lambdas; k++) {
+					struct square_matrix* bd = birthdeath_cache_get_matrix(cache, pcnode->super.branchlength, pcnode->birth_death_probabilities.param_lambdas[k], pcnode->birth_death_probabilities.mu);
+					arraylist_add(pcnode->k_bd, bd);
+				}
+			}
+			else {
+				pcnode->birthdeath_matrix = birthdeath_cache_get_matrix(cache, pcnode->super.branchlength, pcnode->birth_death_probabilities.param_lambdas[0], pcnode->birth_death_probabilities.mu);
+			}
+		}
+	}
+	else {
+		pcnode->birthdeath_matrix = birthdeath_cache_get_matrix(cache, pcnode->super.branchlength, pcnode->birth_death_probabilities.lambda, pcnode->birth_death_probabilities.mu);
+	}
+
+}
+
+/**
 *	Set each node's birthdeath matrix based on its values of branchlength, lambdas, and mus
 **/
 void cafe_tree_set_birthdeath(pCafeTree pcafe)
 {
 	if ( pcafe->super.nlist )
 	{
-		int i, k;
 		pArrayList nlist = pcafe->super.nlist;
-		for (  i = 0; i < nlist->size ; i++ )
+		for (int  i = 0; i < nlist->size ; i++ )
 		{
 			pCafeNode pcnode = (pCafeNode)nlist->array[i];
-			if ( pcnode->super.branchlength <= 0 ) continue;
-			if (pcnode->birth_death_probabilities.param_lambdas) {
-				if (pcnode->birth_death_probabilities.param_mus) {
-					if (pcafe->k > 0) {
-						for ( k=0; k<pcafe->k; k++) {
-							struct square_matrix* bd = birthdeath_cache_get_matrix(pcafe->pbdc_array, pcnode->super.branchlength, pcnode->birth_death_probabilities.param_lambdas[k], pcnode->birth_death_probabilities.param_mus[k]);
-							arraylist_add(pcnode->k_bd, bd);
-						}
-					}
-					else {
-						pcnode->birthdeath_matrix = birthdeath_cache_get_matrix(pcafe->pbdc_array, pcnode->super.branchlength, pcnode->birth_death_probabilities.param_lambdas[0], pcnode->birth_death_probabilities.param_mus[0]);
-					}
-				}
-				else {
-					if (pcafe->k > 0) {
-						for ( k=0; k<pcafe->k; k++) {
-							struct square_matrix* bd = birthdeath_cache_get_matrix(pcafe->pbdc_array, pcnode->super.branchlength, pcnode->birth_death_probabilities.param_lambdas[k], pcnode->birth_death_probabilities.mu);
-							arraylist_add(pcnode->k_bd, bd);
-						}
-					}
-					else {
-						pcnode->birthdeath_matrix = birthdeath_cache_get_matrix(pcafe->pbdc_array, pcnode->super.branchlength, pcnode->birth_death_probabilities.param_lambdas[0], pcnode->birth_death_probabilities.mu);
-					}
-				}
-			}
-			else {
-				pcnode->birthdeath_matrix = birthdeath_cache_get_matrix(pcafe->pbdc_array, pcnode->super.branchlength, pcnode->birth_death_probabilities.lambda, pcnode->birth_death_probabilities.mu);
-			}
+			node_set_birthdeath_matrix(pcnode, pcafe->pbdc_array, pcafe->k);
 		}
 	}
 	else

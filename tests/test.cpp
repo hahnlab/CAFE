@@ -35,6 +35,17 @@ static void init_cafe_tree()
 	cafe_shell_dispatch_command(buf);
 }
 
+static pCafeTree create_tree()
+{
+	const char *newick_tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)";
+	char tree[100];
+	strcpy(tree, newick_tree);
+	int family_sizes[2] = { 0,15 };
+	int rootfamily_sizes[2] = { 0,15 };
+	return cafe_tree_new(tree, family_sizes, rootfamily_sizes, 0, 0);
+}
+
+
 
 int cafe_cmd_atoi(int argc, char* argv[])
 {
@@ -63,6 +74,53 @@ TEST_GROUP(LikelihoodRatio)
 		srand(10);
 	}
 };
+
+TEST_GROUP(TreeTests)
+{
+	void setup()
+	{
+		srand(10);
+	}
+};
+
+TEST(TreeTests, node_set_birthdeath_matrix)
+{
+	std::string str;
+
+	pBirthDeathCacheArray cache = birthdeath_cache_init(10);
+	pTree tree = (pTree)create_tree();
+	pCafeNode node = (pCafeNode)tree_get_child(tree->root, 0);
+
+	POINTERS_EQUAL(NULL, node->birthdeath_matrix);
+
+	// if branch length is not set, no probabilities can be set
+	node->super.branchlength = -1;
+	node_set_birthdeath_matrix(node, cache, 0);
+	POINTERS_EQUAL(NULL, node->birthdeath_matrix);
+
+	// if param_lambdas not set, node's birthdeath matrix will be set
+	node->super.branchlength = 6;
+	node_set_birthdeath_matrix(node, cache, 0);
+	CHECK(node->birthdeath_matrix != NULL)
+
+		// if param_lambdas not set, node's birthdeath matrix will be set
+	node->super.branchlength = 6;
+	node_set_birthdeath_matrix(node, cache, 5);
+	CHECK(node->birthdeath_matrix != NULL);
+
+	// even if param_lambdas is set, node's birthdeath matrix will be set if num_lambdas is 0
+	node->birthdeath_matrix = NULL;
+	node->birth_death_probabilities.param_lambdas = (double*)memory_new(5, sizeof(double));
+	node_set_birthdeath_matrix(node, cache, 0);
+	CHECK(node->birthdeath_matrix != NULL);
+
+	// if param_lambdas is set and num_lambdas > 0, put the matrices into k_bd
+	node->birthdeath_matrix = NULL;
+	node->k_bd = arraylist_new(5);
+	node_set_birthdeath_matrix(node, cache, 5);
+	POINTERS_EQUAL(NULL, node->birthdeath_matrix);
+	LONGS_EQUAL(5, node->k_bd->size);
+}
 
 TEST(FirstTestGroup, TestStringSplitter)
 {
@@ -93,17 +151,7 @@ TEST(FirstTestGroup, Tokenize)
 	STRCMP_EQUAL("b", arr[1].c_str());
 }
 
-static pCafeTree create_tree()
-{
-	const char *newick_tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)";
-	char tree[100];
-	strcpy(tree, newick_tree);
-	int family_sizes[2] = { 1,2 };
-	int rootfamily_sizes[2] = { 1,2 };
-	return cafe_tree_new(tree, family_sizes, rootfamily_sizes, 0, 0);
-}
-
-TEST(FirstTestGroup, TestCafeTree)
+TEST(TreeTests, TestCafeTree)
 {
 	pCafeTree cafe_tree = create_tree();
 	LONGS_EQUAL(112, cafe_tree->super.size); // tracks the size of the structure for copying purposes, etc.
@@ -215,14 +263,34 @@ TEST(FirstTestGroup, Test_cafe_get_posterior)
 	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
 	cafe_family_add_item(param.pfamily, build_arraylist(values, 7));
 
-	param.ML = (double*)memory_new(5, sizeof(double));
-	param.MAP = (double*)memory_new(5, sizeof(double));
+	param.ML = (double*)memory_new(15, sizeof(double));
+	param.MAP = (double*)memory_new(15, sizeof(double));
 
+	param.family_sizes[0] = param.rootfamily_sizes[0] = 0;
+	param.family_sizes[1] = param.rootfamily_sizes[1] = 15;
+
+	LONGS_EQUAL(16,	param.pcafe->size_of_factor);	// as a side effect of create_tree
+
+	pArrayList node_list = param.pcafe->super.nlist;
+	pTreeNode node = (pTreeNode)node_list->array[1];
+	CHECK(node->children->head != NULL);
+
+	cafe_set_birthdeath_cache(&param);
+	//cafe_set_birthdeath_cache(&param);
 	DOUBLES_EQUAL(-1.0, cafe_get_posterior(&param), 0.01);	// -1 represents an error - empirical posterior not defined. Is this safe?
 
 	cafe_set_prior_rfsize_empirical(&param);
 	CHECK_FALSE(isfinite(cafe_get_posterior(&param)));
 };
+
+TEST(TreeTests, compute_internal_node_likelihood_using_cache)
+{
+	pCafeTree pcafe = create_tree();
+	pCafeNode node = (pCafeNode)pcafe->super.nlist->array[3];
+	pcafe->pbdc_array = birthdeath_cache_init(pcafe->size_of_factor);
+	compute_internal_node_likelihood_using_cache((pTree)pcafe, (pTreeNode)node);
+	DOUBLES_EQUAL(0, node->likelihoods[0], .001);
+}
 
 TEST(FirstTestGroup, cafe_set_prior_rfsize_empirical)
 {
@@ -236,7 +304,7 @@ TEST(FirstTestGroup, cafe_set_prior_rfsize_empirical)
 
 	param.pcafe = create_tree();
 	cafe_set_prior_rfsize_empirical(&param);
-	DOUBLES_EQUAL(0.5679, param.prior_rfsize[0], .001);
+	DOUBLES_EQUAL(0.0, param.prior_rfsize[0], .001);
 }
 
 TEST(FirstTestGroup, list_commands)
@@ -380,8 +448,8 @@ TEST(FirstTestGroup, compute_internal_node_likelihood)
 	}
 	tree_get_child(tree->root, 1);
 	compute_internal_node_likelihood(tree, tree->root, NULL);
-	DOUBLES_EQUAL(0.214, node->likelihoods[0], 0.001);
-	DOUBLES_EQUAL(0.192, node->likelihoods[1], 0.001);
+	DOUBLES_EQUAL(0.25, node->likelihoods[0], 0.001);
+	DOUBLES_EQUAL(0.25, node->likelihoods[1], 0.001);
 }
 
 TEST(FirstTestGroup, compute_leaf_node_likelihood)

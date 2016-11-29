@@ -52,6 +52,7 @@ void __cafe_tree_node_compute_likelihood(pTree ptree, pTreeNode ptnode, va_list 
 void compute_internal_node_likelihood(pTree ptree, pTreeNode ptnode, struct chooseln_cache *cache);
 void compute_leaf_node_likelihood(pTree ptree, pTreeNode ptnode);
 void compute_likelihood(pTree ptree, pTreeNode ptnode, struct chooseln_cache* cache);
+void compute_internal_node_likelihood_using_cache(pTree ptree, pTreeNode ptnode);
 
 extern double* cafe_tree_likelihood(pCafeTree pcafe);
 extern void cafe_tree_node_free_clustered_likelihoods (pCafeParam param);
@@ -75,6 +76,7 @@ extern double cafe_tree_mp_annotation(pString str, pTreeNode pnode, pMetapostCon
 extern pMetapostConfig cafe_tree_get_default_mpconfig(int id, double width, double height );
 extern pString cafe_tree_metapost(pCafeTree pcafe, int id, char* title, double width, double height);
 extern int cafe_tree_random_familysize(pCafeTree pcafe, int rootFamilysize );
+void node_set_birthdeath_matrix(pCafeNode pcnode, pBirthDeathCacheArray cache, int num_lambdas);
 
 
 /****************************************************************************
