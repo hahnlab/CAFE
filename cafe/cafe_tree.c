@@ -1040,13 +1040,6 @@ double* cafe_tree_likelihood(pCafeTree pcafe)
 	return ((pCafeNode)pcafe->super.root)->likelihoods;
 }
 
-void __cafe_tree_set_birthdeath(pTree ptree, pTreeNode ptnode, va_list ap1 )
-{
-	if ( tree_is_root( ptree, ptnode ) ) return;
-	pCafeNode pcnode = (pCafeNode)ptnode;
-	pcnode->birthdeath_matrix = birthdeath_cache_get_matrix(((pCafeTree)ptree)->pbdc_array, pcnode->super.branchlength, pcnode->birth_death_probabilities.lambda, pcnode->birth_death_probabilities.mu);
-}
-
 /**
 * \brief Initialize node with probability values that it may need.
 * If multiple lambdas are set, k_bd is set to an arraylist of matrices with probability values
@@ -1090,24 +1083,19 @@ void node_set_birthdeath_matrix(pCafeNode pcnode, pBirthDeathCacheArray cache, i
 
 }
 
+void do_node_set_birthdeath(pTree ptree, pTreeNode ptnode, va_list ap1)
+{
+	pCafeTree pcafe = (pCafeTree)ptree;
+	node_set_birthdeath_matrix((pCafeNode)ptnode, pcafe->pbdc_array, pcafe->k);
+}
+
+
 /**
 *	Set each node's birthdeath matrix based on its values of branchlength, lambdas, and mus
 **/
 void cafe_tree_set_birthdeath(pCafeTree pcafe)
 {
-	if ( pcafe->super.nlist )
-	{
-		pArrayList nlist = pcafe->super.nlist;
-		for (int  i = 0; i < nlist->size ; i++ )
-		{
-			pCafeNode pcnode = (pCafeNode)nlist->array[i];
-			node_set_birthdeath_matrix(pcnode, pcafe->pbdc_array, pcafe->k);
-		}
-	}
-	else
-	{
-		tree_traveral_prefix((pTree)pcafe, __cafe_tree_set_birthdeath );
-	}
+	tree_traveral_prefix((pTree)pcafe, do_node_set_birthdeath);
 }
 
 void cafe_tree_node_copy(pTreeNode psrc, pTreeNode pdest)
