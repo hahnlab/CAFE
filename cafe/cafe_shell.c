@@ -1752,8 +1752,6 @@ void log_param_values(pCafeParam param)
 		cafe_log(param, "Lambda: %s\n", pstr->buf);
 		string_free(pstr);
 	}
-	return 0;
-
 }
 
 void __cafe_cmd_pvalue_print(int max)
