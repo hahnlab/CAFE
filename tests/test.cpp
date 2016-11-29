@@ -283,12 +283,12 @@ TEST(FirstTestGroup, Test_cafe_get_posterior)
 	CHECK_FALSE(isfinite(cafe_get_posterior(&param)));
 };
 
-TEST(TreeTests, compute_internal_node_likelihood_using_cache)
+TEST(TreeTests, compute_internal_node_likelihoode)
 {
 	pCafeTree pcafe = create_tree();
 	pCafeNode node = (pCafeNode)pcafe->super.nlist->array[3];
 	pcafe->pbdc_array = birthdeath_cache_init(pcafe->size_of_factor);
-	compute_internal_node_likelihood_using_cache((pTree)pcafe, (pTreeNode)node);
+	compute_internal_node_likelihood((pTree)pcafe, (pTreeNode)node);
 	DOUBLES_EQUAL(0, node->likelihoods[0], .001);
 }
 
@@ -421,52 +421,6 @@ TEST(FirstTestGroup, get_report_parameters)
 	LONGS_EQUAL(0, params.lh);
 }
 
-
-TEST(FirstTestGroup, compute_likelihood)
-{
-	chooseln_cache cache = { 0,0 };
-	pCafeTree tree = create_tree();
-	int maxFamilySize = MAX(tree->rootfamilysizes[1], tree->familysizes[1]);
-	chooseln_cache_init2(&cache, maxFamilySize);
-	pCafeNode node = (pCafeNode)tree->super.root;
-	compute_likelihood((pTree)tree, (pTreeNode)node, &cache);
-	DOUBLES_EQUAL(0, node->likelihoods[0], 0.01);
-}
-
-TEST(FirstTestGroup, compute_internal_node_likelihood)
-{
-	chooseln_cache_init(50);
-	pTree tree = (pTree)create_tree();
-	pCafeNode node = (pCafeNode)tree->root;
-	node->birth_death_probabilities.lambda = 0.01;
-	node->birth_death_probabilities.mu = -1;
-	int factors = ((pCafeTree)tree)->size_of_factor;
-	for (int i = 0; i < factors; ++i)
-	{
-		((pCafeNode)tree_get_child(tree->root, 0))->likelihoods[i] = .5;
-		((pCafeNode)tree_get_child(tree->root, 1))->likelihoods[i] = .5;
-	}
-	tree_get_child(tree->root, 1);
-	compute_internal_node_likelihood(tree, tree->root, NULL);
-	DOUBLES_EQUAL(0.25, node->likelihoods[0], 0.001);
-	DOUBLES_EQUAL(0.25, node->likelihoods[1], 0.001);
-}
-
-TEST(FirstTestGroup, compute_leaf_node_likelihood)
-{
-	pTree tree = (pTree)create_tree();
-	pCafeNode leaf = (pCafeNode)tree_get_child(tree->root, 0);
-
-	// no family size set
-	compute_leaf_node_likelihood(tree, (pTreeNode)leaf);
-	DOUBLES_EQUAL(1.0, leaf->likelihoods[0], 0.001);
-	DOUBLES_EQUAL(1.0, leaf->likelihoods[1], 0.001);
-
-	leaf->familysize = 1;
-	compute_leaf_node_likelihood(tree, (pTreeNode)leaf);
-	DOUBLES_EQUAL(0.0, leaf->likelihoods[0], 0.001);
-	DOUBLES_EQUAL(1.0, leaf->likelihoods[1], 0.001);
-}
 
 TEST(FirstTestGroup, cafe_tree_new_empty_node)
 {
@@ -630,7 +584,7 @@ TEST(FirstTestGroup, initialize_leaf_likelihoods)
 	int rows = 5;
 	int cols = 3;
 	double **matrix = (double**)memory_new_2dim(rows, cols, sizeof(double));
-	initialize_leaf_likelihoods(matrix, rows, 3, 1, cols, NULL);
+	initialize_leaf_likelihoods_for_viterbi(matrix, rows, 3, 1, cols, NULL);
 	double expected[5][3] = { { 0, 1, 0},{0,1,0},{0,1,0},{0,1,0},{0,1,0}};
 	for (int i = 0; i < rows; ++i)
 		for (int j = 0; j < cols; ++j)
@@ -639,7 +593,7 @@ TEST(FirstTestGroup, initialize_leaf_likelihoods)
 
 	for (int i = 0; i < rows; ++i)
 		expected[i][0] = 1;
-	initialize_leaf_likelihoods(matrix, rows, 2, -1, cols, NULL);
+	initialize_leaf_likelihoods_for_viterbi(matrix, rows, 2, -1, cols, NULL);
 	for (int i = 0; i < rows; ++i)
 		for (int j = 0; j < cols; ++j)
 			DOUBLES_EQUAL(expected[i][j], matrix[i][j], .001);

@@ -48,11 +48,7 @@ extern pString cafe_tree_string(pCafeTree pcafe);
 extern pString cafe_tree_string_with_familysize_lambda(pCafeTree pcafe);
 extern pString cafe_tree_string_with_familysize(pCafeTree pcafe);
 extern void cafe_tree_string_print(pCafeTree pcafe);
-void __cafe_tree_node_compute_likelihood(pTree ptree, pTreeNode ptnode, va_list ap1);
-void compute_internal_node_likelihood(pTree ptree, pTreeNode ptnode, struct chooseln_cache *cache);
-void compute_leaf_node_likelihood(pTree ptree, pTreeNode ptnode);
-void compute_likelihood(pTree ptree, pTreeNode ptnode, struct chooseln_cache* cache);
-void compute_internal_node_likelihood_using_cache(pTree ptree, pTreeNode ptnode);
+void compute_internal_node_likelihood(pTree ptree, pTreeNode ptnode);
 
 extern double* cafe_tree_likelihood(pCafeTree pcafe);
 extern void cafe_tree_node_free_clustered_likelihoods (pCafeParam param);
@@ -130,7 +126,7 @@ extern pGMatrix cafe_lambda_distribution(pCafeParam param, int numrange, double*
 
 extern int cafe_report_retrieve_data(char* file, pCafeParam param);
 
-void initialize_leaf_likelihoods(double **matrix, int num_rows, int range, int familysize, int num_cols, pErrorStruct errormodel);
+void initialize_leaf_likelihoods_for_viterbi(double **matrix, int num_rows, int range, int familysize, int num_cols, pErrorStruct errormodel);
 void reset_k_likelihoods(pCafeNode pcnode, int k, int num_factors);
 
 #define CAFE_VERSION "3.2"
