@@ -23,6 +23,7 @@ extern "C" {
 extern "C" {
 	void show_sizes(FILE*, pCafeParam param, pCafeFamilyItem pitem, int i);
 	void phylogeny_lambda_parse_func(pTree ptree, pTreeNode ptnode);
+	extern pBirthDeathCacheArray probability_cache;
 }
 
 
@@ -154,7 +155,7 @@ TEST(FirstTestGroup, Tokenize)
 TEST(TreeTests, TestCafeTree)
 {
 	pCafeTree cafe_tree = create_tree();
-	LONGS_EQUAL(112, cafe_tree->super.size); // tracks the size of the structure for copying purposes, etc.
+	LONGS_EQUAL(104, cafe_tree->super.size); // tracks the size of the structure for copying purposes, etc.
 
 	// Find chimp in the tree after two branches of length 6,81,6
 	pTreeNode ptnode = (pTreeNode)cafe_tree->super.root;
@@ -287,7 +288,7 @@ TEST(TreeTests, compute_internal_node_likelihoode)
 {
 	pCafeTree pcafe = create_tree();
 	pCafeNode node = (pCafeNode)pcafe->super.nlist->array[3];
-	pcafe->pbdc_array = birthdeath_cache_init(pcafe->size_of_factor);
+	probability_cache = birthdeath_cache_init(pcafe->size_of_factor);
 	compute_internal_node_likelihood((pTree)pcafe, (pTreeNode)node);
 	DOUBLES_EQUAL(0, node->likelihoods[0], .001);
 }
@@ -374,12 +375,12 @@ TEST(FirstTestGroup, tree_traversal_postfix)
 	LONGS_EQUAL(7, ids[8]);
 }
 
-TEST(FirstTestGroup, cafe_tree_random_probabilities)
+TEST(TreeTests, cafe_tree_random_probabilities)
 {
 	int num_families = 1;
 	pCafeTree tree = create_tree();
-	tree->pbdc_array = (pBirthDeathCacheArray)memory_new(num_families, sizeof(BirthDeathCacheArray));
-	tree->pbdc_array->maxFamilysize = num_families;
+	probability_cache = (pBirthDeathCacheArray)memory_new(num_families, sizeof(BirthDeathCacheArray));
+	probability_cache->maxFamilysize = num_families;
 	pArrayList node_list = tree->super.nlist;
 	square_matrix bd;
 	square_matrix_init(&bd, tree->familysizes[1] + 1);
@@ -528,7 +529,7 @@ int get_family_size(pTree ptree, int id)
 TEST(FirstTestGroup, cafe_tree_random_familysize)
 {
 	pCafeTree tree = create_tree();
-	tree->pbdc_array = NULL;
+	probability_cache = NULL;
 	CafeParam param;
 	param.pcafe = tree;
 	param.family_sizes[0] = 1;
@@ -552,7 +553,7 @@ TEST(FirstTestGroup, cafe_tree_random_familysize)
 TEST(FirstTestGroup, cafe_set_birthdeath_cache)
 {
 	pCafeTree tree = create_tree();
-	tree->pbdc_array = NULL;
+	probability_cache = NULL;
 	CafeParam param;
 	param.pcafe = tree;
 	param.family_sizes[0] = 0;
@@ -560,11 +561,11 @@ TEST(FirstTestGroup, cafe_set_birthdeath_cache)
 	param.family_sizes[1] = 10;
 	param.rootfamily_sizes[1] = 10;
 	cafe_set_birthdeath_cache(&param);
-	CHECK_FALSE(tree->pbdc_array == NULL);
+	CHECK_FALSE(probability_cache == NULL);
 	// every node should have its birthdeath_matrix set to an entry in the cache
 	// matching its branch length, lambda and mu values
 	pCafeNode node = (pCafeNode)tree->super.nlist->array[3];
-	struct square_matrix* expected = birthdeath_cache_get_matrix(tree->pbdc_array, node->super.branchlength, node->birth_death_probabilities.lambda, node->birth_death_probabilities.mu);
+	struct square_matrix* expected = birthdeath_cache_get_matrix(probability_cache, node->super.branchlength, node->birth_death_probabilities.lambda, node->birth_death_probabilities.mu);
 	POINTERS_EQUAL(expected, node->birthdeath_matrix);
 }
 

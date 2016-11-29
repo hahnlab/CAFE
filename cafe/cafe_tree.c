@@ -7,6 +7,7 @@
 #include "time.h"
 
 extern void __phylogeny_free_node(pTree ptree, pTreeNode ptnode, va_list ap1);
+extern pBirthDeathCacheArray probability_cache;
 
 pTreeNode cafe_tree_new_empty_node(pTree ptree)
 {
@@ -90,7 +91,7 @@ pCafeTree cafe_tree_new(char* sztree, int familysizes[],
 	if (pcafe == NULL) {
 		return NULL;
 	}
-	pcafe->pbdc_array = NULL;
+
 	for ( i = 0 ; i < 2 ; i++ )
 	{
 		pcafe->familysizes[i] = familysizes[i];
@@ -714,7 +715,7 @@ void compute_internal_node_likelihood(pTree ptree, pTreeNode ptnode)
 				for (int c = family_start, j = 0; c <= family_end; c++, j++)
 				{
 					if (!child[idx]->birthdeath_matrix)
-						node_set_birthdeath_matrix(child[idx], pcafe->pbdc_array, pcafe->k);
+						node_set_birthdeath_matrix(child[idx], probability_cache, pcafe->k);
 
 					factors[idx][i] += square_matrix_get(child[idx]->birthdeath_matrix, s, c) * child[idx]->likelihoods[j];		
 					// p(node=c,child|s) = p(node=c|s)p(child|node=c) integrated over all c
@@ -990,7 +991,7 @@ void cafe_tree_node_free_clustered_likelihoods (pCafeParam param)
 double** cafe_tree_clustered_likelihood(pCafeTree pcafe) 
 {
 
-	if (pcafe->pbdc_array)
+	if (probability_cache)
 	{
 		if ( pcafe->super.postfix ) {
 			int i = 0;
@@ -1086,7 +1087,7 @@ void node_set_birthdeath_matrix(pCafeNode pcnode, pBirthDeathCacheArray cache, i
 void do_node_set_birthdeath(pTree ptree, pTreeNode ptnode, va_list ap1)
 {
 	pCafeTree pcafe = (pCafeTree)ptree;
-	node_set_birthdeath_matrix((pCafeNode)ptnode, pcafe->pbdc_array, pcafe->k);
+	node_set_birthdeath_matrix((pCafeNode)ptnode, probability_cache, pcafe->k);
 }
 
 
@@ -1111,7 +1112,6 @@ void cafe_tree_node_copy(pTreeNode psrc, pTreeNode pdest)
 
 void __cafe_tree_copy_new_fill(pCafeTree psrc, pCafeTree pdest )
 {
-	pdest->pbdc_array = psrc->pbdc_array;
 	pdest->size_of_factor = psrc->size_of_factor;
 	pdest->familysizes[0] = psrc->familysizes[0];
 	pdest->familysizes[1] = psrc->familysizes[1];
@@ -1128,7 +1128,6 @@ pCafeTree cafe_tree_copy(pCafeTree psrc)
 							    cafe_tree_node_copy );
 	__cafe_tree_copy_new_fill(psrc,pcafe);
 	tree_build_node_list((pTree)pcafe);
-	pcafe->pbdc_array = psrc->pbdc_array;
 	return pcafe;
 }
 
@@ -1159,9 +1158,8 @@ void __cafe_tree_node_random_familysize(pTree ptree, pTreeNode pnode, va_list ap
 
 	double rnd = unifrnd();					
 	double cumul = 0;
-	pCafeTree pcafe = (pCafeTree)ptree;
 	pCafeNode pcnode = (pCafeNode)pnode;
-	int maxFamilysize = pcafe->pbdc_array->maxFamilysize;
+	int maxFamilysize = probability_cache->maxFamilysize;
 	int s = ((pCafeNode)pnode->parent)->familysize;
 	int c = 0;
 	for (; c < maxFamilysize ; c++ )
@@ -1198,7 +1196,7 @@ double* cafe_tree_random_probabilities(pCafeTree pcafe, int rootFamilysize, int 
 	pcafe->rootfamilysizes[0] = rootFamilysize;
 	pcafe->rootfamilysizes[1] = rootFamilysize;
 	
-	if (pcafe->pbdc_array == NULL) {
+	if (probability_cache == NULL) {
 		printf("error: pbdc_array NULL");
 	}
 

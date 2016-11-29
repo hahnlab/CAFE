@@ -6,6 +6,8 @@ extern "C" {
 #include <pthread.h>
 #include "cafe.h"
 #include <family.h>
+
+	extern pBirthDeathCacheArray probability_cache;
 }
 
 /**************************************************************************
@@ -80,13 +82,13 @@ double __cafe_lhr_get_likelihood_for_diff_lambdas(pCafeParam param, int idx, int
 		cafe_best_lambda_by_fminsearch(param, param->num_lambdas, 0);
 		lambda_cache[t] = param->lambda;
 		cafe_set_birthdeath_cache(param);
-		PBDC[t] = param->pcafe->pbdc_array;
+		PBDC[t] = probability_cache;
 	}
 	else
 	{
 		memcpy(param->lambda, lambda_cache[t], sizeof(double)*param->num_lambdas);
 		param->param_set_func(param, param->lambda);
-		param->pcafe->pbdc_array = PBDC[t];
+		probability_cache = PBDC[t];
 		cafe_tree_set_birthdeath(param->pcafe);
 	}
 	int i;
@@ -115,7 +117,6 @@ void* __cafe_lhr_for_diff_lambdas_i(pCafeParam param,
 {
 	int i, j;
 	pCafeTree pcafe = cafe_tree_copy(param->pcafe);
-	pcafe->pbdc_array = param->pcafe->pbdc_array;
 
 	pCafeParam cpy_param = cafe_copy_parameters(param);
 	cpy_param->num_lambdas = num_lambdas;

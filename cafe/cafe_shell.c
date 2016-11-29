@@ -16,6 +16,7 @@
 #include "viterbi.h"
 
 extern int cafe_shell_dispatch_commandf(char* format, ...);
+extern pBirthDeathCacheArray probability_cache;
 
 /**
 * \brief Holds the global program state that user commands act on.
@@ -183,9 +184,9 @@ void cafe_shell_clear_param(pCafeParam param, int btree_skip)
 	viterbi_parameters_clear(&param->viterbi, nnodes);
 	if ( !btree_skip && param->pcafe ) 
 	{
-		if ( param->pcafe->pbdc_array )
+		if (probability_cache)
 		{
-			birthdeath_cache_array_free(param->pcafe->pbdc_array);
+			birthdeath_cache_array_free(probability_cache);
 		}
 		cafe_tree_free(param->pcafe);
 		//memory_free( param->branchlengths_sorted );
@@ -626,7 +627,7 @@ int cafe_shell_parse_branchlength(int argc, char* argv[])
 			fprintf(stderr,"ERROR: the branch length of node %d is not changed\n", i);
 		}
 	}
-	if ( cafe_param->pcafe->pbdc_array ) cafe_tree_set_birthdeath(cafe_param->pcafe);
+	if (probability_cache) cafe_tree_set_birthdeath(cafe_param->pcafe);
 	return 0;
 }
 
@@ -660,7 +661,7 @@ int cafe_shell_set_branchlength()
 			}
 		}
 	}
-	if ( cafe_param->pcafe->pbdc_array ) cafe_tree_set_birthdeath(cafe_param->pcafe);
+	if (probability_cache) cafe_tree_set_birthdeath(cafe_param->pcafe);
 	return 0;
 }
 
@@ -671,15 +672,15 @@ double* cafe_shell_likelihood(int max)
 	int fmax = max + MAX(50,max/5);
 	pCafeTree pcafe = cafe_param->pcafe;
 
-	if ( pcafe->pbdc_array == NULL || pcafe->pbdc_array->maxFamilysize <  MAX(rfmax, fmax)  )
+	if (probability_cache == NULL || probability_cache->maxFamilysize <  MAX(rfmax, fmax)  )
 	{
 		cafe_param->rootfamily_sizes[1] = rfmax;
 		cafe_param->family_sizes[1] = fmax;
 		cafe_tree_set_parameters(pcafe, cafe_param->family_sizes, cafe_param->rootfamily_sizes, 0 );
-		if ( pcafe->pbdc_array )
+		if (probability_cache)
 		{
 			int remaxFamilysize = MAX(cafe_param->family_sizes[1], cafe_param->rootfamily_sizes[1]);
-			birthdeath_cache_resize(cafe_param->pcafe->pbdc_array, remaxFamilysize);
+			birthdeath_cache_resize(probability_cache, remaxFamilysize);
 			cafe_tree_set_birthdeath(cafe_param->pcafe);
 		}
 		else
@@ -734,7 +735,7 @@ int cafe_cmd_tree(int argc, char* argv[])
 	}
 	if ( cafe_param->pcafe ) 
 	{
-		if ( cafe_param->pcafe->pbdc_array )
+		if (probability_cache)
 		{
 			cafe_free_birthdeath_cache(cafe_param->pcafe);
 		}

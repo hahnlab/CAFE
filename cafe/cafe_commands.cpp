@@ -33,6 +33,8 @@ extern "C" {
 	void __cafe_tree_string_gainloss(pString pstr, pPhylogenyNode ptnode);
 	void __cafe_tree_string_sum_gainloss(pString pstr, pPhylogenyNode ptnode);
 	void __cafe_cmd_viterbi_family_print(int idx);
+
+	extern pBirthDeathCacheArray probability_cache;
 }
 
 using namespace std;
@@ -657,7 +659,7 @@ int cafe_cmd_generate_random_family(pCafeParam param, std::vector<std::string> t
 						for (n = 0; n < nlist->size; n++)
 						{
 							pCafeNode pcnode = (pCafeNode)nlist->array[n];
-							pcnode->birthdeath_matrix = birthdeath_cache_get_matrix(pcafe->pbdc_array, pcnode->super.branchlength, pcnode->birth_death_probabilities.lambda, pcnode->birth_death_probabilities.mu);
+							pcnode->birthdeath_matrix = birthdeath_cache_get_matrix(probability_cache, pcnode->super.branchlength, pcnode->birth_death_probabilities.lambda, pcnode->birth_death_probabilities.mu);
 						}
 					}
 					// now randomly sample familysize
@@ -912,7 +914,7 @@ int cafe_cmd_family(pCafeParam param, std::vector<std::string> tokens)
 		{
 			printf("%s: %d\n", param->pfamily->species[i], pitem->count[i]);
 		}
-		if (param->pcafe && param->pcafe->pbdc_array) __cafe_cmd_viterbi_family_print(idx);
+		if (param->pcafe && probability_cache) __cafe_cmd_viterbi_family_print(idx);
 	}
 
 	return pitem ? 0 : -1;

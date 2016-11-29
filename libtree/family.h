@@ -15,7 +15,6 @@ typedef struct
 	int k;
 	int		size_of_factor;
 	int 	rfsize;
-	pBirthDeathCacheArray pbdc_array;
 }CafeTree;
 typedef CafeTree* pCafeTree;
 

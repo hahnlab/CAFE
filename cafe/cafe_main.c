@@ -36,6 +36,8 @@ variable in cafe_shell.c .
 #include<utils.h>
 #include "viterbi.h"
 
+pBirthDeathCacheArray probability_cache = NULL;
+
 void cafe_log(pCafeParam param, const char* msg, ... )
 {
   va_list ap;
@@ -58,8 +60,8 @@ void cafe_log(pCafeParam param, const char* msg, ... )
 
 void cafe_free_birthdeath_cache(pCafeTree pcafe)
 {
-	birthdeath_cache_array_free(pcafe->pbdc_array);
-	pcafe->pbdc_array = NULL;
+	birthdeath_cache_array_free(probability_cache);
+	probability_cache = NULL;
 }
 
 void thread_run(int numthreads, void* (*run)(void*), void* param, int size )
@@ -964,11 +966,11 @@ double* cafe_best_lambda_mu_by_fminsearch(pCafeParam param, int lambda_len, int 
 
 void cafe_set_birthdeath_cache_thread(pCafeTree tree, int k_value, int* family_sizes, int* rootfamily_sizes)
 {
-	if (tree->pbdc_array)
+	if (probability_cache)
 	{
-		birthdeath_cache_array_free(tree->pbdc_array);
+		birthdeath_cache_array_free(probability_cache);
 	}
-	tree->pbdc_array = birthdeath_cache_init(MAX(family_sizes[1], rootfamily_sizes[1]));
+	probability_cache = birthdeath_cache_init(MAX(family_sizes[1], rootfamily_sizes[1]));
 	cafe_tree_set_birthdeath(tree);
 }
 
@@ -1001,7 +1003,7 @@ double __cafe_each_best_lambda_search(double* plambda, void* args)
 		double* likelihood = cafe_tree_likelihood(pcafe);
 		score = log(__max(likelihood,pcafe->rfsize));
 		cafe_free_birthdeath_cache(pcafe);
-		pcafe->pbdc_array = NULL;
+		probability_cache = NULL;
 	}
 
 	char buf[STRING_STEP_SIZE];
@@ -1388,7 +1390,6 @@ void* __cafe_branch_cutting_thread_func(void* ptr)
 		
 		pCafeTree pcafe = cafe_tree_copy(param->pcafe);
 		pCafeTree psub =  cafe_tree_split(pcafe,b);
-		psub->pbdc_array = param->pcafe->pbdc_array;
 
 		for ( i = pbc->range[0] ; i < pbc->range[1] ; i++ )
 		{
@@ -1454,7 +1455,6 @@ void cafe_branch_cutting(pCafeParam param)
 		}
 		pCafeTree pcafe = cafe_tree_copy(param->pcafe);
 		pCafeTree psub =  cafe_tree_split(pcafe,b);
-		psub->pbdc_array = param->pcafe->pbdc_array;
 		
 		cafe_log(param,">> %d  --------------------\n", b ); 
 		pString pstr = cafe_tree_string(pcafe);
@@ -1593,7 +1593,7 @@ void* __cafe_likelihood_ratio_test_thread_func(void* ptr)
 				prevlh = nextlh;
 				pnode->branchlength += rint(pnode->branchlength * 0.15);
 pthread_mutex_lock( &mutex_cafe_likelihood );
-				((pCafeNode)pnode)->birthdeath_matrix = birthdeath_cache_get_matrix(pcafe->pbdc_array, pnode->branchlength, ((pCafeNode)pnode)->birth_death_probabilities.lambda,  ((pCafeNode)pnode)->birth_death_probabilities.mu );
+				((pCafeNode)pnode)->birthdeath_matrix = birthdeath_cache_get_matrix(probability_cache, pnode->branchlength, ((pCafeNode)pnode)->birth_death_probabilities.lambda,  ((pCafeNode)pnode)->birth_death_probabilities.mu );
 pthread_mutex_unlock( &mutex_cafe_likelihood);
 				nextlh = __max(cafe_tree_likelihood(pcafe), param->pcafe->rfsize );
 			}
