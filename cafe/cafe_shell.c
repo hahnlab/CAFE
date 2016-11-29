@@ -685,7 +685,7 @@ double* cafe_shell_likelihood(int max)
 		}
 		else
 		{
-			cafe_set_birthdeath_cache(cafe_param);
+			reset_birthdeath_cache(cafe_param->pcafe, 0, cafe_param->family_sizes, cafe_param->rootfamily_sizes);
 		}
 	}
 	else
@@ -1156,16 +1156,16 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 	//////////
 	
 	
-	if ( bprint )
+	if (bprint)
 	{
 		pString pstr = cafe_tree_string_with_lambda(pcafe);
-		printf("%s\n", pstr->buf );
+		printf("%s\n", pstr->buf);
 		string_free(pstr);
 	}
-	  if ( cafe_param->pfamily )
-	 {
-	 cafe_set_birthdeath_cache_thread(cafe_param->pcafe, cafe_param->parameterized_k_value, cafe_param->family_sizes, cafe_param->rootfamily_sizes);
-	 }
+	if (cafe_param->pfamily)
+	{
+		reset_birthdeath_cache(cafe_param->pcafe, cafe_param->parameterized_k_value, cafe_param->family_sizes, cafe_param->rootfamily_sizes);
+	}
 	   
 	cafe_log(cafe_param,"DONE: Lamda,Mu Search or setting, for command:\n");
 	char buf[STRING_STEP_SIZE];
@@ -1403,7 +1403,7 @@ double _cafe_cross_validate_by_family(char* queryfile, char* truthfile, char* er
 	{
 		cafe_family_set_species_index(truthfamily, truthtree);
 	}
-	cafe_set_birthdeath_cache_thread(cafe_param->pcafe, cafe_param->parameterized_k_value, cafe_param->family_sizes, cafe_param->rootfamily_sizes);
+	reset_birthdeath_cache(cafe_param->pcafe, cafe_param->parameterized_k_value, cafe_param->family_sizes, cafe_param->rootfamily_sizes);
 	
 	for(i=0; i< cafe_param->cv_test_count_list->size; i++) 
 	{
@@ -1456,7 +1456,7 @@ double _cafe_cross_validate_by_species(char* validatefile, char* errortype)
 	if ( cafe_param->cv_test_count_list == NULL ) return -1;
 	// now compare reconstructed count to true count	
 	pCafeTree pcafe = cafe_param->pcafe;
-	cafe_set_birthdeath_cache_thread(cafe_param->pcafe, cafe_param->parameterized_k_value, cafe_param->family_sizes, cafe_param->rootfamily_sizes);
+	reset_birthdeath_cache(cafe_param->pcafe, cafe_param->parameterized_k_value, cafe_param->family_sizes, cafe_param->rootfamily_sizes);
 	pArrayList estimate_size = arraylist_new(cafe_param->cv_test_count_list->size);
 	for(i=0; i< cafe_param->pfamily->flist->size; i++) 
 	{
@@ -2280,7 +2280,7 @@ int cafe_cmd_root_dist(int argc, char* argv[])
 		cafe_log( cafe_param, "The number of families is %d\n", cafe_param->pfamily->flist->size );
 		int i;
 		pCafeTree pcafe = cafe_param->pcafe;
-		cafe_set_birthdeath_cache_thread(cafe_param->pcafe, cafe_param->parameterized_k_value, cafe_param->family_sizes, cafe_param->rootfamily_sizes);
+		reset_birthdeath_cache(cafe_param->pcafe, cafe_param->parameterized_k_value, cafe_param->family_sizes, cafe_param->rootfamily_sizes);
 		for(i=0; i< cafe_param->pfamily->flist->size; i++) 
 		{
 			cafe_family_set_size(cafe_param->pfamily,i, pcafe);

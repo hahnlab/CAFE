@@ -560,13 +560,8 @@ double __cafe_cluster_lambda_search(double* parameters, void* args)
 	if ( !skip )
 	{
 		param->param_set_func(param,parameters);
-		cafe_set_birthdeath_cache_thread(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
-//		if (param->posterior) {
-			score = cafe_get_clustered_posterior(param);
-//		}
-//		else {
-//			score = cafe_get_clustered_likelihood(param);
-//		}
+		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
+		score = cafe_get_clustered_posterior(param);
 		cafe_free_birthdeath_cache(pcafe);
 		cafe_tree_node_free_clustered_likelihoods(param);
 	}
@@ -606,13 +601,8 @@ double __cafe_cluster_lambda_mu_search(double* parameters, void* args)
 	if ( !skip )
 	{
 		param->param_set_func(param,parameters);
-		cafe_set_birthdeath_cache_thread(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
-//		if (param->posterior) {
-			score = cafe_get_clustered_posterior(param);
-//		}
-//		else {
-//			score = cafe_get_clustered_likelihood(param);
-//		}
+		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
+		score = cafe_get_clustered_posterior(param);
 		cafe_free_birthdeath_cache(pcafe);
 		cafe_tree_node_free_clustered_likelihoods(param);
 	}
@@ -662,13 +652,8 @@ double __cafe_best_lambda_mu_search(double* parameters, void* args)
 	if ( !skip )
 	{
 		param->param_set_func(param,parameters);
-		cafe_set_birthdeath_cache_thread(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
-//		if (param->posterior) {
-			score = cafe_get_posterior(param);
-//		}
-//		else {
-//			score = cafe_get_likelihood(param);
-//		}
+		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
+		score = cafe_get_posterior(param);
 		cafe_free_birthdeath_cache(pcafe);
 	}
 	char buf[STRING_STEP_SIZE];
@@ -701,13 +686,8 @@ double __cafe_best_lambda_search(double* plambda, void* args)
 	if ( !skip )
 	{
 		param->param_set_func(param,plambda);
-		cafe_set_birthdeath_cache_thread(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
-        //if (param->posterior) {
-            score = cafe_get_posterior(param);
-        //}
-        //else {
-        //	score = cafe_get_likelihood(param);
-        //}
+		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
+        score = cafe_get_posterior(param);
 		cafe_free_birthdeath_cache(pcafe);
 	}
 	char buf[STRING_STEP_SIZE];
@@ -964,7 +944,7 @@ double* cafe_best_lambda_mu_by_fminsearch(pCafeParam param, int lambda_len, int 
 	return param->parameters;
 }
 
-void cafe_set_birthdeath_cache_thread(pCafeTree tree, int k_value, int* family_sizes, int* rootfamily_sizes)
+void reset_birthdeath_cache(pCafeTree tree, int k_value, int* family_sizes, int* rootfamily_sizes)
 {
 	if (probability_cache)
 	{
@@ -972,11 +952,6 @@ void cafe_set_birthdeath_cache_thread(pCafeTree tree, int k_value, int* family_s
 	}
 	probability_cache = birthdeath_cache_init(MAX(family_sizes[1], rootfamily_sizes[1]));
 	cafe_tree_set_birthdeath(tree);
-}
-
-void cafe_set_birthdeath_cache(pCafeParam param)
-{
-	cafe_set_birthdeath_cache_thread(param->pcafe, 0, param->family_sizes, param->rootfamily_sizes);
 }
 
 double __cafe_each_best_lambda_search(double* plambda, void* args)
@@ -999,7 +974,7 @@ double __cafe_each_best_lambda_search(double* plambda, void* args)
 	if ( !skip )
 	{
 		param->param_set_func(param,plambda);
-		cafe_set_birthdeath_cache_thread(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
+		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
 		double* likelihood = cafe_tree_likelihood(pcafe);
 		score = log(__max(likelihood,pcafe->rfsize));
 		cafe_free_birthdeath_cache(pcafe);
@@ -1092,8 +1067,6 @@ double* cafe_each_best_lambda_by_fminsearch(pCafeParam param, int lambda_len )
 			}	
 		}
 		param->param_set_func(param,re);
-//		cafe_set_birthdeath_cache_thread(param);
-//		pitem->pbdc_array = param->pcafe->pbdc_array;
 
 		cafe_log(param,"Lambda Search Result of %d/%d in %d iteration \n", i+1, fsize, pfm->iters );
 		if ( lambda_check )
@@ -1306,7 +1279,7 @@ pArrayList cafe_viterbi(pCafeParam param, pArrayList pCD)
 	if ( pCD == NULL )
 	{
 		param->param_set_func(param,param->parameters);
-		cafe_set_birthdeath_cache_thread(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
+		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
 		pCD = cafe_conditional_distribution(param);
 		//cafe_free_birthdeath_cache(param->pcafe);
 	}

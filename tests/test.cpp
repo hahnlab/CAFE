@@ -276,8 +276,8 @@ TEST(FirstTestGroup, Test_cafe_get_posterior)
 	pTreeNode node = (pTreeNode)node_list->array[1];
 	CHECK(node->children->head != NULL);
 
-	cafe_set_birthdeath_cache(&param);
-	//cafe_set_birthdeath_cache(&param);
+	reset_birthdeath_cache(param.pcafe, 0, param.family_sizes, param.rootfamily_sizes);
+
 	DOUBLES_EQUAL(-1.0, cafe_get_posterior(&param), 0.01);	// -1 represents an error - empirical posterior not defined. Is this safe?
 
 	cafe_set_prior_rfsize_empirical(&param);
@@ -537,7 +537,7 @@ TEST(FirstTestGroup, cafe_tree_random_familysize)
 	param.family_sizes[1] = 10;
 	param.rootfamily_sizes[1] = 3;
 
-	cafe_set_birthdeath_cache(&param);
+	reset_birthdeath_cache(param.pcafe, 0, param.family_sizes, param.rootfamily_sizes);
 	pCafeNode node5 = (pCafeNode)tree->super.nlist->array[5];
 	for (int i = 0; i <= 10; ++i)
 		for (int j = 0; j <= 10; ++j)
@@ -550,7 +550,7 @@ TEST(FirstTestGroup, cafe_tree_random_familysize)
 	LONGS_EQUAL(8, get_family_size((pTree)tree, 5));
 }
 
-TEST(FirstTestGroup, cafe_set_birthdeath_cache)
+TEST(FirstTestGroup, reset_birthdeath_cache)
 {
 	pCafeTree tree = create_tree();
 	probability_cache = NULL;
@@ -560,7 +560,7 @@ TEST(FirstTestGroup, cafe_set_birthdeath_cache)
 	param.rootfamily_sizes[0] = 0;
 	param.family_sizes[1] = 10;
 	param.rootfamily_sizes[1] = 10;
-	cafe_set_birthdeath_cache(&param);
+	reset_birthdeath_cache(param.pcafe, 0, param.family_sizes, param.rootfamily_sizes);
 	CHECK_FALSE(probability_cache == NULL);
 	// every node should have its birthdeath_matrix set to an entry in the cache
 	// matching its branch length, lambda and mu values

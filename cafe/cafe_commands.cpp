@@ -488,7 +488,7 @@ int* get_root_dist(pCafeTree pcafe, pCafeFamily pfamily, int k_value, int* famil
 	int *root_dist = (int*)memory_new(pcafe->rfsize + 1, sizeof(int));
 	int num_families = pfamily->flist->size;
 	pCafeNode croot = (pCafeNode)pcafe->super.root;
-	cafe_set_birthdeath_cache_thread(pcafe, k_value, family_sizes,rootfamily_sizes);
+	reset_birthdeath_cache(pcafe, k_value, family_sizes,rootfamily_sizes);
 	printf("Viterbi\n");
 
 	for (int i = 0; i < num_families; i++)
@@ -615,7 +615,7 @@ int cafe_cmd_generate_random_family(pCafeParam param, std::vector<std::string> t
 		prereqs(param, REQUIRES_LAMBDA);
 		cafe_log(param, "Using user defined root size distribution for simulation... \n");
 		param->param_set_func(param, param->parameters);
-		cafe_set_birthdeath_cache_thread(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
+		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
 	}
 
 	int t;
@@ -791,7 +791,7 @@ int cafe_cmd_load(pCafeParam param, std::vector<std::string> tokens)
 	}
 	if (param->lambda && param->pcafe)
 	{
-		cafe_set_birthdeath_cache_thread(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
+		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
 	}
 	log_param_values(param);
 	return 0;

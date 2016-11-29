@@ -503,7 +503,7 @@ int cafe_cmd_lambda(pCafeParam param, vector<string> tokens)
 	{
 		if ( param->pfamily )
 		{
-			cafe_set_birthdeath_cache_thread(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
+			reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
 		}
 	}
 	

@@ -81,7 +81,7 @@ double __cafe_lhr_get_likelihood_for_diff_lambdas(pCafeParam param, int idx, int
 		param->lambda = NULL;
 		cafe_best_lambda_by_fminsearch(param, param->num_lambdas, 0);
 		lambda_cache[t] = param->lambda;
-		cafe_set_birthdeath_cache(param);
+		reset_birthdeath_cache(param->pcafe, 0, param->family_sizes, param->rootfamily_sizes);
 		PBDC[t] = probability_cache;
 	}
 	else
