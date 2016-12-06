@@ -920,3 +920,13 @@ int cafe_cmd_family(pCafeParam param, std::vector<std::string> tokens)
 	return pitem ? 0 : -1;
 }
 
+int cafe_cmd_report(pCafeParam param, std::vector<std::string> tokens)
+{
+	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE | REQUIRES_LAMBDA);
+
+	report_parameters params;
+	get_report_parameters(params, tokens);
+
+	cafe_do_report(param, &params);
+	return 0;
+}

@@ -625,6 +625,8 @@ void cafe_family_free(pCafeFamily pcf)
 
 void cafe_family_set_size(pCafeFamily pcf, int idx, pCafeTree pcafe)
 {
+	assert(idx < pcf->flist->size);
+
 	pTree ptree = (pTree)pcafe;
 	for (int i = 0; i< ptree->nlist->size; i++) {
 		((pCafeNode)ptree->nlist->array[i])->familysize = -1;

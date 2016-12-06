@@ -18,5 +18,11 @@ typedef struct
 
 void get_report_parameters(report_parameters &params, std::vector<std::string> tokens);
 int cafe_cmd_report(pCafeParam param, std::vector<std::string> tokens);
+void cafe_report(pCafeParam param, std::ostream& report_file);
+void write_viterbi(std::ostream& ost, const viterbi_parameters& viterbi);
+void write_families_header(std::ostream& ost, double **cutPvalues, double**likelihoodRatios);
+void write_families_line(std::ostream& ost, pCafeParam param, int i, std::string node_id);
+void cafe_do_report(pCafeParam param, report_parameters* params);
+
 
 #endif
