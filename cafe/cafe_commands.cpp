@@ -19,6 +19,7 @@
 	\defgroup Commands Commands that are available in CAFE
 */
 
+
 extern "C" {
 #include <utils_string.h>
 #include "cafe_shell.h"
@@ -39,6 +40,10 @@ extern "C" {
 
 using namespace std;
 
+/**
+\brief This is the list of commands that can be called
+*
+*/
 map<string, cafe_command2> get_dispatcher()
 {
 	map<string, cafe_command2> dispatcher;
