@@ -86,6 +86,28 @@ void write_families_header(ostream& ost, double **cutPvalues, double**likelihood
 	ost << "\n";
 }
 
+void write_doubles(ostream&ost, vector<double> items)
+{
+	ost << "(";
+
+	vector<double>::iterator iter = items.begin();
+	while (iter != items.end())
+	{
+		if (*iter == -1)
+		{
+			ost << "-";
+		}
+		else
+		{
+			ost << *iter;
+		}
+		*iter++;
+		if (iter != items.end())
+			ost << ",";
+	}
+	ost << ")";
+}
+
 void write_families_line(ostream& ost, pCafeParam param, int i, string node_id)
 {
 	ost << node_id << "\t";
@@ -111,40 +133,23 @@ void write_families_line(ostream& ost, pCafeParam param, int i, string node_id)
 
 	if (param->viterbi.cutPvalues)
 	{
-		ost << "(";
+		vector<double> vals(param->viterbi.num_nodes);
 		for (int b = 0; b < param->viterbi.num_nodes; b++)
 		{
-			if (param->viterbi.cutPvalues[b][i] == -1)
-			{
-				ost << "-";
-			}
-			else
-			{
-				ost << param->viterbi.cutPvalues[b][i];
-			}
-			if (b < param->viterbi.num_nodes - 1) 
-				ost << ",";
+			vals[b] = param->viterbi.cutPvalues[b][i];
 		}
-		ost << ")\t";
+		write_doubles(ost, vals);
+		ost << "\t";
 	}
 
 	if (param->likelihoodRatios)
 	{
-		ost << "(";
-		for (int b = 0; b < param->pcafe->super.nlist->size; b++)
+		vector<double> vals(param->pcafe->super.nlist->size);
+		for (size_t b = 0; b < vals.size(); b++)
 		{
-			if (param->likelihoodRatios[b][i] == -1)
-			{
-				ost << "-";
-			}
-			else
-			{
-				ost << param->likelihoodRatios[b][i];
-			}
-			if (b <param->pcafe->super.nlist->size - 1) 
-				ost << ",";
+			vals[b] = param->likelihoodRatios[b][i];
 		}
-		ost << ")";
+		write_doubles(ost, vals);
 	}
 
 	ost << "\n";

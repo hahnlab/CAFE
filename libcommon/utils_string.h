@@ -23,8 +23,8 @@ extern pString string_new_with_string(const char* newstr );
 extern void string_free(pString pstr);
 extern void string_free_without_data(pString pstr);
 extern void string_reset(pString pstr);
-extern void string_add(pString pstr, char* add);
-extern void string_fadd(pString pstr, char* msg, ...);
+extern void string_add(pString pstr, const char* add);
+extern void string_fadd(pString pstr, const char* msg, ...);
 extern void string_trim(pString pstr);
 extern char* string_get(pString pstr);
 

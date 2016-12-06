@@ -48,7 +48,7 @@ void string_reset(pString pstr)
 	pstr->buf[0] = '\0';
 }
 
-void string_add(pString pstr, char* add)
+void string_add(pString pstr, const char* add)
 {
 	size_t len = strlen(add);
 	if ( pstr->alloc_size < len + pstr->length )	
@@ -65,7 +65,7 @@ void string_add(pString pstr, char* add)
 	pstr->length += len;
 }
 
-void string_fadd(pString pstr, char* msg, ... )
+void string_fadd(pString pstr, const char* msg, ... )
 {
 	char buf[STRING_BUF_SIZE];
 	va_list ap;

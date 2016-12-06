@@ -9,7 +9,7 @@ typedef int (*cafe_command)(int argc, char* argv[]);
 
 typedef struct 
 {
-	char* command; 
+	const char* command; 
 	cafe_command func;
 }CafeShellCommand;
 

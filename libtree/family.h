@@ -72,6 +72,13 @@ typedef struct
 	double** cutPvalues;
 } viterbi_parameters;
 
+/**
+* \brief Structure representing a matrix of values of family sizes
+*
+* Species array contains a list of names of species. Each item in flist
+* holds a pCafeFamilyItem which holds a description and family ID, and
+* and an array of integer family sizes in the order of the species given
+*/
 typedef struct
 {
 	char** species;				///< Names (ID's) of the species loaded into the family
