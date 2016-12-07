@@ -34,7 +34,7 @@ typedef enum
 
 extern double cafe_get_posterior(pCafeParam param);
 extern double cafe_set_prior_rfsize_empirical(pCafeParam param);
-extern pCafeTree cafe_tree_new(char* sztree, int familysizes[], int rootfamilysizes[], double lambda, double mu);
+extern pCafeTree cafe_tree_new(const char* sztree, int familysizes[], int rootfamilysizes[], double lambda, double mu);
 extern pTreeNode cafe_tree_new_empty_node(pTree pcafe);
 extern void cafe_tree_set_parameters(pCafeTree pcafe, int familysizes[], int rootfamilysizes[], double lambda);
 extern pCafeTree cafe_tree_copy(pCafeTree psrc);

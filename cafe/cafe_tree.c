@@ -74,7 +74,7 @@ void cafe_tree_parse_node(pTree ptree, pTreeNode ptnode)
 	}
 }
 
-pCafeTree cafe_tree_new(char* sztree, int familysizes[], 
+pCafeTree cafe_tree_new(const char* sztree, int familysizes[], 
 		                int rootfamilysizes[], double lambda, double mu)
 {
 	int i;
@@ -82,8 +82,11 @@ pCafeTree cafe_tree_new(char* sztree, int familysizes[],
 	int rsize = rootfamilysizes[1] - rootfamilysizes[0]  + 1;
 	int fsize = familysizes[1] - familysizes[0]  + 1;
 
+	assert(strlen(sztree) < STRING_BUF_SIZE);
+	char buf[STRING_BUF_SIZE];
+	strcpy(buf, sztree);	// needs a writable buffer to work with
 	pCafeTree pcafe = (pCafeTree)phylogeny_load_from_string(
-			             		sztree, 
+			             		buf, 
 								__cafe_tree_new, 
 			             		cafe_tree_new_empty_node, 
 								cafe_tree_parse_node, 

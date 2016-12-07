@@ -55,10 +55,7 @@ CafeShellCommand cafe_cmd[]  =
 	{ "cvspecies", cafe_cmd_crossvalidation_by_species},
 	{ "cvfamily", cafe_cmd_crossvalidation_by_family},
 	{ "accuracy", cafe_cmd_reconstruction_accuracy},
-	{ "save", cafe_cmd_save},
-	{ "score", cafe_cmd_score },
 	{ "simextinct", cafe_cmd_sim_extinct },
-	{ "tree", cafe_cmd_tree },
 	{ "viterbi", cafe_cmd_viterbi},
 	{ NULL, NULL }
 };
@@ -717,70 +714,6 @@ void cafe_shell_init(int quiet)
 	cafe_param->pvalue = 0.01;
 	cafe_param->quiet = quiet;
 	cafe_param->prior_rfsize_by_family = NULL;
-}
-
-int cafe_cmd_tree(int argc, char* argv[])
-{
-    char buf[STRING_BUF_SIZE];
-	if ( argc == 1 )
-	{
-		printf("Newick: ");
-		if (fgets(buf,STRING_BUF_SIZE,stdin) == NULL)
-			fprintf(stderr, "Failed to read input\n");
-
-	}
-	else
-	{
-		string_pchar_join(buf,NULL,argc-1, &argv[1]);
-	}
-	if ( cafe_param->pcafe ) 
-	{
-		if (probability_cache)
-		{
-			cafe_free_birthdeath_cache(cafe_param->pcafe);
-		}
-		cafe_tree_free(cafe_param->pcafe);
-		memory_free( cafe_param->old_branchlength );
-		cafe_param->old_branchlength = NULL;
-	}
-	cafe_param->pcafe = cafe_tree_new(buf, cafe_param->family_sizes, 
-			                          cafe_param->rootfamily_sizes, 0, 0);
-	if (cafe_param->pcafe == NULL) {
-		return -1;
-	}
-	cafe_param->num_branches = cafe_param->pcafe->super.nlist->size - 1;
-	cafe_param->old_branchlength = (int*)memory_new(cafe_param->num_branches, sizeof(int));
-	pTree ptree = (pTree)cafe_param->pcafe;
-	int i=0, j=0;
-    // find max_branch_length and sum_branch_length.
-    cafe_param->max_branch_length = 0;
-    cafe_param->sum_branch_length = 0;
-    for( j = 0 ; j < ptree->nlist->size; j++ )
-	{
-		pPhylogenyNode pnode = (pPhylogenyNode)ptree->nlist->array[j];
-		if ( pnode->branchlength > 0 )
-		{
-            cafe_param->sum_branch_length += pnode->branchlength;
-            if (cafe_param->max_branch_length < pnode->branchlength) {
-                cafe_param->max_branch_length = pnode->branchlength;
-            }
-            i++;
-		}
-	}
-	if ( i != ptree->nlist->size - 1 )
-	{
-		fprintf(stderr, "Expected number of Branch length is %d\n", ptree->nlist->size - 1 );
-		cafe_tree_free(cafe_param->pcafe);
-		cafe_param->pcafe = NULL;
-		return -1;
-	}
-	if (!cafe_param->quiet)
-		cafe_tree_string_print(cafe_param->pcafe);
-	if ( cafe_param->pfamily )
-	{
-		cafe_family_set_species_index(cafe_param->pfamily, cafe_param->pcafe);
-	}
-	return 0;
 }
 
 void phylogeny_lambda_parse_func(pTree ptree, pTreeNode ptnode)
@@ -1696,40 +1629,6 @@ int cafe_cmd_crossvalidation_by_species(int argc, char* argv[])
 
 
 
-int cafe_cmd_save(int argc, char* argv[])
-{
-	if ( argc != 2 )
-	{
-		fprintf(stderr,"Usage(save): save filename\n");
-		return -1;
-	}
-	FILE* fp;
-	if ( ( fp = fopen( argv[1], "w" ) ) == NULL )
-	{
-		fprintf(stderr,"ERROR(save): Cannot open %s in write mode.\n", argv[1] );
-		return -1;
-	}
-	pCafeFamily pcf = cafe_param->pfamily;
-
-	int i, n;
-	char buf[STRING_STEP_SIZE];
-	string_pchar_join(buf,"\t", pcf->num_species, pcf->species );
-	fprintf(fp,"Desc\tFamily ID\t%s\n", buf );	
-
-	for ( i = 0 ; i < pcf->flist->size ; i++ )
-	{
-		pCafeFamilyItem pitem = (pCafeFamilyItem)pcf->flist->array[i];
-		fprintf(fp,"%s\t%s\t%d", pitem->desc,pitem->id, pitem->count[0]);	
-		for ( n =  1 ; n < pcf->num_species ; n++ )
-		{
-			fprintf(fp,"\t%d", pitem->count[n]);	
-		}
-		fprintf(fp,"\n");
-	}
-	fclose(fp);
-	return 0;
-}
-
 void log_param_values(pCafeParam param)
 {
 	cafe_log(param, "-----------------------------------------------------------\n");
@@ -1984,17 +1883,6 @@ double cafe_shell_score()
 		}
 	}
 	return score;
-}
-
-int cafe_cmd_score(int argc, char* argv[])
-{
-  double score = cafe_shell_score();
-  cafe_log(cafe_param,"%lf\n",  score);
-  if (cafe_param->parameterized_k_value > 0) {
-    cafe_family_print_cluster_membership(cafe_param);
-  }
-  cafe_shell_set_sizes();
-  return 0;
 }
 
 int cafe_cmd_retrieve(int argc, char* argv[] )

@@ -249,7 +249,6 @@ void cafe_do_report(pCafeParam param, report_parameters* params)
 		}
 		cafe_report(param, report);
 	}
-	fclose(param->fout);
 
 	// HTML
 	string name = params->name + ".html";

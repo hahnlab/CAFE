@@ -176,3 +176,16 @@ TEST(FamilyTests, write_family_gainloss)
 	STRCMP_EQUAL("family_id\t39\t(((chimp_3<3>:6,human_5<5>:6)_0<0>:81,(mouse_7<7>:17,rat_11<11>:17)_0<0>:70)_0<0>:6,dog_13<13>:9)_0\n", ost.str().c_str())
 }
 
+TEST(FamilyTests, write_family)
+{
+	std::ostringstream ost;
+	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
+	pCafeFamily pcf = cafe_family_init(build_arraylist(species, 7));
+	const char *values[] = { "my_description", "my_id", "3", "5", "7", "11", "13" };
+	cafe_family_add_item(pcf, build_arraylist(values, 7));
+
+	write_family(ost, pcf);
+	STRCMP_CONTAINS("Desc\tFamily ID\tchimp\thuman\tmouse\trat\tdog\n", ost.str().c_str())
+	STRCMP_CONTAINS("my_description\tmy_id\t3\t5\t7\t11\t13\n", ost.str().c_str())
+}
+

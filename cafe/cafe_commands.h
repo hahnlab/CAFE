@@ -12,20 +12,24 @@ extern "C" {
 
 typedef int(*cafe_command2)(pCafeParam cafe_param, std::vector<std::string>);
 
+#define MAKE_FN_NAME(x) int cafe_cmd_##x (pCafeParam cafe_param, std::vector<std::string>)
+#define COMMAND(signal) MAKE_FN_NAME(signal)
 
-int cafe_cmd_source(pCafeParam param, std::vector<std::string> tokens);
-int cafe_cmd_list(pCafeParam param, std::vector<std::string> tokens);
-int cafe_cmd_echo(pCafeParam param, std::vector<std::string> tokens);
-int cafe_cmd_date(pCafeParam param, std::vector<std::string> tokens);
-int cafe_cmd_exit(pCafeParam param, std::vector<std::string> tokens);
-int cafe_cmd_gainloss(pCafeParam param, std::vector<std::string> tokens);
-int cafe_cmd_generate_random_family(pCafeParam param, std::vector<std::string> tokens);
-int cafe_cmd_log(pCafeParam param, std::vector<std::string> tokens);
-int cafe_cmd_version(pCafeParam param, std::vector<std::string> tokens);
-int cafe_cmd_print_param(pCafeParam param, std::vector<std::string> tokens);
-int cafe_cmd_load(pCafeParam param, std::vector<std::string> tokens);
-int cafe_cmd_family(pCafeParam param, std::vector<std::string> tokens);
-
+COMMAND(source);
+COMMAND(list);
+COMMAND(date);
+COMMAND(echo);
+COMMAND(exit);
+COMMAND(gainloss);
+COMMAND(generate_random_family);
+COMMAND(log);
+COMMAND(version);
+COMMAND(print_param);
+COMMAND(load);
+COMMAND(family);
+COMMAND(save);
+COMMAND(tree);
+COMMAND(score);
 
 int cafe_shell_dispatch_command(char* cmd);
 void list_commands(std::ostream& ost);
@@ -42,6 +46,7 @@ std::vector<int> get_clusters(int parameterized_k_value, int num_families, doubl
 void write_node_headers(std::ostream& s1, std::ostream& s2, pCafeTree pcafe);
 void write_leaves(std::ostream& ofst, pCafeTree pcafe, int *k, int i, int id, bool evens);
 void write_version(std::ostream &ost);
+void write_family(std::ostream& ost, pCafeFamily family);
 
 struct load_args {
 	int num_threads;

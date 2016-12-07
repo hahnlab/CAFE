@@ -62,6 +62,10 @@ map<string, cafe_command2> get_dispatcher()
 	dispatcher["info"] = cafe_cmd_print_param;
 	dispatcher["load"] = cafe_cmd_load;
 	dispatcher["family"] = cafe_cmd_family;
+	dispatcher["score"] = cafe_cmd_score;
+	dispatcher["save"] = cafe_cmd_save;
+	dispatcher["tree"] = cafe_cmd_tree;
+
 
 	return dispatcher;
 }
@@ -200,6 +204,7 @@ int cafe_cmd_source(pCafeParam param, std::vector<std::string> tokens)
 	{
 		throw std::runtime_error("Usage: source <file>\n");
 	}
+
 	FILE* fp = fopen( tokens[1].c_str(), "r" );
 	if ( fp == NULL ) 
 	{
@@ -935,3 +940,130 @@ int cafe_cmd_report(pCafeParam param, std::vector<std::string> tokens)
 	cafe_do_report(param, &params);
 	return 0;
 }
+
+int cafe_cmd_score(pCafeParam param, std::vector<std::string> tokens)
+{
+	double score = cafe_shell_score();
+	cafe_log(param, "%lf\n", score);
+	if (param->parameterized_k_value > 0) {
+		cafe_family_print_cluster_membership(param);
+	}
+	cafe_shell_set_sizes();
+	return 0;
+}
+
+
+template <typename T>
+void write_vector(ostream& ost, vector<T> items, string delimiter)
+{
+	copy(items.begin(), items.end() - 1, ostream_iterator<T>(ost, delimiter.c_str()));
+	ost << *(items.end() - 1);
+}
+
+void write_family(ostream& ost, pCafeFamily family)
+{
+	int i, n;
+	
+	vector<string> species(family->num_species);
+	for (int i = 0; i < family->num_species; ++i)
+		species[i] = family->species[i];
+	
+	ost << "Desc\tFamily ID\t";
+	write_vector(ost, species, "\t");
+	ost << "\n";
+
+	for (i = 0; i < family->flist->size; i++)
+	{
+		pCafeFamilyItem pitem = (pCafeFamilyItem)family->flist->array[i];
+		ost << pitem->desc << "\t" << pitem->id << "\t" << pitem->count[0];
+		for (n = 1; n < family->num_species; n++)
+		{
+			ost << "\t" << pitem->count[n];
+		}
+		ost << "\n";
+	}
+}
+
+int cafe_cmd_save(pCafeParam param, std::vector<std::string> tokens)
+{
+	if (tokens.size() != 2)
+	{
+		throw std::runtime_error("Usage(save): save filename");
+	}
+	ofstream ofst(tokens[1].c_str());
+	if (!ofst)
+	{
+		ostringstream ost;
+		ost << "ERROR(save): Cannot open " << tokens[1] << " in write mode.\n";
+		throw std::runtime_error(ost.str());
+	}
+	write_family(ofst, param->pfamily);
+
+	return 0;
+}
+
+int cafe_cmd_tree(pCafeParam param, std::vector<std::string> tokens)
+{
+	string newick;
+	if (tokens.size() == 1)
+	{
+		printf("Newick: ");
+		cin >> newick;
+		if (cin.fail())
+			fprintf(stderr, "Failed to read input\n");
+
+	}
+	else
+	{
+		ostringstream ost;
+		copy(tokens.begin() + 1, tokens.end(), ostream_iterator<string>(ost));
+		newick = ost.str();
+	}
+	if (param->pcafe)
+	{
+		if (probability_cache)
+		{
+			cafe_free_birthdeath_cache(param->pcafe);
+		}
+		cafe_tree_free(param->pcafe);
+		memory_free(param->old_branchlength);
+		param->old_branchlength = NULL;
+	}
+	param->pcafe = cafe_tree_new(newick.c_str(), param->family_sizes,
+		param->rootfamily_sizes, 0, 0);
+	if (param->pcafe == NULL) {
+		throw runtime_error("Failed to load tree from provided string");
+	}
+	param->num_branches = param->pcafe->super.nlist->size - 1;
+	param->old_branchlength = (int*)memory_new(param->num_branches, sizeof(int));
+	pTree ptree = (pTree)param->pcafe;
+	// find max_branch_length and sum_branch_length.
+	param->max_branch_length = 0;
+	param->sum_branch_length = 0;
+	for (int j = 0; j < ptree->nlist->size; j++)
+	{
+		pPhylogenyNode pnode = (pPhylogenyNode)ptree->nlist->array[j];
+		if (pnode->branchlength > 0)
+		{
+			param->sum_branch_length += pnode->branchlength;
+			if (param->max_branch_length < pnode->branchlength) {
+				param->max_branch_length = pnode->branchlength;
+			}
+		}
+		else if (!tree_is_root(ptree, (pTreeNode)pnode))
+		{
+			cafe_tree_free(param->pcafe);
+			param->pcafe = NULL;
+			throw runtime_error("Failed to load tree from provided string (branch length missing)");
+		}
+	}
+
+	if (!param->quiet)
+		cafe_tree_string_print(param->pcafe);
+	if (param->pfamily)
+	{
+		cafe_family_set_species_index(param->pfamily, param->pcafe);
+	}
+	return 0;
+}
+
