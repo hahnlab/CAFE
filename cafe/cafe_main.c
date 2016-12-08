@@ -192,13 +192,7 @@ double cafe_get_posterior(pCafeParam param)
 			}
 			// get posterior by adding lnPrior to lnLikelihood
 			double* posterior = (double*)memory_new(param->pcafe->size_of_factor,sizeof(double));
-			if (param->prior_rfsize_by_family) {		// prior is set by birth=death
-				for(j = 0; j < param->pcafe->rfsize; j++)	// j: root family size
-				{
-					posterior[j] = exp(log(likelihood[j])+log(param->prior_rfsize_by_family[i][j]));
-				}
-			}
-			else if(param->prior_rfsize) {		// prior is a poisson distribution on the root size based on leaves' size
+			if(param->prior_rfsize) {		// prior is a poisson distribution on the root size based on leaves' size
 				for(j = 0; j < param->pcafe->rfsize; j++)	// j: root family size
 				{
 					// likelihood and posterior both starts from 1 instead of 0 
@@ -358,13 +352,7 @@ double cafe_get_clustered_posterior(pCafeParam param)
 				
 				// get posterior by adding lnPrior to lnLikelihood
 				double* posterior = (double*)memory_new(FAMILYSIZEMAX,sizeof(double));
-				if (param->prior_rfsize_by_family) {		// prior is set by birth=death
-					for(j = 0; j < param->pcafe->rfsize; j++)	// j: root family size
-					{
-						posterior[j+param->pcafe->rootfamilysizes[0]] = exp(log(k_likelihoods[k][j])+log(param->prior_rfsize_by_family[i][j]));
-					}
-				}
-				else if(param->prior_rfsize) {		// prior is a poisson distribution on the root size based on leaves' size
+				if(param->prior_rfsize) {		// prior is a poisson distribution on the root size based on leaves' size
 					for(j = 0; j < param->pcafe->rfsize; j++)	// j: root family size
 					{
 						posterior[j+param->pcafe->rootfamilysizes[0]] = exp(log(k_likelihoods[k][j])+log(param->prior_rfsize[j]));
@@ -527,11 +515,11 @@ double cafe_set_prior_rfsize_empirical(pCafeParam param)
 	for ( i = 0; i < num_params; i++ ) parameters[i] = re[i];
 	cafe_log(param,"Empirical Prior Estimation Result: %d\n", pfm->iters );
 	cafe_log(param,"Poisson lambda: %f & Score: %f\n", parameters[0], *pfm->fv);	
-	param->prior_poisson_lambda = memory_new_with_init(num_params, sizeof(double), (void*) parameters);
+	double *prior_poisson_lambda = memory_new_with_init(num_params, sizeof(double), (void*) parameters);
 	//cafe_log(param,"Gamma alpha: %f, beta: %f & Score: %f\n", parameters[0], parameters[1], *pfm->fv);	
 	
 	// set rfsize based on estimated prior
-	cafe_set_prior_rfsize_poisson_lambda(param, param->prior_poisson_lambda);
+	cafe_set_prior_rfsize_poisson_lambda(param, prior_poisson_lambda);
 
 	// clean
 	fminsearch_free(pfm);

@@ -265,7 +265,6 @@ TEST(FirstTestGroup, Test_cafe_get_posterior)
 	CafeParam param;
 	param.flog = stdout;
 	param.quiet = 1;
-	param.prior_rfsize_by_family = NULL;
 	param.prior_rfsize = NULL;
 	param.pcafe = create_tree();
 	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };

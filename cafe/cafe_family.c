@@ -95,12 +95,12 @@ void cafe_family_read_cvquery(char* file)
 
 
 
-int cafe_family_split_cvfiles_byfamily(pCafeParam param)
+int cafe_family_split_cvfiles_byfamily(pCafeParam param, int cv_fold)
 {
 	int f;
 	char* file = param->str_fdata->buf;
 	pCafeFamily pcf = param->pfamily;
-	int fold = param->cv_fold;
+	int fold = cv_fold;
 
 	for (f=0; f<fold; f++) 
 	{
@@ -166,7 +166,7 @@ int cafe_family_split_cvfiles_byfamily(pCafeParam param)
 	return 0;
 }
 
-void cafe_family_clean_cvfiles_byfamily(pCafeParam param) 
+void cafe_family_clean_cvfiles_byfamily(pCafeParam param, int cv_fold) 
 {
 	int i;
 	char buf[STRING_BUF_SIZE];
@@ -189,7 +189,7 @@ void cafe_family_clean_cvfiles_byfamily(pCafeParam param)
 	pArrayList data = string_pchar_split( buf, '\t');
 	fclose(fp);
 	
-	for (i=0; i<param->cv_fold; i++) {
+	for (i=0; i<cv_fold; i++) {
 		char tmp[STRING_BUF_SIZE];
 		sprintf(tmp, "%s.%d.train", file, i+1);
 		if (remove(tmp) == -1) { 

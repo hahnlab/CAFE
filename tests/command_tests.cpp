@@ -112,7 +112,6 @@ TEST(CommandTests, cafe_cmd_exit)
 	param->parameters = (double *)memory_new(10, sizeof(double));
 	param->pfamily = NULL;
 	param->pcafe = NULL;
-	param->prior_rfsize_by_family = NULL;
 	param->prior_rfsize = NULL;
 	param->MAP = NULL;
 	param->ML = (double *)memory_new(10, sizeof(double));;

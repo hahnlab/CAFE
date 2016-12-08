@@ -125,14 +125,9 @@ struct tagCafeParam
 	/// prior is a poisson distribution on the root size based on leaves' size
 	double* prior_rfsize;
 
-
-	double** prior_rfsize_by_family;
-
 	double* parameters;
 	int num_params;
 	param_func param_set_func;
-	double bl_augment;
-	//lambda_func lambda_set_func;
 
 	double* lambda;
 	pTree lambda_tree;
@@ -146,12 +141,8 @@ struct tagCafeParam
 	double* k_weights;
 	double** p_z_membership;
 	int fixcluster0;
-	//double* params;
 
-	double* prior_poisson_lambda;
-	
 	int checkconv;
-	//int* branchlengths_sorted;
     int* old_branchlength;
 	double max_branch_length;
     double sum_branch_length;
@@ -162,7 +153,6 @@ struct tagCafeParam
 	char* cv_species_name;
 	pArrayList cv_test_species_list;
 	pArrayList cv_test_count_list;
-	int cv_fold;
 
 	double pvalue;
 	

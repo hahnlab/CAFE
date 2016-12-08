@@ -10,6 +10,9 @@ extern "C" {
 	extern pBirthDeathCacheArray probability_cache;
 }
 
+const double bl_augment = 0.5;
+
+
 /**************************************************************************
 * Likelihood ratio test with more than one lambda
 **************************************************************************/
@@ -75,7 +78,7 @@ void update_branchlength(pCafeTree pcafe, pTree lambda_tree, double bl_augment, 
 
 double __cafe_lhr_get_likelihood_for_diff_lambdas(pCafeParam param, int idx, int t, std::vector<double*> &lambda_cache, std::vector<pBirthDeathCacheArray>& PBDC)
 {
-	update_branchlength(param->pcafe, param->lambda_tree, param->bl_augment, param->old_branchlength, &t);
+	update_branchlength(param->pcafe, param->lambda_tree, bl_augment, param->old_branchlength, &t);
 	if (lambda_cache[t] == NULL)
 	{
 		param->lambda = NULL;

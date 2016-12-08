@@ -147,7 +147,6 @@ void viterbi_set_max_pvalue(viterbi_parameters* viterbi, int index, double val)
 	viterbi->maximumPvalues[index] = val;
 }
 
-
 void cafe_shell_clear_param(pCafeParam param, int btree_skip)
 {
 	if ( param->str_fdata ) 
@@ -169,11 +168,6 @@ void cafe_shell_clear_param(pCafeParam param, int btree_skip)
 	{
 		memory_free(param->prior_rfsize);
 		param->prior_rfsize = NULL;
-	}
-	if ( param->prior_rfsize_by_family )
-	{
-		memory_free_2dim((void**)param->prior_rfsize_by_family, param->pfamily->flist->size, FAMILYSIZEMAX, NULL);
-		param->prior_rfsize_by_family = NULL;
 	}
 	
 	int nnodes = param->pcafe ? ((pTree)param->pcafe)->nlist->size : 0;
@@ -237,7 +231,6 @@ void cafe_shell_clear_param(pCafeParam param, int btree_skip)
 	param->num_threads = 1;
 	param->num_random_samples = 1000;
 	param->pvalue = 0.01;
-	param->bl_augment = 0.5;
 }
 
 void cafe_shell_set_sizes(pCafeParam param)
@@ -709,10 +702,8 @@ void cafe_shell_init(int quiet)
 	cafe_param->flog = stdout;
 	cafe_param->num_threads = 1;
 	cafe_param->num_random_samples = 1000;
-	cafe_param->bl_augment = 0.5;
 	cafe_param->pvalue = 0.01;
 	cafe_param->quiet = quiet;
-	cafe_param->prior_rfsize_by_family = NULL;
 }
 
 void phylogeny_lambda_parse_func(pTree ptree, pTreeNode ptnode)
@@ -1334,15 +1325,16 @@ int cafe_cmd_crossvalidation_by_family(int argc, char* argv[])
 	}
 	pArrayList pargs = cafe_shell_build_argument(argc, argv);
 	pArgument parg;
+	int cv_fold = 0;
 	if ((parg = cafe_shell_get_argument("-fold", pargs)))
 	{
-		sscanf( parg->argv[0], "%d", &cafe_param->cv_fold );
+		sscanf( parg->argv[0], "%d", &cv_fold );
 	}
 	// set up the training-validation set
-	cafe_family_split_cvfiles_byfamily(cafe_param);
+	cafe_family_split_cvfiles_byfamily(cafe_param, cv_fold);
 	
 	//
-	for (i=0; i<cafe_param->cv_fold; i++) 
+	for (i=0; i<cv_fold; i++) 
 	{
 		char trainfile[STRING_BUF_SIZE];
 		char queryfile[STRING_BUF_SIZE];
@@ -1382,7 +1374,7 @@ int cafe_cmd_crossvalidation_by_family(int argc, char* argv[])
 		
 		cafe_family_free(tmpfamily);
 	}
-	MSE_allfolds = MSE_allfolds/cafe_param->cv_fold;
+	MSE_allfolds = MSE_allfolds/cv_fold;
 	cafe_log( cafe_param, "MSE all folds %f\n", MSE_allfolds);
 	
 	//re-load the original family file
@@ -1404,7 +1396,7 @@ int cafe_cmd_crossvalidation_by_family(int argc, char* argv[])
 	}
 	
 	// remove training-validation set
-	cafe_family_clean_cvfiles_byfamily(cafe_param);	
+	cafe_family_clean_cvfiles_byfamily(cafe_param, cv_fold);	
 	return 0;
 }
 
