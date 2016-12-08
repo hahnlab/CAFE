@@ -96,7 +96,7 @@ TEST(LambdaTests, TestCmdLambda)
 {
 	cafe_shell_init(1);
 	init_cafe_tree();
-
+	birthdeath_cache_init(2);
 	char buf[100];
 	strcpy(buf, "load -i ../example/example_data.tab");
 	cafe_shell_dispatch_command(buf);

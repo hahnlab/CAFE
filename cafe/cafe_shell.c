@@ -56,7 +56,6 @@ CafeShellCommand cafe_cmd[]  =
 	{ "cvfamily", cafe_cmd_crossvalidation_by_family},
 	{ "accuracy", cafe_cmd_reconstruction_accuracy},
 	{ "simextinct", cafe_cmd_sim_extinct },
-	{ "viterbi", cafe_cmd_viterbi},
 	{ NULL, NULL }
 };
 
@@ -241,14 +240,14 @@ void cafe_shell_clear_param(pCafeParam param, int btree_skip)
 	param->bl_augment = 0.5;
 }
 
-void cafe_shell_set_sizes()
+void cafe_shell_set_sizes(pCafeParam param)
 {
-	pCafeTree pcafe = cafe_param->pcafe;
-	pcafe->rootfamilysizes[0] = cafe_param->rootfamily_sizes[0];
-	pcafe->rootfamilysizes[1] = cafe_param->rootfamily_sizes[1];
-	pcafe->familysizes[0] = cafe_param->family_sizes[0];
-	pcafe->familysizes[1] = cafe_param->family_sizes[1];
-	cafe_tree_set_parameters(pcafe, cafe_param->family_sizes, cafe_param->rootfamily_sizes, 0 );
+	pCafeTree pcafe = param->pcafe;
+	pcafe->rootfamilysizes[0] = param->rootfamily_sizes[0];
+	pcafe->rootfamilysizes[1] = param->rootfamily_sizes[1];
+	pcafe->familysizes[0] = param->family_sizes[0];
+	pcafe->familysizes[1] = param->family_sizes[1];
+	cafe_tree_set_parameters(pcafe, param->family_sizes, param->rootfamily_sizes, 0 );
 }
 
 void cafe_shell_prompt(char* prompt, char* format, ... )
@@ -1118,17 +1117,6 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 
 
 
-void __cafe_cmd_viterbi_print(int max)
-{
-	pCafeTree pcafe = cafe_param->pcafe;
-	double* lh = cafe_shell_likelihood(max);
-	double mlh =  __max(lh,pcafe->rfsize);
-	cafe_tree_viterbi(pcafe);
-	pString pstr = cafe_tree_string(pcafe);
-	printf("%g\t%s\n", mlh , pstr->buf );
-	string_free(pstr);
-}
-
 void __cafe_cmd_viterbi_family_print(int idx)
 {
 	pCafeTree pcafe = cafe_param->pcafe;
@@ -1141,119 +1129,6 @@ void __cafe_cmd_viterbi_family_print(int idx)
 	pString pstr = cafe_tree_string(pcafe);
 	printf("%g(%d)\t%s\n", mlh , ridx,  pstr->buf );
 	string_free(pstr);
-}
-
-int cafe_cmd_viterbi(int argc, char* argv[])
-{
-	int i;
-	pCafeTree pcafe = cafe_param->pcafe;
-	STDERR_IF( cafe_param->pcafe == NULL, "ERROR(viterbi): You did not specify tree: command 'tree'\n" );
-	STDERR_IF( cafe_param->lambda == NULL, "ERROR(viterbi): You did not estimate the parameters: use command 'lambda'\n" );
-	pArrayList pargs = cafe_shell_build_argument(argc, argv);
-	pArgument parg;
-
-	if ( (parg = cafe_shell_get_argument( "-all", pargs) )  )
-	{
-		cafe_shell_set_sizes();
-		STDERR_IF( cafe_param->pfamily == NULL, "ERROR(viterbi): You must load family data first: command 'load'\n");
-		FILE *fp = stdout;
-		if  ( parg->argc )
-		{
-			fp = (FILE*)fopen(parg->argv[0], "w");
-			if ( fp == NULL )
-			{
-				fprintf(stderr,"ERROR(viterbi): Cannot open %s in write mode.\n", parg->argv[0] );
-				return -1;
-			}
-		}
-		pCafeFamilyItem pitem;
-/*
-		int j;
-	   	int	free_v;
-		int nnodes = (pcafe->super.nlist->size-1)/2;
-		int nrows = cafe_param->pfamily->flist->size ;
-		if ( cafe_param->viterbiNodeFamilysizes == NULL )
-		{
-			free_v = 1;
-			cafe_param->viterbiNodeFamilysizes 
-				= (int**)memory_new_2dim(nnodes,nrows,sizeof(int));
-		}
-		else
-		{
-			free_v = 0;
-		}
-*/
-		double score = 0;
-		for ( i = 0 ; i < cafe_param->pfamily->flist->size ; i++ )
-		{
-			pitem = (pCafeFamilyItem)cafe_param->pfamily->flist->array[i];
-			pitem->maxlh = -1;
-			cafe_family_set_size_with_family(cafe_param->pfamily,i, pcafe);
-			cafe_tree_likelihood(pcafe);
-			int ridx =  __maxidx(((pCafeNode)pcafe->super.root)->likelihoods,pcafe->rfsize) + pcafe->rootfamilysizes[0];
-			double mlh =  __max( ((pCafeNode)pcafe->super.root)->likelihoods,pcafe->rfsize);
-			score += log(mlh);
-			cafe_tree_viterbi(pcafe);
-/*
-			for ( j = 0 ; j < nnodes ; j++ )
-			{
-				pCafeNode pcnode = (pCafeNode)pcafe->super.nlist->array[2*j+1];
-				cafe_param->viterbiNodeFamilysizes[j][i] = pcnode->familysize;
-			}
-*/
-			pString pstr = cafe_tree_string(pcafe);
-			fprintf(fp,"%s\t%g\t%s\t%d\n", pitem->id,  mlh, pstr->buf, ridx );
-			string_free(pstr);
-		}
-		cafe_log( cafe_param, "Score: %f\n", score );
-		if ( fp != stdout )
-		{
-			fprintf(fp,"Score: %f\n", score );
-		}
-/*
-		if ( free_v )
-		{
-			memory_free_2dim((void**)cafe_param->viterbiNodeFamilysizes,nnodes, 0, NULL );
-			cafe_param->viterbiNodeFamilysizes = NULL;
-		}
-*/
-		if ( fp != stdout ) fclose( fp );
-	}
-	else if ( (parg = cafe_shell_get_argument( "-id", pargs) )  )
-	{
-		int idx = cafe_family_get_index(cafe_param->pfamily, parg->argv[0] );
-		if ( idx == -1 )
-		{
-			fprintf(stderr, "ERROR(viterbi): %s not found\n", parg->argv[0] );
-			return -1;
-		}
-		__cafe_cmd_viterbi_family_print(idx);
-	}
-	else if ( (parg = cafe_shell_get_argument( "-idx", pargs) )  )
-	{
-		int idx = -1; sscanf( parg->argv[0], "%d", &idx );
-		if ( idx == -1 )
-		{
-			fprintf(stderr,"ERROR(viterbi): It is not integer\n");
-			return -1;
-		}
-		if ( idx > cafe_param->pfamily->flist->size )
-		{
-			fprintf(stderr, "ERROR(viterbi): Out of range[0~%d]: %s.\n", cafe_param->pfamily->flist->size, parg->argv[0] ); 
-			return -1;
-		}
-		__cafe_cmd_viterbi_family_print(idx);
-	}
-	else if ( argc == 1 )
-	{
-		__cafe_cmd_viterbi_print( cafe_shell_set_familysize() );
-	}
-	else
-	{
-		__cafe_cmd_viterbi_print( cafe_shell_parse_familysize( argc-1, &argv[1]) );
-	}
-	arraylist_free(pargs, free);
-	return 0;
 }
 
 int cafe_cmd_reconstruction_accuracy(int argc, char* argv[])
@@ -1749,7 +1624,7 @@ int cafe_cmd_pvalue(int argc, char* argv[])
 		{
 			cafe_pCD = cafe_conditional_distribution(cafe_param);
 		}
-		cafe_shell_set_sizes();
+		cafe_shell_set_sizes(cafe_param);
 
 		int idx = 0;
 

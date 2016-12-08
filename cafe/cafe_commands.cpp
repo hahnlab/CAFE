@@ -36,6 +36,8 @@ extern "C" {
 	void __cafe_cmd_viterbi_family_print(int idx);
 
 	extern pBirthDeathCacheArray probability_cache;
+	int cafe_shell_set_familysize();
+	double* cafe_shell_likelihood(int max);
 }
 
 using namespace std;
@@ -852,6 +854,12 @@ struct family_args get_family_arguments(vector<Argument> pargs)
 	return args;
 }
 
+/**
+\ingroup Commands
+\brief Allows modifications of family data
+*
+* Takes four arguments: --idx, -id, -add, and -filter
+*/
 int cafe_cmd_family(pCafeParam param, std::vector<std::string> tokens)
 {
 	prereqs(param, REQUIRES_FAMILY);
@@ -930,6 +938,11 @@ int cafe_cmd_family(pCafeParam param, std::vector<std::string> tokens)
 	return pitem ? 0 : -1;
 }
 
+/**
+\ingroup Commands
+\brief Reports
+*
+*/
 int cafe_cmd_report(pCafeParam param, std::vector<std::string> tokens)
 {
 	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE | REQUIRES_LAMBDA);
@@ -941,6 +954,11 @@ int cafe_cmd_report(pCafeParam param, std::vector<std::string> tokens)
 	return 0;
 }
 
+/**
+\ingroup Commands
+\brief Score
+*
+*/
 int cafe_cmd_score(pCafeParam param, std::vector<std::string> tokens)
 {
 	double score = cafe_shell_score();
@@ -948,7 +966,7 @@ int cafe_cmd_score(pCafeParam param, std::vector<std::string> tokens)
 	if (param->parameterized_k_value > 0) {
 		cafe_family_print_cluster_membership(param);
 	}
-	cafe_shell_set_sizes();
+	cafe_shell_set_sizes(param);
 	return 0;
 }
 
@@ -984,6 +1002,11 @@ void write_family(ostream& ost, pCafeFamily family)
 	}
 }
 
+/**
+\ingroup Commands
+\brief Save
+*
+*/
 int cafe_cmd_save(pCafeParam param, std::vector<std::string> tokens)
 {
 	if (tokens.size() != 2)
@@ -1002,6 +1025,11 @@ int cafe_cmd_save(pCafeParam param, std::vector<std::string> tokens)
 	return 0;
 }
 
+/**
+\ingroup Commands
+\brief Tree
+*
+*/
 int cafe_cmd_tree(pCafeParam param, std::vector<std::string> tokens)
 {
 	string newick;
@@ -1064,6 +1092,161 @@ int cafe_cmd_tree(pCafeParam param, std::vector<std::string> tokens)
 	{
 		cafe_family_set_species_index(param->pfamily, param->pcafe);
 	}
+	return 0;
+}
+
+struct viterbi_args get_viterbi_arguments(vector<Argument> pargs)
+{
+	struct viterbi_args args;
+	args.idx = -1;
+	args.all = false;
+
+	for (size_t i = 0; i < pargs.size(); i++)
+	{
+		pArgument parg = &pargs[i];
+
+		if (!strcmp(parg->opt, "-all"))
+		{
+			args.all = true;
+			if (parg->argc > 0)
+			args.file = parg->argv[0];
+		}
+		if (!strcmp(parg->opt, "-idx"))
+		{
+			sscanf(parg->argv[0], "%d", &args.idx);
+			if (args.idx == -1)
+			{
+				throw std::runtime_error("ERROR(viterbi): idx parameter is not an integer\n");
+			}
+		}
+		if (!strcmp(parg->opt, "-id"))
+		{
+			args.item_id = parg->argv[0];
+		}
+	}
+
+	return args;
+}
+
+
+int to_integer(std::string str)
+{
+	int size = -1;
+	sscanf(str.c_str(), "%d", &size);
+	if (size < 0)
+		throw std::runtime_error("ERROR: Family sizes must be greater than or equal to 0\n");
+	return size;
+}
+
+int cafe_shell_parse_familysize(pTree pcafe, std::vector<std::string> tokens)
+{
+	if (tokens.size() != (size_t)(pcafe->nlist->size / 2 + 1))
+	{
+		throw std::runtime_error("ERROR: Species count did not match value count\n");
+	}
+	vector<int> sizes(tokens.size());
+	transform(tokens.begin(), tokens.end(), sizes.begin(), to_integer);
+	for (size_t i = 0; i < sizes.size(); i++)
+	{
+		pCafeNode pnode = (pCafeNode)pcafe->nlist->array[i * 2];
+		pnode->familysize = sizes[i];
+	}
+	return *max_element(sizes.begin(), sizes.end());
+}
+
+void viterbi_print(int max)
+{
+	pCafeTree pcafe = cafe_param->pcafe;
+	double* lh = cafe_shell_likelihood(max);
+	double mlh = __max(lh, pcafe->rfsize);
+	cafe_tree_viterbi(pcafe);
+	pString pstr = cafe_tree_string(pcafe);
+	printf("%g\t%s\n", mlh, pstr->buf);
+	string_free(pstr);
+}
+
+void viterbi_write(ostream& ost, pCafeTree pcafe, pCafeFamily pfamily)
+{
+	pCafeFamilyItem pitem;
+	double score = 0;
+	for (int i = 0; i < pfamily->flist->size; i++)
+	{
+		pitem = (pCafeFamilyItem)pfamily->flist->array[i];
+		pitem->maxlh = -1;
+		cafe_family_set_size_with_family(pfamily, i, pcafe);
+		cafe_tree_likelihood(pcafe);
+		int ridx = __maxidx(((pCafeNode)pcafe->super.root)->likelihoods, pcafe->rfsize) + pcafe->rootfamilysizes[0];
+		double mlh = __max(((pCafeNode)pcafe->super.root)->likelihoods, pcafe->rfsize);
+		score += log(mlh);
+		cafe_tree_viterbi(pcafe);
+		pString pstr = cafe_tree_string(pcafe);
+		ost << pitem->id << "\t" << mlh << "\t" << pstr->buf << "\t" << ridx << "\n";
+		string_free(pstr);
+	}
+	ost << "Score: " << score << "\n";
+}
+
+/**
+\ingroup Commands
+\brief Viterbi
+*
+*/
+int cafe_cmd_viterbi(pCafeParam param, std::vector<std::string> tokens)
+{
+	prereqs(param, REQUIRES_TREE | REQUIRES_LAMBDA);
+	struct viterbi_args args = get_viterbi_arguments(build_argument_list(tokens));
+
+
+	if (args.all)
+	{
+		cafe_shell_set_sizes(param);
+		prereqs(param, REQUIRES_FAMILY);
+		ostream* fp = &cout;
+		ofstream fout;
+		if (!args.file.empty())
+		{
+			fout.open(args.file.c_str());
+			if (fout.fail())
+			{
+				ostringstream ost;
+				ost << "ERROR(viterbi): Cannot open " << args.file << "in write mode.\n";
+				throw std::runtime_error(ost.str());
+			}
+			fp = &fout;
+		}
+		viterbi_write(*fp, param->pcafe, param->pfamily);
+	}
+	else if (!args.item_id.empty())
+	{
+		int idx = cafe_family_get_index(param->pfamily, args.item_id.c_str());
+		if (idx == -1)
+		{
+			ostringstream ost;
+			ost << "ERROR(viterbi): " << args.item_id << " not found";
+			throw std::runtime_error(ost.str());
+		}
+		__cafe_cmd_viterbi_family_print(idx);
+	}
+	else if (args.idx >= 0)
+	{
+		if (args.idx > param->pfamily->flist->size)
+		{
+			ostringstream ost;
+			ost << "ERROR(viterbi): Out of range[0~" << param->pfamily->flist->size << "]: " << args.idx;
+			throw std::runtime_error(ost.str());
+		}
+		__cafe_cmd_viterbi_family_print(args.idx);
+	}
+	else if (tokens.size() == 1)
+	{
+		viterbi_print(cafe_shell_set_familysize());
+	}
+	else
+	{
+		tokens.erase(tokens.begin());
+		viterbi_print(cafe_shell_parse_familysize((pTree)param->pcafe, tokens));
+	}
+
 	return 0;
 }
 

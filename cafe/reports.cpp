@@ -216,7 +216,7 @@ void cafe_do_report(pCafeParam param, report_parameters* params)
 {
 	if (!params->just_save)
 	{
-		cafe_shell_set_sizes();
+		cafe_shell_set_sizes(param);
 		int nnodes = ((pTree)param->pcafe)->nlist->size;
 		viterbi_parameters_clear(&param->viterbi, nnodes);
 	}

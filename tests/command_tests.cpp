@@ -19,8 +19,8 @@ static pCafeTree create_tree()
 	const char *newick_tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)";
 	char tree[100];
 	strcpy(tree, newick_tree);
-	int family_sizes[2] = { 1,2 };
-	int rootfamily_sizes[2] = { 1,2 };
+	int family_sizes[2] = { 0, 15 };
+	int rootfamily_sizes[2] = { 0, 15 };
 	return cafe_tree_new(tree, family_sizes, rootfamily_sizes, 0, 0);
 }
 
@@ -39,7 +39,7 @@ TEST_GROUP(CommandTests)
 		param.quiet = 1;
 		param.lambda = NULL;
 		param.str_log = NULL;
-		param.flog = NULL;
+		param.flog = stdout;
 	}
 };
 
@@ -292,4 +292,94 @@ TEST(CommandTests, cafe_cmd_tree_missing_branch_length)
 	{
 		STRCMP_EQUAL("Failed to load tree from provided string (branch length missing)", e.what());
 	}
+}
+
+extern pBirthDeathCacheArray probability_cache;
+
+void prepare_viterbi(CafeParam& param)
+{
+	param.pcafe = create_tree();
+	double lambdas[] = { 1.5, 2.5, 3.5 };
+	param.lambda = lambdas;
+
+	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
+	param.pfamily = cafe_family_init(build_arraylist(species, 7));
+	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
+	cafe_family_add_item(param.pfamily, build_arraylist(values, 7));
+
+	cafe_family_set_species_index(param.pfamily, param.pcafe);
+
+	param.family_sizes[0] = param.rootfamily_sizes[0] = 0;
+	param.family_sizes[1] = param.rootfamily_sizes[1] = 15;
+
+	probability_cache = birthdeath_cache_init(20);
+}
+
+TEST(CommandTests, cafe_cmd_viterbi_id_not_existing)
+{
+	prepare_viterbi(param);
+
+	tokens.push_back("viterbi");
+	tokens.push_back("-id");
+	tokens.push_back("fish");
+
+	try
+	{
+		cafe_cmd_viterbi(&param, tokens);
+		FAIL("Expected exception not thrown");
+	}
+	catch (std::runtime_error& e)
+	{
+		STRCMP_EQUAL("ERROR(viterbi): fish not found", e.what());
+	}
+}
+
+TEST(CommandTests, cafe_cmd_viterbi_family_out_of_range)
+{
+	prepare_viterbi(param);
+
+	tokens.push_back("viterbi");
+	tokens.push_back("-idx");
+	tokens.push_back("1000");
+
+	try
+	{
+		cafe_cmd_viterbi(&param, tokens);
+		FAIL("Expected exception not thrown");
+	}
+	catch (std::runtime_error& e)
+	{
+		STRCMP_EQUAL("ERROR(viterbi): Out of range[0~1]: 1000", e.what());
+	}
+}
+
+TEST(CommandTests, cafe_cmd_viterbi_args)
+{
+	tokens.push_back("viterbi");
+	tokens.push_back("-id");
+	tokens.push_back("fish");
+
+	struct viterbi_args args = get_viterbi_arguments(build_argument_list(tokens));
+	STRCMP_EQUAL("fish", args.item_id.c_str());
+
+	tokens[1] = "-idx";
+	tokens[2] = "4";
+	args = get_viterbi_arguments(build_argument_list(tokens));
+	LONGS_EQUAL(4, args.idx);
+
+	tokens[1] = "-all";
+	tokens[2] = "vit.txt";
+	args = get_viterbi_arguments(build_argument_list(tokens));
+	STRCMP_EQUAL("vit.txt", args.file.c_str());
+}
+
+TEST(CommandTests, viterbi_write)
+{
+	prepare_viterbi(param);
+	ostringstream ost;
+	viterbi_write(ost, param.pcafe, param.pfamily);
+	STRCMP_CONTAINS("id\t0\t(((chimp_3:6,human_5:6)_0:81,(mouse_7:17,rat_11:17)_0:70)_0:6,dog_13:9)_0\t0\n", ost.str().c_str());
+	STRCMP_CONTAINS("Score: -inf\n", ost.str().c_str());
+
+
 }

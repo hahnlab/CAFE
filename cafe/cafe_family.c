@@ -621,8 +621,11 @@ void cafe_family_free(pCafeFamily pcf)
 }
 
 
-
-
+/*! \brief Copy sizes of an individual gene family into the tree
+*
+* Takes the given gene family and copies the size of the family in the species
+* into the tree node that corresponds to that species
+*/
 void cafe_family_set_size(pCafeFamily pcf, int idx, pCafeTree pcafe)
 {
 	assert(idx < pcf->flist->size);

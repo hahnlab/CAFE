@@ -5,9 +5,15 @@
 #include<gmatrix.h>
 #include <chooseln_cache.h>
 
+/*! \brief Represents a single gene family and the number of members of that family that exist in each species
+*
+*/
 typedef struct
 {
 	char* id;
+
+	/// Holds the family size of the given gene family for the given species 
+	/// Ordered in the same order as the species list in the associated \ref CafeFamily
 	int*  count;
 	char* desc;
 	int   maxlh;

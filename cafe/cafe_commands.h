@@ -30,6 +30,7 @@ COMMAND(family);
 COMMAND(save);
 COMMAND(tree);
 COMMAND(score);
+COMMAND(viterbi);
 
 int cafe_shell_dispatch_command(char* cmd);
 void list_commands(std::ostream& ost);
@@ -47,6 +48,7 @@ void write_node_headers(std::ostream& s1, std::ostream& s2, pCafeTree pcafe);
 void write_leaves(std::ostream& ofst, pCafeTree pcafe, int *k, int i, int id, bool evens);
 void write_version(std::ostream &ost);
 void write_family(std::ostream& ost, pCafeFamily family);
+void viterbi_write(std::ostream& ost, pCafeTree pcafe, pCafeFamily pfamily);
 
 struct load_args {
 	int num_threads;
@@ -57,7 +59,15 @@ struct load_args {
 	std::string family_file_name;
 };
 
+struct viterbi_args {
+	bool all;
+	std::string file;
+	int idx;
+	std::string item_id;
+};
+
 struct load_args get_load_arguments(std::vector<Argument> pargs);
+struct viterbi_args get_viterbi_arguments(std::vector<Argument> pargs);
 
 #endif
 
