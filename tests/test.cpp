@@ -21,6 +21,7 @@ extern "C" {
 #include <likelihood_ratio.h>
 
 extern "C" {
+	extern pCafeParam cafe_param;
 	void show_sizes(FILE*, pCafeParam param, pCafeFamilyItem pitem, int i);
 	void phylogeny_lambda_parse_func(pTree ptree, pTreeNode ptnode);
 	extern pBirthDeathCacheArray probability_cache;
@@ -33,7 +34,7 @@ static void init_cafe_tree()
 	char buf[100];
 	strcpy(buf, "tree ");
 	strcat(buf, newick_tree);
-	cafe_shell_dispatch_command(buf);
+	cafe_shell_dispatch_command(cafe_param, buf);
 }
 
 static pCafeTree create_tree()
@@ -196,13 +197,13 @@ TEST(FirstTestGroup, TestShellDispatcher)
 	cafe_cmd[1] = cafe_cmd_test[1];
 
 	strcpy(c, "atoi 9528");
-	LONGS_EQUAL(9528, cafe_shell_dispatch_command(c));
+	LONGS_EQUAL(9528, cafe_shell_dispatch_command(cafe_param, c));
 
 	strcpy(c, "# a comment");
-	LONGS_EQUAL(0, cafe_shell_dispatch_command(c));
+	LONGS_EQUAL(0, cafe_shell_dispatch_command(cafe_param, c));
 
 	strcpy(c, "unknown");
-	LONGS_EQUAL(CAFE_SHELL_NO_COMMAND, cafe_shell_dispatch_command(c));
+	LONGS_EQUAL(CAFE_SHELL_NO_COMMAND, cafe_shell_dispatch_command(cafe_param, c));
 }
 
 TEST(FirstTestGroup, TestShowSizes)

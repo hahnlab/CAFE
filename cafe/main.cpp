@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
 			printf("%s", "# "); 
 			if (!fgets(prompt,STRING_BUF_SIZE,stdin))
 				return -1;
-			shell = cafe_shell_dispatch_command(prompt);
+			shell = cafe_shell_dispatch_command(cafe_param, prompt);
 		}
 	}
   return 0;

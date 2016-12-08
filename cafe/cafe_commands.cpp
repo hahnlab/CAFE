@@ -24,8 +24,6 @@ extern "C" {
 #include <utils_string.h>
 #include "cafe_shell.h"
 #include "cafe.h"
-
-	extern pCafeParam cafe_param;
 	extern void cafe_log(pCafeParam param, const char* msg, ...);
 	void cafe_shell_clear_param(pCafeParam param, int btree_skip);
 
@@ -219,7 +217,7 @@ int cafe_cmd_source(pCafeParam param, std::vector<std::string> tokens)
 	int rtn  = 0;
 	while( fgets( buf, STRING_BUF_SIZE, fp ) )
 	{
-		if ( (rtn = cafe_shell_dispatch_command(buf)) ) break;
+		if ( (rtn = cafe_shell_dispatch_command(param, buf)) ) break;
 	}
 	fclose(fp);
 	return rtn;
@@ -396,7 +394,7 @@ vector<Argument> build_argument_list(vector<string> tokens)
 }
 
 
-int cafe_shell_dispatch_command(char* cmd)
+int cafe_shell_dispatch_command(pCafeParam param, char* cmd)
 {
 	using namespace std;
 
@@ -416,7 +414,7 @@ int cafe_shell_dispatch_command(char* cmd)
 		{
 			rtn = CAFE_SHELL_NO_COMMAND;
 			if (dispatcher.find(tokens[0]) != dispatcher.end())
-				rtn = dispatcher[tokens[0]](cafe_param, tokens);
+				rtn = dispatcher[tokens[0]](param, tokens);
 			else
 			{
 				pArrayList parg = string_pchar_space_split(cmd);
@@ -445,13 +443,14 @@ int cafe_shell_dispatch_command(char* cmd)
 }
 
 extern "C" {
+	extern pCafeParam cafe_param;
 	int cafe_shell_dispatch_commandf(char* format, ...)
 	{
 		va_list ap;
 		char buf[STRING_BUF_SIZE];
 		va_start(ap, format);
 		vsprintf(buf, format, ap);
-		int r = cafe_shell_dispatch_command(buf);
+		int r = cafe_shell_dispatch_command(cafe_param, buf);
 		va_end(ap);
 		return r;
 	}
@@ -1154,9 +1153,8 @@ int cafe_shell_parse_familysize(pTree pcafe, std::vector<std::string> tokens)
 	return *max_element(sizes.begin(), sizes.end());
 }
 
-void viterbi_print(int max)
+void viterbi_print(pCafeTree pcafe, int max)
 {
-	pCafeTree pcafe = cafe_param->pcafe;
 	double* lh = cafe_shell_likelihood(max);
 	double mlh = __max(lh, pcafe->rfsize);
 	cafe_tree_viterbi(pcafe);
@@ -1239,12 +1237,12 @@ int cafe_cmd_viterbi(pCafeParam param, std::vector<std::string> tokens)
 	}
 	else if (tokens.size() == 1)
 	{
-		viterbi_print(cafe_shell_set_familysize());
+		viterbi_print(param->pcafe, cafe_shell_set_familysize());
 	}
 	else
 	{
 		tokens.erase(tokens.begin());
-		viterbi_print(cafe_shell_parse_familysize((pTree)param->pcafe, tokens));
+		viterbi_print(param->pcafe, cafe_shell_parse_familysize((pTree)param->pcafe, tokens));
 	}
 
 	return 0;

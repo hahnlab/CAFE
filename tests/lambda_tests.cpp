@@ -19,7 +19,7 @@ static void init_cafe_tree()
 	char buf[100];
 	strcpy(buf, "tree ");
 	strcat(buf, newick_tree);
-	cafe_shell_dispatch_command(buf);
+	cafe_shell_dispatch_command(cafe_param, buf);
 }
 
 int lambda_cmd_helper()
@@ -61,7 +61,7 @@ TEST(LambdaTests, PrepareCafeParamFailsWithoutLoad)
 	char buf[100];
 	strcpy(buf, "tree ");
 	strcat(buf, newick_tree);
-	cafe_shell_dispatch_command(buf);
+	cafe_shell_dispatch_command(cafe_param, buf);
 	try
 	{
 		prepare_cafe_param(cafe_param);
@@ -99,7 +99,7 @@ TEST(LambdaTests, TestCmdLambda)
 	birthdeath_cache_init(2);
 	char buf[100];
 	strcpy(buf, "load -i ../example/example_data.tab");
-	cafe_shell_dispatch_command(buf);
+	cafe_shell_dispatch_command(cafe_param, buf);
 
 	LONGS_EQUAL(0, lambda_cmd_helper());
 };

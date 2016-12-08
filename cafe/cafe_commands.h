@@ -32,7 +32,7 @@ COMMAND(tree);
 COMMAND(score);
 COMMAND(viterbi);
 
-int cafe_shell_dispatch_command(char* cmd);
+int cafe_shell_dispatch_command(pCafeParam param, char* cmd);
 void list_commands(std::ostream& ost);
 
 std::vector<std::string> tokenize(std::string s);
