@@ -676,7 +676,11 @@ TEST(FirstTestGroup, reset_birthdeath_cache)
 	// matching its branch length, lambda and mu values
 	pCafeNode node = (pCafeNode)tree->super.nlist->array[3];
 	struct square_matrix* expected = birthdeath_cache_get_matrix(probability_cache, node->super.branchlength, node->birth_death_probabilities.lambda, node->birth_death_probabilities.mu);
-	POINTERS_EQUAL(expected, node->birthdeath_matrix);
+	struct square_matrix* actual = node->birthdeath_matrix;
+	LONGS_EQUAL(expected->size, actual->size);
+	for (int i = 0; i < expected->size; ++i)
+		for (int j = 0; j < expected->size; ++j)
+			DOUBLES_EQUAL(square_matrix_get(expected, i, j), square_matrix_get(actual, i, j), .0001);
 }
 
 TEST(FirstTestGroup, get_num_trials)
