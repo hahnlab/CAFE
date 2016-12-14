@@ -38,7 +38,14 @@ variable in cafe_shell.c .
 
 pBirthDeathCacheArray probability_cache = NULL;
 
-void cafe_log(pCafeParam param, const char* msg, ... )
+/**
+\brief Logs the message and parameters in a standard way
+*
+* If the user has assigned a file for logging, message
+* is written to the file and also to stdout. The stdout
+* write will be suppressed if the param "quiet" flag is set.
+*
+*/void cafe_log(pCafeParam param, const char* msg, ... )
 {
   va_list ap;
   va_start(ap, msg);

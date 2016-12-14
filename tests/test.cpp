@@ -791,6 +791,40 @@ TEST(FirstTestGroup, write_leaves)
 	STRCMP_EQUAL("k5_root42\t1234\t0\t3\t6\t9\t12\t15\t18\t21\t24\n", ost4.str().c_str());
 }
 
+TEST(FirstTestGroup, run_viterbi_sim)
+{
+	pCafeTree tree = create_tree();
+	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
+	pCafeFamily pfamily = cafe_family_init(build_arraylist(species, 7));
+	cafe_family_set_species_index(pfamily, tree);
+	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
+	cafe_family_add_item(pfamily, build_arraylist(values, 7));
+	probability_cache = birthdeath_cache_init(tree->size_of_factor);
+	cafe_tree_set_birthdeath(tree);
+
+	roots roots;
+	run_viterbi_sim(tree, pfamily, roots);
+	LONGS_EQUAL(0, roots.size[0]);
+	DOUBLES_EQUAL(0, roots.extinct[0], .01);
+	LONGS_EQUAL(0, roots.total_extinct);
+	LONGS_EQUAL(1, roots.num[0]);
+
+}
+
+TEST(FirstTestGroup, init_histograms)
+{
+	roots roots;
+	roots.num.resize(2);
+	roots.num[1] = 1;
+	roots.extinct.resize(2);
+	int maxsize = init_histograms(1, roots, 1);
+	LONGS_EQUAL(1, maxsize);
+	CHECK(roots.phist_sim[0] != NULL);
+	CHECK(roots.phist_data[0] != NULL);
+	CHECK(roots.phist_sim[1] != NULL);
+	CHECK(roots.phist_data[1] != NULL);
+}
+
 TEST(LikelihoodRatio, cafe_likelihood_ratio_test)
 {
 	CafeParam param;

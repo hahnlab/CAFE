@@ -42,7 +42,6 @@ pArrayList cafe_pCD;
 CafeShellCommand cafe_cmd[]  =
 {
 	{ "branchlength", cafe_cmd_branchlength },
-	{ "extinct", cafe_cmd_extinct },
 	{ "lambdamu", cafe_cmd_lambda_mu },
 	{ "lhtest", cafe_cmd_lh_test },
 	{ "pvalue", cafe_cmd_pvalue },
@@ -1831,13 +1830,13 @@ double __cafe_tree_gainloss_mp_annotation(pString pstr, pTreeNode pnode, pMetapo
 
 extern double cafe_tree_mp_remark(pString pstr, pTree ptree, pMetapostConfig pmc, va_list ap1);
 
-int __cafe_cmd_extinct_count_zero()
+int __cafe_cmd_extinct_count_zero(pTree pcafe)
 {
 	int n;
 	int cnt_zero = 0;
-	tree_clear_reg((pTree)cafe_param->pcafe);
-	pArrayList nlist = ((pTree)cafe_param->pcafe)->nlist;
-	((pTree)cafe_param->pcafe)->root->reg = 1;
+	tree_clear_reg(pcafe);
+	pArrayList nlist = pcafe->nlist;
+	pcafe->root->reg = 1;
 	for ( n = 0 ; n < nlist->size ; n+=2 )
 	{
 		pCafeNode pcnode = (pCafeNode)nlist->array[n];
@@ -1920,7 +1919,7 @@ int cafe_cmd_sim_extinct(int argc, char* argv[])
 		for(  i = 0 ; i < num_trials ; i++ )
 		{
 			cafe_tree_random_familysize(cafe_param->pcafe, r);
-			data[i] = __cafe_cmd_extinct_count_zero();
+			data[i] = __cafe_cmd_extinct_count_zero((pTree)cafe_param->pcafe);
 			cnt_zero += data[i];
 		}
 		cafe_log( cafe_param, "------------------------------------------\n");
@@ -2095,202 +2094,6 @@ int cafe_cmd_root_dist(int argc, char* argv[])
 
 
 
-
-/**
-\ingroup Commands
-\brief Runs a simulation to determine how many families are likely to have gone extinct
-
-Arguments: –t parameter gives the number of trials. Logs the total number of extinct families?
-*/
-int cafe_cmd_extinct(int argc, char* argv[])
-{
-	STDERR_IF( cafe_param->pfamily == NULL, "ERROR(extinct): You did not load family: command 'load'\n" );
-	STDERR_IF( cafe_param->pcafe == NULL, "ERROR(extinct): You did not specify tree: command 'tree'\n" );
-	STDERR_IF( cafe_param->lambda == NULL, "ERROR(extinct): You did not set the parameters: command 'lambda' or 'lambdamu'\n" );
-
-	int familysize = cafe_param->pfamily->flist->size;
-	pCafeTree pcafe = cafe_param->pcafe;
-	double* roots_extinct = (double*) memory_new(familysize,sizeof(double));
-	int* roots_size = (int*) memory_new(familysize,sizeof(int));
-	int* roots_num = (int*) memory_new(pcafe->rfsize+1,sizeof(int));
-	double* avg_extinct = (double*) memory_new(pcafe->rfsize+1,sizeof(double));
-
-	pArrayList pargs = cafe_shell_build_argument(argc, argv);
-	pArgument parg;
-	int num_trials = 1000;
-
-	cafe_log( cafe_param, ">> Data and Simulation for extinction:\n");
-
-	if ( (parg = cafe_shell_get_argument( "-t", pargs) ) )
-	{
-		sscanf( parg->argv[0], "%d", &num_trials);	
-	}
-	arraylist_free(pargs, free);
-
-	cafe_log( cafe_param, "# trials: %d\n", num_trials );
-
-	int i,j;
-	int total_extinct = 0;
-
-	fprintf(stderr, "Data ...\n");
-
-	pCafeNode croot = (pCafeNode)pcafe->super.root;
-	for ( i = 0 ; i < familysize; i++ )
-	{
-		cafe_family_set_size(cafe_param->pfamily,i, pcafe);
-		cafe_tree_viterbi(pcafe);
-		roots_size[i] = croot->familysize;
-		roots_extinct[i] = __cafe_cmd_extinct_count_zero();
-		total_extinct += roots_extinct[i];
-		roots_num[roots_size[i]]++;
-	}
-
-	pHistogram phist_tmp = histogram_new(NULL,0,0);
-	pHistogram* phist_data = (pHistogram*) memory_new(pcafe->rfsize+1,sizeof(pHistogram));
-	pHistogram* phist_sim = (pHistogram*) memory_new(pcafe->rfsize+1,sizeof(pHistogram));
-	phist_sim[0] = histogram_new(NULL,0,0);
-	phist_data[0] = histogram_new(NULL,0,0);
-	int maxsize = roots_num[1];
-	for ( i = 1 ; i <= pcafe->rfsize ; i++ ) 
-	{
-		if ( roots_num[i] > maxsize ) maxsize = roots_num[i];
-		if ( roots_num[i] )
-		{
-			phist_data[i] = histogram_new(NULL,0,0);	
-			phist_sim[i] = histogram_new(NULL,0,0);	
-		}
-	}
-	histogram_set_sparse_data(phist_data[0],roots_extinct,familysize);
-
-	double* data = (double*) memory_new( maxsize, sizeof(double));
-	double* simdata = (double*) memory_new( familysize, sizeof(double));
-
-	cafe_log(cafe_param,"*******************  DATA  *************************\n");
-
-	for ( i = 1 ; i <= pcafe->rfsize; i++ )
-	{
-		if ( roots_num[i] )
-		{
-			int k = 0;
-			int sum = 0;
-			for ( j = 0 ; j < familysize ; j++ )
-			{
-				if ( roots_size[j] == i ) 
-				{
-					data[k++] = roots_extinct[j];
-					sum += roots_extinct[j];
-				}
-			}
-			histogram_set_sparse_data(phist_data[i],data,k);
-			cafe_log(cafe_param,"--------------------------------\n");
-			cafe_log(cafe_param,"Root Size: %d\n", i );
-			histogram_print(phist_data[i], cafe_param->flog);
-			if ( cafe_param->flog != stdout ) histogram_print(phist_data[i], NULL);
-			cafe_log(cafe_param,"Extinct: %d\n", sum );
-		}
-	}
-
-	fprintf(stderr, "Begin simulation...\n");
-	cafe_log(cafe_param,"******************* SIMULATION **********************\n");
-
-	pHistogram** phist_sim_n = (pHistogram**)memory_new_2dim(num_trials, pcafe->rfsize+1, sizeof(pHistogram));
-
-	int t;
-	for ( t = 0 ; t < num_trials; t++ )
-	{
-		if ( t % 100 == 0 && t != 0 )
-		{
-			fprintf(stderr, "\t%d...\n", t );
-		}
-		int f = 0;
-		for ( i = 1 ; i <= pcafe->rfsize ; i++ )
-		{
-			if ( roots_num[i] ) 
-			{
-				int k = 0;
-				int sum = 0;
-				for ( j = 0 ; j < roots_num[i] ; j++ )
-				{
-					cafe_tree_random_familysize(cafe_param->pcafe, i);
-					simdata[f] = __cafe_cmd_extinct_count_zero();
-					data[k++] =simdata[f];
-					sum += simdata[f];
-					f++;
-				}
-				avg_extinct[i] += sum;
-				histogram_set_sparse_data(phist_tmp,data,k);
-				histogram_merge( phist_sim[i], phist_tmp );
-				phist_sim_n[t][i] = histogram_new(NULL,0,0);
-				histogram_merge( phist_sim_n[t][i], phist_tmp );
-			}
-		}
-		histogram_set_sparse_data(phist_tmp,simdata,familysize);
-		histogram_merge( phist_sim[0], phist_tmp );
-		phist_sim_n[t][0] = histogram_new(NULL,0,0);
-		histogram_merge( phist_sim_n[t][0], phist_tmp);
-	}
-
-	double* cnt  = (double*) memory_new(num_trials, sizeof(double));
-	double avg_total_extinct = 0;
-	for ( i = 1 ; i <= pcafe->rfsize ; i++ )
-	{
-		if ( phist_sim[i] )
-		{
-			cafe_log(cafe_param,"--------------------------------\n");
-			cafe_log(cafe_param,"Root Size: %d\n", i );
-			__hg_print_sim_extinct(phist_sim_n,phist_sim,i,phist_tmp,cnt,num_trials);
-			avg_extinct[i] /= num_trials;
-			avg_total_extinct += avg_extinct[i];
-		}
-	}
-
-
-
-	cafe_log(cafe_param,"*******************  ALL *************************\n");
-	cafe_log(cafe_param,">> DATA\n");
-	histogram_print(phist_data[0], cafe_param->flog);
-	if ( cafe_param->flog != stdout) histogram_print(phist_data[0], NULL);
-	cafe_log(cafe_param, "Total Extinct: %d\n", total_extinct );
-	cafe_log(cafe_param,">> SIMULATION\n");
-	__hg_print_sim_extinct(phist_sim_n,phist_sim,0,phist_tmp,cnt,num_trials);
-
-	memory_free(cnt);
-	cnt = NULL;
-
-	for ( i = 0 ; i < pcafe->rfsize ; i++ )
-	{
-		if ( phist_data[i] ) 
-		{
-			histogram_free( phist_data[i] );
-			histogram_free( phist_sim[i] );
-			for ( t = 0 ; t < num_trials ; t++ )
-			{
-				histogram_free(phist_sim_n[t][i]);
-			}
-		}
-	}
-
-	histogram_free(phist_tmp);
-	memory_free(phist_data);
-	phist_data= NULL;
-	memory_free(phist_sim);
-	phist_sim = NULL;
-	memory_free_2dim((void**)phist_sim_n,num_trials, 0, NULL);
-
-	memory_free(roots_size);
-	roots_size = NULL;
-	memory_free(roots_extinct);
-	roots_extinct = NULL;
-	memory_free(roots_num);
-	roots_num = NULL;
-	memory_free(data);
-	data  = NULL;
-	memory_free(avg_extinct);
-	avg_extinct = NULL;
-	memory_free(simdata);
-	simdata = NULL;
-	return 0;
-}
 
 int cafe_cmd_lh_test(int argc, char* argv[])
 {

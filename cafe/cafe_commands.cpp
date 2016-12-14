@@ -36,6 +36,9 @@ extern "C" {
 	extern pBirthDeathCacheArray probability_cache;
 	int cafe_shell_set_familysize();
 	double* cafe_shell_likelihood(int max);
+	int __cafe_cmd_extinct_count_zero(pTree pcafe);
+	void __hg_print_sim_extinct(pHistogram** phist_sim_n, pHistogram* phist_sim,
+		int r, pHistogram phist_tmp, double* cnt, int num_trials);
 }
 
 using namespace std;
@@ -65,7 +68,7 @@ map<string, cafe_command2> get_dispatcher()
 	dispatcher["score"] = cafe_cmd_score;
 	dispatcher["save"] = cafe_cmd_save;
 	dispatcher["tree"] = cafe_cmd_tree;
-
+	dispatcher["extinct"] = cafe_cmd_extinct;
 
 	return dispatcher;
 }
@@ -1245,6 +1248,208 @@ int cafe_cmd_viterbi(pCafeParam param, std::vector<std::string> tokens)
 		viterbi_print(param->pcafe, cafe_shell_parse_familysize((pTree)param->pcafe, tokens));
 	}
 
+	return 0;
+}
+
+void run_viterbi_sim(pCafeTree pcafe, pCafeFamily pfamily, roots& roots)
+{
+	int familysize = pfamily->flist->size;
+	roots.extinct.resize(familysize);
+	roots.size.resize(familysize);
+	roots.num.resize(pcafe->rfsize + 1);
+	roots.avg_extinct.resize(pcafe->rfsize + 1);
+	roots.total_extinct = 0;
+
+	pCafeNode croot = (pCafeNode)pcafe->super.root;
+	for (int i = 0; i < familysize; i++)
+	{
+		cafe_family_set_size(pfamily, i, pcafe);
+		cafe_tree_viterbi(pcafe);
+		roots.size[i] = croot->familysize;
+		roots.extinct[i] = __cafe_cmd_extinct_count_zero((pTree)pcafe);
+		roots.total_extinct += roots.extinct[i];
+		roots.num[roots.size[i]]++;
+	}
+
+}
+
+int init_histograms(int rfsize, roots& roots, int nsamples)
+{
+	roots.phist_data = (pHistogram*)memory_new(rfsize + 1, sizeof(pHistogram));
+	roots.phist_sim = (pHistogram*)memory_new(rfsize + 1, sizeof(pHistogram));
+	roots.phist_sim[0] = histogram_new(NULL, 0, 0);
+	roots.phist_data[0] = histogram_new(NULL, 0, 0);
+	int maxsize = roots.num[1];
+	for (int i = 1; i <= rfsize; i++)
+	{
+		if (roots.num[i] > maxsize) maxsize = roots.num[i];
+		if (roots.num[i])
+		{
+			roots.phist_data[i] = histogram_new(NULL, 0, 0);
+			roots.phist_sim[i] = histogram_new(NULL, 0, 0);
+		}
+	}
+	histogram_set_sparse_data(roots.phist_data[0], &roots.extinct.front(), nsamples);
+	return maxsize;
+
+}
+/**
+\ingroup Commands
+\brief Runs a simulation to determine how many families are likely to have gone extinct
+
+Arguments: –t parameter gives the number of trials. Logs the total number of extinct families?
+*/
+int cafe_cmd_extinct(pCafeParam param, std::vector<std::string> tokens)
+{
+	prereqs(param, REQUIRES_FAMILY | REQUIRES_LAMBDA | REQUIRES_TREE);
+
+	int familysize = param->pfamily->flist->size;
+	pCafeTree pcafe = param->pcafe;
+	
+	int num_trials = 1000;
+
+	cafe_log(param, ">> Data and Simulation for extinction:\n");
+
+	vector<Argument> args = build_argument_list(tokens);
+	if (args.size() > 0 && !strcmp(args[0].opt, "-t"))
+	{
+		sscanf(args[0].argv[0], "%d", &num_trials);
+	}
+
+	cafe_log(param, "# trials: %d\n", num_trials);
+
+	int i, j;
+	int total_extinct = 0;
+
+	fprintf(stderr, "Data ...\n");
+
+	roots roots;
+	run_viterbi_sim(pcafe, param->pfamily, roots);
+
+	int maxsize = init_histograms(pcafe->rfsize, roots, familysize);
+
+	pHistogram phist_tmp = histogram_new(NULL, 0, 0);
+
+	double* data = (double*)memory_new(maxsize, sizeof(double));
+
+	cafe_log(cafe_param, "*******************  DATA  *************************\n");
+
+	for (i = 1; i <= pcafe->rfsize; i++)
+	{
+		if (roots.num[i])
+		{
+			int k = 0;
+			int sum = 0;
+			for (j = 0; j < familysize; j++)
+			{
+				if (roots.size[j] == i)
+				{
+					data[k++] = roots.extinct[j];
+					sum += roots.extinct[j];
+				}
+			}
+			histogram_set_sparse_data(roots.phist_data[i], data, k);
+			cafe_log(cafe_param, "--------------------------------\n");
+			cafe_log(cafe_param, "Root Size: %d\n", i);
+			histogram_print(roots.phist_data[i], cafe_param->flog);
+			if (cafe_param->flog != stdout) histogram_print(roots.phist_data[i], NULL);
+			cafe_log(cafe_param, "Extinct: %d\n", sum);
+		}
+	}
+
+	fprintf(stderr, "Begin simulation...\n");
+	cafe_log(cafe_param, "******************* SIMULATION **********************\n");
+
+	pHistogram** phist_sim_n = (pHistogram**)memory_new_2dim(num_trials, pcafe->rfsize + 1, sizeof(pHistogram));
+
+	double* simdata = (double*)memory_new(familysize, sizeof(double));
+	int t;
+	for (t = 0; t < num_trials; t++)
+	{
+		if (t % 100 == 0 && t != 0)
+		{
+			fprintf(stderr, "\t%d...\n", t);
+		}
+		int f = 0;
+		for (i = 1; i <= pcafe->rfsize; i++)
+		{
+			if (roots.num[i])
+			{
+				int k = 0;
+				int sum = 0;
+				for (j = 0; j < roots.num[i]; j++)
+				{
+					cafe_tree_random_familysize(cafe_param->pcafe, i);
+					simdata[f] = __cafe_cmd_extinct_count_zero((pTree)cafe_param->pcafe);
+					data[k++] = simdata[f];
+					sum += simdata[f];
+					f++;
+				}
+				roots.avg_extinct[i] += sum;
+				histogram_set_sparse_data(phist_tmp, data, k);
+				histogram_merge(roots.phist_sim[i], phist_tmp);
+				phist_sim_n[t][i] = histogram_new(NULL, 0, 0);
+				histogram_merge(phist_sim_n[t][i], phist_tmp);
+			}
+		}
+		histogram_set_sparse_data(phist_tmp, simdata, familysize);
+		histogram_merge(roots.phist_sim[0], phist_tmp);
+		phist_sim_n[t][0] = histogram_new(NULL, 0, 0);
+		histogram_merge(phist_sim_n[t][0], phist_tmp);
+	}
+
+	double* cnt = (double*)memory_new(num_trials, sizeof(double));
+	double avg_total_extinct = 0;
+	for (i = 1; i <= pcafe->rfsize; i++)
+	{
+		if (roots.phist_sim[i])
+		{
+			cafe_log(cafe_param, "--------------------------------\n");
+			cafe_log(cafe_param, "Root Size: %d\n", i);
+			__hg_print_sim_extinct(phist_sim_n, roots.phist_sim, i, phist_tmp, cnt, num_trials);
+			roots.avg_extinct[i] /= num_trials;
+			avg_total_extinct += roots.avg_extinct[i];
+		}
+	}
+
+
+
+	cafe_log(cafe_param, "*******************  ALL *************************\n");
+	cafe_log(cafe_param, ">> DATA\n");
+	histogram_print(roots.phist_data[0], cafe_param->flog);
+	if (cafe_param->flog != stdout) histogram_print(roots.phist_data[0], NULL);
+	cafe_log(cafe_param, "Total Extinct: %d\n", total_extinct);
+	cafe_log(cafe_param, ">> SIMULATION\n");
+	__hg_print_sim_extinct(phist_sim_n, roots.phist_sim, 0, phist_tmp, cnt, num_trials);
+
+	memory_free(cnt);
+	cnt = NULL;
+
+	for (i = 0; i < pcafe->rfsize; i++)
+	{
+		if (roots.phist_data[i])
+		{
+			histogram_free(roots.phist_data[i]);
+			histogram_free(roots.phist_sim[i]);
+			for (t = 0; t < num_trials; t++)
+			{
+				histogram_free(phist_sim_n[t][i]);
+			}
+		}
+	}
+
+	histogram_free(phist_tmp);
+	memory_free(roots.phist_data);
+	roots.phist_data = NULL;
+	memory_free(roots.phist_sim);
+	roots.phist_sim = NULL;
+	memory_free_2dim((void**)phist_sim_n, num_trials, 0, NULL);
+
+	memory_free(data);
+	data = NULL;
+
+	memory_free(simdata);
+	simdata = NULL;
 	return 0;
 }
 

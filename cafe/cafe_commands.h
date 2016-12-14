@@ -31,6 +31,7 @@ COMMAND(save);
 COMMAND(tree);
 COMMAND(score);
 COMMAND(viterbi);
+COMMAND(extinct);
 
 int cafe_shell_dispatch_command(pCafeParam param, char* cmd);
 void list_commands(std::ostream& ost);
@@ -68,6 +69,21 @@ struct viterbi_args {
 
 struct load_args get_load_arguments(std::vector<Argument> pargs);
 struct viterbi_args get_viterbi_arguments(std::vector<Argument> pargs);
+
+struct roots
+{
+	std::vector<double> extinct;
+	std::vector<int> size;
+	std::vector<int> num;
+	std::vector<double> avg_extinct;
+	int total_extinct;
+
+	pHistogram* phist_data;
+	pHistogram* phist_sim;
+};
+
+void run_viterbi_sim(pCafeTree pcafe, pCafeFamily pfamily, roots& roots);
+int init_histograms(int rfsize, roots& roots, int nsamples);
 
 #endif
 
