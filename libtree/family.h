@@ -48,7 +48,15 @@ typedef struct
 	double** k_likelihoods;
 	double* likelihoods;
 	int*    viterbi;
+	
+	/**
+	* Value representing the size of a single gene family for the species or node
+	* Temporary value since CAFE holds in memory counts for many gene families for
+	* each node
+	*/
 	int	familysize;	
+
+
 	struct probabilities birth_death_probabilities;
 
 	/** Matrix of precalculated values, indexed by the root family size

@@ -85,7 +85,7 @@ TEST(CommandTests, cafe_cmd_date)
 	char outbuf[10000];
 	param.flog = fmemopen(outbuf, 999, "w");
 	cafe_cmd_date(&param, tokens);
-	STRCMP_CONTAINS("2016", outbuf);	// this will start to fail in 2017
+	STRCMP_CONTAINS("2017", outbuf);	// this will start to fail in 2018
 	fclose(param.flog);
 }
 

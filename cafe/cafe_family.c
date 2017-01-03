@@ -625,6 +625,9 @@ void cafe_family_free(pCafeFamily pcf)
 *
 * Takes the given gene family and copies the size of the family in the species
 * into the tree node that corresponds to that species
+*
+* Side effect is to set the familysize member for each node in the tree, but
+* since that is a convenience variable it shouldn't make any difference
 */
 void cafe_family_set_size(pCafeFamily pcf, int idx, pCafeTree pcafe)
 {
