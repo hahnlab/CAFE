@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 #include <iosfwd>
 
 extern "C" {
@@ -33,6 +34,7 @@ COMMAND(score);
 COMMAND(viterbi);
 COMMAND(extinct);
 
+std::map<std::string, cafe_command2> get_dispatcher();
 int cafe_shell_dispatch_command(pCafeParam param, char* cmd);
 void list_commands(std::ostream& ost);
 

@@ -70,10 +70,18 @@ typedef CafeNode*	pCafeNode;
 
 typedef struct
 {
+	/** Number of nodes in the tree */
 	int num_nodes;
+
+	/** Number of gene families for which to keep data */
 	int num_rows;
+
+	/** Matrix of calculated P values for each node in the tree and each gene family  */
 	double** viterbiPvalues;
+
+	/** array of three integers expand, remain, and decrease for each node in the tree relative to its parent */
 	int** expandRemainDecrease;
+
 	int** viterbiNodeFamilysizes;
 	double* maximumPvalues;
 	double* averageExpansion;

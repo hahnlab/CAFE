@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <map>
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 #include "cafe_commands.h"
@@ -43,8 +44,12 @@ TEST_GROUP(CommandTests)
 	}
 };
 
-typedef int(*cafe_command2)(pCafeParam cafe_param, vector<string>);
+TEST(CommandTests, command_list)
+{
+	std::map<string, cafe_command2> dispatcher = get_dispatcher();
+	CHECK(dispatcher.find("viterbi") != dispatcher.end());
 
+}
 TEST(CommandTests, Test_cafe_cmd_source_prereqs)
 {
 	tokens.push_back("source");

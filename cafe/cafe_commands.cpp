@@ -69,6 +69,7 @@ map<string, cafe_command2> get_dispatcher()
 	dispatcher["save"] = cafe_cmd_save;
 	dispatcher["tree"] = cafe_cmd_tree;
 	dispatcher["extinct"] = cafe_cmd_extinct;
+	dispatcher["viterbi"] = cafe_cmd_viterbi;
 
 	return dispatcher;
 }
@@ -141,9 +142,11 @@ int cafe_cmd_exit(pCafeParam param, std::vector<std::string> tokens)
 
 /**
 \ingroup Commands
+\ingroup Setters
 \brief Sets file to which data is logged
 *
 * With no arguments, writes the current log file to stdout
+* 
 * with the argument "stdout" the current log file is closed and log data goes to stdout
 *
 */
@@ -1293,6 +1296,31 @@ int init_histograms(int rfsize, roots& roots, int nsamples)
 	return maxsize;
 
 }
+
+ostream& operator<<(ostream& os, const Histogram& hist)
+{
+	int i;
+	os << "MIN: " << hist.min << " ~ MAX: " << hist.max << "\n";
+	os << "BIN: " << hist.nbins << "\n";
+	os << "# Samples: " << hist.nsamples << "\n";
+	if (hist.point)
+	{
+		for (i = 0; i < hist.nbins; i++)
+		{
+			os << hist.point[i] << "\t" << hist.count[i] << "\t" << ((double)hist.count[i]) / hist.nsamples << "\n";
+		}
+	}
+	else
+	{
+		for (i = 0; i < hist.nbins; i++)
+		{
+			os << hist.min + hist.width*i << "\t" << hist.count[i] << "\t" << ((double)hist.count[i]) / hist.nsamples << "\n";
+		}
+	}
+
+	return os;
+}
+
 /**
 \ingroup Commands
 \brief Runs a simulation to determine how many families are likely to have gone extinct
@@ -1349,16 +1377,20 @@ int cafe_cmd_extinct(pCafeParam param, std::vector<std::string> tokens)
 				}
 			}
 			histogram_set_sparse_data(roots.phist_data[i], data, k);
-			cafe_log(cafe_param, "--------------------------------\n");
-			cafe_log(cafe_param, "Root Size: %d\n", i);
-			histogram_print(roots.phist_data[i], cafe_param->flog);
-			if (cafe_param->flog != stdout) histogram_print(roots.phist_data[i], NULL);
-			cafe_log(cafe_param, "Extinct: %d\n", sum);
+			cafe_log(param, "--------------------------------\n");
+			cafe_log(param, "Root Size: %d\n", i);
+			ostringstream ost;
+			ost << *roots.phist_data[i];
+			cafe_log(param, ost.str().c_str());
+
+			//histogram_print(roots.phist_data[i], );
+			if (param->flog != stdout) histogram_print(roots.phist_data[i], NULL);
+			cafe_log(param, "Extinct: %d\n", sum);
 		}
 	}
 
 	fprintf(stderr, "Begin simulation...\n");
-	cafe_log(cafe_param, "******************* SIMULATION **********************\n");
+	cafe_log(param, "******************* SIMULATION **********************\n");
 
 	pHistogram** phist_sim_n = (pHistogram**)memory_new_2dim(num_trials, pcafe->rfsize + 1, sizeof(pHistogram));
 
