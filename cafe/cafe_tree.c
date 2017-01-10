@@ -1038,10 +1038,15 @@ void compute_node_likelihoods(pTree ptree, pTreeNode ptnode, va_list ap1)
 	}
 }
 
-double* cafe_tree_likelihood(pCafeTree pcafe) 
+void compute_tree_likelihoods(pCafeTree pcafe)
 {
 	tree_traveral_postfix((pTree)pcafe, compute_node_likelihoods);
+}
+
+double* get_likelihoods(const pCafeTree pcafe)
+{
 	return ((pCafeNode)pcafe->super.root)->likelihoods;
+
 }
 
 /**
@@ -1216,7 +1221,7 @@ double* cafe_tree_random_probabilities(pCafeTree pcafe, int rootFamilysize, int 
 		{
 			pcafe->familysizes[1] = MIN( max + MAX(50,max/5) , pcafe->familysizes[1] );
 		}
-		cafe_tree_likelihood(pcafe);
+		compute_tree_likelihoods(pcafe);
 		probs[i] = ((pCafeNode)pcafe->super.root)->likelihoods[0];
 	}
 
@@ -1242,15 +1247,15 @@ pArrayList cafe_tree_conditional_distribution(pCafeTree pcafe, int range_start, 
 	return pal;
 }
 
-double* cafe_tree_p_values(pCafeTree pcafe,double* pvalues, pArrayList pconddist, int cdlen)
+void cafe_tree_p_values(pCafeTree pcafe,double* pvalues, pArrayList pconddist, int cdlen)
 {
-	double* lh = cafe_tree_likelihood(pcafe);
+	compute_tree_likelihoods(pcafe);
+	double* lh = get_likelihoods(pcafe);
 	int s;
 	for( s = 0 ; s < pcafe->rfsize; s++ )
 	{
 		pvalues[s] = pvalue( lh[s] , (double*)pconddist->array[s], cdlen);
 	}
-	return pvalues;
 }
 
 /*
@@ -1261,8 +1266,10 @@ double** cafe_tree_p_values_of_two_trees(pCafeTree pcafe1, pCafeTree pcafe2,
 		                                   pArrayList pconddist1, pArrayList pconddist2,
 										   int cdlen )
 {
-	double* lh1 = cafe_tree_likelihood(pcafe1);
-	double* lh2 = cafe_tree_likelihood(pcafe2);
+	compute_tree_likelihoods(pcafe1);
+	compute_tree_likelihoods(pcafe2);
+	double* lh1 = get_likelihoods(pcafe1);
+	double* lh2 = get_likelihoods(pcafe2);
 	int s1, s2, t;
 	double p;
 	for( s2 = 0 ; s2 < pcafe1->rfsize ; s2++ )

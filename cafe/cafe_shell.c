@@ -683,7 +683,8 @@ double* cafe_shell_likelihood(int max)
 		pcafe->familysizes[1] = fmax;
 		pcafe->rfsize = pcafe->rootfamilysizes[1] - pcafe->rootfamilysizes[0] + 1;
 	}
-	return cafe_tree_likelihood(pcafe);
+	compute_tree_likelihoods(pcafe);
+	return get_likelihoods(pcafe);
 }
 
 /**
@@ -1111,10 +1112,10 @@ void __cafe_cmd_viterbi_family_print(int idx)
 {
 	pCafeTree pcafe = cafe_param->pcafe;
 	cafe_family_set_size_with_family_forced(cafe_param->pfamily,idx,pcafe);
-	cafe_tree_likelihood(pcafe);
+	compute_tree_likelihoods(pcafe);
 	int ridx =  __maxidx(((pCafeNode)pcafe->super.root)->likelihoods,pcafe->rfsize) + pcafe->rootfamilysizes[0];
 	double mlh =  __max( ((pCafeNode)pcafe->super.root)->likelihoods,pcafe->rfsize);
-	//cafe_tree_likelihood(pcafe);
+	//compute_tree_likelihoods(pcafe);
 	cafe_tree_viterbi(pcafe);
 	pString pstr = cafe_tree_string(pcafe);
 	printf("%g(%d)\t%s\n", mlh , ridx,  pstr->buf );

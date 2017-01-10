@@ -56,14 +56,15 @@ extern pString cafe_tree_string_with_familysize(pCafeTree pcafe);
 extern void cafe_tree_string_print(pCafeTree pcafe);
 void compute_internal_node_likelihood(pTree ptree, pTreeNode ptnode);
 
-extern double* cafe_tree_likelihood(pCafeTree pcafe);
+extern void compute_tree_likelihoods(pCafeTree pcafe);
+extern double* get_likelihoods(const pCafeTree pcafe);
 extern void cafe_tree_node_free_clustered_likelihoods (pCafeParam param);
 extern double** cafe_tree_clustered_likelihood(pCafeTree pcafe); 
 extern void cafe_tree_viterbi(pCafeTree pcafe);
 extern void cafe_tree_clustered_viterbi(pCafeTree pcafe, int num_likelihoods);
 extern void cafe_tree_viterbi_posterior(pCafeTree pcafe, pCafeParam param);
 extern double* cafe_tree_random_probabilities(pCafeTree pcafe, int rootFamilysize, int trials );
-extern double* cafe_tree_p_values(pCafeTree pcafe, double* p,  pArrayList pconddist, int cdlen);
+extern void cafe_tree_p_values(pCafeTree pcafe, double* p,  pArrayList pconddist, int cdlen);
 extern double** cafe_tree_p_values_of_two_trees(pCafeTree pcafe1, pCafeTree pcafe2,    
 		 								   double** p,
 		                                   pArrayList pconddist1, pArrayList pconddist2,

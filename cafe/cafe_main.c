@@ -191,7 +191,8 @@ double cafe_get_posterior(pCafeParam param)
 		if ( pitem->ref < 0 || pitem->ref == i ) 
 		{
 			cafe_family_set_size(param->pfamily, i, param->pcafe);	// this part is just setting the leave counts.
-			likelihood = cafe_tree_likelihood(param->pcafe);		// likelihood of the whole tree = multiplication of likelihood of all nodes
+			compute_tree_likelihoods(param->pcafe);
+			likelihood = get_likelihoods(param->pcafe);		// likelihood of the whole tree = multiplication of likelihood of all nodes
 			param->ML[i] = __max(likelihood,param->pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
 			if ( pitem->maxlh < 0 )
 			{
@@ -970,7 +971,8 @@ double __cafe_each_best_lambda_search(double* plambda, void* args)
 	{
 		param->param_set_func(param,plambda);
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
-		double* likelihood = cafe_tree_likelihood(pcafe);
+		compute_tree_likelihoods(pcafe);
+		double* likelihood = get_likelihoods(pcafe);
 		score = log(__max(likelihood,pcafe->rfsize));
 		cafe_free_birthdeath_cache(pcafe);
 		probability_cache = NULL;
@@ -1110,7 +1112,7 @@ void* __cafe_conditional_distribution_thread_func(void* ptr)
 	pCDParam param = (pCDParam)ptr;	
 	pCafeParam cafeparam = param->cafeparam;
 	pCafeTree pcafe = cafe_tree_copy(cafeparam->pcafe);
-#ifdef __DEBUG__
+#ifdef DEBUG
 	printf("CD: %d ~ %d\n", param->range[0], param->range[1]);
 #endif
 	param->pCD = cafe_tree_conditional_distribution(pcafe, param->range[0], param->range[1], cafeparam->num_random_samples);
@@ -1251,7 +1253,7 @@ void* __cafe_viterbi_thread_func(void* ptr)
 	pCafeTree pcafe = cafe_tree_copy(param->pcafe);
 	int fsize = param->pfamily->flist->size;
 	double* cP = (double*)memory_new( pcafe->rfsize, sizeof(double));
-#ifdef __DEBUG__
+#ifdef DEBUG
 	printf("VITERBI: from %d\n", pv->from );
 #endif
 	for (int i = pv->from; i < fsize ; i+=param->num_threads )
@@ -1340,7 +1342,7 @@ void* __cafe_branch_cutting_thread_func(void* ptr)
 	pCafeParam param = pbc->cafeparam;	
 	pArrayList** pCDSs = pbc->pCDSs;
 
-#ifdef __DEBUG__
+#ifdef DEBUG
 	printf("Branch cutting : %d ~ %d\n", pbc->range[0], pbc->range[1] -1 );
 #endif
 
@@ -1530,7 +1532,7 @@ void* __cafe_likelihood_ratio_test_thread_func(void* ptr)
 	int nnodes = ptree->nlist->size;
 	int old_bl;
 	int fsize = param->pfamily->flist->size;
-#ifdef __DEBUG__
+#ifdef DEBUG
 	printf("Likelihood ratio test: %d\n", plrt->from );
 #endif
 	for ( i = plrt->from ; i < fsize ; i += param->num_threads )
@@ -1543,7 +1545,8 @@ void* __cafe_likelihood_ratio_test_thread_func(void* ptr)
 			continue;
 		}
 		cafe_family_set_size(param->pfamily,i, pcafe);
-		double maxlh = __max(cafe_tree_likelihood(pcafe), param->pcafe->rfsize );
+		compute_tree_likelihoods(pcafe);
+		double maxlh = __max(get_likelihoods(pcafe), param->pcafe->rfsize );
 		for( b = 0 ; b < nnodes ; b++ )
 		{
 			pPhylogenyNode pnode = (pPhylogenyNode)pcafe->super.nlist->array[b];
@@ -1563,7 +1566,8 @@ void* __cafe_likelihood_ratio_test_thread_func(void* ptr)
 pthread_mutex_lock( &mutex_cafe_likelihood );
 				((pCafeNode)pnode)->birthdeath_matrix = birthdeath_cache_get_matrix(probability_cache, pnode->branchlength, ((pCafeNode)pnode)->birth_death_probabilities.lambda,  ((pCafeNode)pnode)->birth_death_probabilities.mu );
 pthread_mutex_unlock( &mutex_cafe_likelihood);
-				nextlh = __max(cafe_tree_likelihood(pcafe), param->pcafe->rfsize );
+				compute_tree_likelihoods(pcafe);
+				nextlh = __max(get_likelihoods(pcafe), param->pcafe->rfsize );
 			}
 			param->likelihoodRatios[b][i] = (prevlh == maxlh) ? 1 : 1 - chi2cdf( 2*(log(prevlh) - log(maxlh)), 1);
 		//	param->likelihoodRatios[b][i] = (prevlh == maxlh) ? 1 : prevlh / maxlh ;

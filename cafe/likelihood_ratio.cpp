@@ -96,7 +96,8 @@ double __cafe_lhr_get_likelihood_for_diff_lambdas(pCafeParam param, int idx, int
 	}
 	int i;
 	cafe_family_set_size(param->pfamily, idx, param->pcafe);
-	double mlh = __max(cafe_tree_likelihood(param->pcafe), param->pcafe->rfsize);
+	compute_tree_likelihoods(param->pcafe);
+	double mlh = __max(get_likelihoods(param->pcafe), param->pcafe->rfsize);
 	pTree ptree = (pTree)param->pcafe;
 	pArrayList nlist = ptree->nlist;
 	for (i = 0; i < nlist->size; i++)
@@ -132,7 +133,8 @@ void* __cafe_lhr_for_diff_lambdas_i(pCafeParam param,
 		pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
 		if (pitem->ref >= 0 && pitem->ref != i) continue;
 		cafe_family_set_size(param->pfamily, i, pcafe);
-		double maxlh1 = __max(cafe_tree_likelihood(pcafe), pcafe->rfsize);
+		compute_tree_likelihoods(pcafe);
+		double maxlh1 = __max(get_likelihoods(pcafe), pcafe->rfsize);
 		double prev = -1;
 		double next = __cafe_lhr_get_likelihood_for_diff_lambdas(cpy_param, i, 0, lambda_cache, PBDC);
 		for (j = 1; prev < next; j++)

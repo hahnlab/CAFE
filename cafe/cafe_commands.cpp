@@ -1178,7 +1178,7 @@ void viterbi_write(ostream& ost, pCafeTree pcafe, pCafeFamily pfamily)
 		pitem = (pCafeFamilyItem)pfamily->flist->array[i];
 		pitem->maxlh = -1;
 		cafe_family_set_size_with_family(pfamily, i, pcafe);
-		cafe_tree_likelihood(pcafe);
+		compute_tree_likelihoods(pcafe);
 		int ridx = __maxidx(((pCafeNode)pcafe->super.root)->likelihoods, pcafe->rfsize) + pcafe->rootfamilysizes[0];
 		double mlh = __max(((pCafeNode)pcafe->super.root)->likelihoods, pcafe->rfsize);
 		score += log(mlh);
