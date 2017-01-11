@@ -20,9 +20,10 @@ static pCafeTree create_tree()
 	const char *newick_tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)";
 	char tree[100];
 	strcpy(tree, newick_tree);
-	int family_sizes[2] = { 0, 15 };
-	int rootfamily_sizes[2] = { 0, 15 };
-	return cafe_tree_new(tree, family_sizes, rootfamily_sizes, 0, 0);
+	family_size_range range;
+	range.min = range.root_min = 0;
+	range.max = range.root_max = 15;
+	return cafe_tree_new(tree, &range, 0, 0);
 }
 
 TEST_GROUP(CommandTests)
@@ -313,8 +314,8 @@ void prepare_viterbi(CafeParam& param)
 
 	cafe_family_set_species_index(param.pfamily, param.pcafe);
 
-	param.family_sizes[0] = param.rootfamily_sizes[0] = 0;
-	param.family_sizes[1] = param.rootfamily_sizes[1] = 15;
+	param.family_size.min = param.family_size.root_min = 0;
+	param.family_size.max = param.family_size.root_max = 15;
 
 	probability_cache = birthdeath_cache_init(20);
 }

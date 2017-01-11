@@ -97,8 +97,11 @@ void cafe_report_load_bc_or_lhr_list(char* data, double** pvalues, int i, int nn
 int cafe_report_retrieve_data(char* file, pCafeParam param)
 {
 	int i, j;
-	int fs[2] = { 0, 1 };
-	int rs[2] = { 1, 2 };
+	family_size_range range;
+	range.min = 0;
+	range.max = 1;
+	range.root_min = 1;
+	range.root_max = 2;
 
 	FILE* fp = fopen(file,"r");		
 	if ( fp == NULL )
@@ -147,7 +150,7 @@ int cafe_report_retrieve_data(char* file, pCafeParam param)
 		string_pchar_chomp(data);
 		if ( strcasecmp( pstr->buf, "tree" ) == 0 )
 		{
-			param->pcafe = cafe_tree_new(data, fs, rs, 0, 0);
+			param->pcafe = cafe_tree_new(data, &range, 0, 0);
 			nnodes = param->pcafe->super.nlist->size;
 		}
 		else if ( strncasecmp( pstr->buf, "lambda tree", 10 ) == 0 )
@@ -227,7 +230,7 @@ int cafe_report_retrieve_data(char* file, pCafeParam param)
 		arraylist_add(pcf->flist,pitem);
 		sscanf((char*)data->array[2], "%lf", &param->viterbi.maximumPvalues[i]);
 
-		pCafeTree ptree = cafe_tree_new( (char*)data->array[1], fs, rs, 0, 0 );
+		pCafeTree ptree = cafe_tree_new( (char*)data->array[1], &range, 0, 0 );
 		pArrayList nlist = ptree->super.nlist;
 
 		for ( j = 0 ; j < nlist->size ; j+=2 )
@@ -261,11 +264,9 @@ int cafe_report_retrieve_data(char* file, pCafeParam param)
 		cafe_tree_free(ptree);
 	}
 	
-	rs[0] = 1; 
-	rs[1] = rint(max_size*1.25);
-	fs[0] = 0;
-    fs[1] =	max_size  + MAX(50,max_size/50);
-	cafe_tree_set_parameters(param->pcafe, fs, rs, param->lambda[0] );
+	init_family_size(&range, max_size);
+
+	cafe_tree_set_parameters(param->pcafe, &range, param->lambda[0] );
 	arraylist_free(plines, free);
 	return 0;
 }

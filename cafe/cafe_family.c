@@ -968,6 +968,15 @@ void cafe_family_filter(pCafeParam param )
 }
 #endif 
 
+void init_family_size(family_size_range* fs, int max)
+{
+	fs->root_min = 1;	// Must be 1, not 0
+	fs->root_max = MAX(30, rint(max * 1.25));
+
+	fs->max = max + MAX(50, max / 5);
+	fs->min = 0;
+}
+
 
 void cafe_family_filter(pCafeParam param )
 {
@@ -1103,9 +1112,8 @@ void cafe_family_filter(pCafeParam param )
 	if ( pcf->max_size != max )
 	{
 		pcf->max_size = max;
-		param->rootfamily_sizes[1] = rint(param->pfamily->max_size * 1.25);
-		param->family_sizes[1] = param->pfamily->max_size + MAX(50,param->pfamily->max_size/5);
-		cafe_tree_set_parameters(pcafe, param->family_sizes, param->rootfamily_sizes, 0 );
+		init_family_size(&param->family_size, max);
+		cafe_tree_set_parameters(pcafe, &param->family_size, 0 );
 	}
 }
 

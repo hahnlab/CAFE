@@ -222,10 +222,10 @@ void cafe_shell_clear_param(pCafeParam param, int btree_skip)
 	param->num_mus = 0;
 	param->parameterized_k_value = 0;
 	param->fixcluster0 = 0;
-	param->rootfamily_sizes[0] = 0;
-	param->rootfamily_sizes[1] = 1;
-	param->family_sizes[0] = 0;
-	param->family_sizes[1] = 1;
+	param->family_size.root_min = 0;
+	param->family_size.root_max = 1;
+	param->family_size.min = 0;
+	param->family_size.max = 1;
 	param->param_set_func = cafe_shell_set_lambda;
 	param->num_threads = 1;
 	param->num_random_samples = 1000;
@@ -235,11 +235,8 @@ void cafe_shell_clear_param(pCafeParam param, int btree_skip)
 void cafe_shell_set_sizes(pCafeParam param)
 {
 	pCafeTree pcafe = param->pcafe;
-	pcafe->rootfamilysizes[0] = param->rootfamily_sizes[0];
-	pcafe->rootfamilysizes[1] = param->rootfamily_sizes[1];
-	pcafe->familysizes[0] = param->family_sizes[0];
-	pcafe->familysizes[1] = param->family_sizes[1];
-	cafe_tree_set_parameters(pcafe, param->family_sizes, param->rootfamily_sizes, 0 );
+	copy_range_to_tree(pcafe, &param->family_size);
+	cafe_tree_set_parameters(pcafe, &param->family_size, 0 );
 }
 
 void cafe_shell_prompt(char* prompt, char* format, ... )
@@ -662,18 +659,18 @@ double* cafe_shell_likelihood(int max)
 
 	if (probability_cache == NULL || probability_cache->maxFamilysize <  MAX(rfmax, fmax)  )
 	{
-		cafe_param->rootfamily_sizes[1] = rfmax;
-		cafe_param->family_sizes[1] = fmax;
-		cafe_tree_set_parameters(pcafe, cafe_param->family_sizes, cafe_param->rootfamily_sizes, 0 );
+		cafe_param->family_size.root_max = rfmax;
+		cafe_param->family_size.max = fmax;
+		cafe_tree_set_parameters(pcafe, &cafe_param->family_size, 0 );
 		if (probability_cache)
 		{
-			int remaxFamilysize = MAX(cafe_param->family_sizes[1], cafe_param->rootfamily_sizes[1]);
+			int remaxFamilysize = MAX(cafe_param->family_size.max, cafe_param->family_size.root_max);
 			birthdeath_cache_resize(probability_cache, remaxFamilysize);
 			cafe_tree_set_birthdeath(cafe_param->pcafe);
 		}
 		else
 		{
-			reset_birthdeath_cache(cafe_param->pcafe, 0, cafe_param->family_sizes, cafe_param->rootfamily_sizes);
+			reset_birthdeath_cache(cafe_param->pcafe, 0, &cafe_param->family_size);
 		}
 	}
 	else
@@ -694,10 +691,10 @@ double* cafe_shell_likelihood(int max)
 void cafe_shell_init(int quiet)
 {
 	cafe_param = (pCafeParam)memory_new(1,sizeof(CafeParam));
-	cafe_param->rootfamily_sizes[0] = 1;
-	cafe_param->rootfamily_sizes[1] = 1;
-	cafe_param->family_sizes[0] = 0;
-	cafe_param->family_sizes[1] = 1;
+	cafe_param->family_size.root_min = 1;
+	cafe_param->family_size.root_max = 1;
+	cafe_param->family_size.min = 0;
+	cafe_param->family_size.max = 1;
 	cafe_param->param_set_func = cafe_shell_set_lambda;
 	cafe_param->flog = stdout;
 	cafe_param->num_threads = 1;
@@ -1087,7 +1084,7 @@ int cafe_cmd_lambda_mu(int argc, char* argv[])
 	}
 	if (cafe_param->pfamily)
 	{
-		reset_birthdeath_cache(cafe_param->pcafe, cafe_param->parameterized_k_value, cafe_param->family_sizes, cafe_param->rootfamily_sizes);
+		reset_birthdeath_cache(cafe_param->pcafe, cafe_param->parameterized_k_value, &cafe_param->family_size);
 	}
 	   
 	cafe_log(cafe_param,"DONE: Lamda,Mu Search or setting, for command:\n");
@@ -1202,7 +1199,8 @@ double _cafe_cross_validate_by_family(char* queryfile, char* truthfile, char* er
 	{
 		cafe_family_set_species_index(truthfamily, truthtree);
 	}
-	reset_birthdeath_cache(cafe_param->pcafe, cafe_param->parameterized_k_value, cafe_param->family_sizes, cafe_param->rootfamily_sizes);
+
+	reset_birthdeath_cache(cafe_param->pcafe, cafe_param->parameterized_k_value, &cafe_param->family_size);
 	
 	for(i=0; i< cafe_param->cv_test_count_list->size; i++) 
 	{
@@ -1255,7 +1253,8 @@ double _cafe_cross_validate_by_species(char* validatefile, char* errortype)
 	if ( cafe_param->cv_test_count_list == NULL ) return -1;
 	// now compare reconstructed count to true count	
 	pCafeTree pcafe = cafe_param->pcafe;
-	reset_birthdeath_cache(cafe_param->pcafe, cafe_param->parameterized_k_value, cafe_param->family_sizes, cafe_param->rootfamily_sizes);
+
+	reset_birthdeath_cache(cafe_param->pcafe, cafe_param->parameterized_k_value, &cafe_param->family_size);
 	pArrayList estimate_size = arraylist_new(cafe_param->cv_test_count_list->size);
 	for(i=0; i< cafe_param->pfamily->flist->size; i++) 
 	{
@@ -1302,11 +1301,10 @@ double _cafe_cross_validate_by_species(char* validatefile, char* errortype)
 	return returnerror;
 }
 
-
-
-
-
-
+void set_range_from_family(family_size_range* range, pCafeFamily family)
+{
+	init_family_size(range, family->max_size);
+}
 
 int cafe_cmd_crossvalidation_by_family(int argc, char* argv[])
 {
@@ -1351,12 +1349,10 @@ int cafe_cmd_crossvalidation_by_family(int argc, char* argv[])
 		}
 		cafe_param->pfamily = tmpfamily;
 		
-		cafe_param->rootfamily_sizes[0] = 1;
-		cafe_param->rootfamily_sizes[1] =  MAX(30,rint(cafe_param->pfamily->max_size * 1.25));
-		cafe_param->family_sizes[1] = cafe_param->pfamily->max_size + MAX(50,cafe_param->pfamily->max_size/5);
+		set_range_from_family(&cafe_param->family_size, cafe_param->pfamily);
 		if ( cafe_param->pcafe )
 		{
-			cafe_tree_set_parameters(cafe_param->pcafe, cafe_param->family_sizes, cafe_param->rootfamily_sizes, 0 );
+			cafe_tree_set_parameters(cafe_param->pcafe, &cafe_param->family_size, 0 );
 			cafe_family_set_species_index(cafe_param->pfamily, cafe_param->pcafe);
 		}
 		// re-train 
@@ -1379,12 +1375,11 @@ int cafe_cmd_crossvalidation_by_family(int argc, char* argv[])
 	
 	//re-load the original family file
 	cafe_param->pfamily = pcafe_original;
-	cafe_param->rootfamily_sizes[0] = 1;
-	cafe_param->rootfamily_sizes[1] =  MAX(30,rint(cafe_param->pfamily->max_size * 1.25));
-	cafe_param->family_sizes[1] = cafe_param->pfamily->max_size + MAX(50,cafe_param->pfamily->max_size/5);
+	set_range_from_family(&cafe_param->family_size, cafe_param->pfamily);
+
 	if ( cafe_param->pcafe )
 	{
-		cafe_tree_set_parameters(cafe_param->pcafe, cafe_param->family_sizes, cafe_param->rootfamily_sizes, 0 );
+		cafe_tree_set_parameters(cafe_param->pcafe, &cafe_param->family_size, 0 );
 		cafe_family_set_species_index(cafe_param->pfamily, cafe_param->pcafe);
 	}
 	// re-train 
@@ -1433,12 +1428,11 @@ int cafe_cmd_crossvalidation_by_species(int argc, char* argv[])
 			}
 			cafe_param->pfamily = tmpfamily;
 			
-			cafe_param->rootfamily_sizes[0] = 1;
-			cafe_param->rootfamily_sizes[1] =  MAX(30,rint(cafe_param->pfamily->max_size * 1.25));
-			cafe_param->family_sizes[1] = cafe_param->pfamily->max_size + MAX(50,cafe_param->pfamily->max_size/5);
+			set_range_from_family(&cafe_param->family_size, cafe_param->pfamily);
+
 			if ( cafe_param->pcafe )
 			{
-				cafe_tree_set_parameters(cafe_param->pcafe, cafe_param->family_sizes, cafe_param->rootfamily_sizes, 0 );
+				cafe_tree_set_parameters(cafe_param->pcafe, &cafe_param->family_size, 0 );
 				cafe_family_set_species_index(cafe_param->pfamily, cafe_param->pcafe);
 			}
 			// re-train 
@@ -1461,12 +1455,11 @@ int cafe_cmd_crossvalidation_by_species(int argc, char* argv[])
 		
 		//re-load the original family file
 		cafe_param->pfamily = pcafe_original;
-		cafe_param->rootfamily_sizes[0] = 1;
-		cafe_param->rootfamily_sizes[1] =  MAX(30,rint(cafe_param->pfamily->max_size * 1.25));
-		cafe_param->family_sizes[1] = cafe_param->pfamily->max_size + MAX(50,cafe_param->pfamily->max_size/5);
+		set_range_from_family(&cafe_param->family_size, cafe_param->pfamily);
+
 		if ( cafe_param->pcafe )
 		{
-			cafe_tree_set_parameters(cafe_param->pcafe, cafe_param->family_sizes, cafe_param->rootfamily_sizes, 0 );
+			cafe_tree_set_parameters(cafe_param->pcafe, &cafe_param->family_size, 0 );
 			cafe_family_set_species_index(cafe_param->pfamily, cafe_param->pcafe);
 		}
 		// re-train 
@@ -1508,8 +1501,8 @@ void log_param_values(pCafeParam param)
 		string_free(pstr);
 	}
 	cafe_log(param, "The number of families is %d\n", param->pfamily->flist->size);
-	cafe_log(param, "Root Family size : %d ~ %d\n", param->rootfamily_sizes[0], param->rootfamily_sizes[1]);
-	cafe_log(param, "Family size : %d ~ %d\n", param->family_sizes[0], param->family_sizes[1]);
+	cafe_log(param, "Root Family size : %d ~ %d\n", param->family_size.root_min, param->family_size.root_max);
+	cafe_log(param, "Family size : %d ~ %d\n", param->family_size.min, param->family_size.max);
 	cafe_log(param, "P-value: %f\n", param->pvalue);
 	cafe_log(param, "Num of Threads: %d\n", param->num_threads);
 	cafe_log(param, "Num of Random: %d\n", param->num_random_samples);
@@ -1877,7 +1870,7 @@ int cafe_cmd_sim_extinct(int argc, char* argv[])
 
 	pArrayList pargs = cafe_shell_build_argument(argc, argv);
 	pArgument parg;
-	int range[2] = { 1, cafe_param->rootfamily_sizes[1] };
+	int range[2] = { 1, cafe_param->family_size.root_max };
 	int num_trials = 10000;
 
 	cafe_log( cafe_param, "Extinction count from Monte Carlo:\n");
@@ -1901,9 +1894,9 @@ int cafe_cmd_sim_extinct(int argc, char* argv[])
 	}
 	cafe_log( cafe_param, "# trials: %d\n", num_trials );
 
-	if ( range[0] > range[1] || range[1] > cafe_param->rootfamily_sizes[1] )
+	if ( range[0] > range[1] || range[1] > cafe_param->family_size.root_max)
 	{
-		fprintf(stderr, "ERROR(simextinct): -r : 1 ~ %d\n", cafe_param->rootfamily_sizes[1] );
+		fprintf(stderr, "ERROR(simextinct): -r : 1 ~ %d\n", cafe_param->family_size.root_max);
 		arraylist_free(pargs, free);
 		return -1;
 	}
@@ -2035,7 +2028,8 @@ int cafe_cmd_root_dist(int argc, char* argv[])
 		cafe_log( cafe_param, "The number of families is %d\n", cafe_param->pfamily->flist->size );
 		int i;
 		pCafeTree pcafe = cafe_param->pcafe;
-		reset_birthdeath_cache(cafe_param->pcafe, cafe_param->parameterized_k_value, cafe_param->family_sizes, cafe_param->rootfamily_sizes);
+
+		reset_birthdeath_cache(cafe_param->pcafe, cafe_param->parameterized_k_value, &cafe_param->family_size);
 		for(i=0; i< cafe_param->pfamily->flist->size; i++) 
 		{
 			cafe_family_set_size(cafe_param->pfamily,i, pcafe);
@@ -2071,11 +2065,11 @@ int cafe_cmd_root_dist(int argc, char* argv[])
 		if (cafe_param->root_dist) { memory_free( cafe_param->root_dist); cafe_param->root_dist = NULL;}
 		cafe_param->root_dist = (int*) memory_new(max_rootsize+1,sizeof(int));
 		
-		cafe_param->pcafe->rootfamilysizes[0] = cafe_param->rootfamily_sizes[0] = 1;
-		cafe_param->pcafe->rootfamilysizes[1] = cafe_param->rootfamily_sizes[1] = max_rootsize;
-		cafe_param->pcafe->familysizes[0] = cafe_param->family_sizes[0] = 0;
-		cafe_param->pcafe->familysizes[1] = cafe_param->family_sizes[1] = max_rootsize*2;
-		cafe_param->pcafe->rfsize = cafe_param->rootfamily_sizes[1] - cafe_param->rootfamily_sizes[0] + 1;
+		cafe_param->family_size.root_min = 1;
+		cafe_param->family_size.root_max = max_rootsize;
+		cafe_param->family_size.min = 0;
+		cafe_param->family_size.max = max_rootsize * 2;
+		copy_range_to_tree(cafe_param->pcafe, &cafe_param->family_size);
 		
 		for(  i = 0 ; fgets(buf,STRING_BUF_SIZE,fp) ; i++ )	
 		{
@@ -2202,7 +2196,7 @@ int cafe_shell_read_freq_from_measures(char* file1, char* file2, int* sizeFreq)
     
     // count frequency of family sizes
     int line1 = 0;
-    int maxFamilySize = cafe_param->family_sizes[1];
+    int maxFamilySize = cafe_param->family_size.max;
     int data1colnum = 0;
     while(fgets(buf1,STRING_BUF_SIZE,fpfile1))	
     {
@@ -3194,8 +3188,8 @@ int cafe_shell_set_error_matrix_from_file(char* filename, char* speciesname)
 		pArrayList data = string_pchar_split( buf, ' ');
 		pArrayList max = string_pchar_split( data->array[0], ':');
 		errormodel->maxfamilysize = atoi((char*)max->array[1]);
-        if (errormodel->maxfamilysize < cafe_param->family_sizes[1]) {
-            errormodel->maxfamilysize = cafe_param->family_sizes[1];
+        if (errormodel->maxfamilysize < cafe_param->family_size.max) {
+            errormodel->maxfamilysize = cafe_param->family_size.max;
         }
 		arraylist_free(data,NULL);
         arraylist_free(max, NULL);

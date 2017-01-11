@@ -28,9 +28,11 @@ static pCafeTree create_tree()
 	const char *newick_tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)";
 	char tree[100];
 	strcpy(tree, newick_tree);
-	int family_sizes[2] = { 1,1 };
-	int rootfamily_sizes[2] = { 1,1 };
-	return cafe_tree_new(tree, family_sizes, rootfamily_sizes, 0, 0);
+	family_size_range range;
+	range.min = range.root_min = 1;
+	range.max = range.root_max = 1;
+
+	return cafe_tree_new(tree, &range, 0, 0);
 }
 
 

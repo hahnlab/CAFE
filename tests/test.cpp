@@ -42,9 +42,10 @@ static pCafeTree create_tree()
 	const char *newick_tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)";
 	char tree[100];
 	strcpy(tree, newick_tree);
-	int family_sizes[2] = { 0,15 };
-	int rootfamily_sizes[2] = { 0,15 };
-	return cafe_tree_new(tree, family_sizes, rootfamily_sizes, 0, 0);
+	family_size_range range;
+	range.min = range.root_min = 0;
+	range.max = range.root_max = 15;
+	return cafe_tree_new(tree, &range, 0, 0);
 }
 
 
@@ -192,7 +193,7 @@ TEST(FirstTestGroup, TestShellDispatcher)
 	char c[10];
 	cafe_shell_init(1);
 
-	CafeShellCommand *old = cafe_cmd;
+	//CafeShellCommand *old = cafe_cmd;
 	cafe_cmd[0] = cafe_cmd_test[0];
 	cafe_cmd[1] = cafe_cmd_test[1];
 
@@ -212,10 +213,10 @@ TEST(FirstTestGroup, TestShowSizes)
 	setbuf(stdout, outbuf);
 
 	CafeParam param;
-	param.rootfamily_sizes[0] = 29;
-	param.rootfamily_sizes[1] = 31;
-	param.family_sizes[0] = 37;
-	param.family_sizes[1] = 41;
+	param.family_size.root_min = 29;
+	param.family_size.root_max = 31;
+	param.family_size.min = 37;
+	param.family_size.max = 41;
 
 	CafeFamilyItem item;
 	item.ref = 14;
@@ -276,16 +277,19 @@ TEST(FirstTestGroup, Test_cafe_get_posterior)
 	param.ML = (double*)memory_new(15, sizeof(double));
 	param.MAP = (double*)memory_new(15, sizeof(double));
 
-	param.family_sizes[0] = param.rootfamily_sizes[0] = 0;
-	param.family_sizes[1] = param.rootfamily_sizes[1] = 15;
-
 	LONGS_EQUAL(16,	param.pcafe->size_of_factor);	// as a side effect of create_tree
 
 	pArrayList node_list = param.pcafe->super.nlist;
 	pTreeNode node = (pTreeNode)node_list->array[1];
 	CHECK(node->children->head != NULL);
 
-	reset_birthdeath_cache(param.pcafe, 0, param.family_sizes, param.rootfamily_sizes);
+	family_size_range range;
+	range.min = 0;
+	range.max = 15;
+	range.root_min = 0;
+	range.root_max = 15;
+
+	reset_birthdeath_cache(param.pcafe, 0, &range);
 
 	DOUBLES_EQUAL(-1.0, cafe_get_posterior(&param), 0.01);	// -1 represents an error - empirical posterior not defined. Is this safe?
 
@@ -508,7 +512,7 @@ TEST(ReportTests, write_families_line)
 	cafe_family_add_item(param.pfamily, build_arraylist(values, 7));
 
 	param.viterbi.num_nodes = 6;
-	double expansion[] = { 1.3, 2.3, 3.3, 4.3, 5.3, 6.3 };
+	//double expansion[] = { 1.3, 2.3, 3.3, 4.3, 5.3, 6.3 };
 	param.viterbi.viterbiPvalues = (double**)memory_new_2dim(6, 1, sizeof(double));
 	param.viterbi.viterbiPvalues[0][0] = .025;
 	param.viterbi.viterbiNodeFamilysizes = (int**)memory_new_2dim(6, 1, sizeof(int));
@@ -642,12 +646,13 @@ TEST(FirstTestGroup, cafe_tree_random_familysize)
 	probability_cache = NULL;
 	CafeParam param;
 	param.pcafe = tree;
-	param.family_sizes[0] = 1;
-	param.rootfamily_sizes[0] = 1;
-	param.family_sizes[1] = 10;
-	param.rootfamily_sizes[1] = 3;
 
-	reset_birthdeath_cache(param.pcafe, 0, param.family_sizes, param.rootfamily_sizes);
+	family_size_range range;
+	range.min = 1;
+	range.max = 10;
+	range.root_min = 1;
+	range.root_max = 3;
+	reset_birthdeath_cache(param.pcafe, 0, &range);
 	pCafeNode node5 = (pCafeNode)tree->super.nlist->array[5];
 	for (int i = 0; i <= 10; ++i)
 		for (int j = 0; j <= 10; ++j)
@@ -664,13 +669,13 @@ TEST(FirstTestGroup, reset_birthdeath_cache)
 {
 	pCafeTree tree = create_tree();
 	probability_cache = NULL;
-	CafeParam param;
-	param.pcafe = tree;
-	param.family_sizes[0] = 0;
-	param.rootfamily_sizes[0] = 0;
-	param.family_sizes[1] = 10;
-	param.rootfamily_sizes[1] = 10;
-	reset_birthdeath_cache(param.pcafe, 0, param.family_sizes, param.rootfamily_sizes);
+	family_size_range range;
+	range.min = 0;
+	range.root_min  = 0;
+	range.max = 10;
+	range.root_max = 10;
+	
+	reset_birthdeath_cache(tree, 0, &range);
 	CHECK_FALSE(probability_cache == NULL);
 	// every node should have its birthdeath_matrix set to an entry in the cache
 	// matching its branch length, lambda and mu values
@@ -823,6 +828,43 @@ TEST(FirstTestGroup, init_histograms)
 	CHECK(roots.phist_data[0] != NULL);
 	CHECK(roots.phist_sim[1] != NULL);
 	CHECK(roots.phist_data[1] != NULL);
+}
+
+TEST(FirstTestGroup, init_family_size)
+{
+	family_size_range sz;
+	init_family_size(&sz, 100);
+	LONGS_EQUAL(1, sz.root_min);
+	LONGS_EQUAL(125, sz.root_max);
+	LONGS_EQUAL(0, sz.min);
+	LONGS_EQUAL(150, sz.max);
+
+	init_family_size(&sz, 10);
+	LONGS_EQUAL(1, sz.root_min);
+	LONGS_EQUAL(30, sz.root_max);
+	LONGS_EQUAL(0, sz.min);
+	LONGS_EQUAL(60, sz.max);
+}
+
+TEST(FirstTestGroup, cafe_tree_set_parameters)
+{
+	pCafeTree tree = create_tree();
+
+	family_size_range range;
+	range.min = 0;
+	range.max = 50;
+	range.root_min = 15;
+	range.root_max = 20;
+	cafe_tree_set_parameters(tree, &range, 0.05);
+
+	DOUBLES_EQUAL(0.05, tree->lambda, 0.0001);
+	LONGS_EQUAL(0, tree->familysizes[0]);
+	LONGS_EQUAL(50, tree->familysizes[1]);
+	LONGS_EQUAL(15, tree->rootfamilysizes[0]);
+	LONGS_EQUAL(20, tree->rootfamilysizes[1]);
+
+	LONGS_EQUAL(51, tree->size_of_factor);
+	// TODO: test that each node's likelihood and viterbi values have been reset to a size of 51
 }
 
 TEST(LikelihoodRatio, cafe_likelihood_ratio_test)

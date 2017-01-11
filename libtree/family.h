@@ -108,6 +108,15 @@ typedef struct
 }CafeFamily;
 typedef CafeFamily* pCafeFamily;
 
+typedef struct {
+	int min;
+	int max;
+	int root_min;
+	int root_max;
+} family_size_range;
+void init_family_size(family_size_range* fs, int max);
+void copy_range_to_tree(pCafeTree tree, family_size_range* range);
+
 typedef struct tagCafeParam CafeParam;
 typedef CafeParam* pCafeParam;
 typedef void (*param_func)(pCafeParam param, double* parameters);
@@ -163,8 +172,9 @@ struct tagCafeParam
 	double max_branch_length;
     double sum_branch_length;
 	int num_branches;
-	int family_sizes[2];
-	int rootfamily_sizes[2];
+
+	family_size_range family_size;
+	
 	int* root_dist;
 	char* cv_species_name;
 	pArrayList cv_test_species_list;

@@ -23,21 +23,16 @@ pTreeNode cafe_tree_new_empty_node(pTree ptree)
 	return (pTreeNode)pcnode;		
 }
 
-void cafe_tree_set_parameters(pCafeTree pcafe, int familysizes[], 
-		                int rootfamilysizes[], double lambda)
+void cafe_tree_set_parameters(pCafeTree pcafe, family_size_range* range, double lambda)
 {
 	int i;
 	pArrayList nlist = pcafe->super.nlist;
-	for ( i = 0 ; i < 2 ; i++ )
-	{
-		pcafe->familysizes[i] = familysizes[i];
-		pcafe->rootfamilysizes[i] = rootfamilysizes[i];
-	}
-	pcafe->lambda = lambda;
-	pcafe->rfsize = rootfamilysizes[1] - rootfamilysizes[0] + 1;
+	copy_range_to_tree(pcafe, range);
 
-	int rsize = rootfamilysizes[1] - rootfamilysizes[0]  + 1;
-	int fsize = familysizes[1] - familysizes[0]  + 1;
+	pcafe->lambda = lambda;
+
+	int rsize = pcafe->rfsize;
+	int fsize = range->max - range->min  + 1;
 	int max_size = rsize > fsize ? rsize : fsize;
 	if ( pcafe->size_of_factor < max_size )
 	{
@@ -74,13 +69,10 @@ void cafe_tree_parse_node(pTree ptree, pTreeNode ptnode)
 	}
 }
 
-pCafeTree cafe_tree_new(const char* sztree, int familysizes[], 
-		                int rootfamilysizes[], double lambda, double mu)
+pCafeTree cafe_tree_new(const char* sztree, family_size_range* range, double lambda, double mu)
 {
-	int i;
-
-	int rsize = rootfamilysizes[1] - rootfamilysizes[0]  + 1;
-	int fsize = familysizes[1] - familysizes[0]  + 1;
+	int rsize = range->root_max - range->root_min  + 1;
+	int fsize = range->max - range->min  + 1;
 
 	assert(strlen(sztree) < STRING_BUF_SIZE);
 	char buf[STRING_BUF_SIZE];
@@ -95,14 +87,11 @@ pCafeTree cafe_tree_new(const char* sztree, int familysizes[],
 		return NULL;
 	}
 
-	for ( i = 0 ; i < 2 ; i++ )
-	{
-		pcafe->familysizes[i] = familysizes[i];
-		pcafe->rootfamilysizes[i] = rootfamilysizes[i];
-	}
+	copy_range_to_tree(pcafe, range);
+
 	pcafe->lambda = lambda;
 	pcafe->mu = mu;
-	pcafe->rfsize = rootfamilysizes[1] - rootfamilysizes[0] + 1;
+
 	((pCafeNode)pcafe->super.root)->birth_death_probabilities.lambda = lambda;
 	((pCafeNode)pcafe->super.root)->birth_death_probabilities.mu = mu;
 	tree_build_node_list((pTree)pcafe);

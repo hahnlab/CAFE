@@ -40,9 +40,9 @@ typedef enum
 
 extern double cafe_get_posterior(pCafeParam param);
 extern double cafe_set_prior_rfsize_empirical(pCafeParam param);
-extern pCafeTree cafe_tree_new(const char* sztree, int familysizes[], int rootfamilysizes[], double lambda, double mu);
+extern pCafeTree cafe_tree_new(const char* sztree, family_size_range* range, double lambda, double mu);
 extern pTreeNode cafe_tree_new_empty_node(pTree pcafe);
-extern void cafe_tree_set_parameters(pCafeTree pcafe, int familysizes[], int rootfamilysizes[], double lambda);
+extern void cafe_tree_set_parameters(pCafeTree pcafe, family_size_range* range, double lambda);
 extern pCafeTree cafe_tree_copy(pCafeTree psrc);
 extern pCafeTree cafe_tree_split(pCafeTree pcafe, int idx );
 extern void cafe_tree_free(pCafeTree pcafe);
@@ -115,7 +115,7 @@ extern void cafe_family_read_query_family(pCafeParam param, char* file);
 ****************************************************************************/
 
 extern void cafe_log(pCafeParam param, const char* msg, ... );
-extern void reset_birthdeath_cache(pCafeTree tree, int k_value, int* family_sizes, int* rootfamily_sizes);
+extern void reset_birthdeath_cache(pCafeTree tree, int k_value, family_size_range* range);
 extern double* cafe_best_lambda_by_fminsearch(pCafeParam param, int lambda_len, int k);
 extern double* cafe_best_lambda_mu_by_fminsearch(pCafeParam param, int lambda_len, int mu_len, int k );
 extern double* cafe_best_lambda_mu_eqbg_by_fminsearch(pCafeParam param, int lambda_len, int mu_len );

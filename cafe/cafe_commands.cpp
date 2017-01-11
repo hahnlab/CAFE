@@ -500,12 +500,13 @@ void verify_directory(string dir)
 	}
 }
 
-int* get_root_dist(pCafeTree pcafe, pCafeFamily pfamily, int k_value, int* family_sizes, int* rootfamily_sizes)
+int* get_root_dist(pCafeTree pcafe, pCafeFamily pfamily, int k_value, family_size_range* range)
 {
 	int *root_dist = (int*)memory_new(pcafe->rfsize + 1, sizeof(int));
 	int num_families = pfamily->flist->size;
 	pCafeNode croot = (pCafeNode)pcafe->super.root;
-	reset_birthdeath_cache(pcafe, k_value, family_sizes,rootfamily_sizes);
+
+	reset_birthdeath_cache(pcafe, k_value, range);
 	printf("Viterbi\n");
 
 	for (int i = 0; i < num_families; i++)
@@ -621,7 +622,7 @@ int cafe_cmd_generate_random_family(pCafeParam param, std::vector<std::string> t
 
 		num_families = param->pfamily->flist->size;
 		param->param_set_func(param, param->parameters);
-		param->root_dist = get_root_dist(pcafe, param->pfamily, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
+		param->root_dist = get_root_dist(pcafe, param->pfamily, param->parameterized_k_value, &param->family_size);
 	}
 	else {
 		num_families = 0;
@@ -632,7 +633,7 @@ int cafe_cmd_generate_random_family(pCafeParam param, std::vector<std::string> t
 		prereqs(param, REQUIRES_LAMBDA);
 		cafe_log(param, "Using user defined root size distribution for simulation... \n");
 		param->param_set_func(param, param->parameters);
-		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
+		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
 	}
 
 	int t;
@@ -788,15 +789,11 @@ int cafe_cmd_load(pCafeParam param, std::vector<std::string> tokens)
 	if (param->pfamily == NULL) 
 		throw runtime_error("Failed to load file\n");
 
-	// this is very important!!!!!!!!!!!
-	param->rootfamily_sizes[0] = 1;
-	//param->rootfamily_sizes[0] = 0;
-	//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	param->rootfamily_sizes[1] = MAX(30, rint(param->pfamily->max_size * 1.25));
-	param->family_sizes[1] = param->pfamily->max_size + MAX(50, param->pfamily->max_size / 5);
+	init_family_size(&param->family_size, param->pfamily->max_size);
+
 	if (param->pcafe)
 	{
-		cafe_tree_set_parameters(param->pcafe, param->family_sizes, param->rootfamily_sizes, 0);
+		cafe_tree_set_parameters(param->pcafe, &param->family_size, 0);
 		cafe_family_set_species_index(param->pfamily, param->pcafe);
 	}
 	param->ML = (double*)memory_new(param->pfamily->flist->size, sizeof(double));
@@ -808,7 +805,7 @@ int cafe_cmd_load(pCafeParam param, std::vector<std::string> tokens)
 	}
 	if (param->lambda && param->pcafe)
 	{
-		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, param->family_sizes, param->rootfamily_sizes);
+		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
 	}
 	log_param_values(param);
 	return 0;
@@ -1062,8 +1059,7 @@ int cafe_cmd_tree(pCafeParam param, std::vector<std::string> tokens)
 		memory_free(param->old_branchlength);
 		param->old_branchlength = NULL;
 	}
-	param->pcafe = cafe_tree_new(newick.c_str(), param->family_sizes,
-		param->rootfamily_sizes, 0, 0);
+	param->pcafe = cafe_tree_new(newick.c_str(), &param->family_size, 0, 0);
 	if (param->pcafe == NULL) {
 		throw runtime_error("Failed to load tree from provided string");
 	}
