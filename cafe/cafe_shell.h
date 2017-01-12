@@ -43,7 +43,6 @@ typedef struct
 } ErrorMeasure;
 typedef ErrorMeasure* pErrorMeasure;
  
-void cafe_shell_set_sizes(pCafeParam param);
 pArrayList cafe_shell_build_argument(int argc, char* argv[]);
 void cafe_shell_prompt(char* prompt, char* format, ... );
 void cafe_shell_init(int quiet);

@@ -232,12 +232,14 @@ void cafe_shell_clear_param(pCafeParam param, int btree_skip)
 	param->pvalue = 0.01;
 }
 
+#if 0
 void cafe_shell_set_sizes(pCafeParam param)
 {
 	pCafeTree pcafe = param->pcafe;
 	copy_range_to_tree(pcafe, &param->family_size);
 	cafe_tree_set_parameters(pcafe, &param->family_size, 0 );
 }
+#endif
 
 void cafe_shell_prompt(char* prompt, char* format, ... )
 {
@@ -1609,7 +1611,7 @@ int cafe_cmd_pvalue(int argc, char* argv[])
 		{
 			cafe_pCD = cafe_conditional_distribution(cafe_param);
 		}
-		cafe_shell_set_sizes(cafe_param);
+		cafe_tree_set_parameters(cafe_param->pcafe, &cafe_param->family_size, 0);
 
 		int idx = 0;
 

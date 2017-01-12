@@ -968,7 +968,7 @@ int cafe_cmd_score(pCafeParam param, std::vector<std::string> tokens)
 	if (param->parameterized_k_value > 0) {
 		cafe_family_print_cluster_membership(param);
 	}
-	cafe_shell_set_sizes(param);
+	cafe_tree_set_parameters(param->pcafe, &param->family_size, 0);
 	return 0;
 }
 
@@ -1199,7 +1199,7 @@ int cafe_cmd_viterbi(pCafeParam param, std::vector<std::string> tokens)
 
 	if (args.all)
 	{
-		cafe_shell_set_sizes(param);
+		cafe_tree_set_parameters(param->pcafe, &param->family_size, 0);
 		prereqs(param, REQUIRES_FAMILY);
 		ostream* fp = &cout;
 		ofstream fout;
