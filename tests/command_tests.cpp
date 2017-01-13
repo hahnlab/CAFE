@@ -388,3 +388,27 @@ TEST(CommandTests, viterbi_write)
 
 
 }
+
+TEST(CommandTests, get_pvalue_arguments)
+{
+	tokens.push_back("pvalue");
+	pvalue_args args = get_pvalue_arguments(build_argument_list(tokens));
+	CHECK(args.infile.empty());
+	CHECK(args.outfile.empty());
+	LONGS_EQUAL(-1, args.index);
+
+	tokens.push_back("-i");
+	tokens.push_back("infile");
+	tokens.push_back("-o");
+	tokens.push_back("outfile");
+	tokens.push_back("-idx");
+	tokens.push_back("17");
+
+	args = get_pvalue_arguments(build_argument_list(tokens));
+	STRCMP_EQUAL("infile", args.infile.c_str());
+	STRCMP_EQUAL("outfile", args.outfile.c_str());
+	LONGS_EQUAL(17, args.index);
+}
+
+
+

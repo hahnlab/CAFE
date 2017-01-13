@@ -5,6 +5,7 @@
 
 #include "reports.h"
 #include "likelihood_ratio.h"
+#include "pvalue.h"
 
 using namespace std;
 
@@ -15,8 +16,6 @@ extern "C" {
 	extern pTree tmp_lambda_tree;
 	void cafe_shell_set_lambda(pCafeParam param, double* lambda);
 }
-
-pArrayList cafe_pCD;
 
 void lambda_tree_string(pString pstr, pPhylogenyNode pnode)
 {
@@ -231,7 +230,7 @@ void cafe_do_report(pCafeParam param, report_parameters* params)
 
 	if (params->bc || params->lh)
 	{
-		cafe_pCD = cafe_viterbi(param, cafe_pCD);
+		ConditionalDistribution::cafe_pCD = cafe_viterbi(param, ConditionalDistribution::cafe_pCD);
 		if (params->bc) cafe_branch_cutting(param);
 		if (params->lh) cafe_likelihood_ratio_test(param);
 		cafe_log(param, "Building Text report: %s\n", params->name.c_str());
@@ -245,7 +244,7 @@ void cafe_do_report(pCafeParam param, report_parameters* params)
 	{
 		if (!params->just_save)
 		{
-			cafe_pCD = cafe_viterbi(param, cafe_pCD);
+			ConditionalDistribution::cafe_pCD = cafe_viterbi(param, ConditionalDistribution::cafe_pCD);
 		}
 		cafe_report(param, report);
 	}

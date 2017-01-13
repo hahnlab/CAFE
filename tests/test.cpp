@@ -19,6 +19,7 @@ extern "C" {
 #include <lambda.h>
 #include <reports.h>
 #include <likelihood_ratio.h>
+#include <pvalue.h>
 
 extern "C" {
 	extern pCafeParam cafe_param;
@@ -94,6 +95,13 @@ TEST_GROUP(ReportTests)
 	}
 };
 
+TEST_GROUP(PValueTests)
+{
+	void setup()
+	{
+		srand(10);
+	}
+};
 
 TEST(TreeTests, node_set_birthdeath_matrix)
 {
@@ -865,6 +873,58 @@ TEST(FirstTestGroup, cafe_tree_set_parameters)
 
 	LONGS_EQUAL(51, tree->size_of_factor);
 	// TODO: test that each node's likelihood and viterbi values have been reset to a size of 51
+}
+
+TEST(PValueTests, pvalue)
+{
+	std::ostringstream ost;
+
+	print_pvalues(ost, create_tree(), 10, 5);
+
+	STRCMP_CONTAINS("(((chimp_1:6,human_1:6)_1:81,(mouse_1:17,rat_1:17)_1:70)_1:6,dog_1:9)_1\n", ost.str().c_str());
+	STRCMP_CONTAINS("Root size: 1 with maximum likelihood : 0\n", ost.str().c_str());
+	STRCMP_CONTAINS("p-value: 0\n", ost.str().c_str());
+}
+
+TEST(PValueTests, pvalues_for_family)
+{
+	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
+	pCafeTree pcafe = create_tree();
+	pCafeFamily pfamily = cafe_family_init(build_arraylist(species, 7));
+	cafe_family_set_species_index(pfamily, pcafe);
+	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
+	cafe_family_add_item(pfamily, build_arraylist(values, 7));
+
+	family_size_range range;
+	range.min = 0;
+	range.max = 5;
+	range.root_min = 1;
+	range.root_max = 1;
+	ConditionalDistribution::cafe_pCD = arraylist_new(10);
+	double *d = new double[10];
+	arraylist_add(ConditionalDistribution::cafe_pCD, d);
+
+	probability_cache = birthdeath_cache_init(pcafe->size_of_factor);
+
+	pvalues_for_family(pcafe, pfamily, &range, 1, 1, 0);
+
+	delete[] d;
+}
+
+TEST(PValueTests, read_pvalues)
+{
+	std::string str("1.0\t2.0\t3.0\n1.5\t2.5\t3.5\n");
+	std::istringstream stream(str);
+	read_pvalues(stream, 3);
+	double *vals = (double *)arraylist_get(ConditionalDistribution::cafe_pCD, 0);
+	DOUBLES_EQUAL(1.0, vals[0], .001);
+	DOUBLES_EQUAL(2.0, vals[1], .001);
+	DOUBLES_EQUAL(3.0, vals[2], .001);
+	vals = (double *)arraylist_get(ConditionalDistribution::cafe_pCD, 1);
+	DOUBLES_EQUAL(1.5, vals[0], .001);
+	DOUBLES_EQUAL(2.5, vals[1], .001);
+	DOUBLES_EQUAL(3.5, vals[2], .001);
+
 }
 
 TEST(LikelihoodRatio, cafe_likelihood_ratio_test)

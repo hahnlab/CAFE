@@ -33,6 +33,7 @@ COMMAND(tree);
 COMMAND(score);
 COMMAND(viterbi);
 COMMAND(extinct);
+COMMAND(pvalue);
 
 std::map<std::string, cafe_command2> get_dispatcher();
 int cafe_shell_dispatch_command(pCafeParam param, char* cmd);
@@ -69,8 +70,17 @@ struct viterbi_args {
 	std::string item_id;
 };
 
+struct pvalue_args
+{
+	std::string infile;
+	std::string outfile;
+	int index;
+};
+
 struct load_args get_load_arguments(std::vector<Argument> pargs);
 struct viterbi_args get_viterbi_arguments(std::vector<Argument> pargs);
+struct pvalue_args get_pvalue_arguments(std::vector<Argument> pargs);
+
 
 struct roots
 {

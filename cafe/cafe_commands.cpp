@@ -14,28 +14,29 @@
 #include "lambda.h"
 #include "cafe_commands.h"
 #include "reports.h"
+#include "pvalue.h"
 
 /**
 	\defgroup Commands Commands that are available in CAFE
 */
 
-
 extern "C" {
 #include <utils_string.h>
 #include "cafe_shell.h"
 #include "cafe.h"
+#include <io.h>
+
 	extern void cafe_log(pCafeParam param, const char* msg, ...);
 	void cafe_shell_clear_param(pCafeParam param, int btree_skip);
 
 	extern pTree tmp_lambda_tree;
-	extern pArrayList cafe_pCD;
+
 	void __cafe_tree_string_gainloss(pString pstr, pPhylogenyNode ptnode);
 	void __cafe_tree_string_sum_gainloss(pString pstr, pPhylogenyNode ptnode);
 	void __cafe_cmd_viterbi_family_print(int idx);
 
 	extern pBirthDeathCacheArray probability_cache;
 	int cafe_shell_set_familysize();
-	double* cafe_shell_likelihood(int max);
 	int __cafe_cmd_extinct_count_zero(pTree pcafe);
 	void __hg_print_sim_extinct(pHistogram** phist_sim_n, pHistogram* phist_sim,
 		int r, pHistogram phist_tmp, double* cnt, int num_trials);
@@ -70,6 +71,7 @@ map<string, cafe_command2> get_dispatcher()
 	dispatcher["tree"] = cafe_cmd_tree;
 	dispatcher["extinct"] = cafe_cmd_extinct;
 	dispatcher["viterbi"] = cafe_cmd_viterbi;
+	dispatcher["pvalue"] = cafe_cmd_pvalue;
 
 	return dispatcher;
 }
@@ -135,7 +137,7 @@ int cafe_cmd_exit(pCafeParam param, std::vector<std::string> tokens)
 	if (tmp_lambda_tree) phylogeny_free(tmp_lambda_tree);
 	tmp_lambda_tree = NULL;
 	cafe_shell_clear_param(param, 0);
-	if (cafe_pCD) arraylist_free(cafe_pCD, free);
+	if (ConditionalDistribution::cafe_pCD) arraylist_free(ConditionalDistribution::cafe_pCD, free);
 	memory_free(param);
 	return CAFE_SHELL_EXIT;
 }
@@ -339,7 +341,7 @@ int cafe_cmd_gainloss(pCafeParam param, std::vector<std::string> tokens)
 
 	if (param->viterbi.viterbiNodeFamilysizes == NULL)
 	{
-		cafe_pCD = cafe_viterbi(param, cafe_pCD);
+		ConditionalDistribution::cafe_pCD = cafe_viterbi(param, ConditionalDistribution::cafe_pCD);
 	}
 
 	string name = tokens[1] + ".gs";
@@ -1157,7 +1159,8 @@ int cafe_shell_parse_familysize(pTree pcafe, std::vector<std::string> tokens)
 
 void viterbi_print(pCafeTree pcafe, int max)
 {
-	double* lh = cafe_shell_likelihood(max);
+	check_cache_and_compute_likelihoods(pcafe, max);
+	double* lh = get_likelihoods(pcafe);
 	double mlh = __max(lh, pcafe->rfsize);
 	cafe_tree_viterbi(pcafe);
 	pString pstr = cafe_tree_string(pcafe);
@@ -1480,4 +1483,85 @@ int cafe_cmd_extinct(pCafeParam param, std::vector<std::string> tokens)
 	simdata = NULL;
 	return 0;
 }
+
+struct pvalue_args get_pvalue_arguments(vector<Argument> pargs)
+{
+	struct pvalue_args args;
+	args.index = -1;
+
+	for (size_t i = 0; i < pargs.size(); i++)
+	{
+		pArgument parg = &pargs[i];
+
+		if (!strcmp(parg->opt, "-o"))
+		{
+			args.outfile = parg->argv[0];
+		}
+		if (!strcmp(parg->opt, "-i"))
+		{
+			args.infile = parg->argv[0];
+		}
+		if (!strcmp(parg->opt, "-idx"))
+		{
+			sscanf(parg->argv[0], "%d", &args.index);
+			if (args.index == -1)
+			{
+				throw std::runtime_error("ERROR(pvalue): idx parameter is not an integer\n");
+			}
+		}
+	}
+
+	return args;
+}
+
+/**
+\ingroup Commands
+\brief Calculates pvalues
+
+*/
+int cafe_cmd_pvalue(pCafeParam param, std::vector<std::string> tokens)
+{
+	pvalue_args args = get_pvalue_arguments(build_argument_list(tokens));
+
+	if (args.outfile.size() > 0)
+	{
+		prereqs(param, REQUIRES_TREE | REQUIRES_LAMBDA);
+		ofstream ofst(args.outfile.c_str());
+		if (!ofst)
+		{
+			throw std::runtime_error("ERROR(pvalue): Cannot open " + args.outfile + " in write mode\n");
+		}
+
+		pArrayList cond_dist = cafe_conditional_distribution(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
+		write_pvalues(ofst, cond_dist, param->num_random_samples);
+		arraylist_free(cond_dist, free);
+	}
+	else if (args.infile.size() > 0)
+	{
+		cafe_log(param, "Loading p-values ... \n");
+		ifstream ifst(args.infile.c_str());
+		if (!ifst)
+		{
+			throw std::runtime_error("ERROR(pvalue): Cannot open " + args.outfile + " in write mode\n");
+		}
+		read_pvalues(ifst, cafe_param->num_random_samples);
+		cafe_log(cafe_param, "Done Loading p-values ... \n");
+	}
+	else if (args.index >= 0)
+	{
+		pvalues_for_family(param->pcafe, param->pfamily, &param->family_size, param->num_threads, param->num_random_samples, args.index);
+	}
+	else if (tokens.size() > 1)
+	{
+		prereqs(param, REQUIRES_TREE);
+		print_pvalues(cout, param->pcafe, cafe_shell_parse_familysize((pTree)param->pcafe, tokens), param->num_random_samples);
+	}
+	else
+	{
+		prereqs(param, REQUIRES_TREE);
+		print_pvalues(cout, param->pcafe, cafe_shell_set_familysize(), param->num_random_samples);
+	}
+	return 0;
+}
+
 

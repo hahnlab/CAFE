@@ -25,7 +25,6 @@ extern pBirthDeathCacheArray probability_cache;
 pCafeParam cafe_param;
 
 pTree tmp_lambda_tree;
-pArrayList cafe_pCD;
 
 #ifndef STDERR_IF
 	#define STDERR_IF(a,b)	if ( a ) { fprintf(stderr,b); return -1; }
@@ -44,7 +43,6 @@ CafeShellCommand cafe_cmd[]  =
 	{ "branchlength", cafe_cmd_branchlength },
 	{ "lambdamu", cafe_cmd_lambda_mu },
 	{ "lhtest", cafe_cmd_lh_test },
-	{ "pvalue", cafe_cmd_pvalue },
 	{ "retrieve", cafe_cmd_retrieve },
 	{ "rootdist", cafe_cmd_root_dist}, 
     { "errormodel", cafe_cmd_error_model},  
@@ -534,29 +532,6 @@ void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters)
 	}
 }
 
-
-int cafe_shell_parse_familysize(int argc, char* argv[])
-{
-	int i;
-	int max = 0;
-	pArrayList nlist = cafe_param->pcafe->super.nlist;
-	if ( argc != (nlist->size/2+1) )
-	{
-		fprintf( stderr, "ERROR: There are %d species\n", nlist->size/2 + 1);
-		return -1;
-	}
-	for ( i = 0; i < argc ; i++ )
-	{
-		int size = -1;
-		sscanf( argv[i],"%d", &size );
-		STDERR_IF(size<0, "ERROR: You must input integers greater than or equal to 0\n");
-		pCafeNode pnode = (pCafeNode)nlist->array[i*2];
-		pnode->familysize = size;
-		if ( size > max ) max = size;
-	}
-	return max;
-}
-
 int cafe_shell_set_familysize()
 {
 	int i;
@@ -652,39 +627,6 @@ int cafe_shell_set_branchlength()
 	return 0;
 }
 
-
-double* cafe_shell_likelihood(int max)
-{
-	int rfmax = max+ MAX(50,max/4);
-	int fmax = max + MAX(50,max/5);
-	pCafeTree pcafe = cafe_param->pcafe;
-
-	if (probability_cache == NULL || probability_cache->maxFamilysize <  MAX(rfmax, fmax)  )
-	{
-		cafe_param->family_size.root_max = rfmax;
-		cafe_param->family_size.max = fmax;
-		cafe_tree_set_parameters(pcafe, &cafe_param->family_size, 0 );
-		if (probability_cache)
-		{
-			int remaxFamilysize = MAX(cafe_param->family_size.max, cafe_param->family_size.root_max);
-			birthdeath_cache_resize(probability_cache, remaxFamilysize);
-			cafe_tree_set_birthdeath(cafe_param->pcafe);
-		}
-		else
-		{
-			reset_birthdeath_cache(cafe_param->pcafe, 0, &cafe_param->family_size);
-		}
-	}
-	else
-	{
-		pcafe->rootfamilysizes[0] = 1;
-		pcafe->rootfamilysizes[1] = rfmax;
-		pcafe->familysizes[1] = fmax;
-		pcafe->rfsize = pcafe->rootfamilysizes[1] - pcafe->rootfamilysizes[0] + 1;
-	}
-	compute_tree_likelihoods(pcafe);
-	return get_likelihoods(pcafe);
-}
 
 /**
 * \brief Initializes the global \ref cafe_param that holds the data acted upon by cafe. Called at program startup.
@@ -1515,133 +1457,6 @@ void log_param_values(pCafeParam param)
 		string_free(pstr);
 	}
 }
-
-void __cafe_cmd_pvalue_print(int max)
-{
-	pCafeTree pcafe = cafe_param->pcafe;
-	double* lh = cafe_shell_likelihood(max);
-	int rfsize =  __maxidx(lh,pcafe->rfsize);
-	double mlh = lh[rfsize];
-   	rfsize += pcafe->rootfamilysizes[0];
-
-	double* pcd = cafe_tree_random_probabilities(cafe_param->pcafe, rfsize, cafe_param->num_random_samples );
-	double pv = pvalue( mlh, pcd, cafe_param->num_random_samples);
-	pString pstr = cafe_tree_string(pcafe);
-	printf("%s\n", pstr->buf );
-	printf("Root size: %d with maximum likelihood : %g\n", rfsize, mlh );
-	printf("p-value: %g\n", pv);
-	memory_free(pcd);
-	pcd = NULL;
-	string_free(pstr);
-}
-
-int cafe_cmd_pvalue(int argc, char* argv[])
-{
-	int i, j;
-	pArrayList pargs = cafe_shell_build_argument(argc, argv);
-	pArgument parg;
-	FILE* fp;
-	if ( ( parg = cafe_shell_get_argument("-o", pargs) ) )
-	{
-		if ( cafe_param->pcafe == NULL )
-		{
-			fprintf(stderr, "ERROR(pvalue): You must input newick-formated tree.\n");
-			return -1;
-		}
-		if ( cafe_param->lambda == NULL )
-		{
-			fprintf(stderr, "ERROR(pvalue): You must specify lambda information.\n");
-			return -1;
-		}
-		if ( cafe_pCD ) arraylist_free( cafe_pCD, free);
-		if ( (fp = fopen(parg->argv[0] ,"w") ) == NULL )
-		{
-			fprintf(stderr, "ERROR(pvalue): Cannot open %s in write mode\n", parg->argv[0] );
-			return -1;
-		}
-		cafe_pCD = cafe_conditional_distribution(cafe_param->pcafe, &cafe_param->family_size, cafe_param->num_threads, cafe_param->num_random_samples);
-		for ( i = 0 ; i < cafe_pCD->size ; i++ )
-		{
-			double* data = (double*)cafe_pCD->array[i];
-			fprintf(fp, "%10.9lg", data[0] );
-			for ( j = 1 ; j < cafe_param->num_random_samples ; j++ )
-			{
-				fprintf(fp, "\t%10.9lg", data[j] );
-			}
-			fprintf(fp,"\n");
-		}
-		fclose(fp);
-	}
-	else if ( ( parg = cafe_shell_get_argument("-i", pargs) ) )
-	{
-		if ( cafe_pCD ) arraylist_free( cafe_pCD, free);
-		if ( (fp = fopen(parg->argv[0],"r") ) == NULL )
-		{
-			fprintf(stderr, "ERROR(pvalue): Cannot open %s in read mode\n", parg->argv[0] );
-			return -1;
-		}
-		cafe_log(cafe_param,"Loading p-values ... \n");
-		pString pstr = string_new();
-		cafe_pCD = arraylist_new(11000);
-
-		while( file_read_line( pstr, fp ) )
-		{
-			char* buf = pstr->buf;
-			double * data = (double*) memory_new(cafe_param->num_random_samples, sizeof(double) );
-			int k = 0;
-			for ( i = 0, j = 0; buf[i] ; i++ )
-			{
-				if ( buf[i] == '\t' || buf[i] == '\n' )
-				{
-					buf[i] = '\0';
-					sscanf(&buf[j],"%lg", &data[k++] );
-					buf[i] = '\t';
-					j = i + 1;
-				}
-			}
-			arraylist_add( cafe_pCD, data );
-		}
-		string_free(pstr);
-		fclose(fp);
-		cafe_log(cafe_param,"Done Loading p-values ... \n");
-	}
-	else if ( ( parg = cafe_shell_get_argument("-idx", pargs) ) )
-	{
-		if ( cafe_pCD == NULL ) 
-		{
-			cafe_pCD = cafe_conditional_distribution(cafe_param->pcafe, &cafe_param->family_size, cafe_param->num_threads, cafe_param->num_random_samples);
-		}
-		cafe_tree_set_parameters(cafe_param->pcafe, &cafe_param->family_size, 0);
-
-		int idx = 0;
-
-		pCafeTree pcafe = cafe_param->pcafe;
-		sscanf( parg->argv[0], "%d", &idx );
-		cafe_family_set_size(cafe_param->pfamily,idx,pcafe);
-		double* cP = (double*)memory_new( pcafe->rfsize, sizeof(double));
-		double* lh = ((pCafeNode)pcafe)->likelihoods;
-		cafe_tree_p_values(pcafe, cP, cafe_pCD, cafe_param->num_random_samples);
-		for (idx = 0 ; idx < pcafe->rfsize  ; idx++ )
-		{
-			printf("%d\t%lg\t%lg\n", idx + pcafe->rootfamilysizes[0], lh[idx] , cP[idx] );
-		}
-		memory_free(cP);
-		cP = NULL;
-	}
-	else if ( pargs->size > 0 )
-	{
-    STDERR_IF( cafe_param->pcafe == NULL, "You did not specify tree: command 'tree'\n" );
-		__cafe_cmd_pvalue_print( cafe_shell_parse_familysize(argc-1,&argv[1] ) );
-	}
-	else
-	{
-    STDERR_IF( cafe_param->pcafe == NULL, "You did not specify tree: command 'tree'\n" );
-		__cafe_cmd_pvalue_print( cafe_shell_set_familysize() );
-	}
-	arraylist_free( pargs, free );
-	return 0;
-}
-
 
 int cafe_cmd_branchlength(int argc, char* argv[])
 {
