@@ -1092,7 +1092,8 @@ double* cafe_each_best_lambda_by_fminsearch(pCafeParam param, int lambda_len )
 
 typedef struct
 {
-	pCafeParam cafeparam;
+	pCafeTree pTree;
+	int num_random_samples;
 	int range[2];
 	pArrayList pCD;
 }CDParam;
@@ -1102,23 +1103,21 @@ typedef CDParam* pCDParam;
 void* __cafe_conditional_distribution_thread_func(void* ptr)
 {
 	pCDParam param = (pCDParam)ptr;	
-	pCafeParam cafeparam = param->cafeparam;
-	pCafeTree pcafe = cafe_tree_copy(cafeparam->pcafe);
+	pCafeTree pcafe = cafe_tree_copy(param->pTree);
 #ifdef DEBUG
 	printf("CD: %d ~ %d\n", param->range[0], param->range[1]);
 #endif
-	param->pCD = cafe_tree_conditional_distribution(pcafe, param->range[0], param->range[1], cafeparam->num_random_samples);
+	param->pCD = cafe_tree_conditional_distribution(pcafe, param->range[0], param->range[1], param->num_random_samples);
 	cafe_tree_free(pcafe);
 	return (NULL);
 }
 
-pArrayList cafe_conditional_distribution(pCafeParam param)
+pArrayList cafe_conditional_distribution(pCafeTree pTree, family_size_range *range, int numthreads, int num_random_samples)
 {
-	int numthreads = param->num_threads;
-	int threadstep = param->pcafe->rfsize/numthreads;
+	int threadstep = pTree->rfsize/numthreads;
 	if ( threadstep == 0 )
 	{
-		numthreads = param->pcafe->rfsize;
+		numthreads = pTree->rfsize;
 	}
 	else
 	{
@@ -1126,14 +1125,15 @@ pArrayList cafe_conditional_distribution(pCafeParam param)
 	}
 
 	pCDParam ptparam = (pCDParam)memory_new(numthreads,sizeof(CDParam));
-	int i, r = param->family_size.root_min;
+	int i, r = range->root_min;
 	for ( i = 0 ; i < numthreads; i++, r+=threadstep+1 )
 	{
-		ptparam[i].cafeparam = param;
+		ptparam[i].pTree = pTree;
+		ptparam[i].num_random_samples = num_random_samples;
 		ptparam[i].range[0]= r;
 		ptparam[i].range[1]= r + threadstep;
 	}
-	ptparam[numthreads-1].range[1] = param->family_size.root_max;
+	ptparam[numthreads-1].range[1] = range->root_max;
 	thread_run(numthreads, __cafe_conditional_distribution_thread_func, ptparam, sizeof(CDParam));
 	pArrayList cdlist = ptparam[0].pCD;
 	for( i = 1 ; i < numthreads ; i++ )
@@ -1270,7 +1270,7 @@ pArrayList cafe_viterbi(pCafeParam param, pArrayList pCD)
 		param->param_set_func(param,param->parameters);
 
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
-		pCD = cafe_conditional_distribution(param);
+		pCD = cafe_conditional_distribution(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
 		//cafe_free_birthdeath_cache(param->pcafe);
 	}
 
@@ -1431,13 +1431,13 @@ void cafe_branch_cutting(pCafeParam param)
 		if ( tree_is_leaf( psub->super.root ) )
 		{
 			param->pcafe = pcafe;
-			pCDSs[b][0] = cafe_conditional_distribution(param);
+			pCDSs[b][0] = cafe_conditional_distribution(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
 			pCDSs[b][1] = NULL;
 		}
 		else if ( tree_is_leaf ( pcafe->super.root) )
 		{
 			param->pcafe = psub;
-			pCDSs[b][0] = cafe_conditional_distribution(param);
+			pCDSs[b][0] = cafe_conditional_distribution(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
 			pCDSs[b][1] = NULL;
 		}
 		else
@@ -1445,9 +1445,9 @@ void cafe_branch_cutting(pCafeParam param)
 			int orig_r = param->num_random_samples;
 			param->num_random_samples /= 10;
 			param->pcafe = pcafe;
-			pCDSs[b][0] = cafe_conditional_distribution(param);
+			pCDSs[b][0] = cafe_conditional_distribution(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
 			param->pcafe = psub;
-			pCDSs[b][1] = cafe_conditional_distribution(param);
+			pCDSs[b][1] = cafe_conditional_distribution(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
 			param->num_random_samples = orig_r;
 		}
 		param->pcafe = porig;

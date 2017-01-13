@@ -120,7 +120,7 @@ extern double* cafe_best_lambda_by_fminsearch(pCafeParam param, int lambda_len, 
 extern double* cafe_best_lambda_mu_by_fminsearch(pCafeParam param, int lambda_len, int mu_len, int k );
 extern double* cafe_best_lambda_mu_eqbg_by_fminsearch(pCafeParam param, int lambda_len, int mu_len );
 extern double* cafe_each_best_lambda_by_fminsearch(pCafeParam param, int lambda_len );
-extern pArrayList cafe_conditional_distribution(pCafeParam param);
+extern pArrayList cafe_conditional_distribution(pCafeTree pTree, family_size_range *range, int numthreads, int num_random_samples);
 extern void cafe_lambda_set_default(pCafeParam param, double* lambda);
 
 extern void cafe_free_birthdeath_cache(pCafeTree pcafe);

@@ -1559,7 +1559,7 @@ int cafe_cmd_pvalue(int argc, char* argv[])
 			fprintf(stderr, "ERROR(pvalue): Cannot open %s in write mode\n", parg->argv[0] );
 			return -1;
 		}
-		cafe_pCD = cafe_conditional_distribution(cafe_param);
+		cafe_pCD = cafe_conditional_distribution(cafe_param->pcafe, &cafe_param->family_size, cafe_param->num_threads, cafe_param->num_random_samples);
 		for ( i = 0 ; i < cafe_pCD->size ; i++ )
 		{
 			double* data = (double*)cafe_pCD->array[i];
@@ -1609,7 +1609,7 @@ int cafe_cmd_pvalue(int argc, char* argv[])
 	{
 		if ( cafe_pCD == NULL ) 
 		{
-			cafe_pCD = cafe_conditional_distribution(cafe_param);
+			cafe_pCD = cafe_conditional_distribution(cafe_param->pcafe, &cafe_param->family_size, cafe_param->num_threads, cafe_param->num_random_samples);
 		}
 		cafe_tree_set_parameters(cafe_param->pcafe, &cafe_param->family_size, 0);
 
