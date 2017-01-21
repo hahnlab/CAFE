@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <vector>
 #include <string>
+#include <algorithm>
 
 extern "C" {
 #include "cafe.h"
@@ -12,7 +13,8 @@ extern "C" {
 	extern pBirthDeathCacheArray probability_cache;
 }
 
-pArrayList ConditionalDistribution::cafe_pCD;
+std::vector<std::vector<double> > ConditionalDistribution::matrix;
+//pArrayList ConditionalDistribution::cafe_pCD;
 
 void check_cache_and_compute_likelihoods(pCafeTree pTree, int max)
 {
@@ -59,7 +61,6 @@ void print_pvalues(std::ostream& ost, pCafeTree pcafe, int max, int num_random_s
 	ost << "Root size: " << rfsize << " with maximum likelihood : " << mlh << "\n";
 	ost << "p-value: " << pv << "\n";
 	memory_free(pcd);
-	pcd = NULL;
 	string_free(pstr);
 }
 
@@ -82,25 +83,24 @@ void write_pvalues(std::ostream& ost, pArrayList values, int count)
 
 void read_pvalues(std::istream& ist, int count)
 {
-	if (ConditionalDistribution::cafe_pCD) arraylist_free(ConditionalDistribution::cafe_pCD, free);
-	ConditionalDistribution::cafe_pCD = arraylist_new(11000);
+	ConditionalDistribution::matrix.clear();
 
 	std::string str;
 	while (std::getline(ist, str))
 	{
-		double * data = (double*)memory_new(count, sizeof(double));
+		std::vector<double> data(count);
 		std::istringstream iss(str);
 		for (int i = 0; i < count; ++i)
 			iss >> data[i];
-		arraylist_add(ConditionalDistribution::cafe_pCD, data);
+		ConditionalDistribution::matrix.push_back(data);
 	}
 }
 
 void pvalues_for_family(pCafeTree pTree, pCafeFamily family, family_size_range *range, int numthreads, int num_random_samples, int index)
 {
-	if (ConditionalDistribution::cafe_pCD == NULL)
+	if (ConditionalDistribution::matrix.empty())
 	{
-		ConditionalDistribution::cafe_pCD = cafe_conditional_distribution(pTree, range, numthreads, num_random_samples);
+		ConditionalDistribution::reset(pTree, range, numthreads, num_random_samples);
 	}
 	cafe_tree_set_parameters(pTree, range, 0);
 
@@ -113,11 +113,33 @@ void pvalues_for_family(pCafeTree pTree, pCafeFamily family, family_size_range *
 
 	for (int s = 0; s < pTree->rfsize; s++)
 	{
-		pvalues[s] = pvalue(lh[s], (double*)ConditionalDistribution::cafe_pCD->array[s], num_random_samples);
+		pvalues[s] = pvalue(lh[s], &ConditionalDistribution::matrix[s][0], num_random_samples);
 	}
 
 	for (int i = 0; i < pTree->rfsize; i++)
 	{
 		printf("%d\t%lg\t%lg\n", i + pTree->rootfamilysizes[0], lh[i], pvalues[i]);
 	}
+}
+
+void ConditionalDistribution::reset(pCafeTree pTree, family_size_range * range, int numthreads, int num_random_samples)
+{
+	matrix.clear();
+	pArrayList cd = cafe_conditional_distribution(pTree, range, numthreads, num_random_samples);
+	for (int i = 0; i < cd->size; ++i)
+	{
+		std::vector<double> pvalues(pTree->rfsize);
+		double *values = (double*)arraylist_get(cd, i);
+		std::copy(values, values + pTree->rfsize, pvalues.begin());
+		matrix.push_back(pvalues);
+	}
+	arraylist_free(cd, free);
+}
+
+pArrayList ConditionalDistribution::to_arraylist()
+{
+	pArrayList result = arraylist_new(1000);
+	for (size_t i = 0; i < matrix.size(); ++i)
+		arraylist_add(result, &matrix[i][0]);
+	return result;
 }

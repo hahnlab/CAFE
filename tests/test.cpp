@@ -101,6 +101,12 @@ TEST_GROUP(PValueTests)
 	{
 		srand(10);
 	}
+
+	void teardown()
+	{
+		// prevent the values in the static matrix from being reported as a memory leak
+		std::vector<std::vector<double> >().swap(ConditionalDistribution::matrix);
+	}
 };
 
 TEST(TreeTests, node_set_birthdeath_matrix)
@@ -877,6 +883,7 @@ TEST(FirstTestGroup, cafe_tree_set_parameters)
 
 TEST(PValueTests, pvalue)
 {
+	probability_cache = NULL;
 	std::ostringstream ost;
 
 	print_pvalues(ost, create_tree(), 10, 5);
@@ -900,15 +907,12 @@ TEST(PValueTests, pvalues_for_family)
 	range.max = 5;
 	range.root_min = 1;
 	range.root_max = 1;
-	ConditionalDistribution::cafe_pCD = arraylist_new(10);
-	double *d = new double[10];
-	arraylist_add(ConditionalDistribution::cafe_pCD, d);
+	ConditionalDistribution::matrix.push_back(std::vector<double>(10));
 
 	probability_cache = birthdeath_cache_init(pcafe->size_of_factor);
 
 	pvalues_for_family(pcafe, pfamily, &range, 1, 1, 0);
 
-	delete[] d;
 }
 
 TEST(PValueTests, read_pvalues)
@@ -916,15 +920,14 @@ TEST(PValueTests, read_pvalues)
 	std::string str("1.0\t2.0\t3.0\n1.5\t2.5\t3.5\n");
 	std::istringstream stream(str);
 	read_pvalues(stream, 3);
-	double *vals = (double *)arraylist_get(ConditionalDistribution::cafe_pCD, 0);
+	std::vector<double> vals = ConditionalDistribution::matrix[0];
 	DOUBLES_EQUAL(1.0, vals[0], .001);
 	DOUBLES_EQUAL(2.0, vals[1], .001);
 	DOUBLES_EQUAL(3.0, vals[2], .001);
-	vals = (double *)arraylist_get(ConditionalDistribution::cafe_pCD, 1);
+	vals = ConditionalDistribution::matrix[1];
 	DOUBLES_EQUAL(1.5, vals[0], .001);
 	DOUBLES_EQUAL(2.5, vals[1], .001);
 	DOUBLES_EQUAL(3.5, vals[2], .001);
-
 }
 
 TEST(LikelihoodRatio, cafe_likelihood_ratio_test)

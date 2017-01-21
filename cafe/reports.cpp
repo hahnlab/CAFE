@@ -228,9 +228,18 @@ void cafe_do_report(pCafeParam param, report_parameters* params)
 		throw std::runtime_error(string("ERROR(report) : Cannot open ") + params->name + " in write mode.\n");
 	}
 
+	if (ConditionalDistribution::matrix.empty())
+	{
+		param->param_set_func(param, param->parameters);
+		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
+		ConditionalDistribution::reset(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
+	}
+
 	if (params->bc || params->lh)
 	{
-		ConditionalDistribution::cafe_pCD = cafe_viterbi(param, ConditionalDistribution::cafe_pCD);
+		pArrayList cd = ConditionalDistribution::to_arraylist();
+		cafe_viterbi(param, cd);
+		arraylist_free(cd, NULL);
 		if (params->bc) cafe_branch_cutting(param);
 		if (params->lh) cafe_likelihood_ratio_test(param);
 		cafe_log(param, "Building Text report: %s\n", params->name.c_str());
@@ -244,7 +253,9 @@ void cafe_do_report(pCafeParam param, report_parameters* params)
 	{
 		if (!params->just_save)
 		{
-			ConditionalDistribution::cafe_pCD = cafe_viterbi(param, ConditionalDistribution::cafe_pCD);
+			pArrayList cd = ConditionalDistribution::to_arraylist();
+			cafe_viterbi(param, cd);
+			arraylist_free(cd, NULL);
 		}
 		cafe_report(param, report);
 	}

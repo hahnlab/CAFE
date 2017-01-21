@@ -1265,15 +1265,6 @@ pArrayList cafe_viterbi(pCafeParam param, pArrayList pCD)
 	pViterbiParam ptparam = (pViterbiParam)memory_new(param->num_threads,sizeof(ViterbiParam));
 	pTree ptree = (pTree)param->pcafe;
 
-	if ( pCD == NULL )
-	{
-		param->param_set_func(param,param->parameters);
-
-		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
-		pCD = cafe_conditional_distribution(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
-		//cafe_free_birthdeath_cache(param->pcafe);
-	}
-
 	int nrows = param->pfamily->flist->size;
 	int nnodes = ptree->nlist->size - 1;
 

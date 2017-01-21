@@ -137,7 +137,7 @@ int cafe_cmd_exit(pCafeParam param, std::vector<std::string> tokens)
 	if (tmp_lambda_tree) phylogeny_free(tmp_lambda_tree);
 	tmp_lambda_tree = NULL;
 	cafe_shell_clear_param(param, 0);
-	if (ConditionalDistribution::cafe_pCD) arraylist_free(ConditionalDistribution::cafe_pCD, free);
+
 	memory_free(param);
 	return CAFE_SHELL_EXIT;
 }
@@ -341,7 +341,15 @@ int cafe_cmd_gainloss(pCafeParam param, std::vector<std::string> tokens)
 
 	if (param->viterbi.viterbiNodeFamilysizes == NULL)
 	{
-		ConditionalDistribution::cafe_pCD = cafe_viterbi(param, ConditionalDistribution::cafe_pCD);
+		if (ConditionalDistribution::matrix.empty())
+		{
+			param->param_set_func(param, param->parameters);
+			reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
+			ConditionalDistribution::reset(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
+		}
+		pArrayList cd = ConditionalDistribution::to_arraylist();
+		cafe_viterbi(param, cd);
+		arraylist_free(cd, NULL);
 	}
 
 	string name = tokens[1] + ".gs";
