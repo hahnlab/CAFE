@@ -13,7 +13,7 @@ TESTLIBS=-lCppUTest -lCppUTestExt
 # Project files
 #
 CSRCS=cafe_family.c cafe_main.c cafe_report.c cafe_tree.c cafe_shell.c birthdeath.c chooseln_cache.c io.c phylogeny.c tree.c fminsearch.c grpcmp.c histogram.c  matrix_exponential.c regexpress.c utils_string.c gmatrix.c hashtable.c mathfunc.c memalloc.c utils.c
-CXXSRCS=cafe_commands.cpp lambda.cpp reports.cpp likelihood_ratio.cpp pvalue.cpp
+CXXSRCS=branch_cutting.cpp cafe_commands.cpp conditional_distribution.cpp lambda.cpp reports.cpp likelihood_ratio.cpp pvalue.cpp
 TESTSRCS=command_tests.cpp family_tests.cpp lambda_tests.cpp test.cpp
 COBJS=$(CSRCS:.c=.o)
 CXXOBJS=$(CXXSRCS:.cpp=.o)
@@ -27,7 +27,7 @@ EXE  = cafe
 DBGDIR = debug
 DBGEXE = $(DBGDIR)/$(EXE)
 DBGOBJS = $(addprefix $(DBGDIR)/, $(OBJS))
-DBGCFLAGS = -g -O0 -DDEBUG
+DBGCFLAGS = -g -O0 -DDEBUG -DVERBOSE
 
 #
 # Release build settings
@@ -43,7 +43,8 @@ RELCFLAGS = -O3 -DNDEBUG
 TESTDIR = test
 TESTEXE = $(TESTDIR)/runtests
 TESTOBJS=$(addprefix $(TESTDIR)/, $(TESTSRCS:.cpp=.o)) $(addprefix $(TESTDIR)/, $(OBJS))
-TESTCFLAGS = -g -O0 -DDEBUG
+TESTCFLAGS = -g -rdynamic -O0 -DDEBUG
+TESTCPPFLAGS = -g -rdynamic -O0 -DDEBUG
 
 .PHONY: all clean debug prep release remake test
 
@@ -79,7 +80,7 @@ $(TESTDIR)/%.o: %.c
 	$(CC) -c $(CFLAGS) $(TESTCFLAGS) -o $@ $<
 
 $(TESTDIR)/%.o : %.cpp
-	$(CXX) -c $(CXXFLAGS) $(TESTCFLAGS) -o $@ $<
+	$(CXX) -c $(CXXFLAGS) $(TESTCPPFLAGS) -o $@ $<
 
 #
 # Release rules

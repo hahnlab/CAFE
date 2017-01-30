@@ -1085,70 +1085,6 @@ double* cafe_each_best_lambda_by_fminsearch(pCafeParam param, int lambda_len )
 	param->lambda = old_lambda;
 	return param->lambda;
 }
-
-/**************************************************************************
- * Contidional Distribution
-**************************************************************************/
-
-typedef struct
-{
-	pCafeTree pTree;
-	int num_random_samples;
-	int range[2];
-	pArrayList pCD;
-}CDParam;
-typedef CDParam* pCDParam;
-
-
-void* __cafe_conditional_distribution_thread_func(void* ptr)
-{
-	pCDParam param = (pCDParam)ptr;	
-	pCafeTree pcafe = cafe_tree_copy(param->pTree);
-#ifdef DEBUG
-	printf("CD: %d ~ %d\n", param->range[0], param->range[1]);
-#endif
-	param->pCD = cafe_tree_conditional_distribution(pcafe, param->range[0], param->range[1], param->num_random_samples);
-	cafe_tree_free(pcafe);
-	return (NULL);
-}
-
-pArrayList cafe_conditional_distribution(pCafeTree pTree, family_size_range *range, int numthreads, int num_random_samples)
-{
-	int threadstep = pTree->rfsize/numthreads;
-	if ( threadstep == 0 )
-	{
-		numthreads = pTree->rfsize;
-	}
-	else
-	{
-		threadstep--;
-	}
-
-	pCDParam ptparam = (pCDParam)memory_new(numthreads,sizeof(CDParam));
-	int i, r = range->root_min;
-	for ( i = 0 ; i < numthreads; i++, r+=threadstep+1 )
-	{
-		ptparam[i].pTree = pTree;
-		ptparam[i].num_random_samples = num_random_samples;
-		ptparam[i].range[0]= r;
-		ptparam[i].range[1]= r + threadstep;
-	}
-	ptparam[numthreads-1].range[1] = range->root_max;
-	thread_run(numthreads, __cafe_conditional_distribution_thread_func, ptparam, sizeof(CDParam));
-	pArrayList cdlist = ptparam[0].pCD;
-	for( i = 1 ; i < numthreads ; i++ )
-	{
-		for ( r = 0 ; r < ptparam[i].pCD->size ; r++ )
-		{
-			arraylist_add(cdlist, ptparam[i].pCD->array[r]);
-		}
-		arraylist_free(ptparam[i].pCD, NULL);
-	}
-	memory_free(ptparam);
-	ptparam = NULL;
-	return cdlist;
-}
-
 /**************************************************************************
  * Viterbi
 **************************************************************************/
@@ -1245,7 +1181,7 @@ void* __cafe_viterbi_thread_func(void* ptr)
 	pCafeTree pcafe = cafe_tree_copy(param->pcafe);
 	int fsize = param->pfamily->flist->size;
 	double* cP = (double*)memory_new( pcafe->rfsize, sizeof(double));
-#ifdef DEBUG
+#ifdef VERBOSE
 	printf("VITERBI: from %d\n", pv->from );
 #endif
 	for (int i = pv->from; i < fsize ; i+=param->num_threads )
@@ -1308,192 +1244,6 @@ void cafe_viterbi_print(pCafeParam param)
 }
 
 /**************************************************************************
- * BranchCutting
-**************************************************************************/
-typedef struct
-{
-	pCafeParam cafeparam;
-	pArrayList** pCDSs;				
-	int range[2];
-}BranchCuttingParam;
-
-typedef BranchCuttingParam* pBranchCuttingParam;
-
-void* __cafe_branch_cutting_thread_func(void* ptr)
-{
-	int i, b;
-	pBranchCuttingParam pbc = (pBranchCuttingParam)ptr;
-	pCafeParam param = pbc->cafeparam;	
-	pArrayList** pCDSs = pbc->pCDSs;
-
-#ifdef DEBUG
-	printf("Branch cutting : %d ~ %d\n", pbc->range[0], pbc->range[1] -1 );
-#endif
-
-	pTree ptree = (pTree)param->pcafe;
-	int nnodes = ptree->nlist->size;
-	double* p1 = (double*)memory_new( param->pcafe->rfsize, sizeof(double));
-	double** p2 = (double**)memory_new_2dim( param->pcafe->rfsize, param->pcafe->rfsize, sizeof(double));
-
-	for ( b = 0 ; b < nnodes ; b++ )
-	{
-		if ( tree_is_root( ptree,(pTreeNode)ptree->nlist->array[b] ) ) 
-		{
-			continue;
-		}
-		
-		pCafeTree pcafe = cafe_tree_copy(param->pcafe);
-		pCafeTree psub =  cafe_tree_split(pcafe,b);
-
-		for ( i = pbc->range[0] ; i < pbc->range[1] ; i++ )
-		{
-			pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
-			if ( pitem->ref >= 0 && pitem->ref != i ) continue;
-			if ( param->viterbi.maximumPvalues[i] > param->pvalue )
-			{
-				param->viterbi.cutPvalues[b][i] = -1;
-				continue;
-			}
-			if ( tree_is_leaf( psub->super.root ) || tree_is_leaf(pcafe->super.root) )
-			{
-				pCafeTree pct = tree_is_leaf ( psub->super.root ) ? pcafe : psub;
-				cafe_family_set_size_for_split(param->pfamily,i, pct);
-				cafe_tree_p_values( pct,p1,pCDSs[b][0], param->num_random_samples  );
-				param->viterbi.cutPvalues[b][i] = __max(p1, pcafe->rfsize );
-			}
-			else
-			{
-				cafe_family_set_size_for_split(param->pfamily,i, pcafe);
-				cafe_family_set_size_for_split(param->pfamily,i, psub);
-				cafe_tree_p_values_of_two_trees(pcafe,psub, p2,
-										pCDSs[b][0], pCDSs[b][1], param->num_random_samples/10 );
-				param->viterbi.cutPvalues[b][i] = 0;
-				int m,n;
-				for ( m = 0 ; m < pcafe->rfsize ; m++ )
-				{
-					for( n = 0 ; n < pcafe->rfsize ; n++ )
-					{
-						if ( p2[m][n] > param->viterbi.cutPvalues[b][i] )
-						{
-							param->viterbi.cutPvalues[b][i] = p2[m][n];
-						}
-					}
-				}
-			}
-		}
-		cafe_tree_free(pcafe);	
-		cafe_tree_free(psub);
-	}
-	memory_free(p1);
-	p1 = NULL;
-	memory_free_2dim((void**)p2,param->pcafe->rfsize,param->pcafe->rfsize,NULL);
-	return (NULL);
-}
-
-void cafe_branch_cutting(pCafeParam param)
-{
-	cafe_log(param,"Running Branch Cutting....\n");
-
-	pTree ptree = (pTree)param->pcafe;
-	int i,b,j;
-	int nnodes = ptree->nlist->size;
-	pArrayList** pCDSs = (pArrayList**)memory_new_2dim(nnodes,2,sizeof(pArrayList));
-
-	for ( b = 0 ; b < nnodes  ; b++ )
-	{
-		if ( tree_is_root( ptree,(pTreeNode)ptree->nlist->array[b] ) ) 
-		{
-			pCDSs[b][0] = NULL;
-			pCDSs[b][1] = NULL;
-			continue;
-		}
-		pCafeTree pcafe = cafe_tree_copy(param->pcafe);
-		pCafeTree psub =  cafe_tree_split(pcafe,b);
-		
-		cafe_log(param,">> %d  --------------------\n", b ); 
-		pString pstr = cafe_tree_string(pcafe);
-		cafe_log(param,"%s\n", pstr->buf );
-		string_free(pstr);
-		pstr = cafe_tree_string(psub);
-		cafe_log(param,"%s\n", pstr->buf );
-		string_free(pstr);
-
-		pCafeTree porig = param->pcafe;
-		if ( tree_is_leaf( psub->super.root ) )
-		{
-			param->pcafe = pcafe;
-			pCDSs[b][0] = cafe_conditional_distribution(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
-			pCDSs[b][1] = NULL;
-		}
-		else if ( tree_is_leaf ( pcafe->super.root) )
-		{
-			param->pcafe = psub;
-			pCDSs[b][0] = cafe_conditional_distribution(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
-			pCDSs[b][1] = NULL;
-		}
-		else
-		{
-			int orig_r = param->num_random_samples;
-			param->num_random_samples /= 10;
-			param->pcafe = pcafe;
-			pCDSs[b][0] = cafe_conditional_distribution(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
-			param->pcafe = psub;
-			pCDSs[b][1] = cafe_conditional_distribution(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
-			param->num_random_samples = orig_r;
-		}
-		param->pcafe = porig;
-
-		cafe_tree_free(pcafe);	
-		cafe_tree_free(psub);
-	}
-
-	int threadstep = param->pfamily->flist->size/param->num_threads;
-	pBranchCuttingParam ptparam = (pBranchCuttingParam)memory_new(param->num_threads,sizeof(BranchCuttingParam));
-
-	int nrows = param->pfamily->flist->size;
-	param->viterbi.cutPvalues = (double**)memory_new_2dim(nnodes,nrows,sizeof(double));
-	int rid = ptree->root->id;
-	for ( i = 0 ; i < nrows; i++ )
-	{
-		param->viterbi.cutPvalues[rid][i] = -1;
-	}
-
-	int r = 0;
-	for ( i = 0 ; i < param->num_threads; i++, r+=threadstep )
-	{
-		ptparam[i].cafeparam = param;
-		ptparam[i].pCDSs = pCDSs;
-		ptparam[i].range[0] = r;
-		ptparam[i].range[1] = r + threadstep;
-	}
-	ptparam[param->num_threads-1].range[1]= param->pfamily->flist->size;
-	thread_run(param->num_threads, __cafe_branch_cutting_thread_func, ptparam, sizeof(BranchCuttingParam));
-
-	for ( i = 0 ; i < nrows ; i++ )
-	{
-		pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
-		if ( pitem->ref < 0 || pitem->ref == i ) continue;
-		for( b = 0 ; b < nnodes ; b++ )
-		{
-			param->viterbi.cutPvalues[b][i] = param->viterbi.cutPvalues[b][pitem->ref];
-		}
-	}
-
-	memory_free(ptparam);		
-	ptparam = NULL;			
-	for ( i = 0 ; i < nnodes; i++ )
-	{
-		for ( j = 0 ; j < 2 ; j++ )
-		{
-			if ( pCDSs[i][j] ) arraylist_free(pCDSs[i][j], free);
-		}
-	}
-	memory_free(pCDSs);
-	pCDSs = NULL;
-	cafe_log( param , "Done : Branch Cutting\n" );
-}
-
-/**************************************************************************
  * Likelihood ratio test
 **************************************************************************/
 typedef struct
@@ -1516,7 +1266,7 @@ void* __cafe_likelihood_ratio_test_thread_func(void* ptr)
 	int nnodes = ptree->nlist->size;
 	int old_bl;
 	int fsize = param->pfamily->flist->size;
-#ifdef DEBUG
+#ifdef VERBOSE
 	printf("Likelihood ratio test: %d\n", plrt->from );
 #endif
 	for ( i = plrt->from ; i < fsize ; i += param->num_threads )

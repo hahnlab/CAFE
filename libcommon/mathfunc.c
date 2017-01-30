@@ -660,7 +660,7 @@ double variance(double* data, int size)
 	return v/(size-1);
 }
 
-double pvalue(double v, double* conddist, int size )
+double pvalue(double v, const double* conddist, int size )
 {
 	int from = 0;
 	int to = size - 1;

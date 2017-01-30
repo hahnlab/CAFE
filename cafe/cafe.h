@@ -63,17 +63,11 @@ extern double** cafe_tree_clustered_likelihood(pCafeTree pcafe);
 extern void cafe_tree_viterbi(pCafeTree pcafe);
 extern void cafe_tree_clustered_viterbi(pCafeTree pcafe, int num_likelihoods);
 extern void cafe_tree_viterbi_posterior(pCafeTree pcafe, pCafeParam param);
-extern double* cafe_tree_random_probabilities(pCafeTree pcafe, int rootFamilysize, int trials );
 extern void cafe_tree_p_values(pCafeTree pcafe, double* p,  pArrayList pconddist, int cdlen);
-extern double** cafe_tree_p_values_of_two_trees(pCafeTree pcafe1, pCafeTree pcafe2,    
-		 								   double** p,
-		                                   pArrayList pconddist1, pArrayList pconddist2,
-										   int cdlen );
 
 extern pCafeParam cafe_copy_parameters(pCafeParam psrc);
 extern void cafe_free_copy_parameters(pCafeParam param);
 
-pArrayList cafe_tree_conditional_distribution(pCafeTree pcafe, int range_start, int range_end, int num_trials);
 extern double cafe_tree_mp_remark(pString str, pTree ptree, pMetapostConfig pmc, va_list ap);
 extern double cafe_tree_mp_annotation(pString str, pTreeNode pnode, pMetapostConfig pmc, va_list ap);
 extern pMetapostConfig cafe_tree_get_default_mpconfig(int id, double width, double height );
@@ -120,12 +114,10 @@ extern double* cafe_best_lambda_by_fminsearch(pCafeParam param, int lambda_len, 
 extern double* cafe_best_lambda_mu_by_fminsearch(pCafeParam param, int lambda_len, int mu_len, int k );
 extern double* cafe_best_lambda_mu_eqbg_by_fminsearch(pCafeParam param, int lambda_len, int mu_len );
 extern double* cafe_each_best_lambda_by_fminsearch(pCafeParam param, int lambda_len );
-extern pArrayList cafe_conditional_distribution(pCafeTree pTree, family_size_range *range, int numthreads, int num_random_samples);
 extern void cafe_lambda_set_default(pCafeParam param, double* lambda);
 
 extern void cafe_free_birthdeath_cache(pCafeTree pcafe);
 extern pArrayList cafe_viterbi(pCafeParam param, pArrayList pCD);
-extern void cafe_branch_cutting(pCafeParam param);
 extern void cafe_likelihood_ratio_test(pCafeParam param);
 extern pGMatrix cafe_lambda_distribution(pCafeParam param, int numrange, double** range );
 

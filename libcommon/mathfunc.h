@@ -93,7 +93,7 @@ extern double summation(double* data, int size);
 extern double* vector_fraction(double* data, int size, double denominator);
 extern int comp_double (const void * elem1, const void * elem2);
 
-extern double pvalue(double v, double* conddist, int size );
+extern double pvalue(double v, const double* conddist, int size );
 
 extern double fminsearch(pFMinSearch pfm, double* X0);
 

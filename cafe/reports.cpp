@@ -6,6 +6,7 @@
 #include "reports.h"
 #include "likelihood_ratio.h"
 #include "pvalue.h"
+#include "branch_cutting.h"
 
 using namespace std;
 

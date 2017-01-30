@@ -796,32 +796,6 @@ pCafeFamilyItem cafe_family_get_family_item(pCafeFamily pcf, char* szid )
 	return (pCafeFamilyItem)pcf->flist->array[i];
 }
 
-void cafe_family_set_size_for_split(pCafeFamily pcf, int idx, pCafeTree pcafe)
-{
-	int i, j;
-	pCafeFamilyItem pitem = (pCafeFamilyItem)pcf->flist->array[idx];
-	for ( i = 0 ; i < pcf->num_species; i++ )
-	{
-		for ( j = 0 ; j < pcafe->super.nlist->size ; j+=2 )
-		{
-			pPhylogenyNode pnode = (pPhylogenyNode)pcafe->super.nlist->array[j];
-			if ( pnode->name[0] & 0x80 ) continue;
-			if ( string_pchar_cmp_ignore_case(pnode->name, pcf->species[i] ) )
-			{
-				pnode->name[0] |= 0x80;
-				((pCafeNode)pnode)->familysize = pitem->count[i];
-				break;
-			}
-		}
-	}
-
-	for( j = 0 ; j < pcafe->super.nlist->size; j+=2 )
-	{
-		pPhylogenyNode pnode = (pPhylogenyNode)pcafe->super.nlist->array[j];
-		pnode->name[0] &= 0x7F;
-	}
-}
-
 /*
                  p      r
       0   0   => 0      0 

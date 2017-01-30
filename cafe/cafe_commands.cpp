@@ -15,7 +15,7 @@
 #include "cafe_commands.h"
 #include "reports.h"
 #include "pvalue.h"
-
+#include "conditional_distribution.h"
 /**
 	\defgroup Commands Commands that are available in CAFE
 */
@@ -1522,6 +1522,19 @@ struct pvalue_args get_pvalue_arguments(vector<Argument> pargs)
 	return args;
 }
 
+static pArrayList to_arraylist(matrix& v)
+{
+	pArrayList result = arraylist_new(10);
+	for (size_t i = 0; i < v.size(); ++i)
+	{
+		double * temp = (double *)calloc(v[i].size(), sizeof(double));
+		std::copy(temp, temp + v[i].size(), v[i].begin());
+		arraylist_add(result, temp);
+	}
+	return result;
+}
+
+
 /**
 \ingroup Commands
 \brief Calculates pvalues
@@ -1539,8 +1552,8 @@ int cafe_cmd_pvalue(pCafeParam param, std::vector<std::string> tokens)
 		{
 			throw std::runtime_error("ERROR(pvalue): Cannot open " + args.outfile + " in write mode\n");
 		}
-
-		pArrayList cond_dist = cafe_conditional_distribution(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
+		matrix m = cafe_conditional_distribution(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
+		pArrayList cond_dist = to_arraylist(m);
 		write_pvalues(ofst, cond_dist, param->num_random_samples);
 		arraylist_free(cond_dist, free);
 	}

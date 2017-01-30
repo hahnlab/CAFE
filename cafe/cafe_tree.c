@@ -1182,60 +1182,6 @@ int cafe_tree_random_familysize(pCafeTree pcafe, int rootFamilysize )
 	return max;
 }
 
-/* get likelihood values conditioned on the rootFamilysize for a number of randomly generated families */
-double* cafe_tree_random_probabilities(pCafeTree pcafe, int rootFamilysize, int trials )
-{
-	int old_rfsize = pcafe->rfsize;
-	int old_rfsizes[2] = { pcafe->rootfamilysizes[0], pcafe->rootfamilysizes[1] };
-	int old_fsizes[2] = { pcafe->familysizes[0], pcafe->familysizes[1] };
-
-	pcafe->rfsize = 1;
-	pcafe->rootfamilysizes[0] = rootFamilysize;
-	pcafe->rootfamilysizes[1] = rootFamilysize;
-	
-	if (probability_cache == NULL) {
-		printf("error: pbdc_array NULL");
-	}
-
-	struct chooseln_cache cache;
-	int maxFamilySize = MAX(pcafe->rootfamilysizes[1], pcafe->familysizes[1]);
-	chooseln_cache_init2(&cache, maxFamilySize);
-
-	double* probs = (double*)memory_new(trials, sizeof(double));	
-	int i;
-	for ( i = 0 ; i < trials ; i++ )
-	{
-		int max = cafe_tree_random_familysize(pcafe,rootFamilysize);		
-		if ( pcafe->super.nlist )
-		{
-			pcafe->familysizes[1] = MIN( max + MAX(50,max/5) , pcafe->familysizes[1] );
-		}
-		compute_tree_likelihoods(pcafe);
-		probs[i] = ((pCafeNode)pcafe->super.root)->likelihoods[0];
-	}
-
-	pcafe->rfsize = old_rfsize;
-	pcafe->rootfamilysizes[0] = old_rfsizes[0];
-	pcafe->rootfamilysizes[1] = old_rfsizes[1];
-	pcafe->familysizes[0] = old_fsizes[0];
-	pcafe->familysizes[1] = old_fsizes[1];
-
-	qsort(probs, trials, sizeof(double), __cmp_double);
-	return probs;
-}
-
-/* conditional distribution on a range or root sizes */
-pArrayList cafe_tree_conditional_distribution(pCafeTree pcafe, int range_start, int range_end, int num_trials )
-{
-	int size = range_end - range_start +1;
-	pArrayList pal = arraylist_new(size);
-	for (int s = range_start ; s <= range_end; s++ )
-	{
-		arraylist_add(pal, cafe_tree_random_probabilities(pcafe,s, num_trials) );
-	}
-	return pal;
-}
-
 void cafe_tree_p_values(pCafeTree pcafe,double* pvalues, pArrayList pconddist, int cdlen)
 {
 	compute_tree_likelihoods(pcafe);
@@ -1245,35 +1191,5 @@ void cafe_tree_p_values(pCafeTree pcafe,double* pvalues, pArrayList pconddist, i
 	{
 		pvalues[s] = pvalue( lh[s] , (double*)pconddist->array[s], cdlen);
 	}
-}
-
-/*
- * cdlen: length of conddist : number of trials
- */
-double** cafe_tree_p_values_of_two_trees(pCafeTree pcafe1, pCafeTree pcafe2,    
-										 double** pvalues,
-		                                   pArrayList pconddist1, pArrayList pconddist2,
-										   int cdlen )
-{
-	compute_tree_likelihoods(pcafe1);
-	compute_tree_likelihoods(pcafe2);
-	double* lh1 = get_likelihoods(pcafe1);
-	double* lh2 = get_likelihoods(pcafe2);
-	int s1, s2, t;
-	double p;
-	for( s2 = 0 ; s2 < pcafe1->rfsize ; s2++ )
-	{
-		for ( s1 = 0; s1 < pcafe1->rfsize; s1++ )
-		{
-			p = 0;
-			for ( t = 0 ; t < cdlen ; t++ )
-			{
-				p += pvalue( lh1[s1]*lh2[s2]/((double*)pconddist2->array[s2])[t] ,
-						    (double*)pconddist1->array[s1], cdlen );
-			}
-			pvalues[s1][s2] = p/cdlen;
-		}
-	}
-	return pvalues;
 }
 
