@@ -410,5 +410,43 @@ TEST(CommandTests, get_pvalue_arguments)
 	LONGS_EQUAL(17, args.index);
 }
 
+TEST(CommandTests, get_lhtest_arguments)
+{
+	tokens.push_back("lhtest");
+	lhtest_args args = get_lhtest_arguments(build_argument_list(tokens));
+	CHECK(args.directory.empty());
+	CHECK(args.outfile.empty());
+	CHECK(args.tree.empty());
+	DOUBLES_EQUAL(0.0, args.lambda, .0001);
+
+	tokens.push_back("-t");
+	tokens.push_back("atree");
+	tokens.push_back("-o");
+	tokens.push_back("outfile");
+	tokens.push_back("-l");
+	tokens.push_back("0.03");
+	tokens.push_back("-d");
+	tokens.push_back("directory");
+
+	args = get_lhtest_arguments(build_argument_list(tokens));
+	STRCMP_EQUAL("atree", args.tree.c_str());
+	STRCMP_EQUAL("outfile", args.outfile.c_str());
+	STRCMP_EQUAL("directory", args.directory.c_str());
+	DOUBLES_EQUAL(0.03, args.lambda, 0.00001);
+}
+
+TEST(CommandTests, cafe_cmd_lhtest)
+{
+	tokens.push_back("lhtest");
+	try
+	{
+		cafe_cmd_lhtest(&param, tokens);
+		FAIL("Expected exception not thrown");
+	}
+	catch (std::runtime_error& e)
+	{
+		STRCMP_EQUAL("Failed to read directory", e.what());
+	}
+}
 
 

@@ -34,6 +34,7 @@ COMMAND(score);
 COMMAND(viterbi);
 COMMAND(extinct);
 COMMAND(pvalue);
+COMMAND(lhtest);
 
 std::map<std::string, cafe_command2> get_dispatcher();
 int cafe_shell_dispatch_command(pCafeParam param, char* cmd);
@@ -77,9 +78,19 @@ struct pvalue_args
 	int index;
 };
 
-struct load_args get_load_arguments(std::vector<Argument> pargs);
-struct viterbi_args get_viterbi_arguments(std::vector<Argument> pargs);
-struct pvalue_args get_pvalue_arguments(std::vector<Argument> pargs);
+struct lhtest_args
+{
+	std::string directory;
+	std::string tree;
+	std::string outfile;
+	double lambda;
+};
+
+load_args get_load_arguments(std::vector<Argument> pargs);
+viterbi_args get_viterbi_arguments(std::vector<Argument> pargs);
+pvalue_args get_pvalue_arguments(std::vector<Argument> pargs);
+lhtest_args get_lhtest_arguments(std::vector<Argument> pargs);
+
 
 
 struct roots

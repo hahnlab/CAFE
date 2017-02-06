@@ -1,4 +1,3 @@
-#include<io.h>
 #include <mathfunc.h>
 #include "cafe.h"
 #include "viterbi.h"
@@ -92,6 +91,19 @@ void cafe_report_load_bc_or_lhr_list(char* data, double** pvalues, int i, int nn
 	}
 	memory_free(array);
 	array = NULL;
+}
+
+size_t file_read_line(pString pstr, FILE* fp)
+{
+	char buf[STRING_BUF_SIZE];
+	string_reset(pstr);
+	while (fgets(buf, STRING_BUF_SIZE, fp))
+	{
+		string_add(pstr, buf);
+		size_t len = strlen(buf);
+		if (buf[len - 1] == '\n') break;
+	}
+	return pstr->length;
 }
 
 int cafe_report_retrieve_data(char* file, pCafeParam param)

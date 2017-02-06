@@ -1,6 +1,4 @@
 #include "tree.h"
-
-#include<io.h>
 #include<string.h>
 #include<stdlib.h>
 #include<sys/types.h>
@@ -150,24 +148,6 @@ void phylogeny_free(pTree ptree)
 	tree_free(ptree);
 }
 
-
-pTree phylogeny_load_from_file(char* fname,
-							   tree_func_new new_tree_func, 
-							   tree_func_node_new new_tree_node_func, 
-		                       phylogeny_func_parse_node parsefunc )
-{
-	int i;
-	char* sztree = file_read_all(fname);	
-	for( i = 0 ; i < sztree[i]; i++ )
-	{
-		if ( sztree[i] == '\n' ) sztree[i] = ' ';
-	}
-	pTree ptree = phylogeny_load_from_string(sztree, new_tree_func, 
-							   new_tree_node_func, parsefunc, 0); 
-	memory_free(sztree);
-	sztree = NULL;
-	return ptree;
-}
 
 char* phylogeny_interpret_node(pTree ptree, pTreeNode ptnode, char* sztree)
 {

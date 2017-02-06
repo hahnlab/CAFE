@@ -1,6 +1,5 @@
 #include "cafe.h"
 #include<stdlib.h>
-#include<io.h>
 #include<math.h>
 #include<mathfunc.h>
 #include <chooseln_cache.h>

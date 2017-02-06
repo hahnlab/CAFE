@@ -53,7 +53,6 @@ int cafe_cmd_pvalue(int argc, char* argv[]);
 int cafe_cmd_retrieve(int argc, char* argv[] );
 int cafe_cmd_sim_extinct(int argc, char* argv[]);
 int cafe_cmd_extinct(int argc, char* argv[]);
-int cafe_cmd_lh_test(int argc, char* argv[]);
 int cafe_cmd_root_dist(int argc, char* argv[]);
 int cafe_cmd_esterror(int argc, char* argv[]);
 int cafe_cmd_error_model(int argc, char* argv[]);

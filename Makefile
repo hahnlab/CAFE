@@ -12,7 +12,7 @@ TESTLIBS=-lCppUTest -lCppUTestExt
 #
 # Project files
 #
-CSRCS=cafe_family.c cafe_main.c cafe_report.c cafe_tree.c cafe_shell.c birthdeath.c chooseln_cache.c io.c phylogeny.c tree.c fminsearch.c grpcmp.c histogram.c  matrix_exponential.c regexpress.c utils_string.c gmatrix.c hashtable.c mathfunc.c memalloc.c utils.c
+CSRCS=cafe_family.c cafe_main.c cafe_report.c cafe_tree.c cafe_shell.c birthdeath.c chooseln_cache.c phylogeny.c tree.c fminsearch.c grpcmp.c histogram.c  matrix_exponential.c regexpress.c utils_string.c gmatrix.c hashtable.c mathfunc.c memalloc.c utils.c
 CXXSRCS=branch_cutting.cpp cafe_commands.cpp conditional_distribution.cpp lambda.cpp reports.cpp likelihood_ratio.cpp pvalue.cpp
 TESTSRCS=command_tests.cpp family_tests.cpp lambda_tests.cpp test.cpp
 COBJS=$(CSRCS:.c=.o)

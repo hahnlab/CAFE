@@ -10,6 +10,7 @@
 #include <iterator>
 #include <algorithm>
 #include <stdexcept>
+#include<dirent.h>
 
 #include "lambda.h"
 #include "cafe_commands.h"
@@ -24,7 +25,6 @@ extern "C" {
 #include <utils_string.h>
 #include "cafe_shell.h"
 #include "cafe.h"
-#include <io.h>
 
 	extern void cafe_log(pCafeParam param, const char* msg, ...);
 	void cafe_shell_clear_param(pCafeParam param, int btree_skip);
@@ -72,6 +72,7 @@ map<string, cafe_command2> get_dispatcher()
 	dispatcher["extinct"] = cafe_cmd_extinct;
 	dispatcher["viterbi"] = cafe_cmd_viterbi;
 	dispatcher["pvalue"] = cafe_cmd_pvalue;
+	dispatcher["lhtest"] = cafe_cmd_lhtest;
 
 	return dispatcher;
 }
@@ -460,7 +461,7 @@ int cafe_shell_dispatch_command(pCafeParam param, char* cmd)
 
 extern "C" {
 	extern pCafeParam cafe_param;
-	int cafe_shell_dispatch_commandf(char* format, ...)
+	int cafe_shell_dispatch_commandf(const char* format, ...)
 	{
 		va_list ap;
 		char buf[STRING_BUF_SIZE];
@@ -1585,4 +1586,98 @@ int cafe_cmd_pvalue(pCafeParam param, std::vector<std::string> tokens)
 	return 0;
 }
 
+lhtest_args get_lhtest_arguments(vector<Argument> pargs)
+{
+	lhtest_args args;
+	args.lambda = 0.0;
+
+	for (size_t i = 0; i < pargs.size(); i++)
+	{
+		pArgument parg = &pargs[i];
+
+		if (!strcmp(parg->opt, "-d"))
+		{
+			args.directory = parg->argv[0];
+		}
+		if (!strcmp(parg->opt, "-l"))
+		{
+			sscanf(parg->argv[0], "%lf", &args.lambda);
+		}
+		if (!strcmp(parg->opt, "-t"))
+		{
+			args.tree = parg->argv[0];
+		}
+		if (!strcmp(parg->opt, "-o"))
+		{
+			args.outfile = parg->argv[0];
+		}
+	}
+
+	return args;
+}
+
+
+std::vector<std::string> enumerate_directory(std::string dir, std::string ext)
+{
+	DIR* d = opendir(dir.c_str());
+	struct dirent* dp;
+	if (d == NULL) 
+		throw std::runtime_error("Failed to read directory");
+
+	std::vector<std::string> pal;
+	while ((dp = readdir(d)) != NULL)
+	{
+		if (!ext.empty())
+		{
+			char* point = rindex(dp->d_name, '.');
+			if (point == NULL) continue;
+			point++;
+			if (strcmp(point, ext.c_str())) continue;
+		}
+		pal.push_back(dp->d_name);
+	}
+	closedir(d);
+	return pal;
+}
+
+int cafe_cmd_lhtest(pCafeParam param, std::vector<std::string> tokens)
+{
+	lhtest_args args = get_lhtest_arguments(build_argument_list(tokens));
+
+	FILE* fout = stdout;
+	if (!args.outfile.empty())
+	{
+		if ((fout = fopen(args.outfile.c_str(), "w")) == NULL)
+		{
+			perror(args.outfile.c_str());
+			throw std::runtime_error("Failed to open output file");
+		}
+	}
+	std::vector<std::string> files = enumerate_directory(args.directory, "tab");
+	pString pstr_cafe = phylogeny_string((pTree)param->pcafe, NULL);
+	int j;
+	for (size_t i = 0; i < files.size(); i++)
+	{
+		std::string fname = files[i];
+		if (fname[0] == '.') continue;
+		cafe_shell_dispatch_commandf("load -i %s/%s -p 0.01 -t 10 -l %s",
+			args.directory.c_str(), fname.c_str(), param->str_log ? param->str_log->buf : "stdout");
+		cafe_shell_dispatch_commandf("tree %s", pstr_cafe->buf);
+		cafe_shell_dispatch_commandf("lambda -s -l %lf", args.lambda);
+		fprintf(fout, "\t%lf\t%lf", cafe_get_posterior(param), param->lambda[0]);
+		cafe_family_reset_maxlh(param->pfamily);
+		cafe_shell_dispatch_commandf("lambda -s -v %lf -t %s", args.lambda, args.tree.c_str());
+		fprintf(fout, "\t%lf", cafe_get_posterior(param));
+		for (j = 0; j < param->num_lambdas; j++)
+		{
+			fprintf(fout, "\t%lf", param->lambda[j]);
+		}
+		fprintf(fout, "\n");
+		fflush(fout);
+		cafe_shell_clear_param(param, 0);
+	}
+	fclose(fout);
+	string_free(pstr_cafe);
+	return 0;
+}
 

@@ -10,7 +10,6 @@
 #include <float.h>
 #include<stdarg.h>
 #include<stdio.h>
-#include<io.h>
 #include "cafe.h"
 #include "cafe_shell.h"
 #include "viterbi.h"
@@ -42,7 +41,6 @@ CafeShellCommand cafe_cmd[]  =
 {
 	{ "branchlength", cafe_cmd_branchlength },
 	{ "lambdamu", cafe_cmd_lambda_mu },
-	{ "lhtest", cafe_cmd_lh_test },
 	{ "retrieve", cafe_cmd_retrieve },
 	{ "rootdist", cafe_cmd_root_dist}, 
     { "errormodel", cafe_cmd_error_model},  
@@ -1907,64 +1905,6 @@ int cafe_cmd_root_dist(int argc, char* argv[])
 
 
 
-int cafe_cmd_lh_test(int argc, char* argv[])
-{
-	pArrayList pargs = cafe_shell_build_argument(argc, argv);
-	pArgument parg;
-	double lambda=0;
-	char dir[255];
-	if ( (parg = cafe_shell_get_argument( "-d", pargs) ) )
-	{
-		strcpy( dir, parg->argv[0] );
-	}
-	if ( (parg = cafe_shell_get_argument( "-l", pargs) ) )
-	{
-		sscanf( parg->argv[0], "%lf", &lambda );	
-	}
-	char tree[STRING_STEP_SIZE];
-	if ( (parg = cafe_shell_get_argument( "-t", pargs) ) )
-	{
-		strcpy( tree, parg->argv[0] );
-	}
-	FILE* fout = stdout;
-	if ( (parg = cafe_shell_get_argument( "-o", pargs) ) )
-	{
-		if ( (fout=fopen(parg->argv[0],"w")) == NULL )
-		{
-			perror( parg->argv[0]);
-			return -1;
-		}
-	}
-	arraylist_free(pargs, free);
-
-	pArrayList files = dir_file_list(dir, "tab");
-	pString pstr_cafe = phylogeny_string( (pTree)cafe_param->pcafe, NULL );
-	int i, j;
-	for ( i = 0 ; i < files->size ; i++ )
-	{
-		char* fname = (char*)files->array[i];
-		if ( fname[0] == '.' ) continue;
-		cafe_shell_dispatch_commandf("load -i %s/%s -p 0.01 -t 10 -l %s", 
-				 dir, fname, cafe_param->str_log ? cafe_param->str_log->buf : "stdout" );
-		cafe_shell_dispatch_commandf("tree %s", pstr_cafe->buf );
-		cafe_shell_dispatch_commandf("lambda -s -l %lf", lambda );
-		fprintf(fout,"\t%lf\t%lf", cafe_get_posterior(cafe_param), cafe_param->lambda[0] );
-		cafe_family_reset_maxlh(cafe_param->pfamily);
-		cafe_shell_dispatch_commandf("lambda -s -v %lf -t %s", lambda, tree );
-		fprintf(fout,"\t%lf", cafe_get_posterior(cafe_param) );
-		for ( j = 0 ; j < cafe_param->num_lambdas ; j++ )
-		{
-			fprintf(fout, "\t%lf", cafe_param->lambda[j] );
-		}
-		fprintf(fout,"\n");
-		fflush(fout);
-		cafe_shell_clear_param(cafe_param, 0);
-	}
-	fclose(fout);
-	string_free( pstr_cafe );
-	arraylist_free(files, free);	
-	return 0;
-}
 
 
 

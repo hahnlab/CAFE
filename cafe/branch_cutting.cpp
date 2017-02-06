@@ -169,7 +169,7 @@ void* __cafe_branch_cutting_thread_func(void* ptr)
 std::ostream& operator<<(std::ostream& os, CafeTree& tree)
 {
 	pString pstr = cafe_tree_string(&tree);
-	os << pstr->buf << "\n";
+	os << pstr->buf;
 	string_free(pstr);
 	return os;
 }
@@ -187,12 +187,8 @@ void cut_branch(CutBranch& cb, pTree ptree, pCafeTree paramCafe, family_size_ran
 	pCafeTree psub = cafe_tree_split(pcafe, b);
 
 	ost << ">> " << b << "  --------------------\n";
-	pString pstr = cafe_tree_string(pcafe);
-	ost << pstr->buf << "\n";
-	string_free(pstr);
-	pstr = cafe_tree_string(psub);
-	ost << pstr->buf << "\n";
-	string_free(pstr);
+	ost << *pcafe << "\n";
+	ost << *psub << "\n";
 
 	if (tree_is_leaf(psub->super.root))
 	{
