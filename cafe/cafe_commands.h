@@ -16,25 +16,26 @@ typedef int(*cafe_command2)(pCafeParam cafe_param, std::vector<std::string>);
 #define MAKE_FN_NAME(x) int cafe_cmd_##x (pCafeParam cafe_param, std::vector<std::string>)
 #define COMMAND(signal) MAKE_FN_NAME(signal)
 
-COMMAND(source);
-COMMAND(list);
 COMMAND(date);
 COMMAND(echo);
 COMMAND(exit);
+COMMAND(extinct);
+COMMAND(family);
 COMMAND(gainloss);
 COMMAND(generate_random_family);
-COMMAND(log);
-COMMAND(version);
-COMMAND(print_param);
-COMMAND(load);
-COMMAND(family);
-COMMAND(save);
-COMMAND(tree);
-COMMAND(score);
-COMMAND(viterbi);
-COMMAND(extinct);
-COMMAND(pvalue);
 COMMAND(lhtest);
+COMMAND(list);
+COMMAND(load);
+COMMAND(log);
+COMMAND(print_param);
+COMMAND(pvalue);
+COMMAND(save);
+COMMAND(score);
+COMMAND(simerror);
+COMMAND(source);
+COMMAND(tree);
+COMMAND(version);
+COMMAND(viterbi);
 
 std::map<std::string, cafe_command2> get_dispatcher();
 int cafe_shell_dispatch_command(pCafeParam param, char* cmd);
@@ -107,6 +108,13 @@ struct roots
 
 void run_viterbi_sim(pCafeTree pcafe, pCafeFamily pfamily, roots& roots);
 int init_histograms(int rfsize, roots& roots, int nsamples);
+
+const int REQUIRES_FAMILY = 0x01;
+const int REQUIRES_TREE = 0x02;
+const int REQUIRES_LAMBDA = 0x04;
+const int REQUIRES_ERRORMODEL = 0x08;
+
+void prereqs(pCafeParam param, int flags);
 
 #endif
 

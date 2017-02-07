@@ -160,15 +160,15 @@ void assert_gainloss_exception(CafeParam *param, std::string expected)
 
 TEST(CommandTests, cafe_cmd_gainloss_exceptions)
 {
-	assert_gainloss_exception(&param, "ERROR: You did not load family: command 'load'\n");
+	assert_gainloss_exception(&param, "ERROR: The gene families were not loaded. Please load gene families with the 'load' command.\n");
 
 	CafeFamily fam;
 	param.pfamily = &fam;
-	assert_gainloss_exception(&param, "ERROR: You did not specify tree: command 'tree'\n");
+	assert_gainloss_exception(&param, "ERROR: The tree was not loaded. Please load a tree with the 'tree' command.\n");
 
 	CafeTree tree;
 	param.pcafe = &tree;
-	assert_gainloss_exception(&param, "ERROR: You did not set the parameters: command 'lambda' or 'lambdamu'\n");
+	assert_gainloss_exception(&param, "ERROR: Lambda values were not set. Please set lambda values with the 'lambda' or 'lambdamu' commands.\n");
 }
 
 TEST(CommandTests, cafe_cmd_log)

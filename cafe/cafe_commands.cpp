@@ -17,6 +17,8 @@
 #include "reports.h"
 #include "pvalue.h"
 #include "conditional_distribution.h"
+#include "simerror.h"
+
 /**
 	\defgroup Commands Commands that are available in CAFE
 */
@@ -73,6 +75,7 @@ map<string, cafe_command2> get_dispatcher()
 	dispatcher["viterbi"] = cafe_cmd_viterbi;
 	dispatcher["pvalue"] = cafe_cmd_pvalue;
 	dispatcher["lhtest"] = cafe_cmd_lhtest;
+	dispatcher["simerror"] = cafe_cmd_simerror;
 
 	return dispatcher;
 }
@@ -317,18 +320,20 @@ int write_family_gainloss(ostream& ofst, std::string family_id, pCafeTree tree1,
 	return sum;
 }
 
-const int REQUIRES_FAMILY = 0x01;
-const int REQUIRES_TREE = 0x02;
-const int REQUIRES_LAMBDA = 0x04;
-
 void prereqs(pCafeParam param, int flags)
 {
 	if ((flags & REQUIRES_FAMILY) && param->pfamily == NULL)
-		throw runtime_error("ERROR: You did not load family: command 'load'\n");
+		throw runtime_error("ERROR: The gene families were not loaded. Please load gene families with the 'load' command.\n");
 	if ((flags & REQUIRES_TREE) && param->pcafe == NULL)
-		throw runtime_error("ERROR: You did not specify tree: command 'tree'\n");
+		throw runtime_error("ERROR: The tree was not loaded. Please load a tree with the 'tree' command.\n");
 	if ((flags & REQUIRES_LAMBDA) && param->lambda == NULL)
-		throw runtime_error("ERROR: You did not set the parameters: command 'lambda' or 'lambdamu'\n");
+		throw runtime_error("ERROR: Lambda values were not set. Please set lambda values with the 'lambda' or 'lambdamu' commands.\n");
+	if (flags & REQUIRES_ERRORMODEL)
+	{
+		pCafeFamily pcf = param->pfamily;
+		if (!pcf->error_ptr && !pcf->errors)
+			throw std::runtime_error("ERROR: No error model has been set. Please set an error model with the 'errormodel' command.\n");
+	}
 }
 
 /**
@@ -1681,3 +1686,28 @@ int cafe_cmd_lhtest(pCafeParam param, std::vector<std::string> tokens)
 	return 0;
 }
 
+int cafe_cmd_simerror(pCafeParam param, std::vector<std::string> tokens)
+{
+	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE | REQUIRES_LAMBDA | REQUIRES_ERRORMODEL);
+
+	std::vector<Argument> args = build_argument_list(tokens);
+
+	std::string prefix;
+	int repeat = 1;
+	for (size_t i = 0; i < args.size(); i++)
+	{
+		// Search for whole family 
+		if (!strcmp(args[i].opt, "-pre"))
+		{
+			for (int j = 0; j < args[i].argc; ++j)
+				prefix += args[i].argv[j];
+		}
+		else if (!strcmp(args[i].opt, "-rep"))
+		{
+			repeat = atoi(args[i].argv[0]);
+		}
+	}
+	simerror(param->pfamily, prefix, repeat);
+
+	return 0;
+}

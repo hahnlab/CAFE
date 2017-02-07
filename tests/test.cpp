@@ -22,6 +22,7 @@ extern "C" {
 #include <pvalue.h>
 #include <branch_cutting.h>
 #include <conditional_distribution.h>
+#include <simerror.h>
 
 extern "C" {
 	extern pCafeParam cafe_param;
@@ -1000,6 +1001,41 @@ TEST(FirstTestGroup, compute_cutpvalues)
 	DOUBLES_EQUAL(0.6, viterbi.cutPvalues[0][0], .001);
 }
 
+TEST(FirstTestGroup, simulate_misclassification)
+{
+	const char *species[] = { "", "", "chimp" };
+	const int num_species = 3;
+
+	pCafeFamily pfamily = cafe_family_init(build_arraylist(species, num_species));
+	const char *values[] = { "description", "id", "3" };
+	cafe_family_add_item(pfamily, build_arraylist(values, num_species));
+
+	ErrorStruct e;
+	e.maxfamilysize = 4;
+	e.errormatrix = (double**)memory_new_2dim(5, 5, sizeof(double));
+	for (int i = 0; i < 5; i++) {
+		e.errormatrix[i][3] = .4;	// 3 is gene count in chimp
+	}
+	std::vector<pErrorStruct> v(1);
+	v[0] = &e;
+	pfamily->error_ptr = &v[0];
+
+	simulate_misclassification(pfamily);
+
+	std::ostringstream ost;
+	write_species_counts(pfamily, ost);
+
+	STRCMP_CONTAINS("Desc\tFamily ID\tchimp\n", ost.str().c_str());
+	STRCMP_CONTAINS("description\tid\t1\n", ost.str().c_str());
+
+}
+
+TEST(FirstTestGroup, get_random)
+{
+	std::vector<double> v(5, 0.2);
+
+	LONGS_EQUAL(2, get_random(v));
+}
 
 TEST(PValueTests, pvalue)
 {
