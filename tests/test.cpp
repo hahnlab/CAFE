@@ -23,6 +23,7 @@ extern "C" {
 #include <branch_cutting.h>
 #include <conditional_distribution.h>
 #include <simerror.h>
+#include <error_model.h>
 
 extern "C" {
 	extern pCafeParam cafe_param;
@@ -1035,6 +1036,28 @@ TEST(FirstTestGroup, get_random)
 	std::vector<double> v(5, 0.2);
 
 	LONGS_EQUAL(2, get_random(v));
+}
+
+TEST(FirstTestGroup, tree_set_branch_lengths)
+{
+	pCafeTree tree = create_tree(range);
+
+	std::vector<int> lengths;
+	try
+	{
+		tree_set_branch_lengths(tree, lengths);
+		FAIL("No exception was thrown");
+	}
+	catch (const std::runtime_error& err)
+	{
+		STRCMP_EQUAL("ERROR: There are 9 branches including the empty branch of root\n", err.what());
+	}
+	int v[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+	lengths.resize(9);
+	std::copy(v, v + 9, lengths.begin());
+	tree_set_branch_lengths(tree, lengths);
+	pPhylogenyNode pnode = (pPhylogenyNode)tree->super.nlist->array[5];
+	LONGS_EQUAL(pnode->branchlength, 5);
 }
 
 TEST(PValueTests, pvalue)

@@ -47,18 +47,12 @@ pArrayList cafe_shell_build_argument(int argc, char* argv[]);
 void cafe_shell_prompt(char* prompt, char* format, ... );
 void cafe_shell_init(int quiet);
 double cafe_shell_score();
-int cafe_cmd_branchlength(int argc, char* argv[]);
 int cafe_cmd_lambda_mu(int argc, char* argv[]);
-int cafe_cmd_pvalue(int argc, char* argv[]);
-int cafe_cmd_retrieve(int argc, char* argv[] );
 int cafe_cmd_sim_extinct(int argc, char* argv[]);
 int cafe_cmd_extinct(int argc, char* argv[]);
 int cafe_cmd_root_dist(int argc, char* argv[]);
 int cafe_cmd_esterror(int argc, char* argv[]);
-int cafe_cmd_error_model(int argc, char* argv[]);
-int cafe_cmd_no_error_model(int argc, char* argv[]);
 int cafe_cmd_simerror(int argc, char* argv[]);
-int cafe_cmd_reconstruction_accuracy(int argc, char* argv[]);
 int cafe_cmd_crossvalidation_by_species(int argc, char* argv[]);
 int cafe_cmd_crossvalidation_by_family(int argc, char* argv[]);
 

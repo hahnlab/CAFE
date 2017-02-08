@@ -39,16 +39,10 @@ pTree tmp_lambda_tree;
 */
 CafeShellCommand cafe_cmd[]  =
 {
-	{ "branchlength", cafe_cmd_branchlength },
 	{ "lambdamu", cafe_cmd_lambda_mu },
-	{ "retrieve", cafe_cmd_retrieve },
 	{ "rootdist", cafe_cmd_root_dist}, 
-    { "errormodel", cafe_cmd_error_model},  
-    { "noerrormodel", cafe_cmd_no_error_model},  
-    { "esterror", cafe_cmd_esterror},
 	{ "cvspecies", cafe_cmd_crossvalidation_by_species},
 	{ "cvfamily", cafe_cmd_crossvalidation_by_family},
-	{ "accuracy", cafe_cmd_reconstruction_accuracy},
 	{ "simextinct", cafe_cmd_sim_extinct },
 	{ NULL, NULL }
 };
@@ -560,36 +554,6 @@ int cafe_shell_set_familysize()
 	return max;
 }
 
-int cafe_shell_parse_branchlength(int argc, char* argv[])
-{
-	int i;
-
-
-	pArrayList nlist = cafe_param->pcafe->super.nlist;
-
-	if ( argc != nlist->size )
-	{
-		fprintf( stderr, "ERROR: There are %d branches including the empty branch of root\n", nlist->size );
-		return -1;
-	}
-	for ( i = 0; i < argc ; i++ )
-	{
-		int size = -1;
-		pPhylogenyNode pnode = (pPhylogenyNode)nlist->array[i];
-		sscanf( argv[i],"%d", &size );
-		if ( size > 0 )
-		{ 
-			pnode->branchlength = size;
-		}
-		else
-		{
-			fprintf(stderr,"ERROR: the branch length of node %d is not changed\n", i);
-		}
-	}
-	if (probability_cache) cafe_tree_set_birthdeath(cafe_param->pcafe);
-	return 0;
-}
-
 int cafe_shell_set_branchlength()
 {
 	int i;
@@ -1060,57 +1024,6 @@ void __cafe_cmd_viterbi_family_print(int idx)
 	string_free(pstr);
 }
 
-int cafe_cmd_reconstruction_accuracy(int argc, char* argv[])
-{
-	int i, j;
-	pCafeTree pcafe = cafe_param->pcafe;
-	pArrayList pargs = cafe_shell_build_argument(argc, argv);
-	pArgument parg;
-	double SSE = 0;
-	double MSE = 0;
-	int nodecnt = 0;
-	int errnodecnt = 0;
-	if ((parg = cafe_shell_get_argument("-i", pargs)))
-	{
-		// read in truth data
-		pString truthfile = string_join(" ",parg->argc, parg->argv );
-		pCafeFamily truthfamily = cafe_family_new( truthfile->buf, 1 );
-		if ( truthfamily == NULL ) {
-			fprintf(stderr, "failed to read in true values %s\n", truthfile->buf);
-			return -1;
-		}
-		pCafeTree truthtree = cafe_tree_copy(pcafe);
-		// set parameters
-		if ( truthtree )
-		{
-			cafe_family_set_species_index(truthfamily, truthtree);
-            // compare inferred vs. truth
-            for(i=0; i< cafe_param->pfamily->flist->size; i++) 
-            {
-                cafe_family_set_truesize_with_family(truthfamily,i, truthtree);
-                cafe_family_set_size(cafe_param->pfamily,i, pcafe);
-                if (cafe_param->posterior) {
-                    cafe_tree_viterbi_posterior(pcafe, cafe_param);
-                }
-                else {
-                    cafe_tree_viterbi(pcafe);
-                }
-                // inner node SSE
-                for (j=1; j<pcafe->super.nlist->size; j=j+2) {
-                    int error = ((pCafeNode)truthtree->super.nlist->array[j])->familysize-((pCafeNode)pcafe->super.nlist->array[j])->familysize;
-                    SSE += pow(error, 2);
-                    if (error != 0) { errnodecnt++; }  
-                    nodecnt++;
-                }
-            }
-            MSE = SSE/nodecnt;
-        }
-		
-	}
-	arraylist_free(pargs, free);
-	cafe_log( cafe_param, "ancestral reconstruction SSE %f MSE %f totalnodes %d errornodes %d\n", SSE, MSE, nodecnt, errnodecnt );
-	return 0;
-}
 
 
 
@@ -1455,39 +1368,6 @@ void log_param_values(pCafeParam param)
 	}
 }
 
-int cafe_cmd_branchlength(int argc, char* argv[])
-{
-	STDERR_IF( cafe_param->pcafe == NULL, "ERROR(branchlength): You did not specify tree: command 'tree'\n" );
-
-	pString pstr = cafe_tree_string_with_id( cafe_param->pcafe );
-	printf("%s\n", pstr->buf );
-	string_free(pstr);
-	int err = 0;
-
-	if ( argc == 1 )
-	{
-		err = cafe_shell_set_branchlength();	
-	}
-	else if ( argc > 2 )
-	{
-		err = cafe_shell_parse_branchlength(argc-1,&argv[1]);	
-	}
-	if ( !err )
-	{
-		cafe_tree_string_print(cafe_param->pcafe);
-	}
-	if ( cafe_param->pfamily )
-	{
-		int i;
-		for ( i = 0 ; i < cafe_param->pfamily->flist->size; i++ )
-		{
-			pCafeFamilyItem pitem = (pCafeFamilyItem)cafe_param->pfamily->flist->array[i];
-			pitem->maxlh = -1;
-		}
-	}
-	return err;
-}
-
 extern double __cafe_best_lambda_search(double* plambda, void* args);
 extern double __cafe_best_lambda_mu_search(double* pparams, void* args);
 extern double __cafe_cluster_lambda_search(double* plambda, void* args);
@@ -1557,16 +1437,6 @@ double cafe_shell_score()
 		}
 	}
 	return score;
-}
-
-int cafe_cmd_retrieve(int argc, char* argv[] )
-{
-	cafe_shell_clear_param(cafe_param, 1);
-	if ( cafe_report_retrieve_data(argv[1], cafe_param)	== -1 )
-	{
-		return -1;
-	}		
-	return 0;
 }
 
 int set_log_file(pCafeParam param, const char *log_file)
@@ -1908,11 +1778,10 @@ int cafe_cmd_root_dist(int argc, char* argv[])
 
 
 
-pErrorStruct cafe_shell_create_error_matrix_from_estimate(pErrorMeasure errormeasure);
 void cafe_shell_free_errorstruct(pErrorStruct errormodel);
 
 
-int cafe_shell_read_freq_from_measures(char* file1, char* file2, int* sizeFreq)
+int cafe_shell_read_freq_from_measures(const char* file1, const char* file2, int* sizeFreq)
 {
     int i=0;
     char buf1[STRING_BUF_SIZE];
@@ -2005,7 +1874,7 @@ int cafe_shell_read_freq_from_measures(char* file1, char* file2, int* sizeFreq)
 
 
 
-int cafe_shell_read_error_double_measure(char* error1, char* error2, int** observed_pairs, int maxFamilySize)
+int cafe_shell_read_error_double_measure(const char* error1, const char* error2, int** observed_pairs, int maxFamilySize)
 {
 	int i=0;
     int j=0;
@@ -2073,7 +1942,7 @@ int cafe_shell_read_error_double_measure(char* error1, char* error2, int** obser
     return 0;
 }
 
-int cafe_shell_read_error_true_measure(char* errorfile, char* truefile, int** observed_pairs, int maxFamilySize)
+int cafe_shell_read_error_true_measure(const char* errorfile, const char* truefile, int** observed_pairs, int maxFamilySize)
 {
 	int i=0;
     char buf1[STRING_BUF_SIZE];
@@ -2128,6 +1997,123 @@ int cafe_shell_read_error_true_measure(char* errorfile, char* truefile, int** ob
         }
     }
     return 0;
+}
+
+// conditional probability of measuring i=familysize when true count is j
+int __check_error_model_columnsums(pErrorStruct errormodel)
+{
+	int i, j = 0;
+	int diff = errormodel->todiff;
+
+	for (j = 0; j<diff; j++) {
+		// column j
+		double columnsum = 0;
+		for (i = 0; i <= errormodel->maxfamilysize; i++) {
+			columnsum += errormodel->errormatrix[i][j];
+		}
+		errormodel->errormatrix[0][j] = errormodel->errormatrix[0][j] + (1 - columnsum);
+	}
+
+	// all other columns
+	for (j = diff; j <= errormodel->maxfamilysize - diff; j++) {
+		double columnsum = 0;
+		for (i = 0; i <= errormodel->maxfamilysize; i++) {
+			columnsum += errormodel->errormatrix[i][j];
+		}
+		if (abs(1 - columnsum) > 0.00000000000001) {
+			for (i = 0; i <= errormodel->maxfamilysize; i++) {
+				errormodel->errormatrix[i][j] = errormodel->errormatrix[i][j] / columnsum;
+			}
+		}
+	}
+
+	for (j = errormodel->maxfamilysize - diff + 1; j <= errormodel->maxfamilysize; j++) {
+		// column j
+		double columnsum = 0;
+		for (i = 0; i <= errormodel->maxfamilysize; i++) {
+			columnsum += errormodel->errormatrix[i][j];
+		}
+		errormodel->errormatrix[errormodel->maxfamilysize][j] = errormodel->errormatrix[errormodel->maxfamilysize][j] + (1 - columnsum);
+
+	}
+	return 0;
+}
+
+pErrorStruct cafe_shell_create_error_matrix_from_estimate(pErrorMeasure errormeasure)
+{
+	int i = 0;
+	int j = 0;
+
+	// allocate new errormodel
+	pErrorStruct errormodel = memory_new(1, sizeof(ErrorStruct));
+
+	errormodel->maxfamilysize = errormeasure->maxFamilySize;
+	errormodel->fromdiff = -(errormeasure->model_parameter_diff);
+	errormodel->todiff = errormeasure->model_parameter_diff;
+	errormodel->errorfilename = NULL;
+	errormodel->errormatrix = (double**)memory_new_2dim(errormodel->maxfamilysize + 1, errormodel->maxfamilysize + 1, sizeof(double));
+
+	int total_param_num = 0;
+	double* total_params = NULL;
+	if (errormeasure->b_symmetric) {
+		// symmetric
+		double sum = 0;
+		total_param_num = errormeasure->model_parameter_number + errormeasure->model_parameter_diff + 1;
+		total_params = memory_new(total_param_num, sizeof(double));
+		total_params[errormeasure->model_parameter_diff] = errormeasure->estimates[0];
+		sum = errormeasure->estimates[0];
+		for (i = 1; i<errormeasure->model_parameter_number; i++) {
+			total_params[errormeasure->model_parameter_diff + i] = errormeasure->estimates[i];
+			sum += 2 * errormeasure->estimates[i];
+		}
+		total_params[total_param_num - 1] = (1 - sum) / (double)((errormeasure->maxFamilySize + 1) - (errormeasure->model_parameter_diff * 2 + 1));
+		// now fill left side
+		for (i = 0; i<errormeasure->model_parameter_diff; i++) {
+			total_params[i] = total_params[abs(total_param_num - 1 - 1 - i)];
+		}
+	}
+	else {
+		//asymmetric
+		double sum = 0;
+		total_param_num = errormeasure->model_parameter_number + 1;
+		total_params = memory_new(total_param_num, sizeof(double));
+		for (i = 0; i<errormeasure->model_parameter_number; i++) {
+			total_params[i] = errormeasure->estimates[i];
+			sum += errormeasure->estimates[i];
+		}
+		total_params[total_param_num - 1] = (1 - sum) / (double)((errormeasure->maxFamilySize + 1) - (errormeasure->model_parameter_diff * 2 + 1));
+	}
+
+
+	// now fill the error matrix column by column
+	for (j = 0; j <= errormodel->maxfamilysize; j++) {
+		int k = 0;  // k is the index of total_params
+		for (i = 0; i<errormodel->fromdiff + j; i++) {
+			if (i <= errormodel->maxfamilysize) {
+				errormodel->errormatrix[i][j] = total_params[total_param_num - 1]; // marginal error probability epsilon
+			}
+		}
+		for (i = errormodel->fromdiff + j; i <= errormodel->todiff + j; i++) {
+			if (i >= 0 && i <= errormodel->maxfamilysize) {
+				errormodel->errormatrix[i][j] = total_params[k]; // conditional probability of measuring i+j when true count is j
+			}
+			k++;
+		}
+		for (i = errormodel->todiff + j + 1; i <= errormodel->maxfamilysize; i++) {
+			if (i >= 0) {
+				errormodel->errormatrix[i][j] = total_params[total_param_num - 1]; // marginal error probability epsilon
+			}
+		}
+	}
+
+	// now make sure that columns of the error matrix sums to one.
+	__check_error_model_columnsums(errormodel);
+
+	/*    if (cafe_param->pfamily->errors == NULL) {
+	cafe_param->pfamily->errors = arraylist_new(cafe_param->pfamily->num_species);
+	}
+	arraylist_add(cafe_param->pfamily->errors, errormodel);*/
+	return errormodel;
 }
 
 double __loglikelihood_pairs_from_double_measure(double* parameters, void* args)
@@ -2364,7 +2350,7 @@ double __loglikelihood_pairs_from_true_measure(double* parameters, void* args)
 
 
 
-pErrorMeasure cafe_shell_estimate_error_double_measure(char* error1, char* error2, int b_symmetric, int max_diff, int b_peakzero)
+pErrorMeasure cafe_shell_estimate_error_double_measure(const char* error1, const char* error2, int b_symmetric, int max_diff, int b_peakzero)
 {
     int i;
     pCafeParam param = cafe_param;
@@ -2492,7 +2478,7 @@ pErrorMeasure cafe_shell_estimate_error_double_measure(char* error1, char* error
 
 
 
-pErrorMeasure cafe_shell_estimate_error_true_measure(char* errorfile, char* truefile, int b_symmetric, int max_diff, int b_peakzero)
+pErrorMeasure cafe_shell_estimate_error_true_measure(const char* errorfile, const char* truefile, int b_symmetric, int max_diff, int b_peakzero)
 {
     int i;
     pCafeParam param = cafe_param;
@@ -2608,493 +2594,6 @@ pErrorMeasure cafe_shell_estimate_error_true_measure(char* errorfile, char* true
     return error; 
 }
 
-
-
-
-int cafe_shell_write_error_matrix( pErrorStruct errormodel, FILE* fp)
-{
-    int i, j;
-    
-
-    fprintf( fp, "maxcnt:%d\n", errormodel->maxfamilysize );	
-    fprintf( fp, "cntdiff");	    
-    for (j=errormodel->fromdiff; j<=errormodel->todiff; j++) {
-        fprintf( fp," %d", j );	        
-    }
-    fprintf( fp, "\n");	    
-    
-    for (j=0; j<=errormodel->maxfamilysize; j++) {
-        fprintf( fp, "%d", j);	    
-        for (i=errormodel->fromdiff; i<=errormodel->todiff; i++) {
-            if (0 <= i+j && i+j <= errormodel->maxfamilysize) { 
-                fprintf( fp," %2.2f", errormodel->errormatrix[i+j][j] );	// conditional probability of measuring i+j when true count is j        
-            }
-            else {
-                fprintf( fp," #nan");	        
-            }
-        }
-        fprintf( fp, "\n");
-    }
-        
-    //fclose(fp);
-
-    return 0;
-}
-
-
-// conditional probability of measuring i=familysize when true count is j
-int __check_error_model_columnsums(pErrorStruct errormodel) 
-{
-    int i,j=0;
-    int diff = errormodel->todiff;
-    
-    for (j=0; j<diff; j++) {
-        // column j
-        double columnsum = 0;
-        for (i=0; i<= errormodel->maxfamilysize; i++) { 
-            columnsum += errormodel->errormatrix[i][j];
-        }
-        errormodel->errormatrix[0][j] = errormodel->errormatrix[0][j] + (1-columnsum);
-    }
-    
-    // all other columns
-    for (j=diff; j<= errormodel->maxfamilysize-diff; j++) {
-        double columnsum = 0;
-        for (i=0; i<= errormodel->maxfamilysize; i++) {
-            columnsum += errormodel->errormatrix[i][j];
-        }
-        if (abs(1 - columnsum) > 0.00000000000001) {
-            for (i=0; i<= errormodel->maxfamilysize; i++) {
-                errormodel->errormatrix[i][j] = errormodel->errormatrix[i][j]/columnsum;
-            }
-        }
-    }
-        
-    for (j=errormodel->maxfamilysize-diff+1; j<=errormodel->maxfamilysize; j++) {
-        // column j
-        double columnsum = 0;
-        for (i=0; i<= errormodel->maxfamilysize; i++) { 
-            columnsum += errormodel->errormatrix[i][j];
-        }
-        errormodel->errormatrix[errormodel->maxfamilysize][j] = errormodel->errormatrix[errormodel->maxfamilysize][j] + (1-columnsum);
-
-    }
-    return 0;
-}
-
-
-
-pErrorStruct cafe_shell_set_error_matrix(pErrorStruct errormodel, char* speciesname)
-{
-    int i;
-    
-    if (cafe_param->pfamily->error_ptr == NULL) {
-        cafe_param->pfamily->error_ptr = memory_new(cafe_param->pfamily->num_species, sizeof(pErrorStruct));
-    }
-    if (speciesname) {
-        for (i=0; i<cafe_param->pfamily->num_species; i++) {
-            if (string_pchar_cmp_ignore_case(cafe_param->pfamily->species[i], speciesname)) {
-                cafe_param->pfamily->error_ptr[i] = errormodel;
-                pCafeNode pcnode = (pCafeNode)cafe_param->pcafe->super.nlist->array[cafe_param->pfamily->index[i]];
-                pcnode->errormodel = errormodel;
-                break;
-            }
-        }
-    }
-    else { // '-all' specified instead of speciesname 
-        for (i=0; i<cafe_param->pfamily->num_species; i++) {
-            cafe_param->pfamily->error_ptr[i] = errormodel;
-            pCafeNode pcnode = (pCafeNode)cafe_param->pcafe->super.nlist->array[cafe_param->pfamily->index[i]];
-            pcnode->errormodel = errormodel;
-        }        
-    }
-    return errormodel;
-    
-}
-
-pErrorStruct cafe_shell_create_error_matrix_from_estimate(pErrorMeasure errormeasure)
-{
-	int i=0;
-    int j=0;
-    
-    // allocate new errormodel
-    pErrorStruct errormodel = memory_new(1, sizeof(ErrorStruct));
-
-    errormodel->maxfamilysize = errormeasure->maxFamilySize;
-    errormodel->fromdiff = -(errormeasure->model_parameter_diff);
-    errormodel->todiff = errormeasure->model_parameter_diff;
-    errormodel->errorfilename = NULL;
-    errormodel->errormatrix = (double**)memory_new_2dim(errormodel->maxfamilysize+1, errormodel->maxfamilysize+1, sizeof(double));
-    
-    int total_param_num = 0;
-    double* total_params = NULL;
-    if (errormeasure->b_symmetric) {
-        // symmetric
-        double sum = 0;
-        total_param_num = errormeasure->model_parameter_number+errormeasure->model_parameter_diff+1;
-        total_params = memory_new(total_param_num, sizeof(double));
-        total_params[errormeasure->model_parameter_diff] = errormeasure->estimates[0];
-        sum = errormeasure->estimates[0];
-        for(i=1; i<errormeasure->model_parameter_number; i++) {
-            total_params[errormeasure->model_parameter_diff+i] = errormeasure->estimates[i];
-            sum += 2*errormeasure->estimates[i];
-        } 
-        total_params[total_param_num-1] = (1-sum)/(double)((errormeasure->maxFamilySize+1)-(errormeasure->model_parameter_diff*2+1));
-        // now fill left side
-        for(i=0; i<errormeasure->model_parameter_diff; i++) {
-            total_params[i] = total_params[abs(total_param_num-1-1-i)];
-        } 
-    }   
-    else {  
-        //asymmetric
-        double sum = 0;
-        total_param_num = errormeasure->model_parameter_number+1;
-        total_params = memory_new(total_param_num, sizeof(double));
-        for(i=0; i<errormeasure->model_parameter_number; i++) {
-            total_params[i] = errormeasure->estimates[i];
-            sum += errormeasure->estimates[i];
-        } 
-        total_params[total_param_num-1] = (1-sum)/(double)((errormeasure->maxFamilySize+1)-(errormeasure->model_parameter_diff*2+1));
-    }
-
-    
-    // now fill the error matrix column by column
-    for (j=0; j<=errormodel->maxfamilysize; j++) {
-        int k = 0;  // k is the index of total_params
-        for ( i=0; i<errormodel->fromdiff+j; i++) {
-            if (i <= errormodel->maxfamilysize) {
-                errormodel->errormatrix[i][j] = total_params[total_param_num-1]; // marginal error probability epsilon
-            }
-        }      
-        for ( i=errormodel->fromdiff+j; i<=errormodel->todiff+j; i++) {
-            if (i >= 0 && i <= errormodel->maxfamilysize) {
-                errormodel->errormatrix[i][j] = total_params[k]; // conditional probability of measuring i+j when true count is j
-            }
-            k++;
-        }      
-        for ( i=errormodel->todiff+j+1; i<=errormodel->maxfamilysize; i++) {
-            if (i >= 0) {
-                errormodel->errormatrix[i][j] = total_params[total_param_num-1]; // marginal error probability epsilon
-            }
-        }      
-    }
-    
-    // now make sure that columns of the error matrix sums to one.
-    __check_error_model_columnsums(errormodel);
-    
-/*    if (cafe_param->pfamily->errors == NULL) {
-        cafe_param->pfamily->errors = arraylist_new(cafe_param->pfamily->num_species);
-    }
-    arraylist_add(cafe_param->pfamily->errors, errormodel);*/
-    return errormodel;
-}
-
-
-
-int cafe_cmd_esterror(int argc, char* argv[]) 
-{
-	pArrayList pargs = cafe_shell_build_argument(argc, argv);
-	pArgument parg;
-    //pCafeFamily pcf = cafe_param->pfamily;
-    
-	if ( argc >= 3 )
-	{
-        // write errormeasure
-        pString outfile = NULL;
-        FILE* fp = NULL;
-
-        if ((parg = cafe_shell_get_argument("-o", pargs)))  {
-            outfile = string_new_with_string(parg->argv[0]);
-            if ( ( fp = fopen( outfile->buf , "w" ) ) == NULL )
-            {
-                fprintf(stderr,"ERROR(esterror): Cannot open %s in write mode.\n", outfile->buf );  
-                return -1;
-            }
-        }
-        else {
-            fprintf(stderr,"ERROR(esterror): need to specify the output file \"-o outfile\".\n" );  
-            fprintf(stderr,"ERROR(esterror): [-dataerror file1 file2] or [-dataerror file1 -datatrue file2] -o outfile.\n" );  
-            return -1;
-            
-        }
-        if ((parg = cafe_shell_get_argument("-dataerror", pargs))) 
-        {
-            
-            pErrorMeasure errormeasure = NULL;
-            int b_symmetric = 0;    // default is asymmetric model 
-            int max_diff = 2;       // default is a maximum difference of two counts 
-            int b_peakzero = 0;     // default is no contraint in shape
-            
-            if (parg->argc == 2) {
-                pString errorfile1 = string_new_with_string(parg->argv[0]);
-                pString errorfile2 = string_new_with_string(parg->argv[1]);
-                // read model specification 
-                if ( (parg = cafe_shell_get_argument( "-symm", pargs) ) )
-                {
-                    b_symmetric = 1;
-                }
-                if ( (parg = cafe_shell_get_argument( "-diff", pargs) ) )
-                {
-                    max_diff = atoi(parg->argv[0]);
-                }
-                if ( (parg = cafe_shell_get_argument( "-peakzero", pargs) ) )
-                {
-                    b_peakzero = 1;
-                }
-                // estimate error matrix                
-                errormeasure = cafe_shell_estimate_error_double_measure(errorfile1->buf, errorfile2->buf, b_symmetric, max_diff, b_peakzero);
-                string_free(errorfile1);
-                string_free(errorfile2);
-            }
-            else if (parg->argc == 1) {
-                pString errorfile1 = string_new_with_string(parg->argv[0]);
-                if ((parg = cafe_shell_get_argument("-datatrue", pargs)))
-                {
-                    pString truefile = string_new_with_string(parg->argv[0]);
-                    // read model specification 
-                    if ( (parg = cafe_shell_get_argument( "-symm", pargs) ) )
-                    {
-                        b_symmetric = 1;
-                    }
-                    if ( (parg = cafe_shell_get_argument( "-diff", pargs) ) )
-                    {
-                        max_diff = atoi(parg->argv[0]);
-                    }
-                    if ( (parg = cafe_shell_get_argument( "-peakzero", pargs) ) )
-                    {
-                        b_peakzero = 1;
-                    }
-                    // estimate error matrix                                    
-                    errormeasure = cafe_shell_estimate_error_true_measure(errorfile1->buf, truefile->buf, b_symmetric, max_diff, b_peakzero);
-                    string_free(truefile);
-                }
-                else {
-                        fprintf(stderr,"ERROR(esterror): we need another data file with error or a true data file to compare.\n" );
-                        fprintf(stderr,"ERROR(esterror): [-dataerror file1 file2] or [-dataerror file1 -datatrue file2] -o outfile.\n" );
-                        fclose(fp);
-                        string_free(outfile); 
-                        string_free(errorfile1);
-                        return -1;
-                }
-                string_free(errorfile1);
-            }
-            else
-            {
-                fprintf(stderr,"ERROR(esterror): [-dataerror file1 file2] or [-dataerror file1 -datatrue file2] -o outfile.\n" );  
-                fclose(fp);
-                string_free(outfile);                  
-                return -1;
-            }
-            
-            // create errormodel based on errormeasure
-            pErrorStruct errormodel = cafe_shell_create_error_matrix_from_estimate(errormeasure);
-            
-            // write errormodel
-            cafe_shell_write_error_matrix(errormodel, fp);
-            
-        }
-        fclose(fp);
-        string_free(outfile);                  
-
-    }
-    else
-    {
-        fprintf(stderr,"ERROR(esterror): -o outfile [-dataerror file1 file2] or [-dataerror file1 -datatrue file2] -o outfile.\n" );  
-        return -1;
-    }
-    return 0;
-    
-}
-
-
-int cafe_shell_set_error_matrix_from_file(char* filename, char* speciesname)
-{
-	int i=0;
-    int j=0;
-    char buf[STRING_BUF_SIZE];
-    
-    // check if error model for filename already exists 
-    pErrorStruct errormodel = NULL;
-    if (cafe_param->pfamily->errors) {
-        for (i=0; i<cafe_param->pfamily->errors->size; i++) {
-            pErrorStruct error = (pErrorStruct)cafe_param->pfamily->errors->array[i];
-            if ( string_pchar_cmp_ignore_case(error->errorfilename, filename)) {
-                errormodel = error;
-                break;
-            }
-        }
-    }
-    if (errormodel == NULL) 
-    {
-        // allocate new errormodel
-        errormodel = memory_new(1, sizeof(ErrorStruct));
-        FILE* fp = fopen(filename,"r");
-        if ( fp == NULL )
-        {
-            fprintf( stderr, "Cannot open file: %s\n", filename );
-            return -1;
-        }
-        if ( fgets(buf,STRING_BUF_SIZE,fp) == NULL )
-        {
-            fclose(fp);
-            fprintf( stderr, "Empty file: %s\n", filename );
-            return -1;
-        }
-		string_pchar_chomp(buf);
-		pArrayList data = string_pchar_split( buf, ' ');
-		pArrayList max = string_pchar_split( data->array[0], ':');
-		errormodel->maxfamilysize = atoi((char*)max->array[1]);
-        if (errormodel->maxfamilysize < cafe_param->family_size.max) {
-            errormodel->maxfamilysize = cafe_param->family_size.max;
-        }
-		arraylist_free(data,NULL);
-        arraylist_free(max, NULL);
-
-        if ( fgets(buf,STRING_BUF_SIZE,fp) != NULL ) {
-            string_pchar_chomp(buf);
-            pArrayList data = string_pchar_split( buf, ' ');
-            errormodel->fromdiff = atoi((char*)data->array[1]);
-            errormodel->todiff = atoi((char*)data->array[data->size-1]);
-            arraylist_free(data,NULL);        
-        }
-        errormodel->errorfilename = strdup(filename);       
-        errormodel->errormatrix = (double**)memory_new_2dim(errormodel->maxfamilysize+1, errormodel->maxfamilysize+1, sizeof(double));
-
-        i = 0;
-        while(fgets(buf,STRING_BUF_SIZE,fp))	
-        {
-            string_pchar_chomp(buf);
-            data = string_pchar_split( buf, ' ');
-            if (data->size == (errormodel->todiff-errormodel->fromdiff)+2) {
-                while (j && j < atoi(data->array[0])) {
-                    // copy previous line's error model for missing lines. 
-                    for ( i=errormodel->fromdiff; i<=errormodel->todiff; i++) {
-                        
-                        if (i+j >= 0 && i+j <= errormodel->maxfamilysize) {
-                            errormodel->errormatrix[i+j][j] = errormodel->errormatrix[i+j-1][j-1];
-                        }
-                    }      
-                    i++;
-                }
-                // read error model and save in matrix row
-                int k = 1;  // k is file column index
-                for ( i=errormodel->fromdiff; i<=errormodel->todiff; i++) {
-                    assert(j == atoi(data->array[0]));
-                    if (i+j >= 0 && i+j <= errormodel->maxfamilysize) {
-                        errormodel->errormatrix[i+j][j] = atof(data->array[k]);  // conditional probability of measuring i+j when true count is j
-                    }
-                    k++;
-                }      
-                j++;
-            }
-            arraylist_free(data,NULL);
-        }
-        while (j && j <= errormodel->maxfamilysize) {
-            // copy previous line's error model for missing lines till the end of matrix. 
-            for ( i=errormodel->fromdiff; i<=errormodel->todiff; i++) {
-                if (i+j >= 0 && i+j <= errormodel->maxfamilysize) {
-                    errormodel->errormatrix[i+j][j] = errormodel->errormatrix[i+j-1][j-1]; // conditional probability of measuring i+j when true count is j
-                }
-            }      
-            j++;
-        }
-        
-        // now make sure that columns of the error matrix sums to one.
-        __check_error_model_columnsums(errormodel);
-        
-        if (cafe_param->pfamily->errors == NULL) {
-            cafe_param->pfamily->errors = arraylist_new(cafe_param->pfamily->num_species);
-        }
-        arraylist_add(cafe_param->pfamily->errors, errormodel);
-        
-    }
-    if (cafe_param->pfamily->error_ptr == NULL) {
-        cafe_param->pfamily->error_ptr = memory_new(cafe_param->pfamily->num_species, sizeof(pErrorStruct));
-    }
-    if (speciesname) {
-        for (i=0; i<cafe_param->pfamily->num_species; i++) {
-            if (string_pchar_cmp_ignore_case(cafe_param->pfamily->species[i], speciesname)) {
-                cafe_param->pfamily->error_ptr[i] = errormodel;
-                pCafeNode pcnode = (pCafeNode)cafe_param->pcafe->super.nlist->array[cafe_param->pfamily->index[i]];
-                pcnode->errormodel = errormodel;
-                break;
-            }
-        }
-    }
-    else { // '-all' specified instead of speciesname 
-        for (i=0; i<cafe_param->pfamily->num_species; i++) {
-            cafe_param->pfamily->error_ptr[i] = errormodel;
-            pCafeNode pcnode = (pCafeNode)cafe_param->pcafe->super.nlist->array[cafe_param->pfamily->index[i]];
-            pcnode->errormodel = errormodel;
-        }        
-    }
-    return 0;
-}
-
-
-int cafe_cmd_error_model(int argc, char* argv[])
-{
-	pArrayList pargs = cafe_shell_build_argument(argc, argv);
-	pArgument parg;
-	STDERR_IF( cafe_param->pcafe == NULL, "ERROR(errormodel): You did not specify tree: command 'tree'\n" );
-	STDERR_IF( cafe_param->pfamily == NULL, "ERROR(errormodel): You did not load family: command 'load'\n" );
-    
-	
-	if ( argc >= 3 )
-	{
-        if ((parg = cafe_shell_get_argument("-model", pargs)))
-        {
-            pString file = string_new_with_string(parg->argv[0]);
-            if ( (parg = cafe_shell_get_argument( "-sp", pargs) ) )
-            {
-                int j = 0;
-                for ( j = 0 ; j < parg->argc; j++ )
-                {
-                    pString species = string_new_with_string(parg->argv[j]);
-                    cafe_shell_set_error_matrix_from_file(file->buf, species->buf);
-                    string_free(species);
-                }
-
-            }
-            else if ( (parg = cafe_shell_get_argument( "-all", pargs) ) )
-            {
-                cafe_shell_set_error_matrix_from_file(file->buf, NULL);
-            }
-            fprintf(stderr,"errormodel: %s set.\n", file->buf );  
-            fprintf(stderr,"errormodel: Remember that the rows in the errormodel file have to add up to 1 (rows in the errormodel file correspond to columns in the errormatrix).\n");  
-            fprintf(stderr,"errormodel: The program does not check, only renormalizes.\n");  
-            string_free(file);
-        }
-
-        if (!cafe_param->pfamily->error_ptr || !cafe_param->pfamily->errors) {
-            fprintf(stderr, "ERROR(errormodel): we need an error model specified (-model) or two data files.\n");
-            return -1;
-        }
-	}
-
-	arraylist_free(pargs, free);
-	
-	return 0;
-}
-
-
-int cafe_shell_rm_error_model(char* speciesname)
-{
-	int i=0;
-    if (cafe_param->pfamily->errors) {
-        for (i=0; i<cafe_param->pfamily->num_species; i++) {
-            if (string_pchar_cmp_ignore_case(cafe_param->pfamily->species[i], speciesname)) {
-                cafe_param->pfamily->error_ptr[i] = NULL;
-                pCafeNode pcnode = (pCafeNode)cafe_param->pcafe->super.nlist->array[cafe_param->pfamily->index[i]];
-                pcnode->errormodel = NULL;
-                break;
-            }
-        }
-    }
-    return 0;
-}
-
-
 void cafe_shell_free_errorstruct(pErrorStruct errormodel)
 {
     if (errormodel->errorfilename) {
@@ -3105,41 +2604,5 @@ void cafe_shell_free_errorstruct(pErrorStruct errormodel)
         memory_free_2dim((void**)errormodel->errormatrix, errormodel->maxfamilysize+1, errormodel->maxfamilysize+1, NULL);  
         errormodel->errormatrix = NULL;
     }
-}
-
-void cafe_shell_free_error_model()
-{
-    int i;
-    for (i=0; i<cafe_param->pfamily->num_species; i++) {
-        cafe_shell_rm_error_model(cafe_param->pfamily->species[i]);
-    }
-    if (cafe_param->pfamily->errors) {
-    arraylist_free(cafe_param->pfamily->errors, (freefunc) cafe_shell_free_errorstruct);
-    cafe_param->pfamily->errors = NULL;
-    }
-    if (cafe_param->pfamily->error_ptr) {
-    memory_free(cafe_param->pfamily->error_ptr);
-    cafe_param->pfamily->error_ptr = NULL;
-    }
-}
-
-int cafe_cmd_no_error_model(int argc, char* argv[])
-{
-	pArrayList pargs = cafe_shell_build_argument(argc, argv);
-	pArgument parg;
-	STDERR_IF( cafe_param->pcafe == NULL, "ERROR(errormodel): You did not specify tree: command 'tree'\n" );
-	STDERR_IF( cafe_param->pfamily == NULL, "ERROR(errormodel): You did not load family: command 'load'\n" );
-	
-	if (( argc >= 3 ) && (parg = cafe_shell_get_argument("-sp", pargs)))
-	{
-        pString species = string_join("", parg->argc, parg->argv);
-        cafe_shell_rm_error_model(species->buf);
-	}
-    else if (( argc == 2) && (parg = cafe_shell_get_argument("-all", pargs))) 
-    {
-        cafe_shell_free_error_model();        
-    }
-	arraylist_free(pargs, free);
-	return 0;
 }
 

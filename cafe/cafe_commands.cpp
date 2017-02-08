@@ -18,6 +18,7 @@
 #include "pvalue.h"
 #include "conditional_distribution.h"
 #include "simerror.h"
+#include "error_model.h"
 
 /**
 	\defgroup Commands Commands that are available in CAFE
@@ -42,6 +43,11 @@ extern "C" {
 	int __cafe_cmd_extinct_count_zero(pTree pcafe);
 	void __hg_print_sim_extinct(pHistogram** phist_sim_n, pHistogram* phist_sim,
 		int r, pHistogram phist_tmp, double* cnt, int num_trials);
+	pErrorMeasure cafe_shell_estimate_error_double_measure(const char* error1, const char* error2, int b_symmetric, int max_diff, int b_peakzero);
+	pErrorMeasure cafe_shell_estimate_error_true_measure(const char* errorfile, const char* truefile, int b_symmetric, int max_diff, int b_peakzero);
+	pErrorStruct cafe_shell_create_error_matrix_from_estimate(pErrorMeasure errormeasure);
+	int cafe_shell_write_error_matrix(pErrorStruct errormodel, FILE* fp);
+	int cafe_shell_set_branchlength();
 }
 
 using namespace std;
@@ -76,6 +82,13 @@ map<string, cafe_command2> get_dispatcher()
 	dispatcher["pvalue"] = cafe_cmd_pvalue;
 	dispatcher["lhtest"] = cafe_cmd_lhtest;
 	dispatcher["simerror"] = cafe_cmd_simerror;
+	dispatcher["errormodel"] = cafe_cmd_errormodel;
+	dispatcher["esterror"] = cafe_cmd_esterror;
+	dispatcher["retrieve"] = cafe_cmd_retrieve;
+	dispatcher["noerrormodel"] = cafe_cmd_noerrormodel;
+	dispatcher["branchlength"] = cafe_cmd_branchlength;
+	dispatcher["accuracy"] = cafe_cmd_accuracy;
+
 
 	return dispatcher;
 }
@@ -94,6 +107,16 @@ vector<string> tokenize(string s)
 
 	return result;
 }
+
+io_error::io_error(string source, string file, bool write) : runtime_error("")
+{
+	ostringstream ost;
+	ost << "ERROR (" << source << "): Cannot open " << file;
+	if (write)
+		ost << " in write mode.\n";
+	text = ost.str();
+}
+
 
 /**
 \ingroup Commands
@@ -204,7 +227,6 @@ int cafe_cmd_print_param(pCafeParam param, std::vector<std::string> tokens)
 	return 0;
 }
 
-
 /**
 \ingroup Commands
 \brief Executes a series of commands from a CAFE command file
@@ -220,9 +242,7 @@ int cafe_cmd_source(pCafeParam param, std::vector<std::string> tokens)
 	FILE* fp = fopen( tokens[1].c_str(), "r" );
 	if ( fp == NULL ) 
 	{
-		ostringstream ost;
-		ost << "Error(source): Cannot open " << tokens[1] << "\n";
-		throw std::runtime_error(ost.str().c_str());
+		throw io_error("source", tokens[1], false);
 	}
 
 	char buf[STRING_BUF_SIZE];
@@ -1034,9 +1054,7 @@ int cafe_cmd_save(pCafeParam param, std::vector<std::string> tokens)
 	ofstream ofst(tokens[1].c_str());
 	if (!ofst)
 	{
-		ostringstream ost;
-		ost << "ERROR(save): Cannot open " << tokens[1] << " in write mode.\n";
-		throw std::runtime_error(ost.str());
+		throw io_error("save", tokens[1], true);
 	}
 	write_family(ofst, param->pfamily);
 
@@ -1225,9 +1243,7 @@ int cafe_cmd_viterbi(pCafeParam param, std::vector<std::string> tokens)
 			fout.open(args.file.c_str());
 			if (fout.fail())
 			{
-				ostringstream ost;
-				ost << "ERROR(viterbi): Cannot open " << args.file << "in write mode.\n";
-				throw std::runtime_error(ost.str());
+				throw io_error("viterbi", args.file, true);
 			}
 			fp = &fout;
 		}
@@ -1556,7 +1572,7 @@ int cafe_cmd_pvalue(pCafeParam param, std::vector<std::string> tokens)
 		ofstream ofst(args.outfile.c_str());
 		if (!ofst)
 		{
-			throw std::runtime_error("ERROR(pvalue): Cannot open " + args.outfile + " in write mode\n");
+			throw io_error("pvalue", args.outfile, true);
 		}
 		matrix m = cafe_conditional_distribution(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
 		pArrayList cond_dist = to_arraylist(m);
@@ -1569,7 +1585,7 @@ int cafe_cmd_pvalue(pCafeParam param, std::vector<std::string> tokens)
 		ifstream ifst(args.infile.c_str());
 		if (!ifst)
 		{
-			throw std::runtime_error("ERROR(pvalue): Cannot open " + args.outfile + " in write mode\n");
+			throw io_error("pvalue", args.outfile, true);
 		}
 		read_pvalues(ifst, cafe_param->num_random_samples);
 		cafe_log(cafe_param, "Done Loading p-values ... \n");
@@ -1711,3 +1727,337 @@ int cafe_cmd_simerror(pCafeParam param, std::vector<std::string> tokens)
 
 	return 0;
 }
+
+struct errormodel_args
+{
+	std::string model_file;
+	std::vector<std::string> species_list;
+	bool all;
+};
+
+errormodel_args get_errormodel_arguments(vector<Argument> pargs)
+{
+	errormodel_args args;
+	args.all = false;
+
+	for (size_t i = 0; i < pargs.size(); i++)
+	{
+		pArgument parg = &pargs[i];
+
+		if (!strcmp(parg->opt, "-model"))
+		{
+			args.model_file = parg->argv[0];
+		}
+		if (!strcmp(parg->opt, "-sp"))
+		{
+			for (int j = 0; j < parg->argc; j++)
+			{
+				args.species_list.push_back(parg->argv[j]);
+			}
+		}
+		if (!strcmp(parg->opt, "-all"))
+		{
+			args.all = true;
+		}
+	}
+
+	return args;
+}
+
+int cafe_cmd_errormodel(pCafeParam param, std::vector<std::string> tokens)
+{
+	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE);
+
+	errormodel_args args = get_errormodel_arguments(build_argument_list(tokens));
+
+	if (!args.model_file.empty())
+	{
+		if (!args.species_list.empty())
+		{
+			for (size_t j = 0; j < args.species_list.size(); ++j)
+			{
+				set_error_matrix_from_file(param->pfamily, param->pcafe, param->family_size, args.model_file, args.species_list[j]);
+			}
+		}
+		else if (args.all)
+		{
+			set_error_matrix_from_file(param->pfamily, param->pcafe, param->family_size, args.model_file, std::string());
+		}
+		fprintf(stderr, "errormodel: %s set.\n", args.model_file.c_str());
+		fprintf(stderr, "errormodel: Remember that the rows in the errormodel file have to add up to 1 (rows in the errormodel file correspond to columns in the errormatrix).\n");
+		fprintf(stderr, "errormodel: The program does not check, only ren`ormalizes.\n");
+	}
+
+	if (!param->pfamily->error_ptr || !param->pfamily->errors) {
+		throw std::runtime_error("ERROR(errormodel): we need an error model specified (-model) or two data files.\n");
+	}
+
+	return 0;
+}
+
+esterror_args get_esterror_arguments(vector<Argument> pargs)
+{
+	esterror_args args;
+	args.symmetric = false;
+	args.peakzero = false;
+	args.max_diff = 2;
+
+	for (size_t i = 0; i < pargs.size(); i++)
+	{
+		pArgument parg = &pargs[i];
+
+		if (!strcmp(parg->opt, "-o"))
+		{
+			args.outfile = parg->argv[0];
+		}
+		if (!strcmp(parg->opt, "-datatrue"))
+		{
+			args.truth_file = parg->argv[0];
+		}
+		if (!strcmp(parg->opt, "-dataerror"))
+		{
+			for (int j = 0; j < parg->argc; j++)
+			{
+				args.data_error_files.push_back(parg->argv[j]);
+			}
+		}
+		if (!strcmp(parg->opt, "-symm"))
+		{
+			args.symmetric = true;
+		}
+		if (!strcmp(parg->opt, "-diff"))
+		{
+			args.max_diff = atoi(parg->argv[0]);
+		}
+		if (!strcmp(parg->opt, "-peakzero"))
+		{
+			args.peakzero = true;
+		}
+	}
+
+	return args;
+}
+
+void validate(esterror_args args)
+{
+	if (args.outfile.empty())
+		throw std::runtime_error("ERROR(esterror): need to specify the output file \"-o outfile\".\n");
+
+	size_t num_error_files = args.data_error_files.size();
+	if (num_error_files < 1 || num_error_files > 2)
+		throw std::runtime_error("ERROR(esterror): [-dataerror file1 file2] or [-dataerror file1 -datatrue file2] -o outfile.\n");
+
+	if (num_error_files == 1 && args.truth_file.empty())
+	{
+		throw std::runtime_error("ERROR(esterror): we need another data file with error or a true data file to compare.\n");
+	}
+
+}
+
+int cafe_cmd_esterror(pCafeParam param, std::vector<std::string> tokens)
+{
+	esterror_args args = get_esterror_arguments(build_argument_list(tokens));
+
+	validate(args);
+
+	ofstream ofst(args.outfile.c_str());
+	if (!ofst)
+	{
+		throw io_error("esterror", args.outfile, true);
+	}
+
+	pErrorMeasure errormeasure = NULL;
+
+	// estimate error matrix                
+	if (args.data_error_files.size() == 2) {
+		errormeasure = cafe_shell_estimate_error_double_measure(args.data_error_files[0].c_str(), args.data_error_files[1].c_str(), args.symmetric, args.max_diff, args.peakzero);
+	}
+	else if (args.data_error_files.size() == 1) {
+		errormeasure = cafe_shell_estimate_error_true_measure(args.data_error_files[0].c_str(), args.truth_file.c_str(), args.symmetric, args.max_diff, args.peakzero);
+	}
+
+	// create errormodel based on errormeasure
+	pErrorStruct errormodel = cafe_shell_create_error_matrix_from_estimate(errormeasure);
+
+	// write errormodel
+	ofst << *errormodel;
+
+	return 0;
+
+}
+
+int cafe_cmd_retrieve(pCafeParam param, std::vector<std::string> tokens)
+{
+	cafe_shell_clear_param(param, 1);
+	if (cafe_report_retrieve_data(tokens[1].c_str(), param) == -1)
+	{
+		return -1;
+	}
+	return 0;
+}
+
+int cafe_cmd_noerrormodel(pCafeParam param, std::vector<std::string> tokens)
+{
+	prereqs(param, REQUIRES_TREE | REQUIRES_FAMILY);
+	std::string species;
+	bool all = false;
+
+	vector<Argument> args = build_argument_list(tokens);
+	for (size_t i = 0; i < args.size(); i++)
+	{
+		pArgument parg = &args[i];
+
+		if (!strcmp(parg->opt, "-sp"))
+		{
+			ostringstream ost;
+			copy(parg->argv, parg->argv+ parg->argc, std::ostream_iterator<string>(ost, " "));
+			species = ost.str();
+		}
+		if (!strcmp(parg->opt, "-all"))
+		{
+			all = true;
+		}
+	}
+	
+	if ((tokens.size() >= 3) && !species.empty())
+	{
+		remove_error_model(param->pfamily, param->pcafe, species);
+	}
+	else if (tokens.size() == 2 && all)
+	{
+		free_error_model(param->pfamily, param->pcafe);
+	}
+	return 0;
+}
+
+void tree_set_branch_lengths(pCafeTree pcafe, std::vector<int> lengths)
+{
+	pArrayList nlist = pcafe->super.nlist;
+
+	if (lengths.size() != (size_t)nlist->size)
+	{
+		std::ostringstream ost;
+		ost << "ERROR: There are " << nlist->size << " branches including the empty branch of root\n";
+		throw std::runtime_error(ost.str());
+	}
+	for (size_t i = 0; i < lengths.size(); i++)
+	{
+		pPhylogenyNode pnode = (pPhylogenyNode)nlist->array[i];
+		if (lengths[i] > 0)
+		{
+			pnode->branchlength = lengths[i];
+		}
+		else
+		{
+			fprintf(stderr, "ERROR: the branch length of node %d is not changed\n", (int)i);
+		}
+	}
+	if (probability_cache) cafe_tree_set_birthdeath(pcafe);
+
+}
+
+int s_to_i(std::string s)
+{
+	int size = -1;
+	sscanf(s.c_str(), "%d", &size);
+	return size;
+}
+
+int cafe_cmd_branchlength(pCafeParam param, std::vector<std::string> tokens)
+{
+	prereqs(param, REQUIRES_TREE);
+
+	pString pstr = cafe_tree_string_with_id(param->pcafe);
+	printf("%s\n", pstr->buf);
+	string_free(pstr);
+	int err = 0;
+
+	if (tokens.size() == 1)
+	{
+		err = cafe_shell_set_branchlength();
+	}
+	else if (tokens.size() > 2)
+	{
+		std::vector<int> lengths(tokens.size()-1);
+		std::transform(tokens.begin() + 1, tokens.end(), lengths.begin(), s_to_i);
+		tree_set_branch_lengths(param->pcafe, lengths);
+	}
+	if (!err)
+	{
+		cafe_tree_string_print(param->pcafe);
+	}
+	if (param->pfamily)
+	{
+		int i;
+		for (i = 0; i < param->pfamily->flist->size; i++)
+		{
+			pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
+			pitem->maxlh = -1;
+		}
+	}
+	return err;
+}
+
+int cafe_cmd_accuracy(pCafeParam param, std::vector<std::string> tokens)
+{
+	std::string truthfile;
+	vector<Argument> args = build_argument_list(tokens);
+	for (size_t i = 0; i < args.size(); i++)
+	{
+		pArgument parg = &args[i];
+
+		if (!strcmp(parg->opt, "-i"))
+		{
+			ostringstream ost;
+			copy(parg->argv, parg->argv + parg->argc, std::ostream_iterator<string>(ost, " "));
+			truthfile = ost.str();
+		}
+	}
+
+	int i, j;
+	pCafeTree pcafe = param->pcafe;
+	double SSE = 0;
+	double MSE = 0;
+	int nodecnt = 0;
+	int errnodecnt = 0;
+	if (!truthfile.empty())
+	{
+		// read in truth data
+		pCafeFamily truthfamily = cafe_family_new(truthfile.c_str(), 1);
+		if (truthfamily == NULL) {
+			fprintf(stderr, "failed to read in true values %s\n", truthfile.c_str());
+			return -1;
+		}
+		pCafeTree truthtree = cafe_tree_copy(pcafe);
+		// set parameters
+		if (truthtree)
+		{
+			cafe_family_set_species_index(truthfamily, truthtree);
+			// compare inferred vs. truth
+			for (i = 0; i< param->pfamily->flist->size; i++)
+			{
+				cafe_family_set_truesize_with_family(truthfamily, i, truthtree);
+				cafe_family_set_size(param->pfamily, i, pcafe);
+				if (param->posterior) {
+					cafe_tree_viterbi_posterior(pcafe, param);
+				}
+				else {
+					cafe_tree_viterbi(pcafe);
+				}
+				// inner node SSE
+				for (j = 1; j<pcafe->super.nlist->size; j = j + 2) {
+					int error = ((pCafeNode)truthtree->super.nlist->array[j])->familysize - ((pCafeNode)pcafe->super.nlist->array[j])->familysize;
+					SSE += pow(error, 2);
+					if (error != 0) { errnodecnt++; }
+					nodecnt++;
+				}
+			}
+			MSE = SSE / nodecnt;
+		}
+
+	}
+	cafe_log(param, "ancestral reconstruction SSE %f MSE %f totalnodes %d errornodes %d\n", SSE, MSE, nodecnt, errnodecnt);
+	return 0;
+}
+
+

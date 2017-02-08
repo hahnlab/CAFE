@@ -32,69 +32,6 @@ void __cafe_famliy_check_the_pattern(pCafeFamily pcf)
 	}
 }
 
-
-
-
-void cafe_family_read_cvquery(char* file)
-{
-	FILE* fp = fopen(file,"r");
-	char buf[STRING_BUF_SIZE];
-	if ( fp == NULL )
-	{
-		fprintf( stderr, "Cannot open file: %s\n", file );
-		//		print_error(__FILE__,(char*)__FUNCTION__,__LINE__, "Cannot open file: %s ", file );
-		return;
-	}
-	int i, j;
-	if ( fgets(buf,STRING_BUF_SIZE,fp) == NULL )
-	{
-		fclose(fp);
-		fprintf( stderr, "Empty file: %s\n", file );
-		//		print_error(__FILE__,(char*)__FUNCTION__,__LINE__, "Input file is empty" );
-		return;
-	}
-	string_pchar_chomp(buf);
-	for(  i = 0 ; fgets(buf,STRING_BUF_SIZE,fp) ; i++ )	
-	{
-		//		string_pchar_chomp(buf);
-		pArrayList data = string_pchar_split( buf, '\t');
-		if ( data->size != (2 + 2) )
-		{
-			for ( j = 0 ; j < data->size ; j++ )
-			{
-				fprintf(stderr,"%d: %s\n", j, (char*)data->array[i] );
-			}
-			print_error(__FILE__,(char*)__FUNCTION__,__LINE__, 
-						"The number of column is not consistant(%d), but %d in line %d", 
-						2+2, data->size,  i+2);
-		}
-		pCafeFamilyItem pitem = (pCafeFamilyItem)memory_new(1,sizeof(CafeFamilyItem));
-		
-		pitem->desc = (char*)data->array[0];
-		pitem->id = (char*)data->array[1];		
-		pitem->count = (int*)memory_new(1, sizeof(int));
-		for ( j = 0 ; j < 2 ; j++ )
-		{
-			if ( data->array[j+2] )
-			{
-				pitem->count[j] = atoi((char*)data->array[j+2]);
-				memory_free(data->array[j+2]);
-				data->array[j+2] = NULL;
-			}
-			else
-			{
-				pitem->count[j] = 0;
-			}
-		}
-		arraylist_free(data,NULL);
-	}
-	fclose(fp);
-	return;
-	
-}
-
-
-
 int cafe_family_split_cvfiles_byfamily(pCafeParam param, int cv_fold)
 {
 	int f;

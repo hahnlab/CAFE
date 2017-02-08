@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include <iosfwd>
+#include <stdexcept>
 
 extern "C" {
 #include "family.h"
@@ -16,8 +17,12 @@ typedef int(*cafe_command2)(pCafeParam cafe_param, std::vector<std::string>);
 #define MAKE_FN_NAME(x) int cafe_cmd_##x (pCafeParam cafe_param, std::vector<std::string>)
 #define COMMAND(signal) MAKE_FN_NAME(signal)
 
+COMMAND(accuracy);
+COMMAND(branchlength);
 COMMAND(date);
 COMMAND(echo);
+COMMAND(errormodel);
+COMMAND(esterror);
 COMMAND(exit);
 COMMAND(extinct);
 COMMAND(family);
@@ -29,6 +34,7 @@ COMMAND(load);
 COMMAND(log);
 COMMAND(print_param);
 COMMAND(pvalue);
+COMMAND(retrieve);
 COMMAND(save);
 COMMAND(score);
 COMMAND(simerror);
@@ -36,6 +42,7 @@ COMMAND(source);
 COMMAND(tree);
 COMMAND(version);
 COMMAND(viterbi);
+COMMAND(noerrormodel);
 
 std::map<std::string, cafe_command2> get_dispatcher();
 int cafe_shell_dispatch_command(pCafeParam param, char* cmd);
@@ -55,6 +62,7 @@ void write_leaves(std::ostream& ofst, pCafeTree pcafe, int *k, int i, int id, bo
 void write_version(std::ostream &ost);
 void write_family(std::ostream& ost, pCafeFamily family);
 void viterbi_write(std::ostream& ost, pCafeTree pcafe, pCafeFamily pfamily);
+void tree_set_branch_lengths(pCafeTree pcafe, std::vector<int> lengths);
 
 struct load_args {
 	int num_threads;
@@ -87,12 +95,22 @@ struct lhtest_args
 	double lambda;
 };
 
+struct esterror_args
+{
+	std::string outfile;
+	std::vector<std::string> data_error_files;
+	bool symmetric;
+	bool peakzero;
+	std::string truth_file;
+	int max_diff;
+};
+
 load_args get_load_arguments(std::vector<Argument> pargs);
 viterbi_args get_viterbi_arguments(std::vector<Argument> pargs);
 pvalue_args get_pvalue_arguments(std::vector<Argument> pargs);
 lhtest_args get_lhtest_arguments(std::vector<Argument> pargs);
-
-
+esterror_args get_esterror_arguments(std::vector<Argument> pargs);
+void validate(esterror_args args);
 
 struct roots
 {
@@ -115,6 +133,20 @@ const int REQUIRES_LAMBDA = 0x04;
 const int REQUIRES_ERRORMODEL = 0x08;
 
 void prereqs(pCafeParam param, int flags);
+
+class io_error : public std::runtime_error
+{
+	std::string text;
+public:
+	io_error(std::string source, std::string file, bool write);
+	virtual ~io_error() throw() {}
+
+	virtual const char* what() const throw()
+	{
+		return text.c_str();
+	}
+};
+
 
 #endif
 

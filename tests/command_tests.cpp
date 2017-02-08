@@ -70,9 +70,9 @@ TEST(CommandTests, Test_cafe_cmd_source_prereqs)
 		cafe_cmd_source(&param, tokens);
 		FAIL("No exception was thrown");
 	}
-	catch (const runtime_error& err)
-	{
-		STRCMP_EQUAL("Error(source): Cannot open nonexistent\n", err.what());
+	catch (const io_error& err)
+	{	
+		STRCMP_EQUAL("ERROR (source): Cannot open nonexistent", err.what());
 	}
 };
 
@@ -449,4 +449,39 @@ TEST(CommandTests, cafe_cmd_lhtest)
 	}
 }
 
+TEST(CommandTests, cafe_cmd_esterror)
+{
+	tokens.push_back("esterror");
+	esterror_args args = get_esterror_arguments(build_argument_list(tokens));
+	LONGS_EQUAL(2, args.max_diff);
+	CHECK_FALSE(args.peakzero);
+	CHECK_FALSE(args.symmetric);
+	tokens.push_back("-symm");
+	tokens.push_back("-peakzero");
+	tokens.push_back("-diff");
+	tokens.push_back("10");
+	args = get_esterror_arguments(build_argument_list(tokens));
+	LONGS_EQUAL(10, args.max_diff);
+	CHECK(args.peakzero);
+	CHECK(args.symmetric);
+}
+
+TEST(CommandTests, validate_esterror)
+{
+	esterror_args args;
+	CHECK_THROWS(std::runtime_error, validate(args));	// must have an output file
+
+	args.outfile = "outfile.txt";
+	CHECK_THROWS(std::runtime_error, validate(args));	// must have some data error files
+
+	args.data_error_files.push_back("error.txt");
+	CHECK_THROWS(std::runtime_error, validate(args));	// must have a truth file with one data error file
+
+	args.truth_file = "outfile.txt";
+	validate(args);	// woohoo!
+
+	args.truth_file.clear();
+	args.data_error_files.push_back("error2.txt");
+	validate(args);	// or two error files  is okay too
+}
 

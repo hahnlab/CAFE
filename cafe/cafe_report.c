@@ -106,7 +106,7 @@ size_t file_read_line(pString pstr, FILE* fp)
 	return pstr->length;
 }
 
-int cafe_report_retrieve_data(char* file, pCafeParam param)
+int cafe_report_retrieve_data(const char* file, pCafeParam param)
 {
 	int i, j;
 	family_size_range range;
