@@ -5,16 +5,6 @@
 #include <utils_string.h>
 #include <family.h>
 
-typedef int (*cafe_command)(int argc, char* argv[]);
-
-typedef struct 
-{
-	const char* command; 
-	cafe_command func;
-}CafeShellCommand;
-
-typedef CafeShellCommand* pCafeShellCommand;
-extern CafeShellCommand cafe_cmd[];
 typedef enum
 {
 	CAFE_SHELL_EXIT = 10000,	
@@ -48,13 +38,8 @@ void cafe_shell_prompt(char* prompt, char* format, ... );
 void cafe_shell_init(int quiet);
 double cafe_shell_score();
 int cafe_cmd_lambda_mu(int argc, char* argv[]);
-int cafe_cmd_sim_extinct(int argc, char* argv[]);
-int cafe_cmd_extinct(int argc, char* argv[]);
-int cafe_cmd_root_dist(int argc, char* argv[]);
 int cafe_cmd_esterror(int argc, char* argv[]);
 int cafe_cmd_simerror(int argc, char* argv[]);
-int cafe_cmd_crossvalidation_by_species(int argc, char* argv[]);
-int cafe_cmd_crossvalidation_by_family(int argc, char* argv[]);
 
 int set_log_file(pCafeParam param, const char *file_name);
 void log_param_values(pCafeParam param);

@@ -248,7 +248,7 @@ void cafe_family_clean_cvfiles_byspecies(pCafeParam param)
 	
 }
 
-void cafe_family_read_query_family(pCafeParam param, char* file)
+void cafe_family_read_query_family(pCafeParam param, const char* file)
 {
 	FILE* fp = fopen(file,"r");
 	char buf[STRING_BUF_SIZE];
@@ -308,7 +308,7 @@ void cafe_family_read_query_family(pCafeParam param, char* file)
 
 
 
-void cafe_family_read_validate_species(pCafeParam param, char* file)
+void cafe_family_read_validate_species(pCafeParam param, const char* file)
 {
 	FILE* fp = fopen(file,"r");
 	char buf[STRING_BUF_SIZE];

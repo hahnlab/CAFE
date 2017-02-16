@@ -50,20 +50,6 @@ static pCafeTree create_tree(family_size_range range)
 	return cafe_tree_new(tree, &range, 0, 0);
 }
 
-
-
-int cafe_cmd_atoi(int argc, char* argv[])
-{
-	return atoi(argv[1]);
-}
-
-CafeShellCommand cafe_cmd_test[] =
-{
-	{ "atoi", cafe_cmd_atoi },
-	{ NULL, NULL }
-};
-
-
 TEST_GROUP(FirstTestGroup)
 {
 	family_size_range range;
@@ -220,20 +206,14 @@ TEST(TreeTests, TestCafeTree)
 TEST(FirstTestGroup, TestShellDispatcher)
 {
 	char c[10];
-	cafe_shell_init(1);
 
-	//CafeShellCommand *old = cafe_cmd;
-	cafe_cmd[0] = cafe_cmd_test[0];
-	cafe_cmd[1] = cafe_cmd_test[1];
-
-	strcpy(c, "atoi 9528");
-	LONGS_EQUAL(9528, cafe_shell_dispatch_command(cafe_param, c));
+	CafeParam param;
 
 	strcpy(c, "# a comment");
-	LONGS_EQUAL(0, cafe_shell_dispatch_command(cafe_param, c));
+	LONGS_EQUAL(0, cafe_shell_dispatch_command(&param, c));
 
 	strcpy(c, "unknown");
-	LONGS_EQUAL(CAFE_SHELL_NO_COMMAND, cafe_shell_dispatch_command(cafe_param, c));
+	LONGS_EQUAL(CAFE_SHELL_NO_COMMAND, cafe_shell_dispatch_command(&param, c));
 }
 
 TEST(FirstTestGroup, TestShowSizes)
