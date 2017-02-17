@@ -1684,10 +1684,10 @@ int cafe_cmd_lhtest(pCafeParam param, std::vector<std::string> tokens)
 			args.directory.c_str(), fname.c_str(), param->str_log ? param->str_log->buf : "stdout");
 		cafe_shell_dispatch_commandf("tree %s", pstr_cafe->buf);
 		cafe_shell_dispatch_commandf("lambda -s -l %lf", args.lambda);
-		fprintf(fout, "\t%lf\t%lf", cafe_get_posterior(param), param->lambda[0]);
+		fprintf(fout, "\t%lf\t%lf", cafe_get_posterior(param->pfamily, param->pcafe, &param->family_size, param->ML, param->MAP, param->prior_rfsize, param->quiet), param->lambda[0]);
 		cafe_family_reset_maxlh(param->pfamily);
 		cafe_shell_dispatch_commandf("lambda -s -v %lf -t %s", args.lambda, args.tree.c_str());
-		fprintf(fout, "\t%lf", cafe_get_posterior(param));
+		fprintf(fout, "\t%lf", cafe_get_posterior(param->pfamily, param->pcafe, &param->family_size, param->ML, param->MAP, param->prior_rfsize, param->quiet));
 		for (j = 0; j < param->num_lambdas; j++)
 		{
 			fprintf(fout, "\t%lf", param->lambda[j]);

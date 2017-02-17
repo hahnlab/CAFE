@@ -186,6 +186,30 @@ void write_lambda_distribution(pArgument parg, FILE* fp)
 }
 
 
+void validate_lambda_count(int expected, int actual, pTree pTree, int k_value)
+{
+	// check if the numbers of lambdas and proportions put in matches the number of parameters
+	if (expected != actual) {
+		ostringstream ost;
+		ost << "ERROR(lambda): Number of parameters not correct. \n";
+		ost << "The number of -l lambdas are " << actual << "they need to be " << expected << "\n";
+		if (pTree || k_value > 0)
+			ost << "Based on";
+		if (pTree)
+		{
+			pString pstr = phylogeny_string(pTree, NULL);
+			ost << " the tree " << pstr->buf;
+			string_free(pstr);
+		}
+		if (k_value > 0)
+		{
+			if (pTree) ost << " and ";
+			ost << "the -k clusters " << k_value << ".\n";
+		}
+		throw std::runtime_error(ost.str().c_str());
+	}
+}
+
 /**
 * \brief Find lambda values
 *
@@ -319,15 +343,6 @@ int cafe_cmd_lambda(pCafeParam param, vector<string> tokens)
 			{
 				cafe_best_lambda_by_fminsearch(param, param->num_lambdas, param->parameterized_k_value);
 			}
-            // scale back branch lengths by sum_branch_length.
-            /*for( j = 0 ; j < ptree->nlist->size; j++ )
-            {
-                pPhylogenyNode pnode = (pPhylogenyNode)ptree->nlist->array[j];
-                if ( pnode->branchlength > 0 )
-                {
-                    pnode->branchlength = pnode->branchlength*param->sum_branch_length;
-                }
-            }*/
 		}
 		else {
 			if (params.tmp_param.lambda_tree != NULL) {
@@ -336,16 +351,8 @@ int cafe_cmd_lambda(pCafeParam param, vector<string> tokens)
 					param->parameterized_k_value = params.tmp_param.parameterized_k_value;
 					param->fixcluster0 = params.tmp_param.fixcluster0;
 					param->num_params = (params.tmp_param.num_lambdas*(params.tmp_param.parameterized_k_value- params.tmp_param.fixcluster0))+(params.tmp_param.parameterized_k_value-1);
-					
-					// check if the numbers of lambdas and proportions put in matches the number of parameters
-					if (param->num_params != params.tmp_param.num_params) {
-						fprintf( stderr, "ERROR(lambda): Number of parameters not correct. \n");
-						fprintf( stderr, "the number of -l lambdas and -p proportions are %d they need to be %d\n", params.tmp_param.num_params, param->num_params );
-						pString pstr = phylogeny_string(params.tmp_param.lambda_tree,NULL);
-						fprintf( stderr, "based on the tree %s and -k clusters %d.\n", pstr->buf, param->parameterized_k_value );
-						string_free(pstr);
-						return -1;						
-					}
+
+					validate_lambda_count(param->num_params, params.tmp_param.num_params, params.tmp_param.lambda_tree, param->parameterized_k_value);
 					
 					// copy user input into parameters
 					if( param->parameters ) memory_free(param->parameters);
@@ -362,15 +369,7 @@ int cafe_cmd_lambda(pCafeParam param, vector<string> tokens)
 				else {	// search whole dataset branch specific
 					param->num_params = param->num_lambdas;
 					
-					// check if the numbers of lambdas and proportions put in matches the number of parameters
-					if (param->num_params != params.tmp_param.num_params) {
-						fprintf( stderr, "ERROR(lambda): Number of parameters not correct. \n");
-						fprintf( stderr, "the number of -l lambdas are %d they need to be %d\n", params.tmp_param.num_params, param->num_params );
-						pString pstr = phylogeny_string(params.tmp_param.lambda_tree,NULL);
-						fprintf( stderr, "based on the tree %s \n", pstr->buf );
-						string_free(pstr);
-						return -1;						
-					}
+					validate_lambda_count(param->num_params, params.tmp_param.num_params, params.tmp_param.lambda_tree, -1);
 					
 					// copy user input into parameters
 					if( param->parameters ) memory_free(param->parameters);
@@ -386,13 +385,7 @@ int cafe_cmd_lambda(pCafeParam param, vector<string> tokens)
 					param->fixcluster0 = params.tmp_param.fixcluster0;
 					param->num_params = (param->num_lambdas*(param->parameterized_k_value-param->fixcluster0))+(param->parameterized_k_value-1);
 					
-					// check if the numbers of lambdas and proportions put in matches the number of parameters
-					if (param->num_params != params.tmp_param.num_params) {
-						fprintf( stderr, "ERROR(lambda): Number of parameters not correct. \n");
-						fprintf( stderr, "the number of -l lambdas and -p proportions are %d they need to be %d\n", params.tmp_param.num_params, param->num_params );
-						fprintf( stderr, "based on the -k clusters %d.\n", param->parameterized_k_value );
-						return -1;						
-					}
+					validate_lambda_count(param->num_params, params.tmp_param.num_params, NULL, param->parameterized_k_value);
 					
 					// copy user input into parameters
 					if( param->parameters ) memory_free(param->parameters);
@@ -409,13 +402,8 @@ int cafe_cmd_lambda(pCafeParam param, vector<string> tokens)
 				else {	// search whole dataset whole tree
 					param->num_params = param->num_lambdas;
 					
-					// check if the numbers of lambdas and proportions put in matches the number of parameters
-					if (param->num_params != params.tmp_param.num_params) {
-						fprintf( stderr, "ERROR(lambda): Number of parameters not correct. \n");
-						fprintf( stderr, "the number of -l lambdas are %d they need to be %d\n", params.tmp_param.num_params, param->num_params );
-						return -1;						
-					}
-					
+					validate_lambda_count(param->num_params, params.tmp_param.num_params, NULL, -1);
+
 					// copy user input into parameters
 					if( param->parameters ) memory_free(param->parameters);
 					param->parameters = NULL;

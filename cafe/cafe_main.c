@@ -179,70 +179,70 @@ pGMatrix cafe_lambda_distribution(pCafeParam param, int numrange, double** range
 
 
 
-void show_sizes(FILE* f, pCafeParam param, pCafeFamilyItem pitem, int i)
+void show_sizes(FILE* f, pCafeTree pcafe, family_size_range* range, pCafeFamilyItem pitem, int i)
 {
 	fprintf(f, ">> %d %d\n", i, pitem->ref);
 	fprintf(f, "Root size: %d ~ %d , %d \n",
-		param->pcafe->rootfamilysizes[0],
-		param->pcafe->rootfamilysizes[1], param->pcafe->rfsize);
-	fprintf(f, "Family size: %d ~ %d\n", param->pcafe->familysizes[0], param->pcafe->familysizes[1]);
-	fprintf(f, "Root size: %d ~ %d\n", param->family_size.root_min, param->family_size.root_max);
-	fprintf(f, "Family size: %d ~ %d\n", param->family_size.min, param->family_size.max);
+		pcafe->rootfamilysizes[0],
+		pcafe->rootfamilysizes[1], pcafe->rfsize);
+	fprintf(f, "Family size: %d ~ %d\n", pcafe->familysizes[0], pcafe->familysizes[1]);
+	fprintf(f, "Root size: %d ~ %d\n", range->root_min, range->root_max);
+	fprintf(f, "Family size: %d ~ %d\n", range->min, range->max);
 }
 
-double cafe_get_posterior(pCafeParam param)
+double cafe_get_posterior(pCafeFamily pfamily, pCafeTree pcafe, family_size_range*range, double *ML, double *MAP, double *prior_rfsize, int quiet)
 {
 	int i, j;
 	double score = 0;
 	double* likelihood = NULL;
-	for ( i = 0 ; i < param->pfamily->flist->size ; i++ )	// i: family index
+	for ( i = 0 ; i < pfamily->flist->size ; i++ )	// i: family index
 	{
-		pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
+		pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[i];
 		if ( pitem->ref < 0 || pitem->ref == i ) 
 		{
-			cafe_family_set_size(param->pfamily, i, param->pcafe);	// this part is just setting the leave counts.
-			compute_tree_likelihoods(param->pcafe);
-			likelihood = get_likelihoods(param->pcafe);		// likelihood of the whole tree = multiplication of likelihood of all nodes
-			param->ML[i] = __max(likelihood,param->pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
+			cafe_family_set_size(pfamily, i, pcafe);	// this part is just setting the leave counts.
+			compute_tree_likelihoods(pcafe);
+			likelihood = get_likelihoods(pcafe);		// likelihood of the whole tree = multiplication of likelihood of all nodes
+			ML[i] = __max(likelihood, pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
 			if ( pitem->maxlh < 0 )
 			{
-				pitem->maxlh = __maxidx(likelihood,param->pcafe->rfsize);	
+				pitem->maxlh = __maxidx(likelihood, pcafe->rfsize);	
 			}
 			// get posterior by adding lnPrior to lnLikelihood
-			double* posterior = (double*)memory_new(param->pcafe->size_of_factor,sizeof(double));
-			if(param->prior_rfsize) {		// prior is a poisson distribution on the root size based on leaves' size
-				for(j = 0; j < param->pcafe->rfsize; j++)	// j: root family size
+			double* posterior = (double*)memory_new(pcafe->size_of_factor,sizeof(double));
+			if(prior_rfsize) {		// prior is a poisson distribution on the root size based on leaves' size
+				for(j = 0; j < pcafe->rfsize; j++)	// j: root family size
 				{
 					// likelihood and posterior both starts from 1 instead of 0 
-					posterior[j] = exp(log(likelihood[j])+log(param->prior_rfsize[j]));	//prior_rfsize also starts from 1
+					posterior[j] = exp(log(likelihood[j])+log(prior_rfsize[j]));	//prior_rfsize also starts from 1
 				}				
 			}
             else {
                 fprintf(stderr,"ERROR: empirical posterior not defined.\n");      
                 return -1;
             }
-			param->MAP[i] = __max(posterior,param->pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
+			MAP[i] = __max(posterior, pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
 			memory_free(posterior);
 			posterior = NULL;
 		}
 		else
 		{
-			param->ML[i] = param->ML[pitem->ref];
-			param->MAP[i] = param->MAP[pitem->ref];
+			ML[i] = ML[pitem->ref];
+			MAP[i] = MAP[pitem->ref];
 		}
-		if ( param->ML[i] == 0 )
+		if ( ML[i] == 0 )
 		{ 
-			if (!param->quiet)
+			if (!quiet)
 			{ 
-				show_sizes(stdout, param, pitem, i);
-				pString pstr = cafe_tree_string_with_familysize_lambda(param->pcafe);
+				show_sizes(stdout, pcafe, range, pitem, i);
+				pString pstr = cafe_tree_string_with_familysize_lambda(pcafe);
 				fprintf(stderr, "%d: %s\n", i, pstr->buf );
 				string_free(pstr);
 			}
 			score = log(0);
 			break;
 		}
-		score += log(param->MAP[i]);			// add log-posterior across all families
+		score += log(MAP[i]);			// add log-posterior across all families
 	}
 	return score;
 }
@@ -417,7 +417,7 @@ double cafe_get_clustered_posterior(pCafeParam param)
 		}
 		if ( param->MAP[i] == 0 )
 		{ 
-			show_sizes(stdout, param, pitem, i);
+			show_sizes(stdout, param->pcafe, &param->family_size, pitem, i);
 			pString pstr = cafe_tree_string_with_familysize_lambda(param->pcafe);
 			fprintf(stderr, "%d: %s\n", i, pstr->buf);
 			string_free(pstr);
@@ -662,7 +662,7 @@ double __cafe_best_lambda_mu_search(double* parameters, void* args)
 		param->param_set_func(param,parameters);
 
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
-		score = cafe_get_posterior(param);
+		score = cafe_get_posterior(param->pfamily, param->pcafe, &param->family_size, param->ML, param->MAP, param->prior_rfsize, param->quiet);
 		cafe_free_birthdeath_cache(pcafe);
 	}
 	char buf[STRING_STEP_SIZE];
@@ -697,7 +697,7 @@ double __cafe_best_lambda_search(double* plambda, void* args)
 		param->param_set_func(param,plambda);
 
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
-        score = cafe_get_posterior(param);
+        score = cafe_get_posterior(param->pfamily, param->pcafe, &param->family_size, param->ML, param->MAP, param->prior_rfsize, param->quiet);
 		cafe_free_birthdeath_cache(pcafe);
 	}
 	char buf[STRING_STEP_SIZE];

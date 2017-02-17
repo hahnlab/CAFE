@@ -27,9 +27,10 @@ extern "C" {
 
 extern "C" {
 	extern pCafeParam cafe_param;
-	void show_sizes(FILE*, pCafeParam param, pCafeFamilyItem pitem, int i);
+	void show_sizes(FILE*, pCafeTree pcafe, family_size_range*range, pCafeFamilyItem pitem, int i);
 	void phylogeny_lambda_parse_func(pTree ptree, pTreeNode ptnode);
 	extern pBirthDeathCacheArray probability_cache;
+	void cafe_shell_clear_param(pCafeParam param, int btree_skip);
 }
 
 
@@ -237,7 +238,7 @@ TEST(FirstTestGroup, TestShowSizes)
 	tree.rfsize = 17;
 	param.pcafe = &tree;
 	FILE* in = fmemopen(outbuf, 999, "w");
-	show_sizes(in, &param, &item, 7);
+	show_sizes(in, &tree, &param.family_size, &item, 7);
 	fclose(in);
 	STRCMP_CONTAINS(">> 7 14", outbuf);
 	STRCMP_CONTAINS("Root size: 11 ~ 13 , 17", outbuf);
@@ -300,10 +301,10 @@ TEST(FirstTestGroup, Test_cafe_get_posterior)
 
 	reset_birthdeath_cache(param.pcafe, 0, &range);
 
-	DOUBLES_EQUAL(-1.0, cafe_get_posterior(&param), 0.01);	// -1 represents an error - empirical posterior not defined. Is this safe?
+	DOUBLES_EQUAL(-1.0, cafe_get_posterior(param.pfamily, param.pcafe, &param.family_size, param.ML, param.MAP, param.prior_rfsize, param.quiet), 0.01);	// -1 represents an error - empirical posterior not defined. Is this safe?
 
 	cafe_set_prior_rfsize_empirical(&param);
-	CHECK_FALSE(isfinite(cafe_get_posterior(&param)));
+	CHECK_FALSE(isfinite(cafe_get_posterior(param.pfamily, param.pcafe, &param.family_size, param.ML, param.MAP, param.prior_rfsize, param.quiet)));
 };
 
 TEST(TreeTests, compute_internal_node_likelihoode)
@@ -1038,6 +1039,220 @@ TEST(FirstTestGroup, tree_set_branch_lengths)
 	tree_set_branch_lengths(tree, lengths);
 	pPhylogenyNode pnode = (pPhylogenyNode)tree->super.nlist->array[5];
 	LONGS_EQUAL(pnode->branchlength, 5);
+}
+
+TEST(FirstTestGroup, initialize_k_bd_no_lambda)
+{
+	pCafeTree tree = create_tree(range);
+	std::vector<double> values(10);
+	values[0] = 0.05;
+
+	CafeParam param;
+	param.pcafe = tree;
+	param.lambda_tree = NULL;
+	param.parameterized_k_value = 0;
+	initialize_k_bd(&param, &values[0]);
+
+	// The following assertions should be true for every node in the tree
+	pCafeNode node = (pCafeNode)tree->super.nlist->array[0];
+	DOUBLES_EQUAL(.05, node->birth_death_probabilities.lambda, .0001);
+	DOUBLES_EQUAL(-1, node->birth_death_probabilities.mu, .0001);
+	CHECK(node->k_likelihoods == NULL);
+	CHECK(node->k_bd == NULL);
+
+	param.parameterized_k_value = 2;
+	initialize_k_bd(&param, &values[0]);
+	// The following assertions should be true for every node in the tree
+	DOUBLES_EQUAL(-1, node->birth_death_probabilities.lambda, .0001);
+	DOUBLES_EQUAL(-1, node->birth_death_probabilities.mu, .0001);
+	CHECK_FALSE(node->k_likelihoods == NULL);
+	CHECK_FALSE(node->k_bd == NULL);
+}
+
+TEST(FirstTestGroup, initialize_k_bd_with_lambda)
+{
+	pCafeTree tree = create_tree(range);
+	pCafeTree lambda = create_tree(range);
+
+	CafeParam param;
+	param.pcafe = tree;
+	param.lambda_tree = (pTree)lambda;
+	param.parameterized_k_value = 0;
+	param.fixcluster0 = 0;
+	std::vector<double> values(10);
+	values[0] = 0.05;
+
+	for (int i = 0; i < lambda->super.nlist->size; ++i)
+	{
+		pPhylogenyNode node = (pPhylogenyNode)lambda->super.nlist->array[i];
+		node->taxaid = 0;
+	}
+
+	initialize_k_bd(&param, &values[0]);
+
+	// The following assertions should be true for every node in the tree
+	pCafeNode node = (pCafeNode)tree->super.nlist->array[0];
+	DOUBLES_EQUAL(.05, node->birth_death_probabilities.lambda, .0001);
+	DOUBLES_EQUAL(-1, node->birth_death_probabilities.mu, .0001);
+	CHECK(node->k_likelihoods == NULL);
+	CHECK(node->k_bd == NULL);
+
+	param.parameterized_k_value = 2;
+	initialize_k_bd(&param, &values[0]);
+
+	// The following assertions should be true for every node in the tree
+	DOUBLES_EQUAL(-1, node->birth_death_probabilities.lambda, .0001);
+	DOUBLES_EQUAL(-1, node->birth_death_probabilities.mu, .0001);
+	CHECK_FALSE(node->k_likelihoods == NULL);
+	CHECK_FALSE(node->k_bd == NULL);
+}
+
+TEST(FirstTestGroup, cafe_shell_clear_param_clears_probability_cache)
+{
+	CafeParam param;
+	memset(&param, 0, sizeof(CafeParam));
+	param.pcafe = create_tree(range);
+	param.old_branchlength = (int *)calloc(1, sizeof(int)); // ?
+	probability_cache = NULL;
+	reset_birthdeath_cache(param.pcafe, 1, &range);
+	CHECK(probability_cache != NULL);
+
+	cafe_shell_clear_param(&param, 0);
+	POINTERS_EQUAL(NULL, probability_cache);
+}
+
+TEST(FirstTestGroup, set_birth_death_probabilities3)
+{
+	struct probabilities probs;
+	probs.lambda = 0;
+	probs.mu = 0;
+	probs.param_lambdas = NULL;
+	probs.param_mus = NULL;
+	std::vector<double> values(10);
+	values[0] = .05;
+	values[1] = .04;
+	values[2] = .03;
+	values[3] = .02;
+	values[4] = .01;
+	values[5] = .15;
+	values[6] = .14;
+	values[7] = .13;
+	values[8] = .12;
+	values[9] = .11;
+
+	set_birth_death_probabilities4(&probs, -1, 0, 0, &values[0]);
+	DOUBLES_EQUAL(.05, probs.lambda, .0001);
+	DOUBLES_EQUAL(-1, probs.mu, .0001);
+
+	set_birth_death_probabilities4(&probs, 5, 0, 0, &values[0]);
+	DOUBLES_EQUAL(-1, probs.lambda, .0001);
+	DOUBLES_EQUAL(-1, probs.mu, .0001);
+	POINTERS_EQUAL(NULL, probs.param_mus);
+	DOUBLES_EQUAL(.05, probs.param_lambdas[0], .0001);
+	DOUBLES_EQUAL(.04, probs.param_lambdas[1], .0001);
+	DOUBLES_EQUAL(.03, probs.param_lambdas[2], .0001);
+	DOUBLES_EQUAL(.02, probs.param_lambdas[3], .0001);
+	DOUBLES_EQUAL(.01, probs.param_lambdas[4], .0001);
+
+	set_birth_death_probabilities4(&probs, 5, -1, 0, &values[0]);
+	DOUBLES_EQUAL(-1, probs.lambda, .0001);
+	DOUBLES_EQUAL(-1, probs.mu, .0001);
+	POINTERS_EQUAL(NULL, probs.param_mus);
+	DOUBLES_EQUAL(0, probs.param_lambdas[0], .0001);
+	DOUBLES_EQUAL(.05, probs.param_lambdas[1], .0001);
+	DOUBLES_EQUAL(.04, probs.param_lambdas[2], .0001);
+	DOUBLES_EQUAL(.03, probs.param_lambdas[3], .0001);
+	DOUBLES_EQUAL(.02, probs.param_lambdas[4], .0001);
+
+	set_birth_death_probabilities4(&probs, 5, 0, 1, &values[0]);
+	DOUBLES_EQUAL(-1, probs.lambda, .0001);
+	DOUBLES_EQUAL(-1, probs.mu, .0001);
+	POINTERS_EQUAL(NULL, probs.param_mus);
+	DOUBLES_EQUAL(.15, probs.param_lambdas[0], .0001);
+	DOUBLES_EQUAL(.14, probs.param_lambdas[1], .0001);
+	DOUBLES_EQUAL(.13, probs.param_lambdas[2], .0001);
+	DOUBLES_EQUAL(.12, probs.param_lambdas[3], .0001);
+	DOUBLES_EQUAL(.11, probs.param_lambdas[4], .0001);
+
+	set_birth_death_probabilities4(&probs, 5, -1, 1, &values[0]);
+	DOUBLES_EQUAL(-1, probs.lambda, .0001);
+	DOUBLES_EQUAL(-1, probs.mu, .0001);
+	POINTERS_EQUAL(NULL, probs.param_mus);
+	DOUBLES_EQUAL(.0, probs.param_lambdas[0], .0001);
+	DOUBLES_EQUAL(.01, probs.param_lambdas[1], .0001);
+	DOUBLES_EQUAL(.15, probs.param_lambdas[2], .0001);
+	DOUBLES_EQUAL(.14, probs.param_lambdas[3], .0001);
+	DOUBLES_EQUAL(.13, probs.param_lambdas[4], .0001);
+}
+
+TEST(FirstTestGroup, initialize_k_weights)
+{
+	CafeParam param;
+	std::vector<double> weights(10);
+	std::vector<double> params(100);
+	for (double i = 0; i < 100; ++i)
+		params[i] = i / 100.0;
+	param.k_weights = &weights[0];
+	param.parameters = &params[0];
+	param.parameterized_k_value = 5;
+	param.fixcluster0 = 3;
+	param.num_lambdas = 1;
+
+	initialize_k_weights(&param);
+
+	DOUBLES_EQUAL(.02, weights[0], .0001);
+	DOUBLES_EQUAL(.03, weights[1], .0001);
+	DOUBLES_EQUAL(.04, weights[2], .0001);
+	DOUBLES_EQUAL(.05, weights[3], .0001);
+	DOUBLES_EQUAL(.86, weights[4], .0001);
+
+	param.num_lambdas = 5;
+	param.parameterized_k_value = 6;
+
+	initialize_k_weights(&param);
+
+	DOUBLES_EQUAL(.15, weights[0], .0001);
+	DOUBLES_EQUAL(.16, weights[1], .0001);
+	DOUBLES_EQUAL(.17, weights[2], .0001);
+	DOUBLES_EQUAL(.18, weights[3], .0001);
+	DOUBLES_EQUAL(.19, weights[4], .0001);
+	DOUBLES_EQUAL(.15, weights[5], .0001);
+}
+
+TEST(FirstTestGroup, initialize_k_weights2)
+{
+	CafeParam param;
+	std::vector<double> weights(10);
+	std::vector<double> params(100);
+	for (double i = 0; i < 100; ++i)
+		params[i] = i / 100.0;
+	param.k_weights = &weights[0];
+	param.parameters = &params[0];
+	param.parameterized_k_value = 5;
+	param.fixcluster0 = 3;
+	param.num_lambdas = 1;
+	param.num_mus = 5;
+	param.eqbg = 1;
+
+	initialize_k_weights2(&param);
+
+	DOUBLES_EQUAL(.1, weights[0], .0001);
+	DOUBLES_EQUAL(.11, weights[1], .0001);
+	DOUBLES_EQUAL(.12, weights[2], .0001);
+	DOUBLES_EQUAL(.13, weights[3], .0001);
+	DOUBLES_EQUAL(.54, weights[4], .0001);
+
+	param.num_mus = 7;
+	param.parameterized_k_value = 6;
+
+	initialize_k_weights2(&param);
+
+	DOUBLES_EQUAL(.21, weights[0], .0001);
+	DOUBLES_EQUAL(.22, weights[1], .0001);
+	DOUBLES_EQUAL(.23, weights[2], .0001);
+	DOUBLES_EQUAL(.24, weights[3], .0001);
+	DOUBLES_EQUAL(.25, weights[4], .0001);
+	DOUBLES_EQUAL(-.15, weights[5], .0001);
 }
 
 TEST(PValueTests, pvalue)

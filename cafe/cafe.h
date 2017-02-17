@@ -38,7 +38,7 @@ typedef enum
  * Cafe Tree
 ****************************************************************************/
 
-extern double cafe_get_posterior(pCafeParam param);
+double cafe_get_posterior(pCafeFamily pfamily, pCafeTree pcafe, family_size_range*range, double *ML, double *MAP, double *prior_rfsize, int quiet);
 extern double cafe_set_prior_rfsize_empirical(pCafeParam param);
 extern pCafeTree cafe_tree_new(const char* sztree, family_size_range* range, double lambda, double mu);
 extern pTreeNode cafe_tree_new_empty_node(pTree pcafe);
