@@ -10,6 +10,7 @@
 #include <iterator>
 #include <algorithm>
 #include <stdexcept>
+
 #include<dirent.h>
 
 #include "lambda.h"
@@ -19,6 +20,7 @@
 #include "conditional_distribution.h"
 #include "simerror.h"
 #include "error_model.h"
+#include "log_buffer.h"
 
 /**
 	\defgroup Commands Commands that are available in CAFE
@@ -139,11 +141,13 @@ io_error::io_error(string source, string file, bool write) : runtime_error("")
 */
 int cafe_cmd_echo(pCafeParam param, std::vector<std::string> tokens)
 {
+	log_buffer buf(param);
+	ostream ost(&buf);
 	for (size_t i = 1; i < tokens.size(); i++)
 	{
-		cafe_log(param, " %s", tokens[i].c_str());
+		ost << " " << tokens[i].c_str();
 	}
-	cafe_log(param, "\n");
+	ost << "\n";
 	return 0;
 }
 
