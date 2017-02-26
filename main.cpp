@@ -8,10 +8,9 @@ extern "C" {
 #include "cafe_shell.h"
 #include <utils_string.h>
 
-	extern pCafeParam cafe_param;
 }
 #include "cafe_commands.h"
-
+#include "Globals.h"
 
 const char* __date__ = __DATE__;
 
@@ -21,7 +20,7 @@ int main(int argc, char* argv[])
 {
 	//int i = 0;
 	char prompt[STRING_BUF_SIZE];
-	cafe_shell_init(VERBOSE);
+	Globals globals;
 	srand((unsigned int)time(NULL));
 	int shell = 0;
 	if ( argc == 2 )
@@ -29,8 +28,8 @@ int main(int argc, char* argv[])
 		std::vector<std::string> tokens;
 		tokens.push_back(argv[0]);
 		tokens.push_back(argv[1]);
-		cafe_cmd_source(cafe_param, tokens);
-		cafe_cmd_exit(cafe_param, tokens);
+		cafe_cmd_source(globals, tokens);
+		cafe_cmd_exit(globals, tokens);
 	}
 	else
 	{
@@ -39,7 +38,7 @@ int main(int argc, char* argv[])
 			printf("%s", "# "); 
 			if (!fgets(prompt,STRING_BUF_SIZE,stdin))
 				return -1;
-			shell = cafe_shell_dispatch_command(cafe_param, prompt);
+			shell = cafe_shell_dispatch_command(globals, prompt);
 		}
 	}
   return 0;

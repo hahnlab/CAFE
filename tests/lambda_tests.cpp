@@ -4,32 +4,32 @@
 #include "CppUTest/CommandLineTestRunner.h"
 #include "cafe_commands.h"
 #include "lambda.h"
+#include "Globals.h"
 
 extern "C" {
 #include <cafe_shell.h>
-	extern pCafeParam cafe_param;
 	int __cafe_cmd_lambda_tree(pArgument parg);
 	void cafe_shell_set_lambda(pCafeParam param, double* parameters);
 };
 
-static void init_cafe_tree()
+static void init_cafe_tree(Globals& globals)
 {
 	const char *newick_tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)";
 
 	char buf[100];
 	strcpy(buf, "tree ");
 	strcat(buf, newick_tree);
-	cafe_shell_dispatch_command(cafe_param, buf);
+	cafe_shell_dispatch_command(globals, buf);
 }
 
-int lambda_cmd_helper()
+int lambda_cmd_helper(Globals& globals)
 {
 	std::vector<std::string> strs;
 	strs.push_back("lambda");
 	strs.push_back("-s");
 	strs.push_back("-t");
 	strs.push_back("(((2,2)1,(1,1)1)1,1)");
-	return cafe_cmd_lambda(cafe_param, strs);
+	return cafe_cmd_lambda(globals, strs);
 }
 
 
@@ -39,11 +39,11 @@ TEST_GROUP(LambdaTests)
 
 TEST(LambdaTests, TestCmdLambda_FailsWithoutTree)
 {
-	cafe_shell_init(1);
+	Globals globals;
 
 	try
 	{ 
-		lambda_cmd_helper();
+		lambda_cmd_helper(globals);
 		FAIL("Expected exception not thrown");
 	}
 	catch (std::runtime_error& ex)
@@ -55,16 +55,16 @@ TEST(LambdaTests, TestCmdLambda_FailsWithoutTree)
 
 TEST(LambdaTests, PrepareCafeParamFailsWithoutLoad)
 {
+	Globals globals;
 	const char *newick_tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)";
 
-	cafe_shell_init(1);
 	char buf[100];
 	strcpy(buf, "tree ");
 	strcat(buf, newick_tree);
-	cafe_shell_dispatch_command(cafe_param, buf);
+	cafe_shell_dispatch_command(globals, buf);
 	try
 	{
-		prepare_cafe_param(cafe_param);
+		globals.Prepare();
 		FAIL("Expected exception not thrown");
 	}
 	catch (std::runtime_error& err)
@@ -76,38 +76,39 @@ TEST(LambdaTests, PrepareCafeParamFailsWithoutLoad)
 
 TEST(LambdaTests, PrepareCafeParam)
 {
-	CafeParam param;
+	Globals globals;
 	CafeFamily fam;
 	CafeTree tree;
-	param.pfamily = &fam;
-	param.pcafe = &tree;
-	param.lambda_tree = 0;
-	param.mu_tree = 0;
-	prepare_cafe_param(&param);
-	POINTERS_EQUAL(0, param.lambda);
-	POINTERS_EQUAL(0, param.mu);
-	LONGS_EQUAL(-1, param.num_lambdas);
-	LONGS_EQUAL(-1, param.num_mus);
-	LONGS_EQUAL(0, param.parameterized_k_value);
-	POINTERS_EQUAL(cafe_shell_set_lambda, param.param_set_func);
+	globals.param.pfamily = &fam;
+	globals.param.pcafe = &tree;
+	globals.param.lambda_tree = 0;
+	globals.mu_tree = NULL;
+	globals.Prepare();
+	POINTERS_EQUAL(0, globals.param.lambda);
+	POINTERS_EQUAL(0, globals.param.mu);
+	LONGS_EQUAL(-1, globals.param.num_lambdas);
+	LONGS_EQUAL(-1, globals.param.num_mus);
+	LONGS_EQUAL(0, globals.param.parameterized_k_value);
+	POINTERS_EQUAL(cafe_shell_set_lambda, globals.param.param_set_func);
 }
 
 TEST(LambdaTests, TestCmdLambda)
 {
-	cafe_shell_init(1);
-	init_cafe_tree();
+	Globals globals;
+	globals.param.quiet = 1;
+	init_cafe_tree(globals);
 	birthdeath_cache_init(2);
 	char buf[100];
 	strcpy(buf, "load -i ../example/example_data.tab");
-	cafe_shell_dispatch_command(cafe_param, buf);
+	cafe_shell_dispatch_command(globals, buf);
 
-	LONGS_EQUAL(0, lambda_cmd_helper());
+	LONGS_EQUAL(0, lambda_cmd_helper(globals));
 };
 
 TEST(LambdaTests, TestLambdaTree)
 {
-	cafe_shell_init(1);
-	init_cafe_tree();
+	Globals globals;
+	init_cafe_tree(globals);
 	char strs[2][100];
 	strcpy(strs[0], "(((2,2)1,(1,1)1)1,1)");
 
@@ -120,8 +121,8 @@ TEST(LambdaTests, TestLambdaTree)
 
 TEST(LambdaTests, Test_arguments)
 {
-	cafe_shell_init(1);
-	init_cafe_tree();
+	Globals globals;
+	init_cafe_tree(globals);
 	std::vector<std::string> strs;
 	strs.push_back("lambda");
 	strs.push_back("-t");
@@ -167,8 +168,8 @@ TEST(LambdaTests, Test_arguments)
 
 TEST(LambdaTests, Test_l_argument)
 {
-	cafe_shell_init(1);
-	init_cafe_tree();
+	Globals globals;
+	init_cafe_tree(globals);
 	std::vector<std::string> strs;
 	strs.push_back("lambda");
 	strs.push_back("-l");
@@ -186,8 +187,8 @@ TEST(LambdaTests, Test_l_argument)
 
 TEST(LambdaTests, Test_p_argument)
 {
-	cafe_shell_init(1);
-	init_cafe_tree();
+	Globals globals;
+	init_cafe_tree(globals);
 	std::vector<std::string> strs;
 	strs.push_back("lambda");
 	strs.push_back("-p");
@@ -204,8 +205,8 @@ TEST(LambdaTests, Test_p_argument)
 
 TEST(LambdaTests, Test_r_argument)
 {
-	cafe_shell_init(1);
-	init_cafe_tree();
+	Globals globals;
+	init_cafe_tree(globals);
 	std::vector<std::string> strs;
 	strs.push_back("lambda");
 	strs.push_back("-r");

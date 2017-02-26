@@ -35,7 +35,6 @@ typedef ErrorMeasure* pErrorMeasure;
  
 pArrayList cafe_shell_build_argument(int argc, char* argv[]);
 void cafe_shell_prompt(char* prompt, char* format, ... );
-void cafe_shell_init(int quiet);
 double cafe_shell_score();
 int cafe_cmd_lambda_mu(int argc, char* argv[]);
 int cafe_cmd_esterror(int argc, char* argv[]);

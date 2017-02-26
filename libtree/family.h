@@ -159,7 +159,6 @@ struct tagCafeParam
 	int num_lambdas;
 
 	double* mu;
-	pTree mu_tree;
 	int num_mus;
 	
 	int parameterized_k_value;

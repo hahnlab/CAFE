@@ -24,23 +24,23 @@ extern "C" {
 #include <conditional_distribution.h>
 #include <simerror.h>
 #include <error_model.h>
+#include <Globals.h>
 
 extern "C" {
 	extern pCafeParam cafe_param;
 	void show_sizes(FILE*, pCafeTree pcafe, family_size_range*range, pCafeFamilyItem pitem, int i);
 	void phylogeny_lambda_parse_func(pTree ptree, pTreeNode ptnode);
 	extern pBirthDeathCacheArray probability_cache;
-	void cafe_shell_clear_param(pCafeParam param, int btree_skip);
 }
 
 
-static void init_cafe_tree()
+static void init_cafe_tree(Globals& globals)
 {
 	const char *newick_tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)";
 	char buf[100];
 	strcpy(buf, "tree ");
 	strcat(buf, newick_tree);
-	cafe_shell_dispatch_command(cafe_param, buf);
+	cafe_shell_dispatch_command(globals, buf);
 }
 
 static pCafeTree create_tree(family_size_range range)
@@ -208,13 +208,13 @@ TEST(FirstTestGroup, TestShellDispatcher)
 {
 	char c[10];
 
-	CafeParam param;
+	Globals globals;
 
 	strcpy(c, "# a comment");
-	LONGS_EQUAL(0, cafe_shell_dispatch_command(&param, c));
+	LONGS_EQUAL(0, cafe_shell_dispatch_command(globals, c));
 
 	strcpy(c, "unknown");
-	LONGS_EQUAL(CAFE_SHELL_NO_COMMAND, cafe_shell_dispatch_command(&param, c));
+	LONGS_EQUAL(CAFE_SHELL_NO_COMMAND, cafe_shell_dispatch_command(globals, c));
 }
 
 TEST(FirstTestGroup, TestShowSizes)
@@ -251,8 +251,8 @@ TEST(FirstTestGroup, TestPhylogenyLoadFromString)
 {
 	char outbuf[10000];
 	strcpy(outbuf, "(((1,1)1,(2,2)2)2,2)");
-	cafe_shell_init(1);
-	init_cafe_tree();
+	Globals globals;
+	init_cafe_tree(globals);
 	pTree tree = phylogeny_load_from_string(outbuf, tree_new, phylogeny_new_empty_node, phylogeny_lambda_parse_func, 0);
 	CHECK(tree != 0);
 	LONGS_EQUAL(56, tree->size);
@@ -520,6 +520,8 @@ TEST(ReportTests, write_families_line)
 	CafeParam param;
 	param.likelihoodRatios = NULL;
 	family_size_range range;
+	range.min = range.root_min = 0;
+	range.max = range.root_max = 10;
 	pCafeTree tree = create_tree(range);
 	param.pcafe = tree;
 	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
@@ -1109,15 +1111,16 @@ TEST(FirstTestGroup, initialize_k_bd_with_lambda)
 
 TEST(FirstTestGroup, cafe_shell_clear_param_clears_probability_cache)
 {
-	CafeParam param;
-	memset(&param, 0, sizeof(CafeParam));
-	param.pcafe = create_tree(range);
-	param.old_branchlength = (int *)calloc(1, sizeof(int)); // ?
+	Globals globals;
+	memset(&globals.param, 0, sizeof(CafeParam));
+	globals.param.pcafe = create_tree(range);
+	globals.param.old_branchlength = (int *)calloc(1, sizeof(int)); // ?
 	probability_cache = NULL;
-	reset_birthdeath_cache(param.pcafe, 1, &range);
+	reset_birthdeath_cache(globals.param.pcafe, 1, &range);
 	CHECK(probability_cache != NULL);
 
-	cafe_shell_clear_param(&param, 0);
+	globals.Clear(0);
+
 	POINTERS_EQUAL(NULL, probability_cache);
 }
 

@@ -7,6 +7,7 @@
 #include "CppUTest/CommandLineTestRunner.h"
 #include "cafe_commands.h"
 #include "reports.h"
+#include "Globals.h"
 
 extern "C" {
 #include <family.h>
@@ -29,19 +30,19 @@ static pCafeTree create_tree()
 TEST_GROUP(CommandTests)
 {
 	vector<string> tokens;
-	CafeParam param;
+	Globals globals;
 
 	void setup()
 	{
 		srand(10);
 		tokens.clear();
-		param.pcafe = NULL;
-		param.root_dist = NULL;
-		param.pfamily = NULL;
-		param.quiet = 1;
-		param.lambda = NULL;
-		param.str_log = NULL;
-		param.flog = stdout;
+		globals.param.pcafe = NULL;
+		globals.param.root_dist = NULL;
+		globals.param.pfamily = NULL;
+		globals.param.quiet = 1;
+		globals.param.lambda = NULL;
+		globals.param.str_log = NULL;
+		globals.param.flog = stdout;
 	}
 };
 
@@ -56,7 +57,7 @@ TEST(CommandTests, Test_cafe_cmd_source_prereqs)
 	tokens.push_back("source");
 	try
 	{
-		cafe_cmd_source(&param, tokens);
+		cafe_cmd_source(globals, tokens);
 		FAIL("No exception was thrown");
 	}
 	catch (const runtime_error& err)
@@ -67,7 +68,7 @@ TEST(CommandTests, Test_cafe_cmd_source_prereqs)
 	tokens.push_back("nonexistent");
 	try
 	{
-		cafe_cmd_source(&param, tokens);
+		cafe_cmd_source(globals, tokens);
 		FAIL("No exception was thrown");
 	}
 	catch (const io_error& err)
@@ -79,41 +80,40 @@ TEST(CommandTests, Test_cafe_cmd_source_prereqs)
 TEST(CommandTests, cafe_cmd_generate_random_family)
 {
 	tokens.push_back("genfamily");
-	CHECK_THROWS(std::runtime_error, cafe_cmd_generate_random_family(&param, tokens));
+	CHECK_THROWS(std::runtime_error, cafe_cmd_generate_random_family(globals, tokens));
 	tokens.push_back("filename");
-	CHECK_THROWS(std::runtime_error, cafe_cmd_generate_random_family(&param, tokens));	// no tree
-	param.pcafe = create_tree();
-	CHECK_THROWS(std::runtime_error, cafe_cmd_generate_random_family(&param, tokens));	// no family or root dist
+	CHECK_THROWS(std::runtime_error, cafe_cmd_generate_random_family(globals, tokens));	// no tree
+	globals.param.pcafe = create_tree();
+	CHECK_THROWS(std::runtime_error, cafe_cmd_generate_random_family(globals, tokens));	// no family or root dist
 }
 
 TEST(CommandTests, cafe_cmd_date)
 {
 	char outbuf[10000];
-	param.flog = fmemopen(outbuf, 999, "w");
-	cafe_cmd_date(&param, tokens);
+	globals.param.flog = fmemopen(outbuf, 999, "w");
+	cafe_cmd_date(globals, tokens);
 	STRCMP_CONTAINS("2017", outbuf);	// this will start to fail in 2018
-	fclose(param.flog);
+	fclose(globals.param.flog);
 }
 
 TEST(CommandTests, cafe_cmd_echo)
 {
 	char outbuf[10000];
-	param.flog = fmemopen(outbuf, 999, "w");
+	globals.param.flog = fmemopen(outbuf, 999, "w");
 	tokens.push_back("echo");
 	tokens.push_back("quick");
 	tokens.push_back("brown");
 	tokens.push_back("fox");
-	cafe_cmd_echo(&param, tokens);
+	cafe_cmd_echo(globals, tokens);
 	STRCMP_EQUAL(" quick brown fox\n", outbuf);
-	fclose(param.flog);
+	fclose(globals.param.flog);
 }
 
 TEST(CommandTests, cafe_cmd_exit)
 {
 	// all of these are values that could potentially be freed on exit
-	pCafeParam param = (pCafeParam)memory_new(1, sizeof(CafeParam)); // exit frees this value from the heap
+	pCafeParam param = &globals.param;
 	param->str_log = NULL;
-	param->mu_tree = NULL;
 	param->lambda_tree = NULL;
 	param->parameters = (double *)memory_new(10, sizeof(double));
 	param->pfamily = NULL;
@@ -125,7 +125,7 @@ TEST(CommandTests, cafe_cmd_exit)
 	param->viterbi.viterbiPvalues = NULL;
 	param->viterbi.cutPvalues = NULL;
 
-	cafe_cmd_exit(param, tokens);
+	cafe_cmd_exit(globals, tokens);
 
 	LONGS_EQUAL(0, param->parameters);
 	LONGS_EQUAL(0, param->ML);
@@ -133,22 +133,22 @@ TEST(CommandTests, cafe_cmd_exit)
 
 TEST(CommandTests, cafe_command_report_prereqs)
 {
-	CHECK_THROWS(std::runtime_error, cafe_cmd_report(&param, tokens));
+	CHECK_THROWS(std::runtime_error, cafe_cmd_report(globals, tokens));
 
 	CafeFamily fam;
-	param.pfamily = &fam;
-	CHECK_THROWS(std::runtime_error, cafe_cmd_report(&param, tokens));
+	globals.param.pfamily = &fam;
+	CHECK_THROWS(std::runtime_error, cafe_cmd_report(globals, tokens));
 
 	CafeTree tree;
-	param.pcafe = &tree;
-	CHECK_THROWS(std::runtime_error, cafe_cmd_report(&param, tokens));
+	globals.param.pcafe = &tree;
+	CHECK_THROWS(std::runtime_error, cafe_cmd_report(globals, tokens));
 }
 
-void assert_gainloss_exception(CafeParam *param, std::string expected)
+void assert_gainloss_exception(Globals& globals, std::string expected)
 {
 	try
 	{
-		cafe_cmd_gainloss(param, std::vector<std::string>());
+		cafe_cmd_gainloss(globals, std::vector<std::string>());
 		FAIL("Expected exception not thrown");
 	}
 	catch (std::runtime_error& e)
@@ -160,27 +160,27 @@ void assert_gainloss_exception(CafeParam *param, std::string expected)
 
 TEST(CommandTests, cafe_cmd_gainloss_exceptions)
 {
-	assert_gainloss_exception(&param, "ERROR: The gene families were not loaded. Please load gene families with the 'load' command.\n");
+	assert_gainloss_exception(globals, "ERROR: The gene families were not loaded. Please load gene families with the 'load' command.\n");
 
 	CafeFamily fam;
-	param.pfamily = &fam;
-	assert_gainloss_exception(&param, "ERROR: The tree was not loaded. Please load a tree with the 'tree' command.\n");
+	globals.param.pfamily = &fam;
+	assert_gainloss_exception(globals, "ERROR: The tree was not loaded. Please load a tree with the 'tree' command.\n");
 
 	CafeTree tree;
-	param.pcafe = &tree;
-	assert_gainloss_exception(&param, "ERROR: Lambda values were not set. Please set lambda values with the 'lambda' or 'lambdamu' commands.\n");
+	globals.param.pcafe = &tree;
+	assert_gainloss_exception(globals, "ERROR: Lambda values were not set. Please set lambda values with the 'lambda' or 'lambdamu' commands.\n");
 }
 
 TEST(CommandTests, cafe_cmd_log)
 {
 	tokens.push_back("log");
 	tokens.push_back("stdout");
-	cafe_cmd_log(&param, tokens);
-	LONGS_EQUAL(stdout, param.flog);
+	cafe_cmd_log(globals, tokens);
+	LONGS_EQUAL(stdout, globals.param.flog);
 
 	tokens[1] = "log.txt";
-	cafe_cmd_log(&param, tokens);
-	STRCMP_EQUAL("log.txt", param.str_log->buf);
+	cafe_cmd_log(globals, tokens);
+	STRCMP_EQUAL("log.txt", globals.param.str_log->buf);
 }
 
 TEST(CommandTests, get_load_arguments)
@@ -200,7 +200,7 @@ TEST(CommandTests, cafe_cmd_load)
 	try
 	{
 		tokens.push_back("load");
-		cafe_cmd_load(&param, tokens);
+		cafe_cmd_load(globals, tokens);
 		FAIL("Expected exception not thrown");
 	}
 	catch (std::runtime_error& e)
@@ -212,7 +212,7 @@ TEST(CommandTests, cafe_cmd_load)
 	{
 		tokens.push_back("-t");
 		tokens.push_back("5");
-		cafe_cmd_load(&param, tokens);
+		cafe_cmd_load(globals, tokens);
 		FAIL("Expected exception not thrown");
 	}
 	catch (std::runtime_error& e)
@@ -226,7 +226,7 @@ TEST(CommandTests, cafe_cmd_save)
 	try
 	{
 		tokens.push_back("load");
-		cafe_cmd_save(&param, tokens);
+		cafe_cmd_save(globals, tokens);
 		FAIL("Expected exception not thrown");
 	}
 	catch (std::runtime_error& e)
@@ -253,14 +253,14 @@ TEST(CommandTests, cafe_cmd_tree)
 	tokens.push_back("tree");
 	tokens.push_back("(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)");
 
-	param.pcafe = NULL;
-	param.old_branchlength = NULL;
-	cafe_cmd_tree(&param, tokens);
-	CHECK(param.pcafe != NULL);
-	LONGS_EQUAL(8, param.num_branches);
-	CHECK(param.old_branchlength != NULL);
-	LONGS_EQUAL(212, param.sum_branch_length);
-	LONGS_EQUAL(81, param.max_branch_length);
+	globals.param.pcafe = NULL;
+	globals.param.old_branchlength = NULL;
+	cafe_cmd_tree(globals, tokens);
+	CHECK(globals.param.pcafe != NULL);
+	LONGS_EQUAL(8, globals.param.num_branches);
+	CHECK(globals.param.old_branchlength != NULL);
+	LONGS_EQUAL(212, globals.param.sum_branch_length);
+	LONGS_EQUAL(81, globals.param.max_branch_length);
 }
 
 TEST(CommandTests, cafe_cmd_tree_syncs_family_if_loaded)
@@ -268,19 +268,19 @@ TEST(CommandTests, cafe_cmd_tree_syncs_family_if_loaded)
 	tokens.push_back("tree");
 	tokens.push_back("(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)");
 
-	param.pcafe = NULL;
-	param.old_branchlength = NULL;
+	globals.param.pcafe = NULL;
+	globals.param.old_branchlength = NULL;
 
 	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
-	param.pfamily = cafe_family_init(build_arraylist(species, 7));
+	globals.param.pfamily = cafe_family_init(build_arraylist(species, 7));
 	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
-	cafe_family_add_item(param.pfamily, build_arraylist(values, 7));
+	cafe_family_add_item(globals.param.pfamily, build_arraylist(values, 7));
 
-	LONGS_EQUAL(-1, param.pfamily->index[0]);
-	cafe_cmd_tree(&param, tokens);
-	LONGS_EQUAL(0, param.pfamily->index[0]);
-	LONGS_EQUAL(2, param.pfamily->index[1]);
-	LONGS_EQUAL(4, param.pfamily->index[2]);
+	LONGS_EQUAL(-1, globals.param.pfamily->index[0]);
+	cafe_cmd_tree(globals, tokens);
+	LONGS_EQUAL(0, globals.param.pfamily->index[0]);
+	LONGS_EQUAL(2, globals.param.pfamily->index[1]);
+	LONGS_EQUAL(4, globals.param.pfamily->index[2]);
 }
 
 TEST(CommandTests, cafe_cmd_tree_missing_branch_length)
@@ -290,7 +290,7 @@ TEST(CommandTests, cafe_cmd_tree_missing_branch_length)
 
 	try
 	{
-		cafe_cmd_tree(&param, tokens);
+		cafe_cmd_tree(globals, tokens);
 		FAIL("Expected exception not thrown");
 	}
 	catch (std::runtime_error& e)
@@ -322,7 +322,7 @@ void prepare_viterbi(CafeParam& param)
 
 TEST(CommandTests, cafe_cmd_viterbi_id_not_existing)
 {
-	prepare_viterbi(param);
+	prepare_viterbi(globals.param);
 
 	tokens.push_back("viterbi");
 	tokens.push_back("-id");
@@ -330,7 +330,7 @@ TEST(CommandTests, cafe_cmd_viterbi_id_not_existing)
 
 	try
 	{
-		cafe_cmd_viterbi(&param, tokens);
+		cafe_cmd_viterbi(globals, tokens);
 		FAIL("Expected exception not thrown");
 	}
 	catch (std::runtime_error& e)
@@ -341,7 +341,7 @@ TEST(CommandTests, cafe_cmd_viterbi_id_not_existing)
 
 TEST(CommandTests, cafe_cmd_viterbi_family_out_of_range)
 {
-	prepare_viterbi(param);
+	prepare_viterbi(globals.param);
 
 	tokens.push_back("viterbi");
 	tokens.push_back("-idx");
@@ -349,7 +349,7 @@ TEST(CommandTests, cafe_cmd_viterbi_family_out_of_range)
 
 	try
 	{
-		cafe_cmd_viterbi(&param, tokens);
+		cafe_cmd_viterbi(globals, tokens);
 		FAIL("Expected exception not thrown");
 	}
 	catch (std::runtime_error& e)
@@ -380,9 +380,9 @@ TEST(CommandTests, cafe_cmd_viterbi_args)
 
 TEST(CommandTests, viterbi_write)
 {
-	prepare_viterbi(param);
+	prepare_viterbi(globals.param);
 	ostringstream ost;
-	viterbi_write(ost, param.pcafe, param.pfamily);
+	viterbi_write(ost, globals.param.pcafe, globals.param.pfamily);
 	STRCMP_CONTAINS("id\t0\t(((chimp_3:6,human_5:6)_0:81,(mouse_7:17,rat_11:17)_0:70)_0:6,dog_13:9)_0\t0\n", ost.str().c_str());
 	STRCMP_CONTAINS("Score: -inf\n", ost.str().c_str());
 
@@ -440,7 +440,7 @@ TEST(CommandTests, cafe_cmd_lhtest)
 	tokens.push_back("lhtest");
 	try
 	{
-		cafe_cmd_lhtest(&param, tokens);
+		cafe_cmd_lhtest(globals, tokens);
 		FAIL("Expected exception not thrown");
 	}
 	catch (std::runtime_error& e)

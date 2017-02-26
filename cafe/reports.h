@@ -15,9 +15,10 @@ typedef struct
 	std::string name;
 } report_parameters;
 
+class Globals;
 
 void get_report_parameters(report_parameters &params, std::vector<std::string> tokens);
-int cafe_cmd_report(pCafeParam param, std::vector<std::string> tokens);
+int cafe_cmd_report(Globals& globals, std::vector<std::string> tokens);
 void cafe_report(pCafeParam param, std::ostream& report_file);
 void write_viterbi(std::ostream& ost, const viterbi_parameters& viterbi);
 void write_families_header(std::ostream& ost, double **cutPvalues, double**likelihoodRatios);

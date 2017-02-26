@@ -15,6 +15,7 @@ extern "C" {
 
 #include "lambda.h"
 #include "cafe_commands.h"
+#include "Globals.h"
 
 extern "C" {
 	extern pCafeParam cafe_param;
@@ -115,30 +116,6 @@ lambda_args get_arguments(vector<Argument> pargs)
 	return result;
 }
 
-void prepare_cafe_param(pCafeParam param)
-{
-	param->lambda = NULL;
-	param->mu = NULL;
-	if (param->lambda_tree) {
-		phylogeny_free(param->lambda_tree);
-		param->lambda_tree = NULL;
-	}
-	if (param->mu_tree)
-	{
-		phylogeny_free(param->mu_tree);
-		param->mu_tree = NULL;
-	}
-	param->num_lambdas = -1;
-	param->num_mus = -1;
-	param->parameterized_k_value = 0;
-	param->param_set_func = cafe_shell_set_lambda;
-
-	if (param->pfamily == NULL || param->pcafe == NULL)
-	{
-		throw runtime_error("ERROR(lambda): Please load family (\"load\") and cafe tree (\"tree\") before running \"lambda\" command.");
-	}
-}
-
 void set_all_lambdas(pCafeParam param, double value)
 {
 	if (param->lambda) memory_free(param->lambda);
@@ -222,49 +199,51 @@ void validate_lambda_count(int expected, int actual, pTree pTree, int k_value)
 * values from 1 to N taxon names.
 * etc.
 */
-int cafe_cmd_lambda(pCafeParam param, vector<string> tokens)
+int cafe_cmd_lambda(Globals& globals, vector<string> tokens)
 {
-		int i,j;
+	pCafeParam param = &globals.param;
+	
+	int i,j;
 
-		if(!param->pcafe)
+	if(!param->pcafe)
+	{
+		throw std::runtime_error("ERROR(lambda): You did not specify tree: command 'tree'\n" );
+	}
+
+	pCafeTree pcafe = param->pcafe;
+	vector<Argument> pargs = build_argument_list(tokens);
+
+	globals.Prepare();
+
+	lambda_args params = get_arguments(pargs);
+
+	if (params.lambda_type == SINGLE_LAMBDA && params.vlambda > 0 )
+	{
+		set_all_lambdas(param, params.vlambda);
+	}
+	if ( params.dist.opt )
+	{
+		FILE* fp = NULL;
+		if( params.out.opt && (fp = fopen(params.out.argv[0],"w") ) == NULL )
 		{
-			throw std::runtime_error("ERROR(lambda): You did not specify tree: command 'tree'\n" );
+			fprintf( stderr, "ERROR(lambda): Cannot open file: %s\n", params.out.argv[0] );
+			return -1;
 		}
-
-		pCafeTree pcafe = param->pcafe;
-		vector<Argument> pargs = build_argument_list(tokens);
-
-		prepare_cafe_param(param);
-
-		lambda_args params = get_arguments(pargs);
-
-		if (params.lambda_type == SINGLE_LAMBDA && params.vlambda > 0 )
-		{
-			set_all_lambdas(param, params.vlambda);
-		}
-		if ( params.dist.opt )
-		{
-			FILE* fp = NULL;
-			if( params.out.opt && (fp = fopen(params.out.argv[0],"w") ) == NULL )
-			{
-				fprintf( stderr, "ERROR(lambda): Cannot open file: %s\n", params.out.argv[0] );
-				return -1;
-			}
-			param->posterior = params.tmp_param.posterior;
-			if (param->posterior) {
-				// set rootsize prior based on leaf size
-				cafe_set_prior_rfsize_empirical(param);
-			}		
-			param->num_params = param->num_lambdas;
+		param->posterior = params.tmp_param.posterior;
+		if (param->posterior) {
+			// set rootsize prior based on leaf size
+			cafe_set_prior_rfsize_empirical(param);
+		}		
+		param->num_params = param->num_lambdas;
         
-			if( param->parameters ) memory_free(param->parameters);
-			param->parameters = NULL;
-			param->parameters = (double*)memory_new(param->num_params, sizeof(double));
+		if( param->parameters ) memory_free(param->parameters);
+		param->parameters = NULL;
+		param->parameters = (double*)memory_new(param->num_params, sizeof(double));
 
-			write_lambda_distribution(&params.dist, fp);
-			params.bdone = 1;
-			fclose(fp);
-		}
+		write_lambda_distribution(&params.dist, fp);
+		params.bdone = 1;
+		fclose(fp);
+	}
 
 	if (params.bdone )
 	{

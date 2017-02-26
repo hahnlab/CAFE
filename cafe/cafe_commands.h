@@ -12,9 +12,11 @@ extern "C" {
 #include "cafe_shell.h"
 }
 
-typedef int(*cafe_command2)(pCafeParam cafe_param, std::vector<std::string>);
+class Globals;
 
-#define MAKE_FN_NAME(x) int cafe_cmd_##x (pCafeParam cafe_param, std::vector<std::string>)
+typedef int(*cafe_command2)(Globals& globals, std::vector<std::string>);
+
+#define MAKE_FN_NAME(x) int cafe_cmd_##x (Globals& globals, std::vector<std::string>)
 #define COMMAND(signal) MAKE_FN_NAME(signal)
 
 COMMAND(accuracy);
@@ -50,7 +52,7 @@ COMMAND(version);
 COMMAND(viterbi);
 
 std::map<std::string, cafe_command2> get_dispatcher();
-int cafe_shell_dispatch_command(pCafeParam param, char* cmd);
+int cafe_shell_dispatch_command(Globals& globals, char* cmd);
 void list_commands(std::ostream& ost);
 
 std::vector<std::string> tokenize(std::string s);

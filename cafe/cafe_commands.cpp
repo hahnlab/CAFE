@@ -21,6 +21,7 @@
 #include "simerror.h"
 #include "error_model.h"
 #include "log_buffer.h"
+#include "Globals.h"
 
 /**
 	\defgroup Commands Commands that are available in CAFE
@@ -30,9 +31,9 @@ extern "C" {
 #include <utils_string.h>
 #include "cafe_shell.h"
 #include "cafe.h"
+#include "viterbi.h"
 
 	extern void cafe_log(pCafeParam param, const char* msg, ...);
-	void cafe_shell_clear_param(pCafeParam param, int btree_skip);
 
 	extern pTree tmp_lambda_tree;
 
@@ -54,6 +55,7 @@ extern "C" {
 	double _cafe_cross_validate_by_family(const char* queryfile, const char* truthfile, const char* errortype);
 	double _cafe_cross_validate_by_species(const char* validatefile, const char* errortype);
 	int __cafe_cmd_lambda_tree(pArgument parg);
+	void cafe_shell_set_lambda(pCafeParam param, double* parameters);
 	void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters);
 }
 
@@ -139,9 +141,9 @@ io_error::io_error(string source, string file, bool write) : runtime_error("")
 \brief Echoes test to the log file
 *
 */
-int cafe_cmd_echo(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_echo(Globals& globals, std::vector<std::string> tokens)
 {
-	log_buffer buf(param);
+	log_buffer buf(&globals.param);
 	ostream ost(&buf);
 	for (size_t i = 1; i < tokens.size(); i++)
 	{
@@ -156,13 +158,13 @@ int cafe_cmd_echo(pCafeParam param, std::vector<std::string> tokens)
 \brief Writes the current date and time to log file
 *
 */
-int cafe_cmd_date(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_date(Globals& globals, std::vector<std::string> tokens)
 {
 	time_t now = time(NULL);
 	struct tm *tm = localtime(&now);
 	char buf[64];
 	strftime(buf, sizeof(buf), "%a %b %e %T %Y", tm);
-	cafe_log(param, "%s", buf);
+	cafe_log(&globals.param, "%s", buf);
 	return 0;
 }
 
@@ -171,8 +173,10 @@ int cafe_cmd_date(pCafeParam param, std::vector<std::string> tokens)
 \brief Close files, release memory and exit application
 *
 */
-int cafe_cmd_exit(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_exit(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	if (param->str_log)
 	{
 		string_free(param->str_log);
@@ -181,9 +185,8 @@ int cafe_cmd_exit(pCafeParam param, std::vector<std::string> tokens)
 	}
 	if (tmp_lambda_tree) phylogeny_free(tmp_lambda_tree);
 	tmp_lambda_tree = NULL;
-	cafe_shell_clear_param(param, 0);
+	globals.Clear(0);
 
-	memory_free(param);
 	return CAFE_SHELL_EXIT;
 }
 
@@ -197,11 +200,11 @@ int cafe_cmd_exit(pCafeParam param, std::vector<std::string> tokens)
 * with the argument "stdout" the current log file is closed and log data goes to stdout
 *
 */
-int cafe_cmd_log(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_log(Globals& globals, std::vector<std::string> tokens)
 {
 	if (tokens.size() == 1)
 	{
-		printf("Log: %s\n", param->flog == stdout ? "stdout" : param->str_log->buf);
+		printf("Log: %s\n", globals.param.flog == stdout ? "stdout" : globals.param.str_log->buf);
 	}
 	else
 	{
@@ -213,7 +216,7 @@ int cafe_cmd_log(pCafeParam param, std::vector<std::string> tokens)
 			copy(tokens.begin()+1, tokens.end(), std::ostream_iterator<string>(ost, " "));
 			file_name = ost.str().substr(0, ost.str().size() - 1);
 		}
-		return set_log_file(param, file_name.c_str());
+		return set_log_file(&globals.param, file_name.c_str());
 	}
 	return 0;
 }
@@ -228,7 +231,7 @@ void write_version(ostream &ost)
 \brief Prints CAFE version and date of build
 *
 */
-int cafe_cmd_version(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_version(Globals& globals, std::vector<std::string> tokens)
 {
 	write_version(cout);
 	return 0;
@@ -239,9 +242,9 @@ int cafe_cmd_version(pCafeParam param, std::vector<std::string> tokens)
 \brief Logs various pieces of information about the application state
 *
 */
-int cafe_cmd_print_param(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_print_param(Globals& globals, std::vector<std::string> tokens)
 {
-	log_param_values(param);
+	log_param_values(&globals.param);
 	return 0;
 }
 
@@ -250,7 +253,7 @@ int cafe_cmd_print_param(pCafeParam param, std::vector<std::string> tokens)
 \brief Executes a series of commands from a CAFE command file
 *
 */
-int cafe_cmd_source(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_source(Globals& globals, std::vector<std::string> tokens)
 {
 	if ( tokens.size() != 2 )
 	{
@@ -267,7 +270,7 @@ int cafe_cmd_source(pCafeParam param, std::vector<std::string> tokens)
 	int rtn  = 0;
 	while( fgets( buf, STRING_BUF_SIZE, fp ) )
 	{
-		if ( (rtn = cafe_shell_dispatch_command(param, buf)) ) break;
+		if ( (rtn = cafe_shell_dispatch_command(globals, buf)) ) break;
 	}
 	fclose(fp);
 	return rtn;
@@ -291,7 +294,7 @@ void list_commands(std::ostream& ost)
 \brief List all commands available in CAFE
 *
 */
-int cafe_cmd_list(pCafeParam, std::vector<std::string> tokens)
+int cafe_cmd_list(Globals&, std::vector<std::string> tokens)
 {
 	list_commands(std::cout);
 	return 0;
@@ -374,8 +377,9 @@ void prereqs(pCafeParam param, int flags)
 \brief Write gains and losses
 *
 */
-int cafe_cmd_gainloss(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_gainloss(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
 	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE | REQUIRES_LAMBDA);
 
 	if (param->viterbi.viterbiNodeFamilysizes == NULL)
@@ -449,7 +453,7 @@ vector<Argument> build_argument_list(vector<string> tokens)
 }
 
 
-int cafe_shell_dispatch_command(pCafeParam param, char* cmd)
+int cafe_shell_dispatch_command(Globals& globals, char* cmd)
 {
 	using namespace std;
 
@@ -468,7 +472,7 @@ int cafe_shell_dispatch_command(pCafeParam param, char* cmd)
 		{
 			rtn = CAFE_SHELL_NO_COMMAND;
 			if (dispatcher.find(tokens[0]) != dispatcher.end())
-				rtn = dispatcher[tokens[0]](param, tokens);
+				rtn = dispatcher[tokens[0]](globals, tokens);
 			if (rtn == CAFE_SHELL_NO_COMMAND)
 			{
 				fprintf(stderr, "cafe: %s: command not found\n", tokens[0].c_str());
@@ -483,18 +487,15 @@ int cafe_shell_dispatch_command(pCafeParam param, char* cmd)
 	}
 }
 
-extern "C" {
-	extern pCafeParam cafe_param;
-	int cafe_shell_dispatch_commandf(const char* format, ...)
-	{
-		va_list ap;
-		char buf[STRING_BUF_SIZE];
-		va_start(ap, format);
-		vsprintf(buf, format, ap);
-		int r = cafe_shell_dispatch_command(cafe_param, buf);
-		va_end(ap);
-		return r;
-	}
+int cafe_shell_dispatch_commandf(Globals& globals, const char* format, ...)
+{
+	va_list ap;
+	char buf[STRING_BUF_SIZE];
+	va_start(ap, format);
+	vsprintf(buf, format, ap);
+	int r = cafe_shell_dispatch_command(globals, buf);
+	va_end(ap);
+	return r;
 }
 
 int get_num_trials(vector<string> args)
@@ -633,8 +634,10 @@ void write_leaves(ostream& ofst, pCafeTree pcafe, int *k, int i, int id, bool ev
 \brief Generates random families
 *
 */
-int cafe_cmd_generate_random_family(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_generate_random_family(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	if (tokens.size() == 1)
 	{
 		ostringstream ost;
@@ -797,13 +800,15 @@ void copy_args_to_param(pCafeParam param, struct load_args& args)
 *
 * Takes six arguments: -t, -r, -p, -l, -i, and -filter
 */
-int cafe_cmd_load(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_load(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	if (tokens.size() < 2)
 	{
 		throw runtime_error("Usage(load): load <family file>\n");
 	}
-	cafe_shell_clear_param(param, 1);
+	globals.Clear(1);
 
 	struct load_args args = get_load_arguments(build_argument_list(tokens));
 	copy_args_to_param(param, args);
@@ -815,7 +820,7 @@ int cafe_cmd_load(pCafeParam param, std::vector<std::string> tokens)
 
 	if (args.family_file_name.empty())
 	{
-		cafe_shell_clear_param(param, 1);
+		globals.Clear(1);
 		throw runtime_error("ERROR(load): You must use -i option for input file\n");
 	}
 
@@ -897,8 +902,10 @@ struct family_args get_family_arguments(vector<Argument> pargs)
 *
 * Takes four arguments: --idx, -id, -add, and -filter
 */
-int cafe_cmd_family(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_family(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	prereqs(param, REQUIRES_FAMILY);
 
 	int i, idx = 0;
@@ -980,8 +987,10 @@ int cafe_cmd_family(pCafeParam param, std::vector<std::string> tokens)
 \brief Reports
 *
 */
-int cafe_cmd_report(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_report(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE | REQUIRES_LAMBDA);
 
 	report_parameters params;
@@ -996,8 +1005,10 @@ int cafe_cmd_report(pCafeParam param, std::vector<std::string> tokens)
 \brief Score
 *
 */
-int cafe_cmd_score(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_score(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	double score = cafe_shell_score();
 	cafe_log(param, "%lf\n", score);
 	if (param->parameterized_k_value > 0) {
@@ -1044,8 +1055,10 @@ void write_family(ostream& ost, pCafeFamily family)
 \brief Save
 *
 */
-int cafe_cmd_save(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_save(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	if (tokens.size() != 2)
 	{
 		throw std::runtime_error("Usage(save): save filename");
@@ -1065,8 +1078,10 @@ int cafe_cmd_save(pCafeParam param, std::vector<std::string> tokens)
 \brief Tree
 *
 */
-int cafe_cmd_tree(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_tree(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	string newick;
 	if (tokens.size() == 1)
 	{
@@ -1225,8 +1240,10 @@ void viterbi_write(ostream& ost, pCafeTree pcafe, pCafeFamily pfamily)
 \brief Viterbi
 *
 */
-int cafe_cmd_viterbi(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_viterbi(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	prereqs(param, REQUIRES_TREE | REQUIRES_LAMBDA);
 	struct viterbi_args args = get_viterbi_arguments(build_argument_list(tokens));
 
@@ -1355,8 +1372,10 @@ ostream& operator<<(ostream& os, const Histogram& hist)
 
 Arguments: –t parameter gives the number of trials. Logs the total number of extinct families?
 */
-int cafe_cmd_extinct(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_extinct(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	prereqs(param, REQUIRES_FAMILY | REQUIRES_LAMBDA | REQUIRES_TREE);
 
 	int familysize = param->pfamily->flist->size;
@@ -1388,7 +1407,7 @@ int cafe_cmd_extinct(pCafeParam param, std::vector<std::string> tokens)
 
 	double* data = (double*)memory_new(maxsize, sizeof(double));
 
-	cafe_log(cafe_param, "*******************  DATA  *************************\n");
+	cafe_log(&globals.param, "*******************  DATA  *************************\n");
 
 	for (i = 1; i <= pcafe->rfsize; i++)
 	{
@@ -1439,8 +1458,8 @@ int cafe_cmd_extinct(pCafeParam param, std::vector<std::string> tokens)
 				int sum = 0;
 				for (j = 0; j < roots.num[i]; j++)
 				{
-					cafe_tree_random_familysize(cafe_param->pcafe, i);
-					simdata[f] = __cafe_cmd_extinct_count_zero((pTree)cafe_param->pcafe);
+					cafe_tree_random_familysize(pcafe, i);
+					simdata[f] = __cafe_cmd_extinct_count_zero((pTree)pcafe);
 					data[k++] = simdata[f];
 					sum += simdata[f];
 					f++;
@@ -1464,8 +1483,8 @@ int cafe_cmd_extinct(pCafeParam param, std::vector<std::string> tokens)
 	{
 		if (roots.phist_sim[i])
 		{
-			cafe_log(cafe_param, "--------------------------------\n");
-			cafe_log(cafe_param, "Root Size: %d\n", i);
+			cafe_log(param, "--------------------------------\n");
+			cafe_log(param, "Root Size: %d\n", i);
 			__hg_print_sim_extinct(phist_sim_n, roots.phist_sim, i, phist_tmp, cnt, num_trials);
 			roots.avg_extinct[i] /= num_trials;
 			avg_total_extinct += roots.avg_extinct[i];
@@ -1474,12 +1493,12 @@ int cafe_cmd_extinct(pCafeParam param, std::vector<std::string> tokens)
 
 
 
-	cafe_log(cafe_param, "*******************  ALL *************************\n");
-	cafe_log(cafe_param, ">> DATA\n");
-	histogram_print(roots.phist_data[0], cafe_param->flog);
-	if (cafe_param->flog != stdout) histogram_print(roots.phist_data[0], NULL);
-	cafe_log(cafe_param, "Total Extinct: %d\n", total_extinct);
-	cafe_log(cafe_param, ">> SIMULATION\n");
+	cafe_log(param, "*******************  ALL *************************\n");
+	cafe_log(param, ">> DATA\n");
+	histogram_print(roots.phist_data[0], param->flog);
+	if (param->flog != stdout) histogram_print(roots.phist_data[0], NULL);
+	cafe_log(param, "Total Extinct: %d\n", total_extinct);
+	cafe_log(param, ">> SIMULATION\n");
 	__hg_print_sim_extinct(phist_sim_n, roots.phist_sim, 0, phist_tmp, cnt, num_trials);
 
 	memory_free(cnt);
@@ -1561,8 +1580,10 @@ static pArrayList to_arraylist(matrix& v)
 \brief Calculates pvalues
 
 */
-int cafe_cmd_pvalue(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_pvalue(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	pvalue_args args = get_pvalue_arguments(build_argument_list(tokens));
 
 	if (args.outfile.size() > 0)
@@ -1586,8 +1607,8 @@ int cafe_cmd_pvalue(pCafeParam param, std::vector<std::string> tokens)
 		{
 			throw io_error("pvalue", args.outfile, true);
 		}
-		read_pvalues(ifst, cafe_param->num_random_samples);
-		cafe_log(cafe_param, "Done Loading p-values ... \n");
+		read_pvalues(ifst, param->num_random_samples);
+		cafe_log(param, "Done Loading p-values ... \n");
 	}
 	else if (args.index >= 0)
 	{
@@ -1660,8 +1681,10 @@ std::vector<std::string> enumerate_directory(std::string dir, std::string ext)
 	return pal;
 }
 
-int cafe_cmd_lhtest(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_lhtest(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	lhtest_args args = get_lhtest_arguments(build_argument_list(tokens));
 
 	FILE* fout = stdout;
@@ -1680,13 +1703,13 @@ int cafe_cmd_lhtest(pCafeParam param, std::vector<std::string> tokens)
 	{
 		std::string fname = files[i];
 		if (fname[0] == '.') continue;
-		cafe_shell_dispatch_commandf("load -i %s/%s -p 0.01 -t 10 -l %s",
+		cafe_shell_dispatch_commandf(globals, "load -i %s/%s -p 0.01 -t 10 -l %s",
 			args.directory.c_str(), fname.c_str(), param->str_log ? param->str_log->buf : "stdout");
-		cafe_shell_dispatch_commandf("tree %s", pstr_cafe->buf);
-		cafe_shell_dispatch_commandf("lambda -s -l %lf", args.lambda);
+		cafe_shell_dispatch_commandf(globals, "tree %s", pstr_cafe->buf);
+		cafe_shell_dispatch_commandf(globals, "lambda -s -l %lf", args.lambda);
 		fprintf(fout, "\t%lf\t%lf", cafe_get_posterior(param->pfamily, param->pcafe, &param->family_size, param->ML, param->MAP, param->prior_rfsize, param->quiet), param->lambda[0]);
 		cafe_family_reset_maxlh(param->pfamily);
-		cafe_shell_dispatch_commandf("lambda -s -v %lf -t %s", args.lambda, args.tree.c_str());
+		cafe_shell_dispatch_commandf(globals, "lambda -s -v %lf -t %s", args.lambda, args.tree.c_str());
 		fprintf(fout, "\t%lf", cafe_get_posterior(param->pfamily, param->pcafe, &param->family_size, param->ML, param->MAP, param->prior_rfsize, param->quiet));
 		for (j = 0; j < param->num_lambdas; j++)
 		{
@@ -1694,15 +1717,17 @@ int cafe_cmd_lhtest(pCafeParam param, std::vector<std::string> tokens)
 		}
 		fprintf(fout, "\n");
 		fflush(fout);
-		cafe_shell_clear_param(param, 0);
+		globals.Clear(0);
 	}
 	fclose(fout);
 	string_free(pstr_cafe);
 	return 0;
 }
 
-int cafe_cmd_simerror(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_simerror(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE | REQUIRES_LAMBDA | REQUIRES_ERRORMODEL);
 
 	std::vector<Argument> args = build_argument_list(tokens);
@@ -1763,8 +1788,10 @@ errormodel_args get_errormodel_arguments(vector<Argument> pargs)
 	return args;
 }
 
-int cafe_cmd_errormodel(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_errormodel(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE);
 
 	errormodel_args args = get_errormodel_arguments(build_argument_list(tokens));
@@ -1853,7 +1880,7 @@ void validate(esterror_args args)
 
 }
 
-int cafe_cmd_esterror(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_esterror(Globals& globals, std::vector<std::string> tokens)
 {
 	esterror_args args = get_esterror_arguments(build_argument_list(tokens));
 
@@ -1885,9 +1912,11 @@ int cafe_cmd_esterror(pCafeParam param, std::vector<std::string> tokens)
 
 }
 
-int cafe_cmd_retrieve(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_retrieve(Globals& globals, std::vector<std::string> tokens)
 {
-	cafe_shell_clear_param(param, 1);
+	pCafeParam param = &globals.param;
+
+	globals.Clear(1);
 	if (cafe_report_retrieve_data(tokens[1].c_str(), param) == -1)
 	{
 		return -1;
@@ -1895,8 +1924,10 @@ int cafe_cmd_retrieve(pCafeParam param, std::vector<std::string> tokens)
 	return 0;
 }
 
-int cafe_cmd_noerrormodel(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_noerrormodel(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	prereqs(param, REQUIRES_TREE | REQUIRES_FAMILY);
 	std::string species;
 	bool all = false;
@@ -1962,8 +1993,10 @@ int s_to_i(std::string s)
 	return size;
 }
 
-int cafe_cmd_branchlength(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_branchlength(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	prereqs(param, REQUIRES_TREE);
 
 	pString pstr = cafe_tree_string_with_id(param->pcafe);
@@ -1997,8 +2030,10 @@ int cafe_cmd_branchlength(pCafeParam param, std::vector<std::string> tokens)
 	return err;
 }
 
-int cafe_cmd_accuracy(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_accuracy(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	std::string truthfile;
 	vector<Argument> args = build_argument_list(tokens);
 	for (size_t i = 0; i < args.size(); i++)
@@ -2066,8 +2101,10 @@ int cafe_cmd_accuracy(pCafeParam param, std::vector<std::string> tokens)
 Arguments: -r range Can be specified as a max or a colon-separated range
 -t Number of trials to run
 */
-int cafe_cmd_simextinct(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_simextinct(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	prereqs(param, REQUIRES_TREE | REQUIRES_LAMBDA);
 
 	int num_trials = 10000;
@@ -2100,10 +2137,10 @@ int cafe_cmd_simextinct(pCafeParam param, std::vector<std::string> tokens)
 	cafe_log(param, "root range: %d ~ %d\n", range[0], range[1]);
 	cafe_log(param, "# trials: %d\n", num_trials);
 
-	if (range[0] > range[1] || range[1] > cafe_param->family_size.root_max)
+	if (range[0] > range[1] || range[1] > param->family_size.root_max)
 	{
 		ostringstream ost;
-		ost << "ERROR(simextinct): -r : 1 ~ " << cafe_param->family_size.root_max << "\n";
+		ost << "ERROR(simextinct): -r : 1 ~ " << param->family_size.root_max << "\n";
 		throw std::runtime_error(ost.str());
 	}
 
@@ -2150,8 +2187,10 @@ int cafe_cmd_simextinct(pCafeParam param, std::vector<std::string> tokens)
 
 Arguments: -fold 
 */
-int cafe_cmd_cvfamily(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_cvfamily(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE | REQUIRES_LAMBDA);
 
 	int cv_fold = 0;
@@ -2259,8 +2298,10 @@ std::string get_input_file(std::vector<std::string> tokens)
 	throw std::runtime_error("No input file specified");
 }
 
-int cafe_cmd_cvspecies(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_cvspecies(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	int i;
 	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE | REQUIRES_LAMBDA);
 
@@ -2348,8 +2389,10 @@ int cafe_cmd_cvspecies(pCafeParam param, std::vector<std::string> tokens)
 
 Arguments: -i input file.
 */
-int cafe_cmd_rootdist(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_rootdist(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	prereqs(param, REQUIRES_TREE);
 
 	std::string file = get_input_file(tokens);
@@ -2428,8 +2471,10 @@ int cafe_cmd_rootdist(pCafeParam param, std::vector<std::string> tokens)
 	return 0;
 }
 
-int cafe_cmd_lambdamu(pCafeParam param, std::vector<std::string> tokens)
+int cafe_cmd_lambdamu(Globals& globals, std::vector<std::string> tokens)
 {
+	pCafeParam param = &globals.param;
+
 	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE);
 	int j;
 
@@ -2441,10 +2486,10 @@ int cafe_cmd_lambdamu(pCafeParam param, std::vector<std::string> tokens)
 		phylogeny_free(param->lambda_tree);
 		param->lambda_tree = NULL;
 	}
-	if (param->mu_tree)
+	if (globals.mu_tree)
 	{
-		phylogeny_free(param->mu_tree);
-		param->mu_tree = NULL;
+		phylogeny_free(globals.mu_tree);
+		globals.mu_tree = NULL;
 	}
 	param->num_lambdas = -1;
 	param->num_mus = -1;
