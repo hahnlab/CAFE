@@ -1,10 +1,10 @@
 #include <stdexcept>
 
 #include "Globals.h"
+#include "viterbi.h"
 
 extern "C" {
 #include "family.h"
-#include "viterbi.h"
 #include "cafe.h"
 
 	void cafe_shell_set_lambda(pCafeParam param, double* parameters);

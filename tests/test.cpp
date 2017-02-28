@@ -12,7 +12,6 @@ extern "C" {
 #include <tree.h>
 #include <cafe.h>
 #include <chooseln_cache.h>
-#include <viterbi.h>
 };
 
 #include <cafe_commands.h>
@@ -25,6 +24,7 @@ extern "C" {
 #include <simerror.h>
 #include <error_model.h>
 #include <Globals.h>
+#include <viterbi.h>
 
 extern "C" {
 	extern pCafeParam cafe_param;

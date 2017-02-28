@@ -12,7 +12,6 @@
 #include<stdio.h>
 #include "cafe.h"
 #include "cafe_shell.h"
-#include "viterbi.h"
 
 extern pBirthDeathCacheArray probability_cache;
 
@@ -30,51 +29,6 @@ pTree tmp_lambda_tree;
 
 void cafe_shell_set_lambda(pCafeParam param, double* lambda);
 void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters);
-
-void viterbi_parameters_init(viterbi_parameters *viterbi, int nnodes, int nrows)
-{
-	viterbi->num_nodes = nnodes;
-	viterbi->num_rows = nrows;
-	viterbi->viterbiPvalues = (double**)memory_new_2dim(nnodes, nrows, sizeof(double));
-	viterbi->expandRemainDecrease = (int**)memory_new_2dim(3, nnodes, sizeof(int));
-	viterbi->viterbiNodeFamilysizes = (int**)memory_new_2dim(nnodes, nrows, sizeof(int));
-	viterbi->maximumPvalues = (double*)memory_new(nrows, sizeof(double));
-	viterbi->averageExpansion = (double*)memory_new(nnodes, sizeof(double));
-}
-
-void viterbi_parameters_clear(viterbi_parameters* viterbi, int nnodes)
-{
-//	viterbi_parameters* viterbi = &param->viterbi;
-	if ( viterbi->viterbiPvalues )
-	{
-		int num = (nnodes - 1 )/2;
-		memory_free_2dim((void**)viterbi->viterbiPvalues,num,0,NULL);
-		memory_free_2dim((void**)viterbi->expandRemainDecrease,3,0,NULL);
-		memory_free_2dim((void**)viterbi->viterbiNodeFamilysizes,num, 0, NULL);
-		memory_free(viterbi->averageExpansion);
-		viterbi->averageExpansion = NULL;
-		if ( viterbi->maximumPvalues )
-		{
-			memory_free(viterbi->maximumPvalues);
-			viterbi->maximumPvalues = NULL;
-		}
-	}
-	if ( viterbi->cutPvalues )
-	{
-		memory_free_2dim((void**)viterbi->cutPvalues,nnodes,0,NULL);
-	}
-	viterbi->viterbiPvalues = NULL;
-	viterbi->expandRemainDecrease = NULL;
-	viterbi->viterbiNodeFamilysizes = NULL;
-	viterbi->cutPvalues = NULL;
-	viterbi->maximumPvalues = NULL;
-}
-
-void viterbi_set_max_pvalue(viterbi_parameters* viterbi, int index, double val)
-{
-	assert(index < viterbi->num_rows);
-	viterbi->maximumPvalues[index] = val;
-}
 
 void cafe_shell_prompt(char* prompt, char* format, ... )
 {
