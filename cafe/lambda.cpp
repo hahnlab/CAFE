@@ -395,7 +395,6 @@ int cafe_cmd_lambda(Globals& globals, vector<string> tokens)
 	}
 		
 	FILE* fpout = stdout;
-	FILE* fmpout = NULL;
 	FILE* fhttp = NULL;
 	if (params.write_files)
 	{
@@ -405,17 +404,10 @@ int cafe_cmd_lambda(Globals& globals, vector<string> tokens)
 		{
 			throw std::runtime_error((std::string("Cannot open file: ") + params.name).c_str());
 		}
-		params.name = base_name + ".mp";
-		if ((fmpout = fopen(params.name.c_str(), "w")) == NULL)
-		{
-			fclose(fpout);
-			throw std::runtime_error((std::string("Cannot open file: ") + params.name).c_str());
-		}
 		params.name = base_name + ".html";
 		if ((fhttp = fopen(params.name.c_str(), "w")) == NULL)
 		{
 			fclose(fpout);
-			fclose(fmpout);
 			throw std::runtime_error((std::string("Cannot open file: ") + params.name).c_str());
 		}
 		params.name = base_name;
@@ -451,15 +443,8 @@ int cafe_cmd_lambda(Globals& globals, vector<string> tokens)
 				fprintf(fhttp,"<tr><td>%s</td></tr>\n", pstr->buf );
 			}
 			string_free(pstr);
-			if (fmpout )
-			{
-				pstr = cafe_tree_metapost( pcafe, i+1, pitem->id, 6, 6 );
-				fprintf(fmpout, "%s\n", pstr->buf );
-				string_free(pstr);
-			}
 		}
 		if (fpout != stdout ) fclose(fpout);
-		if (fmpout ) fclose(fmpout);
 		if (fhttp )
 		{
 			fprintf(fhttp,"</table>\n</body>\n</html>\n");

@@ -22,6 +22,7 @@
 #include "error_model.h"
 #include "log_buffer.h"
 #include "Globals.h"
+#include "viterbi.h"
 
 /**
 	\defgroup Commands Commands that are available in CAFE
@@ -31,7 +32,6 @@ extern "C" {
 #include <utils_string.h>
 #include "cafe_shell.h"
 #include "cafe.h"
-#include "viterbi.h"
 
 	extern void cafe_log(pCafeParam param, const char* msg, ...);
 
@@ -382,7 +382,7 @@ int cafe_cmd_gainloss(Globals& globals, std::vector<std::string> tokens)
 	pCafeParam param = &globals.param;
 	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE | REQUIRES_LAMBDA);
 
-	if (param->viterbi.viterbiNodeFamilysizes == NULL)
+	if (globals.viterbi->viterbiNodeFamilysizes == NULL)
 	{
 		if (ConditionalDistribution::matrix.empty())
 		{
@@ -391,7 +391,7 @@ int cafe_cmd_gainloss(Globals& globals, std::vector<std::string> tokens)
 			ConditionalDistribution::reset(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
 		}
 		pArrayList cd = ConditionalDistribution::to_arraylist();
-		cafe_viterbi(param, cd);
+		cafe_viterbi(param, *globals.viterbi, cd);
 		arraylist_free(cd, NULL);
 	}
 
@@ -405,7 +405,7 @@ int cafe_cmd_gainloss(Globals& globals, std::vector<std::string> tokens)
 	clear_tree_viterbis(psum);
 
 	int totalsum = 0;
-	int** nodefs = param->viterbi.viterbiNodeFamilysizes;
+	int** nodefs = globals.viterbi->viterbiNodeFamilysizes;
 	int fsize = param->pfamily->flist->size;
 
 	for (int i = 0; i < fsize; i++)
@@ -996,7 +996,7 @@ int cafe_cmd_report(Globals& globals, std::vector<std::string> tokens)
 	report_parameters params;
 	get_report_parameters(params, tokens);
 
-	cafe_do_report(param, &params);
+	cafe_do_report(param, *globals.viterbi, &params);
 	return 0;
 }
 
@@ -1914,10 +1914,8 @@ int cafe_cmd_esterror(Globals& globals, std::vector<std::string> tokens)
 
 int cafe_cmd_retrieve(Globals& globals, std::vector<std::string> tokens)
 {
-	pCafeParam param = &globals.param;
-
 	globals.Clear(1);
-	if (cafe_report_retrieve_data(tokens[1].c_str(), param) == -1)
+	if (cafe_report_retrieve_data(tokens[1].c_str(), &globals.param, *globals.viterbi) == -1)
 	{
 		return -1;
 	}

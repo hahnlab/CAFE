@@ -16,7 +16,7 @@ extern "C" {
 * \brief Initializes the global \ref cafe_param that holds the data acted upon by cafe. Called at program startup.
 *
 */
-Globals::Globals()
+Globals::Globals() : viterbi(new viterbi_parameters())
 {
 	param.family_size.root_min = 1;
 	param.family_size.root_max = 1;
@@ -36,11 +36,16 @@ Globals::Globals()
 	param.MAP = NULL;
 	param.prior_rfsize = NULL;
 	param.parameters = NULL;
-	param.viterbi.viterbiPvalues = NULL;
-	param.viterbi.cutPvalues = NULL;
+	viterbi->viterbiPvalues = NULL;
+	viterbi->cutPvalues = NULL;
 	mu_tree = NULL;
 
 	cafe_param = &param;
+}
+
+Globals::~Globals()
+{
+	delete viterbi;
 }
 
 void Globals::Clear(int btree_skip)
@@ -67,7 +72,7 @@ void Globals::Clear(int btree_skip)
 	}
 
 	int nnodes = param.pcafe ? ((pTree)param.pcafe)->nlist->size : 0;
-	viterbi_parameters_clear(&param.viterbi, nnodes);
+	viterbi_parameters_clear(viterbi, nnodes);
 	if (!btree_skip && param.pcafe)
 	{
 		if (probability_cache)

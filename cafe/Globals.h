@@ -5,14 +5,19 @@ extern "C" {
 #include "family.h"
 }
 
+class viterbi_parameters;
+
 class Globals
 {
 public:
 	CafeParam param;
 
 	Globals();
+	~Globals();
 
 	pTree mu_tree;
+
+	viterbi_parameters* viterbi;
 
 	void Clear(int btree_skip);
 	void Prepare();

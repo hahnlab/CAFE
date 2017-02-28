@@ -8,6 +8,7 @@
 #include "cafe_commands.h"
 #include "reports.h"
 #include "Globals.h"
+#include "viterbi.h"
 
 extern "C" {
 #include <family.h>
@@ -122,8 +123,8 @@ TEST(CommandTests, cafe_cmd_exit)
 	param->MAP = NULL;
 	param->ML = (double *)memory_new(10, sizeof(double));;
 	param->str_fdata = NULL;
-	param->viterbi.viterbiPvalues = NULL;
-	param->viterbi.cutPvalues = NULL;
+	globals.viterbi->viterbiPvalues = NULL;
+	globals.viterbi->cutPvalues = NULL;
 
 	cafe_cmd_exit(globals, tokens);
 

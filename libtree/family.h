@@ -68,25 +68,6 @@ typedef struct
 }CafeNode;
 typedef CafeNode*	pCafeNode;
 
-typedef struct
-{
-	/** Number of nodes in the tree */
-	int num_nodes;
-
-	/** Number of gene families for which to keep data */
-	int num_rows;
-
-	/** Matrix of calculated P values for each node in the tree and each gene family  */
-	double** viterbiPvalues;
-
-	/** array of three integers expand, remain, and decrease for each node in the tree relative to its parent */
-	int** expandRemainDecrease;
-
-	int** viterbiNodeFamilysizes;
-	double* maximumPvalues;
-	double* averageExpansion;
-	double** cutPvalues;
-} viterbi_parameters;
 
 /**
 * \brief Structure representing a matrix of values of family sizes
@@ -184,7 +165,6 @@ struct tagCafeParam
 	int  num_threads;
 	int  num_random_samples;
 
-	viterbi_parameters viterbi;
 	double** likelihoodRatios;
 
 	int quiet;

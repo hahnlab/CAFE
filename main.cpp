@@ -14,8 +14,6 @@ extern "C" {
 
 const char* __date__ = __DATE__;
 
-const int VERBOSE = 0;
-
 int main(int argc, char* argv[])
 {
 	//int i = 0;

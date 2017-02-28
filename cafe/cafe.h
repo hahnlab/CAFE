@@ -117,11 +117,8 @@ extern double* cafe_each_best_lambda_by_fminsearch(pCafeParam param, int lambda_
 extern void cafe_lambda_set_default(pCafeParam param, double* lambda);
 
 extern void cafe_free_birthdeath_cache(pCafeTree pcafe);
-extern pArrayList cafe_viterbi(pCafeParam param, pArrayList pCD);
-extern void cafe_likelihood_ratio_test(pCafeParam param);
+extern void cafe_likelihood_ratio_test(pCafeParam param, double *maximumPvalues);
 extern pGMatrix cafe_lambda_distribution(pCafeParam param, int numrange, double** range );
-
-extern int cafe_report_retrieve_data(const char* file, pCafeParam param);
 
 void initialize_leaf_likelihoods_for_viterbi(double **matrix, int num_rows, int range, int familysize, int num_cols, pErrorStruct errormodel);
 void reset_k_likelihoods(pCafeNode pcnode, int k, int num_factors);

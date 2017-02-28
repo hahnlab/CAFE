@@ -30,6 +30,7 @@ DBGDIR = debug
 DBGEXE = $(DBGDIR)/$(EXE)
 DBGOBJS = $(addprefix $(DBGDIR)/, $(OBJS))
 DBGCFLAGS = -g -O0 -DDEBUG -DVERBOSE
+DBGCPPFLAGS = -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC
 
 #
 # Release build settings
@@ -58,17 +59,17 @@ all: prep release
 #
 debug: $(DBGEXE)
 
-$(DBGEXE): $(DBGOBJS) main.o
-	$(CXX) $(CXXFLAGS) $(DBGCFLAGS) -o $(DBGEXE) $^ $(LINKFLAGS) 
+$(DBGEXE): $(DBGOBJS) $(DBGDIR)/main.o
+	$(CXX) $(CXXFLAGS) $(DBGCFLAGS) $(DBGCPPFLAGS) -o $(DBGEXE) $^ $(LINKFLAGS) 
 
 $(DBGDIR)/%.o: %.c
 	$(CC) -c $(CFLAGS) $(DBGCFLAGS) -o $@ $<
 
 $(DBGDIR)/%.o: %.cpp
-	$(CXX) -c $(CXXFLAGS) $(DBGCFLAGS) -o $@ $<
+	$(CXX) -c $(CXXFLAGS) $(DBGCFLAGS) $(DBGCPPFLAGS) -o $@ $<
 
 $(DBGDIR)/main.o: main.cpp
-	$(CXX) -c $(CXXFLAGS) $(DBGCFLAGS) -o $@ $<
+	$(CXX) -c $(CXXFLAGS) $(DBGCFLAGS) $(DBGCPPFLAGS) -o $@ $<
 
 #
 # Test rules
@@ -82,14 +83,14 @@ $(TESTDIR)/%.o: %.c
 	$(CC) -c $(CFLAGS) $(TESTCFLAGS) -o $@ $<
 
 $(TESTDIR)/%.o : %.cpp
-	$(CXX) -c $(CXXFLAGS) $(TESTCPPFLAGS) -o $@ $<
+	$(CXX) -c $(CXXFLAGS) $(DBGCPPFLAGS) $(TESTCPPFLAGS) -o $@ $<
 
 #
 # Release rules
 #
 release: $(RELEXE)
 
-$(RELEXE): $(RELOBJS) main.o
+$(RELEXE): $(RELOBJS) $(RELDIR)/main.o
 	$(CXX) $(CXXFLAGS) $(RELCFLAGS) -o $(RELEXE) $^ $(LINKFLAGS) 
 
 $(RELDIR)/%.o: %.c
@@ -99,7 +100,7 @@ $(RELDIR)/%.o: %.cpp
 	$(CXX) -c $(CXXFLAGS) $(RELCFLAGS) -o $@ $<
 
 $(RELDIR)/main.o: main.cpp
-	$(CXX) -c $(CXXFLAGS) $(DBGCFLAGS) -o $@ $<
+	$(CXX) -c $(CXXFLAGS) $(RELCFLAGS) -o $@ $<
 
 #
 # Other rules

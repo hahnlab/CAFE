@@ -1091,6 +1091,7 @@ double* cafe_each_best_lambda_by_fminsearch(pCafeParam param, int lambda_len )
 typedef struct
 {
 	pCafeParam cafeparam;
+	double* maximumPvalues;
 	int from;
 }LRTParam;
 
@@ -1115,7 +1116,7 @@ void* __cafe_likelihood_ratio_test_thread_func(void* ptr)
 	{
 		pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
 		if ( pitem->ref >= 0 &&  pitem->ref != i ) continue;
-		if ( param->viterbi.maximumPvalues[i] > param->pvalue )
+		if (plrt->maximumPvalues[i] > param->pvalue )
 		{
 			for( b = 0 ; b < nnodes ; b++ ) param->likelihoodRatios[b][i] = -1;
 			continue;
@@ -1155,7 +1156,7 @@ pthread_mutex_unlock( &mutex_cafe_likelihood);
 	return (NULL);
 }
 
-void cafe_likelihood_ratio_test(pCafeParam param)
+void cafe_likelihood_ratio_test(pCafeParam param, double *maximumPvalues)
 {
 	cafe_log(param,"Running Likelihood Ratio Test....\n");
 
@@ -1172,6 +1173,7 @@ void cafe_likelihood_ratio_test(pCafeParam param)
 	{
 		ptparam[i].cafeparam = param;
 		ptparam[i].from = i;
+		ptparam[i].maximumPvalues = maximumPvalues;
 	}
 	thread_run(param->num_threads, __cafe_likelihood_ratio_test_thread_func, ptparam, sizeof(LRTParam));
 	for( i = 0 ; i < nrows ; i++ )
@@ -1201,12 +1203,12 @@ pCafeParam cafe_copy_parameters(pCafeParam psrc)
 	param->num_lambdas = 0;
 	param->pcafe = cafe_tree_copy(psrc->pcafe);
 
-	param->viterbi.viterbiPvalues = NULL;
-	param->viterbi.expandRemainDecrease = NULL;
-	param->viterbi.viterbiNodeFamilysizes = NULL;
-	param->viterbi.maximumPvalues = NULL;
-	param->viterbi.averageExpansion = NULL;
-	param->viterbi.cutPvalues = NULL;
+//	param->viterbi.viterbiPvalues = NULL;
+//	param->viterbi.expandRemainDecrease = NULL;
+//	param->viterbi.viterbiNodeFamilysizes = NULL;
+//	param->viterbi.maximumPvalues = NULL;
+//	param->viterbi.averageExpansion = NULL;
+//	param->viterbi.cutPvalues = NULL;
 
 	return param;
 }

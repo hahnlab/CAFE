@@ -1,8 +1,11 @@
+#include "viterbi.h"
+
 extern "C" {
 #include <family.h>
 #include "cafe.h"
 #include <pthread.h>
 }
+
 
 /**************************************************************************
 * Viterbi
@@ -12,10 +15,10 @@ void viterbi_parameters_init(viterbi_parameters *viterbi, int nnodes, int nrows)
 	viterbi->num_nodes = nnodes;
 	viterbi->num_rows = nrows;
 	viterbi->viterbiPvalues = (double**)memory_new_2dim(nnodes, nrows, sizeof(double));
-	viterbi->expandRemainDecrease = (int**)memory_new_2dim(3, nnodes, sizeof(int));
 	viterbi->viterbiNodeFamilysizes = (int**)memory_new_2dim(nnodes, nrows, sizeof(int));
 	viterbi->maximumPvalues = (double*)memory_new(nrows, sizeof(double));
-	viterbi->averageExpansion = (double*)memory_new(nnodes, sizeof(double));
+	viterbi->averageExpansion.clear();
+	viterbi->expandRemainDecrease.clear();
 }
 
 void viterbi_parameters_clear(viterbi_parameters* viterbi, int nnodes)
@@ -25,10 +28,8 @@ void viterbi_parameters_clear(viterbi_parameters* viterbi, int nnodes)
 	{
 		int num = (nnodes - 1) / 2;
 		memory_free_2dim((void**)viterbi->viterbiPvalues, num, 0, NULL);
-		memory_free_2dim((void**)viterbi->expandRemainDecrease, 3, 0, NULL);
 		memory_free_2dim((void**)viterbi->viterbiNodeFamilysizes, num, 0, NULL);
-		memory_free(viterbi->averageExpansion);
-		viterbi->averageExpansion = NULL;
+		viterbi->averageExpansion.clear();
 		if (viterbi->maximumPvalues)
 		{
 			memory_free(viterbi->maximumPvalues);
@@ -40,10 +41,10 @@ void viterbi_parameters_clear(viterbi_parameters* viterbi, int nnodes)
 		memory_free_2dim((void**)viterbi->cutPvalues, nnodes, 0, NULL);
 	}
 	viterbi->viterbiPvalues = NULL;
-	viterbi->expandRemainDecrease = NULL;
 	viterbi->viterbiNodeFamilysizes = NULL;
 	viterbi->cutPvalues = NULL;
 	viterbi->maximumPvalues = NULL;
+	viterbi->expandRemainDecrease.clear();
 }
 
 void viterbi_set_max_pvalue(viterbi_parameters* viterbi, int index, double val)
@@ -100,9 +101,10 @@ void viterbi_section(pCafeFamily pcf, double pvalue, int num_random_samples, vit
 		for (int k = 0; k < 2; k++)
 		{
 			int m = j * 2 + k;
-			if (child[k]->familysize > pcnode->familysize) viterbi->expandRemainDecrease[0][m]++;
-			else if (child[k]->familysize == pcnode->familysize) viterbi->expandRemainDecrease[1][m]++;
-			else viterbi->expandRemainDecrease[2][m]++;
+			if (child[k]->familysize > pcnode->familysize) viterbi->expandRemainDecrease[m].expand++;
+			else if (child[k]->familysize == pcnode->familysize) viterbi->expandRemainDecrease[m].remain++;
+			else viterbi->expandRemainDecrease[m].decrease++;
+
 			pthread_mutex_lock(&mutex_cafe_viterbi);
 			viterbi->averageExpansion[m] += child[k]->familysize - pcnode->familysize;
 			pthread_mutex_unlock(&mutex_cafe_viterbi);
@@ -164,7 +166,7 @@ void* __cafe_viterbi_thread_func(void* ptr)
 	return (NULL);
 }
 
-pArrayList cafe_viterbi(pCafeParam param, pArrayList pCD)
+pArrayList cafe_viterbi(pCafeParam param, viterbi_parameters& viterbi, pArrayList pCD)
 {
 	cafe_log(param, "Running Viterbi algorithm....\n");
 
@@ -174,7 +176,7 @@ pArrayList cafe_viterbi(pCafeParam param, pArrayList pCD)
 	int nrows = param->pfamily->flist->size;
 	int nnodes = ptree->nlist->size - 1;
 
-	viterbi_parameters_init(&param->viterbi, nnodes, nrows);
+	viterbi_parameters_init(&viterbi, nnodes, nrows);
 
 	int i;
 	for (i = 0; i < param->num_threads; i++)
@@ -184,7 +186,7 @@ pArrayList cafe_viterbi(pCafeParam param, pArrayList pCD)
 		ptparam[i].num_threads = param->num_threads;
 
 		ptparam[i].num_random_samples = param->num_random_samples;
-		ptparam[i].viterbi = &param->viterbi;
+		ptparam[i].viterbi = &viterbi;
 		ptparam[i].pvalue = param->pvalue;
 		ptparam[i].from = i;
 		ptparam[i].pCD = pCD;
@@ -193,7 +195,7 @@ pArrayList cafe_viterbi(pCafeParam param, pArrayList pCD)
 
 	for (i = 0; i < ptree->nlist->size - 1; i++)
 	{
-		param->viterbi.averageExpansion[i] /= param->pfamily->flist->size;
+		viterbi.averageExpansion[i] /= param->pfamily->flist->size;
 	}
 
 	memory_free(ptparam);
@@ -201,7 +203,7 @@ pArrayList cafe_viterbi(pCafeParam param, pArrayList pCD)
 	return pCD;
 }
 
-void cafe_viterbi_print(pCafeParam param)
+void cafe_viterbi_print(pCafeParam param, viterbi_parameters& viterbi)
 {
 	int i, j;
 	int size = param->pfamily->flist->size;
@@ -213,7 +215,7 @@ void cafe_viterbi_print(pCafeParam param)
 		for (j = 1; j < ptree->nlist->size; j += 2)
 		{
 			pCafeNode pcnode = (pCafeNode)ptree->nlist->array[j];
-			pcnode->familysize = param->viterbi.viterbiNodeFamilysizes[j / 2][i];
+			pcnode->familysize = viterbi.viterbiNodeFamilysizes[j / 2][i];
 		}
 		cafe_tree_string_print(pcafe);
 	}

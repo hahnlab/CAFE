@@ -16,14 +16,15 @@ typedef struct
 } report_parameters;
 
 class Globals;
+class viterbi_parameters;
 
 void get_report_parameters(report_parameters &params, std::vector<std::string> tokens);
 int cafe_cmd_report(Globals& globals, std::vector<std::string> tokens);
-void cafe_report(pCafeParam param, std::ostream& report_file);
 void write_viterbi(std::ostream& ost, const viterbi_parameters& viterbi);
 void write_families_header(std::ostream& ost, double **cutPvalues, double**likelihoodRatios);
 void write_families_line(std::ostream& ost, pCafeFamily family, pCafeTree pcafe, double** likelihoodRatios, viterbi_parameters& viterbi, int i, std::string node_id);
-void cafe_do_report(pCafeParam param, report_parameters* params);
-
+void cafe_do_report(pCafeParam param, viterbi_parameters& viterbi, report_parameters* params);
+void cafe_report(pCafeParam param, std::ostream& report_file, viterbi_parameters& viterbi);
+int cafe_report_retrieve_data(const char* file, pCafeParam param, viterbi_parameters& viterbi);
 
 #endif
