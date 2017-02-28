@@ -517,42 +517,43 @@ TEST(ReportTests, write_families_header)
 
 TEST(ReportTests, write_families_line)
 {
-	CafeParam param;
-	param.likelihoodRatios = NULL;
+	Globals globals;
+	globals.param.likelihoodRatios = NULL;
 	family_size_range range;
 	range.min = range.root_min = 0;
 	range.max = range.root_max = 10;
 	pCafeTree tree = create_tree(range);
-	param.pcafe = tree;
+	globals.param.pcafe = tree;
 	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
-	param.pfamily = cafe_family_init(build_arraylist(species, 7));
-	cafe_family_set_species_index(param.pfamily, tree);
+	globals.param.pfamily = cafe_family_init(build_arraylist(species, 7));
+	cafe_family_set_species_index(globals.param.pfamily, tree);
 	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
-	cafe_family_add_item(param.pfamily, build_arraylist(values, 7));
+	cafe_family_add_item(globals.param.pfamily, build_arraylist(values, 7));
 
-	param.viterbi.num_nodes = 6;
+	viterbi_parameters* v = &globals.param.viterbi;
+	v->num_nodes = 6;
 	//double expansion[] = { 1.3, 2.3, 3.3, 4.3, 5.3, 6.3 };
-	param.viterbi.viterbiPvalues = (double**)memory_new_2dim(6, 1, sizeof(double));
-	param.viterbi.viterbiPvalues[0][0] = .025;
-	param.viterbi.viterbiNodeFamilysizes = (int**)memory_new_2dim(6, 1, sizeof(int));
-	param.viterbi.cutPvalues = NULL;
+	v->viterbiPvalues = (double**)memory_new_2dim(6, 1, sizeof(double));
+	v->viterbiPvalues[0][0] = .025;
+	v->viterbiNodeFamilysizes = (int**)memory_new_2dim(6, 1, sizeof(int));
+	v->cutPvalues = NULL;
 
 	double maxP = .1;
-	param.viterbi.maximumPvalues = &maxP;
+	v->maximumPvalues = &maxP;
 
 	std::ostringstream ost;
-	write_families_line(ost, &param, 0, "NodeZero");
+	write_families_line(ost, globals.param.pfamily, globals.param.pcafe, globals.param.likelihoodRatios, globals.param.viterbi, 0, "NodeZero");
 	STRCMP_EQUAL("NodeZero\t(((chimp_3:6,human_5:6)_0:81,(mouse_7:17,rat_11:17)_0:70)_0:6,dog_13:9)_0\t0.1\t((0.025,0),(0,0),(0,0))\t\n", ost.str().c_str());
 
-	param.viterbi.cutPvalues = (double**)memory_new_2dim(6, 1, sizeof(double));
+	v->cutPvalues = (double**)memory_new_2dim(6, 1, sizeof(double));
 	std::ostringstream ost2;
-	write_families_line(ost2, &param, 0, "NodeZero");
+	write_families_line(ost2, globals.param.pfamily, globals.param.pcafe, globals.param.likelihoodRatios, globals.param.viterbi, 0, "NodeZero");
 	STRCMP_EQUAL("NodeZero\t(((chimp_3:6,human_5:6)_0:81,(mouse_7:17,rat_11:17)_0:70)_0:6,dog_13:9)_0\t0.1\t((0.025,0),(0,0),(0,0))\t(0,0,0,0,0,0)\t\n", ost2.str().c_str());
 
-	param.viterbi.cutPvalues = NULL;
-	param.likelihoodRatios = (double**)memory_new_2dim(tree->super.size, 1, sizeof(double));
+	v->cutPvalues = NULL;
+	globals.param.likelihoodRatios = (double**)memory_new_2dim(tree->super.size, 1, sizeof(double));
 	std::ostringstream ost3;
-	write_families_line(ost3, &param, 0, "NodeZero");
+	write_families_line(ost3, globals.param.pfamily, globals.param.pcafe, globals.param.likelihoodRatios, globals.param.viterbi, 0, "NodeZero");
 	STRCMP_EQUAL("NodeZero\t(((chimp_3:6,human_5:6)_0:81,(mouse_7:17,rat_11:17)_0:70)_0:6,dog_13:9)_0\t0.1\t((0.025,0),(0,0),(0,0))\t(0,0,0,0,0,0,0,0,0)\n", ost3.str().c_str());
 }
 

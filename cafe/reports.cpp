@@ -26,15 +26,15 @@ void lambda_tree_string(pString pstr, pPhylogenyNode pnode)
 	}
 }
 
-void cafe_report_set_viterbi(pCafeParam param, int i)
+void cafe_report_set_viterbi(pCafeFamily family, pCafeTree pcafe, viterbi_parameters& viterbi, int i)
 {
 	int j;
-	cafe_family_set_size(param->pfamily, i, param->pcafe);
-	pArrayList nlist = param->pcafe->super.nlist;
+	cafe_family_set_size(family, i, pcafe);
+	pArrayList nlist = pcafe->super.nlist;
 	for (j = 1; j < nlist->size; j += 2)
 	{
 		pCafeNode pcnode = (pCafeNode)nlist->array[j];
-		pcnode->familysize = param->viterbi.viterbiNodeFamilysizes[j / 2][i];
+		pcnode->familysize = viterbi.viterbiNodeFamilysizes[j / 2][i];
 	}
 }
 
@@ -108,46 +108,46 @@ void write_doubles(ostream&ost, vector<double> items)
 	ost << ")";
 }
 
-void write_families_line(ostream& ost, pCafeParam param, int i, string node_id)
+void write_families_line(ostream& ost, pCafeFamily family, pCafeTree pcafe, double** likelihoodRatios, viterbi_parameters& viterbi, int i, string node_id)
 {
 	ost << node_id << "\t";
-	cafe_report_set_viterbi(param, i);
-	pString pstr = cafe_tree_string(param->pcafe);
+	cafe_report_set_viterbi(family, pcafe, viterbi, i);
+	pString pstr = cafe_tree_string(pcafe);
 	ost << pstr->buf << "\t";
 	string_free(pstr);
-	ost << param->viterbi.maximumPvalues[i] << "\t(";
-	for (int b = 0; b < param->viterbi.num_nodes / 2; b++)
+	ost << viterbi.maximumPvalues[i] << "\t(";
+	for (int b = 0; b < viterbi.num_nodes / 2; b++)
 	{
-		if (param->viterbi.viterbiPvalues[2 * b][i] == -1)
+		if (viterbi.viterbiPvalues[2 * b][i] == -1)
 		{
 			ost << "(-,-)";
 		}
 		else
 		{
-			ost << "(" << param->viterbi.viterbiPvalues[2 * b][i] << "," << param->viterbi.viterbiPvalues[2 * b + 1][i] << ")";
+			ost << "(" << viterbi.viterbiPvalues[2 * b][i] << "," << viterbi.viterbiPvalues[2 * b + 1][i] << ")";
 		}
-		if (b < param->viterbi.num_nodes / 2 - 1)
+		if (b < viterbi.num_nodes / 2 - 1)
 			ost << ",";
 	}
 	ost << ")\t";
 
-	if (param->viterbi.cutPvalues)
+	if (viterbi.cutPvalues)
 	{
-		vector<double> vals(param->viterbi.num_nodes);
-		for (int b = 0; b < param->viterbi.num_nodes; b++)
+		vector<double> vals(viterbi.num_nodes);
+		for (int b = 0; b < viterbi.num_nodes; b++)
 		{
-			vals[b] = param->viterbi.cutPvalues[b][i];
+			vals[b] = viterbi.cutPvalues[b][i];
 		}
 		write_doubles(ost, vals);
 		ost << "\t";
 	}
 
-	if (param->likelihoodRatios)
+	if (likelihoodRatios)
 	{
-		vector<double> vals(param->pcafe->super.nlist->size);
+		vector<double> vals(pcafe->super.nlist->size);
 		for (size_t b = 0; b < vals.size(); b++)
 		{
-			vals[b] = param->likelihoodRatios[b][i];
+			vals[b] = likelihoodRatios[b][i];
 		}
 		write_doubles(ost, vals);
 	}
@@ -208,7 +208,7 @@ void cafe_report(pCafeParam param, ostream& report_file)
 	pArrayList pflist = param->pfamily->flist;
 	for (int i = 0; i < pflist->size; i++)
 	{
-		write_families_line(report_file, param, i, ((pCafeFamilyItem)pflist->array[i])->id);
+		write_families_line(report_file, param->pfamily, param->pcafe, param->likelihoodRatios, param->viterbi, i, ((pCafeFamilyItem)pflist->array[i])->id);
 	}
 }
 

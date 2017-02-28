@@ -1091,7 +1091,13 @@ double* cafe_each_best_lambda_by_fminsearch(pCafeParam param, int lambda_len )
 
 typedef struct
 {
-	pCafeParam cafeparam;
+	pCafeFamily pfamily;
+	pCafeTree pcafe;
+	int num_threads;
+	viterbi_parameters *viterbi;
+	int num_random_samples;
+	double pvalue;
+
 	pArrayList pCD;
 	int from;
 }ViterbiParam;
@@ -1176,17 +1182,17 @@ void viterbi_section(pCafeFamily pcf, double pvalue, int num_random_samples, vit
 void* __cafe_viterbi_thread_func(void* ptr)
 {
 	pViterbiParam pv = (pViterbiParam)ptr;
-	pCafeParam param = (pCafeParam)pv->cafeparam;
+
 	pArrayList pCD = pv->pCD;
-	pCafeTree pcafe = cafe_tree_copy(param->pcafe);
-	int fsize = param->pfamily->flist->size;
+	pCafeTree pcafe = cafe_tree_copy(pv->pcafe);
+	int fsize = pv->pfamily->flist->size;
 	double* cP = (double*)memory_new( pcafe->rfsize, sizeof(double));
 #ifdef VERBOSE
 	printf("VITERBI: from %d\n", pv->from );
 #endif
-	for (int i = pv->from; i < fsize ; i+=param->num_threads )
+	for (int i = pv->from; i < fsize ; i+=pv->num_threads )
 	{
-		viterbi_section(param->pfamily, param->pvalue, param->num_random_samples, &param->viterbi, i, pcafe, cP, pCD);
+		viterbi_section(pv->pfamily, pv->pvalue, pv->num_random_samples, pv->viterbi, i, pcafe, cP, pCD);
 	}
 	memory_free(cP);
 	cP = NULL;
@@ -1209,7 +1215,13 @@ pArrayList cafe_viterbi(pCafeParam param, pArrayList pCD)
 	int i;
 	for ( i = 0 ; i < param->num_threads; i++ )
 	{
-		ptparam[i].cafeparam = param;
+		ptparam[i].pfamily = param->pfamily;
+		ptparam[i].pcafe = param->pcafe;
+		ptparam[i].num_threads = param->num_threads;
+
+		ptparam[i].num_random_samples = param->num_random_samples;
+		ptparam[i].viterbi = &param->viterbi;
+		ptparam[i].pvalue = param->pvalue;
 		ptparam[i].from = i;
 		ptparam[i].pCD = pCD;
 	}
