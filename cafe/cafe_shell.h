@@ -33,7 +33,6 @@ typedef struct
 } ErrorMeasure;
 typedef ErrorMeasure* pErrorMeasure;
  
-pArrayList cafe_shell_build_argument(int argc, char* argv[]);
 void cafe_shell_prompt(char* prompt, char* format, ... );
 double cafe_shell_score();
 int cafe_cmd_lambda_mu(int argc, char* argv[]);

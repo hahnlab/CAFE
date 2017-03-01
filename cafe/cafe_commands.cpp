@@ -993,8 +993,7 @@ int cafe_cmd_report(Globals& globals, std::vector<std::string> tokens)
 
 	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE | REQUIRES_LAMBDA);
 
-	report_parameters params;
-	get_report_parameters(params, tokens);
+	report_parameters params = get_report_parameters(tokens);
 
 	cafe_do_report(param, *globals.viterbi, &params);
 	return 0;

@@ -427,22 +427,25 @@ TEST(TreeTests, cafe_tree_random_probabilities)
 
 TEST(ReportTests, get_report_parameters)
 {
-	report_parameters params;
-
 	std::vector<std::string> tokens;
 	tokens.push_back("report");
 	tokens.push_back("myreport");
 	tokens.push_back("branchcutting");
 
-	get_report_parameters(params, tokens);
+	report_parameters params = get_report_parameters(tokens);
 	STRCMP_EQUAL("myreport", params.name.c_str());
-	LONGS_EQUAL(1, params.bc);
-	LONGS_EQUAL(0, params.lh);
+	CHECK(params.branchcutting);
+	CHECK_FALSE(params.likelihood);
+	CHECK_FALSE(params.html);
 
 	tokens[2] = "lh2";
-	get_report_parameters(params, tokens);
-	LONGS_EQUAL(1, params.lh2);
-	LONGS_EQUAL(0, params.lh);
+	params = get_report_parameters(tokens);
+	CHECK(params.lh2);
+	CHECK_FALSE(params.likelihood);
+
+	tokens.push_back("html");
+	params = get_report_parameters(tokens);
+	CHECK(params.html);
 }
 
 TEST(ReportTests, write_report)
@@ -466,7 +469,8 @@ TEST(ReportTests, write_report)
 	double lambdas[] = { 1.5, 2.5, 3.5 };
 	globals.param.lambda = lambdas;
 	globals.param.lambda_tree = (pTree)globals.param.pcafe;
-	cafe_report(&globals.param, ost, *globals.viterbi);
+	Report r(&globals.param, *globals.viterbi);
+	ost << r;
 	STRCMP_CONTAINS("Tree:(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)\n", ost.str().c_str());
 	STRCMP_CONTAINS("Lambda:\t1.5\t2.5\t3.5\n", ost.str().c_str());
 	STRCMP_CONTAINS("Lambda tree:\t(((:6,:6):81,(:17,:17):70):6,:9)\n", ost.str().c_str());
@@ -480,19 +484,18 @@ TEST(ReportTests, write_report)
 TEST(ReportTests, write_viterbi)
 {
 	std::ostringstream ost;
-	viterbi_parameters viterbi;
-	viterbi.num_nodes = 6;
+	Report r;
 	for (int i = 1; i < 7; ++i)
-		viterbi.averageExpansion.push_back(i + 0.3);
+		r.averageExpansion.push_back(i + 0.3);
 
-	viterbi.expandRemainDecrease.push_back(change(1,17,41));
-	viterbi.expandRemainDecrease.push_back(change(3, 19, 43));
-	viterbi.expandRemainDecrease.push_back(change(5, 23, 47));
-	viterbi.expandRemainDecrease.push_back(change(7, 29, 53));
-	viterbi.expandRemainDecrease.push_back(change(11, 31, 59));
-	viterbi.expandRemainDecrease.push_back(change(13, 37, 61));
+	r.changes.push_back(change(1,17,41));
+	r.changes.push_back(change(3, 19, 43));
+	r.changes.push_back(change(5, 23, 47));
+	r.changes.push_back(change(7, 29, 53));
+	r.changes.push_back(change(11, 31, 59));
+	r.changes.push_back(change(13, 37, 61));
 
-	write_viterbi(ost, viterbi);
+	write_viterbi(ost, r);
 
 	STRCMP_CONTAINS("Average Expansion:\t(1.3,2.3)\t(3.3,4.3)\t(5.3,6.3)\n", ost.str().c_str());
 	STRCMP_CONTAINS("Expansion :\t(1,3)\t(5,7)\t(11,13)\n", ost.str().c_str());
@@ -543,19 +546,22 @@ TEST(ReportTests, write_families_line)
 	v->maximumPvalues = &maxP;
 
 	std::ostringstream ost;
-	write_families_line(ost, globals.param.pfamily, globals.param.pcafe, globals.param.likelihoodRatios, *globals.viterbi, 0, "NodeZero");
-	STRCMP_EQUAL("NodeZero\t(((chimp_3:6,human_5:6)_0:81,(mouse_7:17,rat_11:17)_0:70)_0:6,dog_13:9)_0\t0.1\t((0.025,0),(0,0),(0,0))\t\n", ost.str().c_str());
+	family_line_item item(globals.param.pfamily, globals.param.pcafe, globals.param.likelihoodRatios, *globals.viterbi, 0, "NodeZero");
+	ost << item;
+	STRCMP_EQUAL("NodeZero\t(((chimp_3:6,human_5:6)_0:81,(mouse_7:17,rat_11:17)_0:70)_0:6,dog_13:9)_0\t0.1\t((0.025,0),(0,0),(0,0))\t", ost.str().c_str());
 
 	v->cutPvalues = (double**)memory_new_2dim(6, 1, sizeof(double));
 	std::ostringstream ost2;
-	write_families_line(ost2, globals.param.pfamily, globals.param.pcafe, globals.param.likelihoodRatios, *globals.viterbi, 0, "NodeZero");
-	STRCMP_EQUAL("NodeZero\t(((chimp_3:6,human_5:6)_0:81,(mouse_7:17,rat_11:17)_0:70)_0:6,dog_13:9)_0\t0.1\t((0.025,0),(0,0),(0,0))\t(0,0,0,0,0,0)\t\n", ost2.str().c_str());
+	family_line_item item2(globals.param.pfamily, globals.param.pcafe, globals.param.likelihoodRatios, *globals.viterbi, 0, "NodeZero");
+	ost2 << item2;
+	STRCMP_EQUAL("NodeZero\t(((chimp_3:6,human_5:6)_0:81,(mouse_7:17,rat_11:17)_0:70)_0:6,dog_13:9)_0\t0.1\t((0.025,0),(0,0),(0,0))\t(0,0,0,0,0,0)\t", ost2.str().c_str());
 
 	v->cutPvalues = NULL;
 	globals.param.likelihoodRatios = (double**)memory_new_2dim(tree->super.size, 1, sizeof(double));
 	std::ostringstream ost3;
-	write_families_line(ost3, globals.param.pfamily, globals.param.pcafe, globals.param.likelihoodRatios, *globals.viterbi, 0, "NodeZero");
-	STRCMP_EQUAL("NodeZero\t(((chimp_3:6,human_5:6)_0:81,(mouse_7:17,rat_11:17)_0:70)_0:6,dog_13:9)_0\t0.1\t((0.025,0),(0,0),(0,0))\t(0,0,0,0,0,0,0,0,0)\n", ost3.str().c_str());
+	family_line_item item3(globals.param.pfamily, globals.param.pcafe, globals.param.likelihoodRatios, *globals.viterbi, 0, "NodeZero");
+	ost3 << item3;
+	STRCMP_EQUAL("NodeZero\t(((chimp_3:6,human_5:6)_0:81,(mouse_7:17,rat_11:17)_0:70)_0:6,dog_13:9)_0\t0.1\t((0.025,0),(0,0),(0,0))\t(0,0,0,0,0,0,0,0,0)", ost3.str().c_str());
 }
 
 TEST(FirstTestGroup, cafe_tree_new_empty_node)
@@ -969,6 +975,8 @@ TEST(FirstTestGroup, compute_cutpvalues)
 	int nnodes = ((pTree)tree)->nlist->size;
 	viterbi_parameters viterbi;
 	viterbi_parameters_init(&viterbi, nnodes, 1);
+	LONGS_EQUAL(nnodes, viterbi.averageExpansion.size());
+	LONGS_EQUAL(nnodes, viterbi.expandRemainDecrease.size());
 	double* p1 = (double*)memory_new(5, sizeof(double));
 	double** p2 = (double**)memory_new_2dim(5, 5, sizeof(double));
 

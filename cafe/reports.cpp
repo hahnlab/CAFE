@@ -2,6 +2,7 @@
 #include <ostream>
 #include <iomanip>
 #include <fstream>
+#include <iterator>
 
 #include <strings.h>
 
@@ -54,38 +55,37 @@ void cafe_tree_string_id(pString pstr, pPhylogenyNode pnode)
 }
 
 
-void write_viterbi(ostream& ost, const viterbi_parameters& viterbi)
+void write_viterbi(ostream& ost, const Report& viterbi)
 {
 	ost << "Average Expansion:";
-	int nnodes = viterbi.num_nodes / 2;
-	for (int b = 0; b < nnodes; b++)
+	for (size_t b = 0; b < viterbi.averageExpansion.size()/2; b++)
 	{
 		ost << "\t(" << viterbi.averageExpansion[2 * b] << "," << viterbi.averageExpansion[2 * b + 1] << ")";
 	}
 	ost << "\n";
 	ost << "Expansion :";
-	for (int b = 0; b < nnodes; b++)
+	for (size_t b = 0; b < viterbi.changes.size()/2; b++)
 	{
-		ost << "\t(" << viterbi.expandRemainDecrease[2 * b].expand << "," << viterbi.expandRemainDecrease[2 * b + 1].expand << ")";
+		ost << "\t(" << viterbi.changes[2 * b].expand << "," << viterbi.changes[2 * b + 1].expand << ")";
 	}
 	ost << "\n";
 
 	ost << "nRemain :";
-	for (int b = 0; b < nnodes; b++)
+	for (size_t b = 0; b < viterbi.changes.size() / 2; b++)
 	{
-		ost << "\t(" << viterbi.expandRemainDecrease[2 * b].remain << "," << viterbi.expandRemainDecrease[2 * b + 1].remain << ")";
+		ost << "\t(" << viterbi.changes[2 * b].remain << "," << viterbi.changes[2 * b + 1].remain << ")";
 	}
 	ost << "\n";
 
 	ost << "nDecrease :";
-	for (int b = 0; b < nnodes; b++)
+	for (size_t b = 0; b < viterbi.changes.size()/2; b++)
 	{
-		ost << "\t(" << viterbi.expandRemainDecrease[2 * b].decrease << "," << viterbi.expandRemainDecrease[2 * b + 1].decrease << ")";
+		ost << "\t(" << viterbi.changes[2 * b].decrease << "," << viterbi.changes[2 * b + 1].decrease << ")";
 	}
 	ost << "\n";
 }
 
-void write_families_header(ostream& ost, double **cutPvalues, double**likelihoodRatios)
+void write_families_header(ostream& ost, bool cutPvalues, bool likelihoodRatios)
 {
 	ost << "'ID'\t'Newick'\t'Family-wide P-value'\t'Viterbi P-values'";
 	if (cutPvalues)
@@ -117,109 +117,301 @@ void write_doubles(ostream&ost, vector<double> items)
 	ost << ")";
 }
 
-void write_families_line(ostream& ost, pCafeFamily family, pCafeTree pcafe, double** likelihoodRatios, viterbi_parameters& viterbi, int i, string node_id)
+family_line_item::family_line_item(pCafeFamily family, pCafeTree pcafe, double** likelihoodRatios, viterbi_parameters& viterbi, int i, string node_id)
 {
-	ost << node_id << "\t";
+	this->node_id = node_id;
 	cafe_report_set_viterbi(family, pcafe, viterbi, i);
 	pString pstr = cafe_tree_string(pcafe);
-	ost << pstr->buf << "\t";
+	tree = pstr->buf;
 	string_free(pstr);
-	ost << viterbi.maximumPvalues[i] << "\t(";
+	max_p_value = viterbi.maximumPvalues[i];
 	for (int b = 0; b < viterbi.num_nodes / 2; b++)
 	{
-		if (viterbi.viterbiPvalues[2 * b][i] == -1)
+		pvalues.push_back(std::pair<double, double>(viterbi.viterbiPvalues[2 * b][i], viterbi.viterbiPvalues[2 * b + 1][i]));
+	}
+
+	if (viterbi.cutPvalues)
+	{
+		cut_pvalues.resize(viterbi.num_nodes);
+		for (int b = 0; b < viterbi.num_nodes; b++)
+		{
+			cut_pvalues[b] = viterbi.cutPvalues[b][i];
+		}
+	}
+
+	if (likelihoodRatios)
+	{
+		likelihood_ratios.resize(pcafe->super.nlist->size);
+		for (size_t b = 0; b < likelihood_ratios.size(); b++)
+		{
+			likelihood_ratios[b] = likelihoodRatios[b][i];
+		}
+	}
+}
+
+std::ostream& operator<<(std::ostream& ost, const family_line_item& item)
+{
+	ost << item.node_id << "\t";
+	ost << item.tree << "\t";
+	ost << item.max_p_value << "\t(";
+	for (size_t b = 0; b < item.pvalues.size(); b++)
+	{
+		std::pair<double, double> p = item.pvalues[b];
+		if (p.first < 0)
 		{
 			ost << "(-,-)";
 		}
 		else
 		{
-			ost << "(" << viterbi.viterbiPvalues[2 * b][i] << "," << viterbi.viterbiPvalues[2 * b + 1][i] << ")";
+			ost << "(" << p.first << "," << p.second << ")";
 		}
-		if (b < viterbi.num_nodes / 2 - 1)
+		if (b < item.pvalues.size() - 1)
 			ost << ",";
 	}
 	ost << ")\t";
 
-	if (viterbi.cutPvalues)
+	if (!item.cut_pvalues.empty())
 	{
-		vector<double> vals(viterbi.num_nodes);
-		for (int b = 0; b < viterbi.num_nodes; b++)
-		{
-			vals[b] = viterbi.cutPvalues[b][i];
-		}
-		write_doubles(ost, vals);
+		write_doubles(ost, item.cut_pvalues);
 		ost << "\t";
 	}
 
-	if (likelihoodRatios)
+	if (!item.likelihood_ratios.empty())
 	{
-		vector<double> vals(pcafe->super.nlist->size);
-		for (size_t b = 0; b < vals.size(); b++)
-		{
-			vals[b] = likelihoodRatios[b][i];
-		}
-		write_doubles(ost, vals);
+		write_doubles(ost, item.likelihood_ratios);
 	}
 
-	ost << "\n";
-
+	return ost;
 }
 
-void cafe_report(pCafeParam param, ostream& report_file, viterbi_parameters& viterbi)
+Report::Report(pCafeParam param, viterbi_parameters& viterbi)
 {
-	report_file << "Tree:";
 	pString pstr = phylogeny_string((pTree)param->pcafe, NULL);
-	report_file << pstr->buf << "\n" << pstr->buf;
+	tree = pstr->buf;
 	string_free(pstr);
 
-	report_file << "Lambda:";
 	for (int i = 0; i < param->num_lambdas; i++)
 	{
-		report_file << "\t" << param->lambda[i];
+		lambdas.push_back(param->lambda[i]);
 	}
-	report_file << "\n";
+
 	if (param->lambda_tree)
 	{
 		pString pstr = phylogeny_string_newick(param->lambda_tree, lambda_tree_string, 0);
-		report_file << "Lambda tree:\t" << pstr->buf << "\n";
+		lambda_tree = pstr->buf;
 		string_free(pstr);
 	}
 
-	report_file << "# IDs of nodes:";
-	//	pstr = cafe_tree_string_with_id(param->pcafe);
+	averageExpansion = viterbi.averageExpansion;
+	changes = viterbi.expandRemainDecrease;
 
 	pstr = phylogeny_string_newick((pTree)param->pcafe, cafe_tree_string_id, PS_SKIP_BL);
-	report_file << pstr->buf << "\n";
+	id_tree = pstr->buf;
 	string_free(pstr);
 
 	pArrayList nlist = param->pcafe->super.nlist;
 
-	report_file << "# Output format for: ' Average Expansion', 'Expansions', 'No Change', 'Contractions', and 'Branch-specific P-values' = (node ID, node ID): ";
 	for (int b = 1; b < nlist->size; b += 2)
 	{
 		pTreeNode pnode = (pTreeNode)nlist->array[b];
 		pTreeNode child[2] = { (pTreeNode)tree_get_child(pnode,0), (pTreeNode)tree_get_child(pnode,1) };
-		report_file << "(" << child[0]->id << "," << child[1]->id << ") ";
+		node_pairs.push_back(std::pair<int, int>(child[0]->id, child[1]->id));
 	}
-
-	report_file << "\n";
-	report_file << "# Output format for 'Branch cutting P-values' and 'Likelihood Ratio Test': (" << 0;
-	for (int i = 1; i < nlist->size; i++)
-	{
-		report_file << ", " << i;
-	}
-	report_file << ")\n";
-
-	write_viterbi(report_file, viterbi);
-
-	write_families_header(report_file, viterbi.cutPvalues, param->likelihoodRatios);
 
 	pArrayList pflist = param->pfamily->flist;
 	for (int i = 0; i < pflist->size; i++)
 	{
-		write_families_line(report_file, param->pfamily, param->pcafe, param->likelihoodRatios, viterbi, i, ((pCafeFamilyItem)pflist->array[i])->id);
+		family_line_item item(param->pfamily, param->pcafe, param->likelihoodRatios, viterbi, i, ((pCafeFamilyItem)pflist->array[i])->id);
+		family_line_items.push_back(item);
+	}
+
+	branch_cutting_output_format.resize(nlist->size);
+	for (int i = 0; i < nlist->size; i++)
+	{
+		branch_cutting_output_format[i] = i;
 	}
 }
+
+std::ostream& operator<<(ostream& ost, const HtmlReport& report)
+{
+	const Report& r = report.report;
+	ost << "<!DOCTYPE html><html><head><meta charset = \"UTF-8\">";
+	ost << "<title>Cafe Report</title><style>table, th, td{ border: 1px solid black;}</style></head><body>";
+	ost << "<h1>Cafe Report</h1>";
+	ost << "<h3>Input tree</h3><p>" << r.tree << "</p>";
+	ost << "<h3>Lambda values</h3><ol>";
+	for (size_t i = 0; i < r.lambdas.size(); i++)
+	{
+		ost << "<li>" << r.lambdas[i] << "</li>";
+	}
+	ost << "</ol>";
+	if (!r.lambda_tree.empty())
+	{
+		ost << "<h3>Lambda tree</h3><p>" << r.lambda_tree << "</p>";
+	}
+	ost << "<h3>ID tree</h3><p>" << r.id_tree << "</p>";
+
+	ost << "<h3>Family Change Summary</h3>";
+	ost << "<table><tr><th>Node Pairs</th>";
+
+	for (size_t i = 0; i < r.node_pairs.size(); ++i)
+	{
+		ost << "<th>(" << r.node_pairs[i].first << "," << r.node_pairs[i].second << ")</th>";
+	}
+	ost << "<tr>";
+
+	ost << "<td>Average Expansion</td>";	
+	for (size_t b = 0; b < r.averageExpansion.size() / 2; b++)
+	{
+		ost << "<td>(" << r.averageExpansion[2 * b] << "," << r.averageExpansion[2 * b + 1] << ")</td>";
+	}
+	ost << "</tr><tr>";
+	ost << "<td>Expanded</td>";
+	for (size_t b = 0; b < r.changes.size() / 2; b++)
+	{
+		ost << "<td>(" << r.changes[2 * b].expand << "," << r.changes[2 * b + 1].expand << ")</td>";
+	}
+	ost << "</tr><tr>";
+	ost << "<td>Remained Same</td>";
+	for (size_t b = 0; b < r.changes.size() / 2; b++)
+	{
+		ost << "<td>(" << r.changes[2 * b].remain << "," << r.changes[2 * b + 1].remain << ")</td>";
+	}
+	ost << "</tr><tr>";
+	ost << "<td>Decreased</td>";
+	for (size_t b = 0; b < r.changes.size() / 2; b++)
+	{
+		ost << "<td>(" << r.changes[2 * b].decrease << "," << r.changes[2 * b + 1].decrease << ")</td>";
+	}
+	ost << "</tr></table>";
+
+	ost << "<h3>Families</h3><table><tr><th>ID</th><th>Newick</th><th>Family-wide P-value</th><th>Viterbi P-values</th>";
+
+	bool has_pvalues = !r.family_line_items.empty() && !r.family_line_items[0].cut_pvalues.empty();
+	bool has_likelihoods = !r.family_line_items.empty() && !r.family_line_items[0].likelihood_ratios.empty();
+	if (has_pvalues)
+		ost << "<th>cut P-value</th>";
+	if (has_likelihoods)
+		ost << "<th>Likelihood Ratio</th>";
+	ost << "</tr>";
+
+	for (size_t i = 0; i < r.family_line_items.size(); ++i)
+	{
+		const family_line_item& item = r.family_line_items[i];
+		ost << "<tr><td>" << item.node_id << "</td><td>" << item.tree << "</td><td>" << item.max_p_value << "</td><td>";
+		for (size_t b = 0; b < item.pvalues.size(); b++)
+		{
+			std::pair<double, double> p = item.pvalues[b];
+			if (p.first < 0)
+			{
+				ost << "(-,-)";
+			}
+			else
+			{
+				ost << "(" << p.first << "," << p.second << ")";
+			}
+			if (b < item.pvalues.size() - 1)
+				ost << ",";
+		}
+		ost << "</td>";
+
+		if (!item.cut_pvalues.empty())
+		{
+			ost << "<td>";
+			write_doubles(ost, item.cut_pvalues);
+			ost << "</td>";
+		}
+
+		if (!item.likelihood_ratios.empty())
+		{
+			ost << "<td>";
+			write_doubles(ost, item.likelihood_ratios);
+			ost << "</td>";
+		}
+		ost << "</tr>";
+	}
+	ost << "</table>";
+
+
+	ost << "</body></html>";
+
+	return ost;
+}
+
+std::ostream& operator<<(ostream& ost, const Report& report)
+{
+	ost << "Tree:";
+	ost << report.tree << "\n" << report.tree;
+
+	ost << "Lambda:";
+	for (size_t i = 0; i < report.lambdas.size(); i++)
+	{
+		ost << "\t" << report.lambdas[i];
+	}
+	ost << "\n";
+	if (!report.lambda_tree.empty())
+	{
+		ost << "Lambda tree:\t" << report.lambda_tree << "\n";
+	}
+
+	ost << "# IDs of nodes:";
+
+	ost << report.id_tree << "\n";
+
+	ost << "# Output format for: ' Average Expansion', 'Expansions', 'No Change', 'Contractions', and 'Branch-specific P-values' = (node ID, node ID): ";
+	for (size_t i = 0; i < report.node_pairs.size(); ++i)
+	{
+		ost << "(" << report.node_pairs[i].first << "," << report.node_pairs[i].second << ") ";
+	}
+
+	ost << "\n";
+	ost << "# Output format for 'Branch cutting P-values' and 'Likelihood Ratio Test': (" << report.branch_cutting_output_format[0];
+
+	for (size_t i = 1; i < report.branch_cutting_output_format.size(); i++)
+	{
+		ost << ", " << report.branch_cutting_output_format[i];
+	}
+	ost << ")\n";
+
+	write_viterbi(ost, report);
+
+	bool has_pvalues = !report.family_line_items.empty() && report.family_line_items[0].cut_pvalues.empty();
+	bool has_likelihoods = !report.family_line_items.empty() && report.family_line_items[0].likelihood_ratios.empty();
+	write_families_header(ost, has_pvalues, has_likelihoods);
+
+	copy(report.family_line_items.begin(), report.family_line_items.end(), ostream_iterator<family_line_item>(ost, "\n"));
+
+	return ost;
+}
+
+report_parameters get_report_parameters(std::vector<std::string> tokens)
+{
+	report_parameters params;
+	params.name = tokens[1];
+
+	params.branchcutting = false;
+	params.likelihood = false;
+	params.lh2 = false;
+	params.just_save = false;
+	for (size_t i = 2; i < tokens.size(); i++)
+	{
+		if (strcasecmp(tokens[i].c_str(), "html") == 0) params.html = true;
+		if (strcasecmp(tokens[i].c_str(), "branchcutting") == 0) params.branchcutting = true;
+		if (strcasecmp(tokens[i].c_str(), "likelihood") == 0) params.likelihood = true;
+		if (strcasecmp(tokens[i].c_str(), "lh2") == 0) params.lh2 = true;
+		if (strcasecmp(tokens[i].c_str(), "save") == 0)
+		{
+			params.branchcutting = false;
+			params.likelihood = false;
+			params.lh2 = false;
+			params.just_save = true;
+			break;
+		}
+	}
+	return params;
+
+}
+
 
 void cafe_do_report(pCafeParam param, viterbi_parameters& viterbi, report_parameters* params)
 {
@@ -230,7 +422,7 @@ void cafe_do_report(pCafeParam param, viterbi_parameters& viterbi, report_parame
 		viterbi_parameters_clear(&viterbi, nnodes);
 	}
 
-	string filename = params->name + ".cafe";
+	string filename = params->name + (params->html ? ".html" : ".cafe");
 	ofstream report(filename.c_str());
 
 	if (!report)
@@ -245,15 +437,29 @@ void cafe_do_report(pCafeParam param, viterbi_parameters& viterbi, report_parame
 		ConditionalDistribution::reset(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
 	}
 
-	if (params->bc || params->lh)
+	if (params->branchcutting || params->likelihood)
 	{
 		pArrayList cd = ConditionalDistribution::to_arraylist();
 		cafe_viterbi(param, viterbi, cd);
 		arraylist_free(cd, NULL);
-		if (params->bc) cafe_branch_cutting(param, viterbi);
-		if (params->lh) cafe_likelihood_ratio_test(param, viterbi.maximumPvalues);
+		
+		if (params->branchcutting) 
+			cafe_branch_cutting(param, viterbi);
+		
+		if (params->likelihood) 
+			cafe_likelihood_ratio_test(param, viterbi.maximumPvalues);
+		
 		cafe_log(param, "Building Text report: %s\n", params->name.c_str());
-		cafe_report(param, report, viterbi);
+		Report r(param, viterbi);
+		if (params->html)
+		{
+			HtmlReport hr(r);
+			report << hr;
+		}
+		else
+		{
+			report << r;
+		}
 	}
 	else if (params->lh2)
 	{
@@ -267,9 +473,19 @@ void cafe_do_report(pCafeParam param, viterbi_parameters& viterbi, report_parame
 			cafe_viterbi(param, viterbi, cd);
 			arraylist_free(cd, NULL);
 		}
-		cafe_report(param, report, viterbi);
+		Report r(param, viterbi);
+		if (params->html)
+		{
+			HtmlReport hr(r);
+			report << hr;
+		}
+		else
+		{
+			report << r;
+		}
 	}
 
+#if 0
 	// HTML
 	string name = params->name + ".html";
 	FILE* fhttp = fopen(name.c_str(), "w");
@@ -284,35 +500,10 @@ void cafe_do_report(pCafeParam param, viterbi_parameters& viterbi, report_parame
 	}
 	fprintf(fhttp, "</table>\n</body>\n</html>\n");
 	fclose(fhttp);
-
+#endif
 	cafe_log(param, "Report Done\n");
 
 }
-
-void get_report_parameters(report_parameters &params, std::vector<std::string> tokens)
-{
-	params.name = tokens[1];
-
-	params.bc = 0;
-	params.lh = 0;
-	params.lh2 = 0;
-	params.just_save = 0;
-	for (size_t i = 2; i < tokens.size(); i++)
-	{
-		if (strcasecmp(tokens[i].c_str(), "branchcutting") == 0) params.bc = 1;
-		if (strcasecmp(tokens[i].c_str(), "likelihood") == 0) params.lh = 1;
-		if (strcasecmp(tokens[i].c_str(), "lh2") == 0) params.lh2 = 1;
-		if (strcasecmp(tokens[i].c_str(), "save") == 0)
-		{
-			params.bc = 0;
-			params.lh = 0;
-			params.lh2 = 0;
-			params.just_save = 1;
-			break;
-		}
-	}
-}
-
 
 int cafe_report_retrieve_data(const char* file, pCafeParam param, viterbi_parameters& viterbi)
 {

@@ -19,6 +19,8 @@ void viterbi_parameters_init(viterbi_parameters *viterbi, int nnodes, int nrows)
 	viterbi->maximumPvalues = (double*)memory_new(nrows, sizeof(double));
 	viterbi->averageExpansion.clear();
 	viterbi->expandRemainDecrease.clear();
+	viterbi->averageExpansion.resize(nnodes);
+	viterbi->expandRemainDecrease.resize(nnodes);
 }
 
 void viterbi_parameters_clear(viterbi_parameters* viterbi, int nnodes)
