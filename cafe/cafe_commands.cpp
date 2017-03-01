@@ -506,33 +506,24 @@ int get_num_trials(vector<string> args)
 	return atoi((++it)->c_str());
 }
 
-void verify_directory(string dir)
+
+void verify_directory(string dirname)
 {
-	if (dir.empty()) {    // check directory exists
-		char * dirprefix = strdup(dir.c_str());
-		char * pch = NULL;
-		char * prevpch = NULL;
-		char directory[STRING_BUF_SIZE];
-		directory[0] = '\0';
-		pch = strtok(dirprefix, "/\0");
-		while (pch != NULL)
-		{
-			if (prevpch) {
-				strcat(directory, prevpch);
-				strcat(directory, "/");
-			}
-			prevpch = pch;
-			pch = strtok(NULL, "/");
-		}
-		if (strlen(directory) != 0) {
-			struct stat st;
-			if (stat(directory, &st) != 0) {
-				perror(directory);
-				ostringstream ost;
-				ost << "Please create directory " << dir << " before running genfamily.\n";
-				throw std::runtime_error(ost.str().c_str());
-			}
-		}
+	if (dirname.empty())
+		throw std::runtime_error("No directory name specified");
+
+	size_t chr = dirname.find_last_of("/\\");
+	if (chr == string::npos)
+		throw std::runtime_error("Usage: genfamily directory/fileprefix -t integer");
+
+	string directory = dirname.substr(0, chr);
+
+	struct stat st;
+	if (stat(directory.c_str(), &st) != 0) {
+		perror(directory.c_str());
+		ostringstream ost;
+		ost << "Directory " << directory << " does not exist. It must be created before running genfamily.\n";
+		throw std::runtime_error(ost.str().c_str());
 	}
 }
 
@@ -640,9 +631,7 @@ int cafe_cmd_generate_random_family(Globals& globals, std::vector<std::string> t
 
 	if (tokens.size() == 1)
 	{
-		ostringstream ost;
-		ost << "Usage: " << tokens[0] << " file\n";
-		throw std::runtime_error(ost.str().c_str());
+		throw std::runtime_error("Usage: genfamily directory/fileprefix -t integer");
 	}
 
 	verify_directory(tokens[1]);
@@ -656,7 +645,7 @@ int cafe_cmd_generate_random_family(Globals& globals, std::vector<std::string> t
 
 	int num_families = 0;
 	if (param->root_dist == NULL) {
-		prereqs(param, REQUIRES_FAMILY);
+		prereqs(param, REQUIRES_FAMILY | REQUIRES_LAMBDA);
 
 		num_families = param->pfamily->flist->size;
 		param->param_set_func(param, param->parameters);
