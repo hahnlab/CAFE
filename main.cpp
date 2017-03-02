@@ -12,12 +12,16 @@ extern "C" {
 #include "cafe_commands.h"
 #include "Globals.h"
 
+#ifdef USE_READLINE
+#include <readline/readline.h>
+#include <readline/history.h>
+#endif
+
 const char* __date__ = __DATE__;
 
 int main(int argc, char* argv[])
 {
 	//int i = 0;
-	char prompt[STRING_BUF_SIZE];
 	Globals globals;
 	srand((unsigned int)time(NULL));
 	int shell = 0;
@@ -33,9 +37,17 @@ int main(int argc, char* argv[])
 	{
 		while(shell !=  CAFE_SHELL_EXIT )
 		{
-			printf("%s", "# "); 
+#ifdef USE_READLINE
+			char *prompt = readline("# ");
+			if (prompt == NULL)
+				return -1;
+			add_history(prompt); 
+#else
+			char prompt[STRING_BUF_SIZE];
+			printf("%s", "# ");
 			if (!fgets(prompt,STRING_BUF_SIZE,stdin))
 				return -1;
+#endif
 			shell = cafe_shell_dispatch_command(globals, prompt);
 		}
 	}

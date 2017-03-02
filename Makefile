@@ -49,6 +49,12 @@ TESTOBJS=$(addprefix $(TESTDIR)/, $(TESTSRCS:.cpp=.o)) $(addprefix $(TESTDIR)/, 
 TESTCFLAGS = -g -rdynamic -O0 -DDEBUG
 TESTCPPFLAGS = -g -rdynamic -O0 -DDEBUG
 
+ifdef USE_READLINE
+        RELCFLAGS += -DUSE_READLINE
+        DBGCFLAGS += -DUSE_READLINE
+        LINKFLAGS += -lreadline
+endif
+
 .PHONY: all clean debug prep release remake test
 
 # Default build
@@ -111,4 +117,5 @@ prep:
 remake: clean all
 
 clean:
-	rm -f $(RELEXE) $(RELOBJS) $(DBGEXE) $(DBGOBJS) $(TESTEXE) $(TESTOBJS)
+	rm -f $(RELEXE) $(RELOBJS) $(DBGEXE) $(DBGOBJS) $(TESTEXE) $(TESTOBJS) $(DBGDIR)/main.o $(RELDIR)/main.o
+
