@@ -35,7 +35,7 @@ li a {
 }
 
 nav {
-    font-family: Gill Sans;
+    font-family: 'Gill Sans';
     font-size: 150%;
     text-align: center;
     margin-bottom: 20px;
@@ -49,7 +49,7 @@ nav {
     margin-bottom: 20px;
     line-height: 150%;
     font-size: 120%;
-    font-family: Gill Sans Light; }
+    font-family: 'Gill Sans Light'; }
 
 .header{
     background: rgb(20,50,59);
@@ -87,7 +87,7 @@ li {
     }
 
 p {
-    font-family: Gill Sans Light;
+    font-family: 'Gill Sans Light';
     font-size: 90%;
 }
 
