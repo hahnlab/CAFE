@@ -28,13 +28,22 @@
     margin: 0px auto;
 }
 
-li.normal a:hover {
+a:link {
+color: rgb(0,255,255);
+}
+
+a:visited {
+color: rgb(255,255,0);
+}
+
+li.nav a:hover {
     color: rgb(255,255,255);
     background-position: 0 -25px;
     padding-left: 50px;
+    text-transform: uppercase;
 }
 
-li a {
+li a.nav {
     text-decoration: none;
     color: rgb(255,255,255);
     padding-left: 50px;
@@ -92,8 +101,13 @@ li {
     margin-bottom: 20px;
     margin-left: 20px;
     text-align: left;
-    text-transform: uppercase;
     }
+
+li.downl {
+    list-style-type: decimal;
+    color: rgb(255,255,255);
+    font-size: 90%;
+}
 
 p {
     font-family: 'Gill Sans Light';
