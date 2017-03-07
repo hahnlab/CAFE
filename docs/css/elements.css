@@ -1,0 +1,89 @@
+.logo {
+    background: rgb(20,50,59);
+    margin: 0px auto;
+}
+
+.menulogo{
+    background: rgb(20,50,59);
+    margin: 0px auto;
+}
+
+li.normal a:hover {
+    color: rgb(255,255,255);
+    background-position: 0 -25px;
+    padding-left: 50px;
+}
+
+li a {
+    text-decoration: none;
+    color: rgb(255,255,255);
+    padding-left: 50px;
+    display: inline-block;
+    height: 24px;
+    background: url('../images/coffee_button.png') no-repeat 0 0;
+}
+
+nav {
+    font-family: Gill Sans;
+    font-size: 150%;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.content {
+    color: rgb(255,255,255);
+    background: rgb(20,50,59);
+    padding: 0px 10px 0px 10px;
+    margin: 0px auto;
+    margin-bottom: 20px;
+    line-height: 150%;
+    font-size: 120%;
+    font-family: "Gill Sans", "Gill Sans MT", Calibri, sans-serif; }
+
+.header{
+    background: rgb(20,50,59);
+    height: 180px;
+    margin: 0px auto;
+}
+
+.foot {
+    background: rgb(20,50,59);
+    margin: 0px auto;
+    text-align: center;
+    font-family: Futura;
+}
+
+h1 { color: rgb(255,255,255);
+     margin-top: 20px;
+     font-family: Futura;
+     font-size: 130%;
+     text-weight: lighter; }
+
+h2 { color: rgb(255,255,255);
+     font-family: Futura;
+     font-size: 105%;
+     text-weight: lighter; }
+
+li {
+    list-style-type: none;
+    color: rgb(209,210,212);
+    font-size: 80%
+    margin: 0px auto;
+    margin-bottom: 20px;
+    margin-left: 20px;
+    text-align: left;
+    text-transform: uppercase;
+    }
+
+p {
+    font-family: Gill Sans;
+    font-size: 90%;
+    font-weight: lighter;
+}
+
+p.indented {
+    padding-left: 30px;
+}
+
+body {
+    background: rgb(20,50,59); }
