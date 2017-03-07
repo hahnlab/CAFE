@@ -1,4 +1,5 @@
-#include<regexpress.h>
+#include "regexpress.h"
+#include "memalloc.h"
 
 pArrayList regex_split(char* pattern, char* string)
 {

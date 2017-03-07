@@ -1,9 +1,10 @@
-#include<utils.h>
 #include<stdlib.h>
 #include<stdio.h>
 #include<stdarg.h>
 #include<errno.h>
 #include<time.h>
+#include "utils.h"
+#include "memalloc.h"
 
 int __cmp_int(const void* a, const void* b)
 {
@@ -26,14 +27,6 @@ void print_error(char* file, char* function, int line, char* message, ... )
 	va_end(ap);
 	fprintf(stderr,"%s:%s:%d: %s\n", file,function,line, buf );
 	exit(errno);
-}
-
-char* get_current_time()
-{
-	struct tm dtm;
-	time_t t;	
-	time(&t);
-	return asctime(localtime_r(&t,&dtm));
 }
 
 /********************************************************************
@@ -364,7 +357,7 @@ void* stack_pop(pStack pstack)
 	return data;	
 }
 
-int stack_is_empty(pStack pstack)
+int stack_has_items(pStack pstack)
 {
 	return pstack->size;
 }

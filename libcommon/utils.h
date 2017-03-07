@@ -1,7 +1,8 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
-#include<memalloc.h>
+#include <stdio.h>
+
 #include<stdint.h>
 
 typedef void (*freefunc)(void*);
@@ -72,14 +73,13 @@ extern pStack stack_new();
 extern void stack_free(pStack pstack);
 extern void stack_push(pStack pstack, void* data);
 extern void* stack_pop(pStack pstack);
-extern int stack_is_empty(pStack pstack);
+extern int stack_has_items(pStack pstack);
 
 
 /********************************************************************
  * Etc
  ********************************************************************/
 extern void print_error(char* file, char* function, int line, char* message, ... );
-extern char* get_current_time();
 extern int __cmp_int(const void* a, const void* b);
 extern int __cmp_double(const void* a, const void* b);
 

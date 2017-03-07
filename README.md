@@ -33,3 +33,8 @@ given average rates of gain and loss
 1.  numbers of gene families with expansions, contractions, or no change
 along each branch in the tree
 
+INSTALL
+
+Run "make" from the home directory. If the readline library is available on the system, running
+"make USE_READLINE=1" will allow CAFE to support a command line history.
+

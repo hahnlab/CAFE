@@ -1,0 +1,18 @@
+language: c
+sudo: required
+dist: trusty
+before_install:
+- sudo apt-get install CppUTest doxygen graphviz
+script:
+- cd $TRAVIS_BUILD_DIR
+- make
+- make test
+- cd test
+- ./runtests
+- cd $TRAVIS_BUILD_DIR/src_docs
+- doxygen doxygen.cfg
+after_success:
+- cd $TRAVIS_BUILD_DIR/src_docs
+- ./publish.sh
+notifications:
+  slack: hahnlab-cafe:qWd7TTjmDiENiF99zgek98Rr
