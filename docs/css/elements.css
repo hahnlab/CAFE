@@ -1,6 +1,5 @@
 @font-face {
   font-family: 'Gill Sans';
-  src: url('font-gill-sans.woff') format('woff'), /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
   src: url('font-gill-sans.ttf') format('truetype'); /* Chrome 4+, Firefox 3.5, Opera 10+, Safari 3—5 */
 }
 
