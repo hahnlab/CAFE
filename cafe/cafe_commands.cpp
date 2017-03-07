@@ -241,17 +241,6 @@ int cafe_cmd_version(Globals& globals, std::vector<std::string> tokens)
 
 /**
 \ingroup Commands
-\brief Logs various pieces of information about the application state
-*
-*/
-int cafe_cmd_print_param(Globals& globals, std::vector<std::string> tokens)
-{
-	log_param_values(&globals.param);
-	return 0;
-}
-
-/**
-\ingroup Commands
 \brief Executes a series of commands from a CAFE command file
 *
 */
@@ -372,59 +361,6 @@ void prereqs(pCafeParam param, int flags)
 		if (!pcf->error_ptr && !pcf->errors)
 			throw std::runtime_error("ERROR: No error model has been set. Please set an error model with the 'errormodel' command.\n");
 	}
-}
-
-/**
-\ingroup Commands
-\brief Write gains and losses
-*
-*/
-int cafe_cmd_gainloss(Globals& globals, std::vector<std::string> tokens)
-{
-	pCafeParam param = &globals.param;
-	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE | REQUIRES_LAMBDA);
-
-	if (globals.viterbi->viterbiNodeFamilysizes == NULL)
-	{
-		if (ConditionalDistribution::matrix.empty())
-		{
-			param->param_set_func(param, param->parameters);
-			reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
-			ConditionalDistribution::reset(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
-		}
-		pArrayList cd = ConditionalDistribution::to_arraylist();
-		cafe_viterbi(param, *globals.viterbi, cd);
-		arraylist_free(cd, NULL);
-	}
-
-	string name = tokens[1] + ".gs";
-	ofstream ofst(name.c_str());
-	//FILE* fout = fopen(name.c_str(), "w");
-
-	pCafeTree pcafe = param->pcafe;
-	pCafeTree psum = cafe_tree_copy(pcafe);
-
-	clear_tree_viterbis(psum);
-
-	int totalsum = 0;
-	int** nodefs = globals.viterbi->viterbiNodeFamilysizes;
-	int fsize = param->pfamily->flist->size;
-
-	for (int i = 0; i < fsize; i++)
-	{
-		cafe_family_set_size(param->pfamily, i, pcafe);
-		set_node_familysize(pcafe, nodefs, i);
-		pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
-		totalsum += write_family_gainloss(ofst, pitem->id, pcafe, psum);
-	}
-	ofst << "SUM\t" << totalsum << "\t";
-	pString pstr = phylogeny_string((pTree)psum, __cafe_tree_string_sum_gainloss);
-	ofst << pstr->buf << "\n";
-	string_free(pstr);
-
-	cafe_tree_free(psum);
-
-	return 0;
 }
 
 vector<Argument> build_argument_list(vector<string> tokens)
@@ -889,92 +825,6 @@ struct family_args get_family_arguments(vector<Argument> pargs)
 
 /**
 \ingroup Commands
-\brief Allows modifications of family data
-*
-* Takes four arguments: --idx, -id, -add, and -filter
-*/
-int cafe_cmd_family(Globals& globals, std::vector<std::string> tokens)
-{
-	pCafeParam param = &globals.param;
-
-	prereqs(param, REQUIRES_FAMILY);
-
-	int i, idx = 0;
-	pCafeFamilyItem pitem = NULL;
-	struct family_args args = get_family_arguments(build_argument_list(tokens));
-
-	if (!args.item_id.empty())
-	{
-		args.idx = cafe_family_get_index(param->pfamily, args.item_id.c_str());
-	}
-	else if (!args.add_id.empty())
-	{
-		pCafeFamily pcf = param->pfamily;
-		if (pcf == NULL)
-		{
-			pcf = (pCafeFamily)memory_new(1, sizeof(CafeFamily));
-			pcf->flist = arraylist_new(11000);
-			pArrayList nlist = param->pcafe->super.nlist;
-			pcf->num_species = (nlist->size + 1) / 2;
-			pcf->species = (char**)memory_new(pcf->num_species, sizeof(char*));
-			pcf->index = (int*)memory_new(pcf->num_species, sizeof(int));
-			for (i = 0; i < nlist->size; i += 2)
-			{
-				pcf->index[i] = i;
-				pPhylogenyNode pnode = (pPhylogenyNode)nlist->array[i];
-				pcf->species[i] = (char*)memory_new(strlen(pnode->name) + 1, sizeof(char));
-				strcpy(pcf->species[i], pnode->name);
-			}
-			param->pfamily = pcf;
-		}
-		pCafeFamilyItem pitem = (pCafeFamilyItem)memory_new(1, sizeof(CafeFamilyItem));
-		pitem->id = (char*)memory_new(args.add_id.length() + 1, sizeof(char));
-		pitem->ref = -1;
-		pitem->count = (int*)memory_new(pcf->num_species, sizeof(int));
-		pitem->maxlh = -1;
-		pitem->desc = NULL;
-		strcpy(pitem->id, args.add_id.c_str());
-		for (i = 1; i <= pcf->num_species; i++)
-		{
-			pitem->count[pcf->index[i]] = args.values[i];
-		}
-		arraylist_add(pcf->flist, pitem);
-	}
-	else if (args.filter)
-	{
-		prereqs(param, REQUIRES_TREE);
-
-		cafe_family_filter(param);
-		log_param_values(param);
-		return 0;
-	}
-	if (idx < 0)
-	{
-		fprintf(stderr, "ERROR(family): your request not found\n");
-		return -1;
-	}
-	if (idx >= param->pfamily->flist->size)
-	{
-		fprintf(stderr, "ERROR(family): The index range is from 0 to %d\n", param->pfamily->flist->size);
-		return -1;
-	}
-	pitem = (pCafeFamilyItem)param->pfamily->flist->array[idx];
-	if (pitem)
-	{
-		printf("ID: %s\n", pitem->id);
-		printf("Desc: %s\n", pitem->desc);
-		for (i = 0; i < param->pfamily->num_species; i++)
-		{
-			printf("%s: %d\n", param->pfamily->species[i], pitem->count[i]);
-		}
-		if (param->pcafe && probability_cache) __cafe_cmd_viterbi_family_print(idx);
-	}
-
-	return pitem ? 0 : -1;
-}
-
-/**
-\ingroup Commands
 \brief Reports
 *
 */
@@ -989,25 +839,6 @@ int cafe_cmd_report(Globals& globals, std::vector<std::string> tokens)
 	cafe_do_report(param, *globals.viterbi, &params);
 	return 0;
 }
-
-/**
-\ingroup Commands
-\brief Score
-*
-*/
-int cafe_cmd_score(Globals& globals, std::vector<std::string> tokens)
-{
-	pCafeParam param = &globals.param;
-
-	double score = cafe_shell_score();
-	cafe_log(param, "%lf\n", score);
-	if (param->parameterized_k_value > 0) {
-		cafe_family_print_cluster_membership(param);
-	}
-	cafe_tree_set_parameters(param->pcafe, &param->family_size, 0);
-	return 0;
-}
-
 
 template <typename T>
 void write_vector(ostream& ost, vector<T> items, string delimiter)
@@ -1038,29 +869,6 @@ void write_family(ostream& ost, pCafeFamily family)
 		}
 		ost << "\n";
 	}
-}
-
-/**
-\ingroup Commands
-\brief Save
-*
-*/
-int cafe_cmd_save(Globals& globals, std::vector<std::string> tokens)
-{
-	pCafeParam param = &globals.param;
-
-	if (tokens.size() != 2)
-	{
-		throw std::runtime_error("Usage(save): save filename");
-	}
-	ofstream ofst(tokens[1].c_str());
-	if (!ofst)
-	{
-		throw io_error("save", tokens[1], true);
-	}
-	write_family(ofst, param->pfamily);
-
-	return 0;
 }
 
 /**
@@ -1225,70 +1033,6 @@ void viterbi_write(ostream& ost, pCafeTree pcafe, pCafeFamily pfamily)
 	ost << "Score: " << score << "\n";
 }
 
-/**
-\ingroup Commands
-\brief Viterbi
-*
-*/
-int cafe_cmd_viterbi(Globals& globals, std::vector<std::string> tokens)
-{
-	pCafeParam param = &globals.param;
-
-	prereqs(param, REQUIRES_TREE | REQUIRES_LAMBDA);
-	struct viterbi_args args = get_viterbi_arguments(build_argument_list(tokens));
-
-
-	if (args.all)
-	{
-		cafe_tree_set_parameters(param->pcafe, &param->family_size, 0);
-		prereqs(param, REQUIRES_FAMILY);
-		ostream* fp = &cout;
-		ofstream fout;
-		if (!args.file.empty())
-		{
-			fout.open(args.file.c_str());
-			if (fout.fail())
-			{
-				throw io_error("viterbi", args.file, true);
-			}
-			fp = &fout;
-		}
-		viterbi_write(*fp, param->pcafe, param->pfamily);
-	}
-	else if (!args.item_id.empty())
-	{
-		int idx = cafe_family_get_index(param->pfamily, args.item_id.c_str());
-		if (idx == -1)
-		{
-			ostringstream ost;
-			ost << "ERROR(viterbi): " << args.item_id << " not found";
-			throw std::runtime_error(ost.str());
-		}
-		__cafe_cmd_viterbi_family_print(idx);
-	}
-	else if (args.idx >= 0)
-	{
-		if (args.idx > param->pfamily->flist->size)
-		{
-			ostringstream ost;
-			ost << "ERROR(viterbi): Out of range[0~" << param->pfamily->flist->size << "]: " << args.idx;
-			throw std::runtime_error(ost.str());
-		}
-		__cafe_cmd_viterbi_family_print(args.idx);
-	}
-	else if (tokens.size() == 1)
-	{
-		viterbi_print(param->pcafe, cafe_shell_set_familysize());
-	}
-	else
-	{
-		tokens.erase(tokens.begin());
-		viterbi_print(param->pcafe, cafe_shell_parse_familysize((pTree)param->pcafe, tokens));
-	}
-
-	return 0;
-}
-
 void run_viterbi_sim(pCafeTree pcafe, pCafeFamily pfamily, roots& roots)
 {
 	int familysize = pfamily->flist->size;
@@ -1354,172 +1098,6 @@ ostream& operator<<(ostream& os, const Histogram& hist)
 	}
 
 	return os;
-}
-
-/**
-\ingroup Commands
-\brief Runs a simulation to determine how many families are likely to have gone extinct
-
-Arguments: –t parameter gives the number of trials. Logs the total number of extinct families?
-*/
-int cafe_cmd_extinct(Globals& globals, std::vector<std::string> tokens)
-{
-	pCafeParam param = &globals.param;
-
-	prereqs(param, REQUIRES_FAMILY | REQUIRES_LAMBDA | REQUIRES_TREE);
-
-	int familysize = param->pfamily->flist->size;
-	pCafeTree pcafe = param->pcafe;
-	
-	int num_trials = 1000;
-
-	cafe_log(param, ">> Data and Simulation for extinction:\n");
-
-	vector<Argument> args = build_argument_list(tokens);
-	if (args.size() > 0 && !strcmp(args[0].opt, "-t"))
-	{
-		sscanf(args[0].argv[0], "%d", &num_trials);
-	}
-
-	cafe_log(param, "# trials: %d\n", num_trials);
-
-	int i, j;
-	int total_extinct = 0;
-
-	fprintf(stderr, "Data ...\n");
-
-	roots roots;
-	run_viterbi_sim(pcafe, param->pfamily, roots);
-
-	int maxsize = init_histograms(pcafe->rfsize, roots, familysize);
-
-	pHistogram phist_tmp = histogram_new(NULL, 0, 0);
-
-	double* data = (double*)memory_new(maxsize, sizeof(double));
-
-	cafe_log(&globals.param, "*******************  DATA  *************************\n");
-
-	for (i = 1; i <= pcafe->rfsize; i++)
-	{
-		if (roots.num[i])
-		{
-			int k = 0;
-			int sum = 0;
-			for (j = 0; j < familysize; j++)
-			{
-				if (roots.size[j] == i)
-				{
-					data[k++] = roots.extinct[j];
-					sum += roots.extinct[j];
-				}
-			}
-			histogram_set_sparse_data(roots.phist_data[i], data, k);
-			cafe_log(param, "--------------------------------\n");
-			cafe_log(param, "Root Size: %d\n", i);
-			ostringstream ost;
-			ost << *roots.phist_data[i];
-			cafe_log(param, ost.str().c_str());
-
-			//histogram_print(roots.phist_data[i], );
-			if (param->flog != stdout) histogram_print(roots.phist_data[i], NULL);
-			cafe_log(param, "Extinct: %d\n", sum);
-		}
-	}
-
-	fprintf(stderr, "Begin simulation...\n");
-	cafe_log(param, "******************* SIMULATION **********************\n");
-
-	pHistogram** phist_sim_n = (pHistogram**)memory_new_2dim(num_trials, pcafe->rfsize + 1, sizeof(pHistogram));
-
-	double* simdata = (double*)memory_new(familysize, sizeof(double));
-	int t;
-	for (t = 0; t < num_trials; t++)
-	{
-		if (t % 100 == 0 && t != 0)
-		{
-			fprintf(stderr, "\t%d...\n", t);
-		}
-		int f = 0;
-		for (i = 1; i <= pcafe->rfsize; i++)
-		{
-			if (roots.num[i])
-			{
-				int k = 0;
-				int sum = 0;
-				for (j = 0; j < roots.num[i]; j++)
-				{
-					cafe_tree_random_familysize(pcafe, i);
-					simdata[f] = __cafe_cmd_extinct_count_zero((pTree)pcafe);
-					data[k++] = simdata[f];
-					sum += simdata[f];
-					f++;
-				}
-				roots.avg_extinct[i] += sum;
-				histogram_set_sparse_data(phist_tmp, data, k);
-				histogram_merge(roots.phist_sim[i], phist_tmp);
-				phist_sim_n[t][i] = histogram_new(NULL, 0, 0);
-				histogram_merge(phist_sim_n[t][i], phist_tmp);
-			}
-		}
-		histogram_set_sparse_data(phist_tmp, simdata, familysize);
-		histogram_merge(roots.phist_sim[0], phist_tmp);
-		phist_sim_n[t][0] = histogram_new(NULL, 0, 0);
-		histogram_merge(phist_sim_n[t][0], phist_tmp);
-	}
-
-	double* cnt = (double*)memory_new(num_trials, sizeof(double));
-	double avg_total_extinct = 0;
-	for (i = 1; i <= pcafe->rfsize; i++)
-	{
-		if (roots.phist_sim[i])
-		{
-			cafe_log(param, "--------------------------------\n");
-			cafe_log(param, "Root Size: %d\n", i);
-			__hg_print_sim_extinct(phist_sim_n, roots.phist_sim, i, phist_tmp, cnt, num_trials);
-			roots.avg_extinct[i] /= num_trials;
-			avg_total_extinct += roots.avg_extinct[i];
-		}
-	}
-
-
-
-	cafe_log(param, "*******************  ALL *************************\n");
-	cafe_log(param, ">> DATA\n");
-	histogram_print(roots.phist_data[0], param->flog);
-	if (param->flog != stdout) histogram_print(roots.phist_data[0], NULL);
-	cafe_log(param, "Total Extinct: %d\n", total_extinct);
-	cafe_log(param, ">> SIMULATION\n");
-	__hg_print_sim_extinct(phist_sim_n, roots.phist_sim, 0, phist_tmp, cnt, num_trials);
-
-	memory_free(cnt);
-	cnt = NULL;
-
-	for (i = 0; i < pcafe->rfsize; i++)
-	{
-		if (roots.phist_data[i])
-		{
-			histogram_free(roots.phist_data[i]);
-			histogram_free(roots.phist_sim[i]);
-			for (t = 0; t < num_trials; t++)
-			{
-				histogram_free(phist_sim_n[t][i]);
-			}
-		}
-	}
-
-	histogram_free(phist_tmp);
-	memory_free(roots.phist_data);
-	roots.phist_data = NULL;
-	memory_free(roots.phist_sim);
-	roots.phist_sim = NULL;
-	memory_free_2dim((void**)phist_sim_n, num_trials, 0, NULL);
-
-	memory_free(data);
-	data = NULL;
-
-	memory_free(simdata);
-	simdata = NULL;
-	return 0;
 }
 
 struct pvalue_args get_pvalue_arguments(vector<Argument> pargs)
@@ -1902,16 +1480,6 @@ int cafe_cmd_esterror(Globals& globals, std::vector<std::string> tokens)
 
 }
 
-int cafe_cmd_retrieve(Globals& globals, std::vector<std::string> tokens)
-{
-	globals.Clear(1);
-	if (cafe_report_retrieve_data(tokens[1].c_str(), &globals.param, *globals.viterbi) == -1)
-	{
-		return -1;
-	}
-	return 0;
-}
-
 int cafe_cmd_noerrormodel(Globals& globals, std::vector<std::string> tokens)
 {
 	pCafeParam param = &globals.param;
@@ -1981,293 +1549,6 @@ int s_to_i(std::string s)
 	return size;
 }
 
-int cafe_cmd_branchlength(Globals& globals, std::vector<std::string> tokens)
-{
-	pCafeParam param = &globals.param;
-
-	prereqs(param, REQUIRES_TREE);
-
-	pString pstr = cafe_tree_string_with_id(param->pcafe);
-	printf("%s\n", pstr->buf);
-	string_free(pstr);
-	int err = 0;
-
-	if (tokens.size() == 1)
-	{
-		err = cafe_shell_set_branchlength();
-	}
-	else if (tokens.size() > 2)
-	{
-		std::vector<int> lengths(tokens.size()-1);
-		std::transform(tokens.begin() + 1, tokens.end(), lengths.begin(), s_to_i);
-		tree_set_branch_lengths(param->pcafe, lengths);
-	}
-	if (!err)
-	{
-		cafe_tree_string_print(param->pcafe);
-	}
-	if (param->pfamily)
-	{
-		int i;
-		for (i = 0; i < param->pfamily->flist->size; i++)
-		{
-			pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
-			pitem->maxlh = -1;
-		}
-	}
-	return err;
-}
-
-int cafe_cmd_accuracy(Globals& globals, std::vector<std::string> tokens)
-{
-	pCafeParam param = &globals.param;
-
-	std::string truthfile;
-	vector<Argument> args = build_argument_list(tokens);
-	for (size_t i = 0; i < args.size(); i++)
-	{
-		pArgument parg = &args[i];
-
-		if (!strcmp(parg->opt, "-i"))
-		{
-			ostringstream ost;
-			copy(parg->argv, parg->argv + parg->argc, std::ostream_iterator<string>(ost, " "));
-			truthfile = ost.str();
-		}
-	}
-
-	int i, j;
-	pCafeTree pcafe = param->pcafe;
-	double SSE = 0;
-	double MSE = 0;
-	int nodecnt = 0;
-	int errnodecnt = 0;
-	if (!truthfile.empty())
-	{
-		// read in truth data
-		pCafeFamily truthfamily = cafe_family_new(truthfile.c_str(), 1);
-		if (truthfamily == NULL) {
-			fprintf(stderr, "failed to read in true values %s\n", truthfile.c_str());
-			return -1;
-		}
-		pCafeTree truthtree = cafe_tree_copy(pcafe);
-		// set parameters
-		if (truthtree)
-		{
-			cafe_family_set_species_index(truthfamily, truthtree);
-			// compare inferred vs. truth
-			for (i = 0; i< param->pfamily->flist->size; i++)
-			{
-				cafe_family_set_truesize_with_family(truthfamily, i, truthtree);
-				cafe_family_set_size(param->pfamily, i, pcafe);
-				if (param->posterior) {
-					cafe_tree_viterbi_posterior(pcafe, param);
-				}
-				else {
-					cafe_tree_viterbi(pcafe);
-				}
-				// inner node SSE
-				for (j = 1; j<pcafe->super.nlist->size; j = j + 2) {
-					int error = ((pCafeNode)truthtree->super.nlist->array[j])->familysize - ((pCafeNode)pcafe->super.nlist->array[j])->familysize;
-					SSE += pow(error, 2);
-					if (error != 0) { errnodecnt++; }
-					nodecnt++;
-				}
-			}
-			MSE = SSE / nodecnt;
-		}
-
-	}
-	cafe_log(param, "ancestral reconstruction SSE %f MSE %f totalnodes %d errornodes %d\n", SSE, MSE, nodecnt, errnodecnt);
-	return 0;
-}
-
-/**
-\ingroup Commands
-\brief Runs a Monte Carlo simulation against the data and reports the number of extinctions that occurred.
-
-Arguments: -r range Can be specified as a max or a colon-separated range
--t Number of trials to run
-*/
-int cafe_cmd_simextinct(Globals& globals, std::vector<std::string> tokens)
-{
-	pCafeParam param = &globals.param;
-
-	prereqs(param, REQUIRES_TREE | REQUIRES_LAMBDA);
-
-	int num_trials = 10000;
-	int range[2] = { 1, param->family_size.root_max };
-	vector<Argument> args = build_argument_list(tokens);
-	for (size_t i = 0; i < args.size(); i++)
-	{
-		pArgument parg = &args[i];
-
-		if (!strcmp(parg->opt, "-t"))
-		{
-			sscanf(parg->argv[0], "%d", &num_trials);
-		}
-
-		if (!strcmp(parg->opt, "-r"))
-		{
-			if (std::string(parg->argv[0]).find(':') != std::string::npos)
-			{
-				sscanf(parg->argv[0], "%d:%d", &range[0], &range[1]);
-			}
-			else
-			{
-				sscanf(parg->argv[0], "%d", &range[1]);
-				range[0] = range[1];
-			}
-		}
-	}
-
-	cafe_log(param, "Extinction count from Monte Carlo:\n");
-	cafe_log(param, "root range: %d ~ %d\n", range[0], range[1]);
-	cafe_log(param, "# trials: %d\n", num_trials);
-
-	if (range[0] > range[1] || range[1] > param->family_size.root_max)
-	{
-		ostringstream ost;
-		ost << "ERROR(simextinct): -r : 1 ~ " << param->family_size.root_max << "\n";
-		throw std::runtime_error(ost.str());
-	}
-
-	int i, r;
-	unsigned int accu_sum = 0;
-	pHistogram phist_sim = histogram_new(NULL, 0, 0);
-	pHistogram phist_accu = histogram_new(NULL, 0, 0);
-	vector<double> data(num_trials);
-	for (r = range[0]; r <= range[1]; r++)
-	{
-		int cnt_zero = 0;
-		for (i = 0; i < num_trials; i++)
-		{
-			cafe_tree_random_familysize(param->pcafe, r);
-			data[i] = __cafe_cmd_extinct_count_zero((pTree)param->pcafe);
-			cnt_zero += data[i];
-		}
-		cafe_log(param, "------------------------------------------\n");
-		cafe_log(param, "Root size: %d\n", r);
-		histogram_set_sparse_data(phist_sim, &data[0], num_trials);
-		histogram_merge(phist_accu, phist_sim);
-		histogram_print(phist_sim, param->flog);
-		if (param->flog != stdout) histogram_print(phist_sim, NULL);
-		cafe_log(param, "Sum : %d\n", cnt_zero);
-		accu_sum += cnt_zero;
-	}
-
-	cafe_log(param, "------------------------------------------\n");
-	cafe_log(param, "Total\n", r);
-	histogram_print(phist_accu, param->flog);
-	if (param->flog != stdout) histogram_print(phist_accu, NULL);
-	cafe_log(param, "Sum : %d\n", accu_sum);
-
-
-	histogram_free(phist_sim);
-	histogram_free(phist_accu);
-	tree_clear_reg((pTree)param->pcafe);
-	return 0;
-}
-
-/**
-\ingroup Commands
-\brief Cross validation by family
-
-Arguments: -fold 
-*/
-int cafe_cmd_cvfamily(Globals& globals, std::vector<std::string> tokens)
-{
-	pCafeParam param = &globals.param;
-
-	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE | REQUIRES_LAMBDA);
-
-	int cv_fold = 0;
-	vector<Argument> args = build_argument_list(tokens);
-	for (size_t i = 0; i < args.size(); i++)
-	{
-		pArgument parg = &args[i];
-
-		if (!strcmp(parg->opt, "-fold"))
-		{
-			sscanf(parg->argv[0], "%d", &cv_fold);
-		}
-	}
-	
-	double MSE_allfolds = 0;
-	pCafeFamily pcafe_original = param->pfamily;
-
-	if (tokens.size() < 2)
-	{
-		throw std::runtime_error("Usage(cvfamily): cvfamily -fold <num>\n");
-	}
-
-	// set up the training-validation set
-	cafe_family_split_cvfiles_byfamily(param, cv_fold);
-
-	//
-	for (int i = 0; i<cv_fold; i++)
-	{
-		char trainfile[STRING_BUF_SIZE];
-		char queryfile[STRING_BUF_SIZE];
-		char validatefile[STRING_BUF_SIZE];
-		sprintf(trainfile, "%s.%d.train", param->str_fdata->buf, i + 1);
-		sprintf(queryfile, "%s.%d.query", param->str_fdata->buf, i + 1);
-		sprintf(validatefile, "%s.%d.valid", param->str_fdata->buf, i + 1);
-
-		// read in training data
-		pCafeFamily tmpfamily = cafe_family_new(trainfile, 1);
-		if (tmpfamily == NULL) {
-			fprintf(stderr, "failed to read in training data %s\n", trainfile);
-			return -1;
-		}
-		param->pfamily = tmpfamily;
-
-		set_range_from_family(&param->family_size, param->pfamily);
-		if (param->pcafe)
-		{
-			cafe_tree_set_parameters(param->pcafe, &param->family_size, 0);
-			cafe_family_set_species_index(param->pfamily, param->pcafe);
-		}
-		// re-train 
-		if (param->num_mus > 0) {
-			cafe_best_lambda_mu_by_fminsearch(param, param->num_lambdas, param->num_mus, param->parameterized_k_value);
-		}
-		else {
-			cafe_best_lambda_by_fminsearch(param, param->num_lambdas, param->parameterized_k_value);
-		}
-
-		//cross-validate
-		double MSE = _cafe_cross_validate_by_family(queryfile, validatefile, "MSE");
-		MSE_allfolds += MSE;
-		cafe_log(param, "MSE fold %d %f\n", i + 1, MSE);
-
-		cafe_family_free(tmpfamily);
-	}
-	MSE_allfolds = MSE_allfolds / cv_fold;
-	cafe_log(param, "MSE all folds %f\n", MSE_allfolds);
-
-	//re-load the original family file
-	param->pfamily = pcafe_original;
-	set_range_from_family(&param->family_size, param->pfamily);
-
-	if (param->pcafe)
-	{
-		cafe_tree_set_parameters(param->pcafe, &param->family_size, 0);
-		cafe_family_set_species_index(param->pfamily, param->pcafe);
-	}
-	// re-train 
-	if (param->num_mus > 0) {
-		cafe_best_lambda_mu_by_fminsearch(param, param->num_lambdas, param->num_mus, param->parameterized_k_value);
-	}
-	else {
-		cafe_best_lambda_by_fminsearch(param, param->num_lambdas, param->parameterized_k_value);
-	}
-
-	// remove training-validation set
-	cafe_family_clean_cvfiles_byfamily(param, cv_fold);
-	return 0;
-}
-
 std::string get_input_file(std::vector<std::string> tokens)
 {
 	vector<Argument> args = build_argument_list(tokens);
@@ -2284,91 +1565,6 @@ std::string get_input_file(std::vector<std::string> tokens)
 	}
 
 	throw std::runtime_error("No input file specified");
-}
-
-int cafe_cmd_cvspecies(Globals& globals, std::vector<std::string> tokens)
-{
-	pCafeParam param = &globals.param;
-
-	int i;
-	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE | REQUIRES_LAMBDA);
-
-	double MSE_allspecies = 0;
-	pCafeFamily pcafe_original = param->pfamily;
-	int num_species_original = param->pfamily->num_species;
-	char** species_names_original = param->pfamily->species;
-
-	if (tokens.size() < 2)
-	{
-		// set up the training-validation set
-		cafe_family_split_cvfiles_byspecies(param);
-
-		for (i = 0; i<num_species_original; i++) {
-			char trainfile[STRING_BUF_SIZE];
-			char validatefile[STRING_BUF_SIZE];
-			sprintf(trainfile, "%s.%s.train", param->str_fdata->buf, species_names_original[i]);
-			sprintf(validatefile, "%s.%s.valid", param->str_fdata->buf, species_names_original[i]);
-
-			// read in training data
-			pCafeFamily tmpfamily = cafe_family_new(trainfile, 1);
-			if (tmpfamily == NULL) {
-				fprintf(stderr, "failed to read in training data %s\n", trainfile);
-				fprintf(stderr, "did you load the family data with the cross-validation option (load -i <familyfile> -cv)?\n");
-				return -1;
-			}
-			param->pfamily = tmpfamily;
-
-			set_range_from_family(&param->family_size, param->pfamily);
-
-			if (param->pcafe)
-			{
-				cafe_tree_set_parameters(param->pcafe, &param->family_size, 0);
-				cafe_family_set_species_index(param->pfamily, param->pcafe);
-			}
-			// re-train 
-			if (param->num_mus > 0) {
-				cafe_best_lambda_mu_by_fminsearch(param, param->num_lambdas, param->num_mus, param->parameterized_k_value);
-			}
-			else {
-				cafe_best_lambda_by_fminsearch(param, param->num_lambdas, param->parameterized_k_value);
-			}
-
-			//cross-validate
-			double MSE = _cafe_cross_validate_by_species(validatefile, "MSE");
-			MSE_allspecies += MSE;
-			cafe_log(param, "MSE %s %f\n", param->cv_species_name, MSE);
-
-			cafe_family_free(tmpfamily);
-		}
-		MSE_allspecies = MSE_allspecies / num_species_original;
-		cafe_log(param, "MSE all species %f\n", MSE_allspecies);
-
-		//re-load the original family file
-		param->pfamily = pcafe_original;
-		set_range_from_family(&param->family_size, param->pfamily);
-
-		if (param->pcafe)
-		{
-			cafe_tree_set_parameters(param->pcafe, &param->family_size, 0);
-			cafe_family_set_species_index(param->pfamily, param->pcafe);
-		}
-		// re-train 
-		if (param->num_mus > 0) {
-			cafe_best_lambda_mu_by_fminsearch(param, param->num_lambdas, param->num_mus, param->parameterized_k_value);
-		}
-		else {
-			cafe_best_lambda_by_fminsearch(param, param->num_lambdas, param->parameterized_k_value);
-		}
-
-		// remove training-validation set
-		cafe_family_clean_cvfiles_byspecies(param);
-	}
-	else
-	{
-		string validate_file = get_input_file(tokens);
-		_cafe_cross_validate_by_species(validate_file.c_str(), "MSE");
-	}
-	return 0;
 }
 
 /**
@@ -2778,3 +1974,829 @@ int cafe_cmd_lambdamu(Globals& globals, std::vector<std::string> tokens)
 	}
 	return 0;
 }
+
+#ifdef DEBUG
+/**
+\ingroup Commands
+\brief Score
+*
+*/
+int cafe_cmd_score(Globals& globals, std::vector<std::string> tokens)
+{
+	pCafeParam param = &globals.param;
+
+	double score = cafe_shell_score();
+	cafe_log(param, "%lf\n", score);
+	if (param->parameterized_k_value > 0) {
+		cafe_family_print_cluster_membership(param);
+	}
+	cafe_tree_set_parameters(param->pcafe, &param->family_size, 0);
+	return 0;
+}
+
+/**
+\ingroup Commands
+\brief Runs a Monte Carlo simulation against the data and reports the number of extinctions that occurred.
+
+Arguments: -r range Can be specified as a max or a colon-separated range
+-t Number of trials to run
+*/
+int cafe_cmd_simextinct(Globals& globals, std::vector<std::string> tokens)
+{
+	pCafeParam param = &globals.param;
+
+	prereqs(param, REQUIRES_TREE | REQUIRES_LAMBDA);
+
+	int num_trials = 10000;
+	int range[2] = { 1, param->family_size.root_max };
+	vector<Argument> args = build_argument_list(tokens);
+	for (size_t i = 0; i < args.size(); i++)
+	{
+		pArgument parg = &args[i];
+
+		if (!strcmp(parg->opt, "-t"))
+		{
+			sscanf(parg->argv[0], "%d", &num_trials);
+		}
+
+		if (!strcmp(parg->opt, "-r"))
+		{
+			if (std::string(parg->argv[0]).find(':') != std::string::npos)
+			{
+				sscanf(parg->argv[0], "%d:%d", &range[0], &range[1]);
+			}
+			else
+			{
+				sscanf(parg->argv[0], "%d", &range[1]);
+				range[0] = range[1];
+			}
+		}
+	}
+
+	cafe_log(param, "Extinction count from Monte Carlo:\n");
+	cafe_log(param, "root range: %d ~ %d\n", range[0], range[1]);
+	cafe_log(param, "# trials: %d\n", num_trials);
+
+	if (range[0] > range[1] || range[1] > param->family_size.root_max)
+	{
+		ostringstream ost;
+		ost << "ERROR(simextinct): -r : 1 ~ " << param->family_size.root_max << "\n";
+		throw std::runtime_error(ost.str());
+	}
+
+	int i, r;
+	unsigned int accu_sum = 0;
+	pHistogram phist_sim = histogram_new(NULL, 0, 0);
+	pHistogram phist_accu = histogram_new(NULL, 0, 0);
+	vector<double> data(num_trials);
+	for (r = range[0]; r <= range[1]; r++)
+	{
+		int cnt_zero = 0;
+		for (i = 0; i < num_trials; i++)
+		{
+			cafe_tree_random_familysize(param->pcafe, r);
+			data[i] = __cafe_cmd_extinct_count_zero((pTree)param->pcafe);
+			cnt_zero += data[i];
+		}
+		cafe_log(param, "------------------------------------------\n");
+		cafe_log(param, "Root size: %d\n", r);
+		histogram_set_sparse_data(phist_sim, &data[0], num_trials);
+		histogram_merge(phist_accu, phist_sim);
+		histogram_print(phist_sim, param->flog);
+		if (param->flog != stdout) histogram_print(phist_sim, NULL);
+		cafe_log(param, "Sum : %d\n", cnt_zero);
+		accu_sum += cnt_zero;
+	}
+
+	cafe_log(param, "------------------------------------------\n");
+	cafe_log(param, "Total\n", r);
+	histogram_print(phist_accu, param->flog);
+	if (param->flog != stdout) histogram_print(phist_accu, NULL);
+	cafe_log(param, "Sum : %d\n", accu_sum);
+
+
+	histogram_free(phist_sim);
+	histogram_free(phist_accu);
+	tree_clear_reg((pTree)param->pcafe);
+	return 0;
+}
+
+/**
+\ingroup Commands
+\brief Change the length of an individual branch or all branches, based on a file
+
+*/
+int cafe_cmd_branchlength(Globals& globals, std::vector<std::string> tokens)
+{
+	pCafeParam param = &globals.param;
+
+	prereqs(param, REQUIRES_TREE);
+
+	pString pstr = cafe_tree_string_with_id(param->pcafe);
+	printf("%s\n", pstr->buf);
+	string_free(pstr);
+	int err = 0;
+
+	if (tokens.size() == 1)
+	{
+		err = cafe_shell_set_branchlength();
+	}
+	else if (tokens.size() > 2)
+	{
+		std::vector<int> lengths(tokens.size() - 1);
+		std::transform(tokens.begin() + 1, tokens.end(), lengths.begin(), s_to_i);
+		tree_set_branch_lengths(param->pcafe, lengths);
+	}
+	if (!err)
+	{
+		cafe_tree_string_print(param->pcafe);
+	}
+	if (param->pfamily)
+	{
+		int i;
+		for (i = 0; i < param->pfamily->flist->size; i++)
+		{
+			pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
+			pitem->maxlh = -1;
+		}
+	}
+	return err;
+}
+
+/**
+\ingroup Commands
+
+*/
+int cafe_cmd_accuracy(Globals& globals, std::vector<std::string> tokens)
+{
+	pCafeParam param = &globals.param;
+
+	std::string truthfile;
+	vector<Argument> args = build_argument_list(tokens);
+	for (size_t i = 0; i < args.size(); i++)
+	{
+		pArgument parg = &args[i];
+
+		if (!strcmp(parg->opt, "-i"))
+		{
+			ostringstream ost;
+			copy(parg->argv, parg->argv + parg->argc, std::ostream_iterator<string>(ost, " "));
+			truthfile = ost.str();
+		}
+	}
+
+	int i, j;
+	pCafeTree pcafe = param->pcafe;
+	double SSE = 0;
+	double MSE = 0;
+	int nodecnt = 0;
+	int errnodecnt = 0;
+	if (!truthfile.empty())
+	{
+		// read in truth data
+		pCafeFamily truthfamily = cafe_family_new(truthfile.c_str(), 1);
+		if (truthfamily == NULL) {
+			fprintf(stderr, "failed to read in true values %s\n", truthfile.c_str());
+			return -1;
+		}
+		pCafeTree truthtree = cafe_tree_copy(pcafe);
+		// set parameters
+		if (truthtree)
+		{
+			cafe_family_set_species_index(truthfamily, truthtree);
+			// compare inferred vs. truth
+			for (i = 0; i< param->pfamily->flist->size; i++)
+			{
+				cafe_family_set_truesize_with_family(truthfamily, i, truthtree);
+				cafe_family_set_size(param->pfamily, i, pcafe);
+				if (param->posterior) {
+					cafe_tree_viterbi_posterior(pcafe, param);
+				}
+				else {
+					cafe_tree_viterbi(pcafe);
+				}
+				// inner node SSE
+				for (j = 1; j<pcafe->super.nlist->size; j = j + 2) {
+					int error = ((pCafeNode)truthtree->super.nlist->array[j])->familysize - ((pCafeNode)pcafe->super.nlist->array[j])->familysize;
+					SSE += pow(error, 2);
+					if (error != 0) { errnodecnt++; }
+					nodecnt++;
+				}
+			}
+			MSE = SSE / nodecnt;
+		}
+
+	}
+	cafe_log(param, "ancestral reconstruction SSE %f MSE %f totalnodes %d errornodes %d\n", SSE, MSE, nodecnt, errnodecnt);
+	return 0;
+}
+
+/**
+\ingroup Commands
+\brief Write gains and losses
+*
+*/
+int cafe_cmd_gainloss(Globals& globals, std::vector<std::string> tokens)
+{
+	pCafeParam param = &globals.param;
+	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE | REQUIRES_LAMBDA);
+
+	if (globals.viterbi->viterbiNodeFamilysizes == NULL)
+	{
+		if (ConditionalDistribution::matrix.empty())
+		{
+			param->param_set_func(param, param->parameters);
+			reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
+			ConditionalDistribution::reset(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
+		}
+		pArrayList cd = ConditionalDistribution::to_arraylist();
+		cafe_viterbi(param, *globals.viterbi, cd);
+		arraylist_free(cd, NULL);
+	}
+
+	string name = tokens[1] + ".gs";
+	ofstream ofst(name.c_str());
+	//FILE* fout = fopen(name.c_str(), "w");
+
+	pCafeTree pcafe = param->pcafe;
+	pCafeTree psum = cafe_tree_copy(pcafe);
+
+	clear_tree_viterbis(psum);
+
+	int totalsum = 0;
+	int** nodefs = globals.viterbi->viterbiNodeFamilysizes;
+	int fsize = param->pfamily->flist->size;
+
+	for (int i = 0; i < fsize; i++)
+	{
+		cafe_family_set_size(param->pfamily, i, pcafe);
+		set_node_familysize(pcafe, nodefs, i);
+		pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
+		totalsum += write_family_gainloss(ofst, pitem->id, pcafe, psum);
+	}
+	ofst << "SUM\t" << totalsum << "\t";
+	pString pstr = phylogeny_string((pTree)psum, __cafe_tree_string_sum_gainloss);
+	ofst << pstr->buf << "\n";
+	string_free(pstr);
+
+	cafe_tree_free(psum);
+
+	return 0;
+}
+
+/**
+\ingroup Commands
+\brief Logs various pieces of information about the application state
+*
+*/
+int cafe_cmd_print_param(Globals& globals, std::vector<std::string> tokens)
+{
+	log_param_values(&globals.param);
+	return 0;
+}
+
+/**
+\ingroup Commands
+\brief Cross validation by family
+
+Arguments: -fold
+*/
+int cafe_cmd_cvfamily(Globals& globals, std::vector<std::string> tokens)
+{
+	pCafeParam param = &globals.param;
+
+	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE | REQUIRES_LAMBDA);
+
+	int cv_fold = 0;
+	vector<Argument> args = build_argument_list(tokens);
+	for (size_t i = 0; i < args.size(); i++)
+	{
+		pArgument parg = &args[i];
+
+		if (!strcmp(parg->opt, "-fold"))
+		{
+			sscanf(parg->argv[0], "%d", &cv_fold);
+		}
+	}
+
+	double MSE_allfolds = 0;
+	pCafeFamily pcafe_original = param->pfamily;
+
+	if (tokens.size() < 2)
+	{
+		throw std::runtime_error("Usage(cvfamily): cvfamily -fold <num>\n");
+	}
+
+	// set up the training-validation set
+	cafe_family_split_cvfiles_byfamily(param, cv_fold);
+
+	//
+	for (int i = 0; i<cv_fold; i++)
+	{
+		char trainfile[STRING_BUF_SIZE];
+		char queryfile[STRING_BUF_SIZE];
+		char validatefile[STRING_BUF_SIZE];
+		sprintf(trainfile, "%s.%d.train", param->str_fdata->buf, i + 1);
+		sprintf(queryfile, "%s.%d.query", param->str_fdata->buf, i + 1);
+		sprintf(validatefile, "%s.%d.valid", param->str_fdata->buf, i + 1);
+
+		// read in training data
+		pCafeFamily tmpfamily = cafe_family_new(trainfile, 1);
+		if (tmpfamily == NULL) {
+			fprintf(stderr, "failed to read in training data %s\n", trainfile);
+			return -1;
+		}
+		param->pfamily = tmpfamily;
+
+		set_range_from_family(&param->family_size, param->pfamily);
+		if (param->pcafe)
+		{
+			cafe_tree_set_parameters(param->pcafe, &param->family_size, 0);
+			cafe_family_set_species_index(param->pfamily, param->pcafe);
+		}
+		// re-train 
+		if (param->num_mus > 0) {
+			cafe_best_lambda_mu_by_fminsearch(param, param->num_lambdas, param->num_mus, param->parameterized_k_value);
+		}
+		else {
+			cafe_best_lambda_by_fminsearch(param, param->num_lambdas, param->parameterized_k_value);
+		}
+
+		//cross-validate
+		double MSE = _cafe_cross_validate_by_family(queryfile, validatefile, "MSE");
+		MSE_allfolds += MSE;
+		cafe_log(param, "MSE fold %d %f\n", i + 1, MSE);
+
+		cafe_family_free(tmpfamily);
+	}
+	MSE_allfolds = MSE_allfolds / cv_fold;
+	cafe_log(param, "MSE all folds %f\n", MSE_allfolds);
+
+	//re-load the original family file
+	param->pfamily = pcafe_original;
+	set_range_from_family(&param->family_size, param->pfamily);
+
+	if (param->pcafe)
+	{
+		cafe_tree_set_parameters(param->pcafe, &param->family_size, 0);
+		cafe_family_set_species_index(param->pfamily, param->pcafe);
+	}
+	// re-train 
+	if (param->num_mus > 0) {
+		cafe_best_lambda_mu_by_fminsearch(param, param->num_lambdas, param->num_mus, param->parameterized_k_value);
+	}
+	else {
+		cafe_best_lambda_by_fminsearch(param, param->num_lambdas, param->parameterized_k_value);
+	}
+
+	// remove training-validation set
+	cafe_family_clean_cvfiles_byfamily(param, cv_fold);
+	return 0;
+}
+
+/**
+\ingroup Commands
+\brief Cross validation by species
+
+*/
+int cafe_cmd_cvspecies(Globals& globals, std::vector<std::string> tokens)
+{
+	pCafeParam param = &globals.param;
+
+	int i;
+	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE | REQUIRES_LAMBDA);
+
+	double MSE_allspecies = 0;
+	pCafeFamily pcafe_original = param->pfamily;
+	int num_species_original = param->pfamily->num_species;
+	char** species_names_original = param->pfamily->species;
+
+	if (tokens.size() < 2)
+	{
+		// set up the training-validation set
+		cafe_family_split_cvfiles_byspecies(param);
+
+		for (i = 0; i<num_species_original; i++) {
+			char trainfile[STRING_BUF_SIZE];
+			char validatefile[STRING_BUF_SIZE];
+			sprintf(trainfile, "%s.%s.train", param->str_fdata->buf, species_names_original[i]);
+			sprintf(validatefile, "%s.%s.valid", param->str_fdata->buf, species_names_original[i]);
+
+			// read in training data
+			pCafeFamily tmpfamily = cafe_family_new(trainfile, 1);
+			if (tmpfamily == NULL) {
+				fprintf(stderr, "failed to read in training data %s\n", trainfile);
+				fprintf(stderr, "did you load the family data with the cross-validation option (load -i <familyfile> -cv)?\n");
+				return -1;
+			}
+			param->pfamily = tmpfamily;
+
+			set_range_from_family(&param->family_size, param->pfamily);
+
+			if (param->pcafe)
+			{
+				cafe_tree_set_parameters(param->pcafe, &param->family_size, 0);
+				cafe_family_set_species_index(param->pfamily, param->pcafe);
+			}
+			// re-train 
+			if (param->num_mus > 0) {
+				cafe_best_lambda_mu_by_fminsearch(param, param->num_lambdas, param->num_mus, param->parameterized_k_value);
+			}
+			else {
+				cafe_best_lambda_by_fminsearch(param, param->num_lambdas, param->parameterized_k_value);
+			}
+
+			//cross-validate
+			double MSE = _cafe_cross_validate_by_species(validatefile, "MSE");
+			MSE_allspecies += MSE;
+			cafe_log(param, "MSE %s %f\n", param->cv_species_name, MSE);
+
+			cafe_family_free(tmpfamily);
+		}
+		MSE_allspecies = MSE_allspecies / num_species_original;
+		cafe_log(param, "MSE all species %f\n", MSE_allspecies);
+
+		//re-load the original family file
+		param->pfamily = pcafe_original;
+		set_range_from_family(&param->family_size, param->pfamily);
+
+		if (param->pcafe)
+		{
+			cafe_tree_set_parameters(param->pcafe, &param->family_size, 0);
+			cafe_family_set_species_index(param->pfamily, param->pcafe);
+		}
+		// re-train 
+		if (param->num_mus > 0) {
+			cafe_best_lambda_mu_by_fminsearch(param, param->num_lambdas, param->num_mus, param->parameterized_k_value);
+		}
+		else {
+			cafe_best_lambda_by_fminsearch(param, param->num_lambdas, param->parameterized_k_value);
+		}
+
+		// remove training-validation set
+		cafe_family_clean_cvfiles_byspecies(param);
+	}
+	else
+	{
+		string validate_file = get_input_file(tokens);
+		_cafe_cross_validate_by_species(validate_file.c_str(), "MSE");
+	}
+	return 0;
+}
+
+/**
+\ingroup Commands
+\brief Runs a simulation to determine how many families are likely to have gone extinct
+
+Arguments: –t parameter gives the number of trials. Logs the total number of extinct families?
+*/
+int cafe_cmd_extinct(Globals& globals, std::vector<std::string> tokens)
+{
+	pCafeParam param = &globals.param;
+
+	prereqs(param, REQUIRES_FAMILY | REQUIRES_LAMBDA | REQUIRES_TREE);
+
+	int familysize = param->pfamily->flist->size;
+	pCafeTree pcafe = param->pcafe;
+
+	int num_trials = 1000;
+
+	cafe_log(param, ">> Data and Simulation for extinction:\n");
+
+	vector<Argument> args = build_argument_list(tokens);
+	if (args.size() > 0 && !strcmp(args[0].opt, "-t"))
+	{
+		sscanf(args[0].argv[0], "%d", &num_trials);
+	}
+
+	cafe_log(param, "# trials: %d\n", num_trials);
+
+	int i, j;
+	int total_extinct = 0;
+
+	fprintf(stderr, "Data ...\n");
+
+	roots roots;
+	run_viterbi_sim(pcafe, param->pfamily, roots);
+
+	int maxsize = init_histograms(pcafe->rfsize, roots, familysize);
+
+	pHistogram phist_tmp = histogram_new(NULL, 0, 0);
+
+	double* data = (double*)memory_new(maxsize, sizeof(double));
+
+	cafe_log(&globals.param, "*******************  DATA  *************************\n");
+
+	for (i = 1; i <= pcafe->rfsize; i++)
+	{
+		if (roots.num[i])
+		{
+			int k = 0;
+			int sum = 0;
+			for (j = 0; j < familysize; j++)
+			{
+				if (roots.size[j] == i)
+				{
+					data[k++] = roots.extinct[j];
+					sum += roots.extinct[j];
+				}
+			}
+			histogram_set_sparse_data(roots.phist_data[i], data, k);
+			cafe_log(param, "--------------------------------\n");
+			cafe_log(param, "Root Size: %d\n", i);
+			ostringstream ost;
+			ost << *roots.phist_data[i];
+			cafe_log(param, ost.str().c_str());
+
+			//histogram_print(roots.phist_data[i], );
+			if (param->flog != stdout) histogram_print(roots.phist_data[i], NULL);
+			cafe_log(param, "Extinct: %d\n", sum);
+		}
+	}
+
+	fprintf(stderr, "Begin simulation...\n");
+	cafe_log(param, "******************* SIMULATION **********************\n");
+
+	pHistogram** phist_sim_n = (pHistogram**)memory_new_2dim(num_trials, pcafe->rfsize + 1, sizeof(pHistogram));
+
+	double* simdata = (double*)memory_new(familysize, sizeof(double));
+	int t;
+	for (t = 0; t < num_trials; t++)
+	{
+		if (t % 100 == 0 && t != 0)
+		{
+			fprintf(stderr, "\t%d...\n", t);
+		}
+		int f = 0;
+		for (i = 1; i <= pcafe->rfsize; i++)
+		{
+			if (roots.num[i])
+			{
+				int k = 0;
+				int sum = 0;
+				for (j = 0; j < roots.num[i]; j++)
+				{
+					cafe_tree_random_familysize(pcafe, i);
+					simdata[f] = __cafe_cmd_extinct_count_zero((pTree)pcafe);
+					data[k++] = simdata[f];
+					sum += simdata[f];
+					f++;
+				}
+				roots.avg_extinct[i] += sum;
+				histogram_set_sparse_data(phist_tmp, data, k);
+				histogram_merge(roots.phist_sim[i], phist_tmp);
+				phist_sim_n[t][i] = histogram_new(NULL, 0, 0);
+				histogram_merge(phist_sim_n[t][i], phist_tmp);
+			}
+		}
+		histogram_set_sparse_data(phist_tmp, simdata, familysize);
+		histogram_merge(roots.phist_sim[0], phist_tmp);
+		phist_sim_n[t][0] = histogram_new(NULL, 0, 0);
+		histogram_merge(phist_sim_n[t][0], phist_tmp);
+	}
+
+	double* cnt = (double*)memory_new(num_trials, sizeof(double));
+	double avg_total_extinct = 0;
+	for (i = 1; i <= pcafe->rfsize; i++)
+	{
+		if (roots.phist_sim[i])
+		{
+			cafe_log(param, "--------------------------------\n");
+			cafe_log(param, "Root Size: %d\n", i);
+			__hg_print_sim_extinct(phist_sim_n, roots.phist_sim, i, phist_tmp, cnt, num_trials);
+			roots.avg_extinct[i] /= num_trials;
+			avg_total_extinct += roots.avg_extinct[i];
+		}
+	}
+
+
+
+	cafe_log(param, "*******************  ALL *************************\n");
+	cafe_log(param, ">> DATA\n");
+	histogram_print(roots.phist_data[0], param->flog);
+	if (param->flog != stdout) histogram_print(roots.phist_data[0], NULL);
+	cafe_log(param, "Total Extinct: %d\n", total_extinct);
+	cafe_log(param, ">> SIMULATION\n");
+	__hg_print_sim_extinct(phist_sim_n, roots.phist_sim, 0, phist_tmp, cnt, num_trials);
+
+	memory_free(cnt);
+	cnt = NULL;
+
+	for (i = 0; i < pcafe->rfsize; i++)
+	{
+		if (roots.phist_data[i])
+		{
+			histogram_free(roots.phist_data[i]);
+			histogram_free(roots.phist_sim[i]);
+			for (t = 0; t < num_trials; t++)
+			{
+				histogram_free(phist_sim_n[t][i]);
+			}
+		}
+	}
+
+	histogram_free(phist_tmp);
+	memory_free(roots.phist_data);
+	roots.phist_data = NULL;
+	memory_free(roots.phist_sim);
+	roots.phist_sim = NULL;
+	memory_free_2dim((void**)phist_sim_n, num_trials, 0, NULL);
+
+	memory_free(data);
+	data = NULL;
+
+	memory_free(simdata);
+	simdata = NULL;
+	return 0;
+}
+
+/**
+\ingroup Commands
+\brief Allows modifications of family data
+*
+* Takes four arguments: --idx, -id, -add, and -filter
+*/
+int cafe_cmd_family(Globals& globals, std::vector<std::string> tokens)
+{
+	pCafeParam param = &globals.param;
+
+	prereqs(param, REQUIRES_FAMILY);
+
+	int i, idx = 0;
+	pCafeFamilyItem pitem = NULL;
+	struct family_args args = get_family_arguments(build_argument_list(tokens));
+
+	if (!args.item_id.empty())
+	{
+		args.idx = cafe_family_get_index(param->pfamily, args.item_id.c_str());
+	}
+	else if (!args.add_id.empty())
+	{
+		pCafeFamily pcf = param->pfamily;
+		if (pcf == NULL)
+		{
+			pcf = (pCafeFamily)memory_new(1, sizeof(CafeFamily));
+			pcf->flist = arraylist_new(11000);
+			pArrayList nlist = param->pcafe->super.nlist;
+			pcf->num_species = (nlist->size + 1) / 2;
+			pcf->species = (char**)memory_new(pcf->num_species, sizeof(char*));
+			pcf->index = (int*)memory_new(pcf->num_species, sizeof(int));
+			for (i = 0; i < nlist->size; i += 2)
+			{
+				pcf->index[i] = i;
+				pPhylogenyNode pnode = (pPhylogenyNode)nlist->array[i];
+				pcf->species[i] = (char*)memory_new(strlen(pnode->name) + 1, sizeof(char));
+				strcpy(pcf->species[i], pnode->name);
+			}
+			param->pfamily = pcf;
+		}
+		pCafeFamilyItem pitem = (pCafeFamilyItem)memory_new(1, sizeof(CafeFamilyItem));
+		pitem->id = (char*)memory_new(args.add_id.length() + 1, sizeof(char));
+		pitem->ref = -1;
+		pitem->count = (int*)memory_new(pcf->num_species, sizeof(int));
+		pitem->maxlh = -1;
+		pitem->desc = NULL;
+		strcpy(pitem->id, args.add_id.c_str());
+		for (i = 1; i <= pcf->num_species; i++)
+		{
+			pitem->count[pcf->index[i]] = args.values[i];
+		}
+		arraylist_add(pcf->flist, pitem);
+	}
+	else if (args.filter)
+	{
+		prereqs(param, REQUIRES_TREE);
+
+		cafe_family_filter(param);
+		log_param_values(param);
+		return 0;
+	}
+	if (idx < 0)
+	{
+		fprintf(stderr, "ERROR(family): your request not found\n");
+		return -1;
+	}
+	if (idx >= param->pfamily->flist->size)
+	{
+		fprintf(stderr, "ERROR(family): The index range is from 0 to %d\n", param->pfamily->flist->size);
+		return -1;
+	}
+	pitem = (pCafeFamilyItem)param->pfamily->flist->array[idx];
+	if (pitem)
+	{
+		printf("ID: %s\n", pitem->id);
+		printf("Desc: %s\n", pitem->desc);
+		for (i = 0; i < param->pfamily->num_species; i++)
+		{
+			printf("%s: %d\n", param->pfamily->species[i], pitem->count[i]);
+		}
+		if (param->pcafe && probability_cache) __cafe_cmd_viterbi_family_print(idx);
+	}
+
+	return pitem ? 0 : -1;
+}
+
+/**
+\ingroup Commands
+\brief Load program state from a file
+*
+*/
+int cafe_cmd_retrieve(Globals& globals, std::vector<std::string> tokens)
+{
+	globals.Clear(1);
+	if (cafe_report_retrieve_data(tokens[1].c_str(), &globals.param, *globals.viterbi) == -1)
+	{
+		return -1;
+	}
+	return 0;
+}
+
+/**
+\ingroup Commands
+\brief Save
+*
+*/
+int cafe_cmd_save(Globals& globals, std::vector<std::string> tokens)
+{
+	pCafeParam param = &globals.param;
+
+	if (tokens.size() != 2)
+	{
+		throw std::runtime_error("Usage(save): save filename");
+	}
+	ofstream ofst(tokens[1].c_str());
+	if (!ofst)
+	{
+		throw io_error("save", tokens[1], true);
+	}
+	write_family(ofst, param->pfamily);
+
+	return 0;
+}
+
+/**
+\ingroup Commands
+\brief Viterbi
+*
+*/
+int cafe_cmd_viterbi(Globals& globals, std::vector<std::string> tokens)
+{
+	pCafeParam param = &globals.param;
+
+	prereqs(param, REQUIRES_TREE | REQUIRES_LAMBDA);
+	struct viterbi_args args = get_viterbi_arguments(build_argument_list(tokens));
+
+
+	if (args.all)
+	{
+		cafe_tree_set_parameters(param->pcafe, &param->family_size, 0);
+		prereqs(param, REQUIRES_FAMILY);
+		ostream* fp = &cout;
+		ofstream fout;
+		if (!args.file.empty())
+		{
+			fout.open(args.file.c_str());
+			if (fout.fail())
+			{
+				throw io_error("viterbi", args.file, true);
+			}
+			fp = &fout;
+		}
+		viterbi_write(*fp, param->pcafe, param->pfamily);
+	}
+	else if (!args.item_id.empty())
+	{
+		int idx = cafe_family_get_index(param->pfamily, args.item_id.c_str());
+		if (idx == -1)
+		{
+			ostringstream ost;
+			ost << "ERROR(viterbi): " << args.item_id << " not found";
+			throw std::runtime_error(ost.str());
+		}
+		__cafe_cmd_viterbi_family_print(idx);
+	}
+	else if (args.idx >= 0)
+	{
+		if (args.idx > param->pfamily->flist->size)
+		{
+			ostringstream ost;
+			ost << "ERROR(viterbi): Out of range[0~" << param->pfamily->flist->size << "]: " << args.idx;
+			throw std::runtime_error(ost.str());
+		}
+		__cafe_cmd_viterbi_family_print(args.idx);
+	}
+	else if (tokens.size() == 1)
+	{
+		viterbi_print(param->pcafe, cafe_shell_set_familysize());
+	}
+	else
+	{
+		tokens.erase(tokens.begin());
+		viterbi_print(param->pcafe, cafe_shell_parse_familysize((pTree)param->pcafe, tokens));
+	}
+
+	return 0;
+}
+
+
+#endif
