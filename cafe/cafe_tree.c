@@ -60,7 +60,7 @@ void cafe_tree_parse_node(pTree ptree, pTreeNode ptnode)
 	pCafeNode pcnode = (pCafeNode)ptnode;
 	char* name = pcnode->super.name;
 	if ( name == NULL ) return;
-	char* familysize = (char*)index(name,'_');
+	char* familysize = (char*)strchr(name,'_');
 	if ( familysize )
 	{
 		*familysize++ = '\0';

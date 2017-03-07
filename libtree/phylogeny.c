@@ -4,7 +4,11 @@
 #include<sys/types.h>
 #include<utils.h>
 #include<utils_string.h>
+
+#ifdef 	__linux__
 #include<unistd.h>
+#include <strings.h>
+#endif
 
 void phylogeny_clear_node(pPhylogenyNode pnode)
 {
@@ -193,7 +197,7 @@ char* phylogeny_interpret_node(pTree ptree, pTreeNode ptnode, char* sztree)
 						*(char*)(sztree-1) = '\0';
 						i = 0;
 					}
-					char *next = index(sztree,']');	
+					char *next = strchr(sztree,']');	
 					if ( next == NULL ) 
 					{
 						print_error(__FILE__,(char*)__FUNCTION__,__LINE__, "keep format : [&&NHX ... ]");		
@@ -205,9 +209,9 @@ char* phylogeny_interpret_node(pTree ptree, pTreeNode ptnode, char* sztree)
 					char* tmp;
 					while( *++ptr )
 					{
-						char* eq = index(ptr,'=');
+						char* eq = strchr(ptr,'=');
 						*eq++ = '\0';
-						if ( (tmp= index(eq,':')))
+						if ( (tmp= strchr(eq,':')))
 						{
 							*tmp = '\0';
 						}

@@ -55,7 +55,7 @@ int* cafe_report_load_data_int_pairs(char* data, int delimiter)
 void cafe_report_load_viterbi_pvalue(char* data, double** pvalues, int i, int nnodes)
 {	
 	char* next = &data[1];
-	while( (next = index(next, ')' )) != NULL )
+	while( (next = strchr(next, ')' )) != NULL )
 	{
 		next++;
 		if( next[0] == ',' )	

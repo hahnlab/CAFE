@@ -1,5 +1,6 @@
 #include <sstream>
 #include <utility>
+#include <algorithm>
 
 #include "branch_cutting.h"
 #include "conditional_distribution.h"
@@ -119,7 +120,7 @@ void compute_cutpvalues(pCafeTree pparamcafe, pCafeFamily family, int num_random
 			assert(cb.pCDSs[b].first.size() == (size_t)pct->rfsize);
 			cafe_tree_p_values(pct, p1, arr, num_random_samples);
 			arraylist_free(arr, free);
-			viterbi.cutPvalues[b][i] = __max(p1, pcafe->rfsize);
+			viterbi.cutPvalues[b][i] = *std::max_element(p1, p1+pcafe->rfsize);
 		}
 		else
 		{
