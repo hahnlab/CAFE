@@ -1,7 +1,7 @@
 
 #include <stdlib.h>
-#include "utils.h"
 #include "utils_string.h"
+#include "memalloc.h"
 
 pString string_new_step(size_t step)
 {

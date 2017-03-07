@@ -5,6 +5,8 @@
 #include<utils.h>
 #include<utils_string.h>
 
+#include "memalloc.h"
+
 #ifdef 	__linux__
 #include<unistd.h>
 #include <strings.h>

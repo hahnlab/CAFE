@@ -1,7 +1,8 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
-#include<memalloc.h>
+#include <stdio.h>
+
 #include<stdint.h>
 
 typedef void (*freefunc)(void*);

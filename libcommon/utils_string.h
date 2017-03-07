@@ -1,13 +1,10 @@
 #ifndef __UTILS_STRING_H__
 #define __UTILS_STRING_H__
 
-#include<utils.h>
-#include<strings.h>
-#include<stdio.h>
-#include<memalloc.h>
-
 #define STRING_STEP_SIZE 2048
 #define STRING_BUF_SIZE 131072
+
+#include "utils.h"
 
 typedef struct
 {

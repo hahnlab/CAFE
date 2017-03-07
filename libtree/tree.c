@@ -2,6 +2,7 @@
 #include<fcntl.h>
 #include<string.h>
 #include<stdlib.h>
+#include "memalloc.h"
 
 void tree_new_fill(pTree ptree, tree_func_node_new nfunc ) 
 {

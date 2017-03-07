@@ -4,6 +4,7 @@
 #include<errno.h>
 #include<time.h>
 #include "utils.h"
+#include "memalloc.h"
 
 int __cmp_int(const void* a, const void* b)
 {

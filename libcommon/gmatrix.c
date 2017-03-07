@@ -1,6 +1,8 @@
-#include<gmatrix.h>
-#include<utils.h>
 #include<stdarg.h>
+
+#include "gmatrix.h"
+#include "utils.h"
+#include "memalloc.h"
 
 pGMatrix gmatrix_new(int dim, int* size, int datasize )
 {
