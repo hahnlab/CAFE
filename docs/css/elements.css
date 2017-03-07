@@ -8,6 +8,16 @@
   src: url('font-gill-sans-light.ttf') format('truetype');
 }
 
+@font-face{
+  font-family: 'Futura';
+  src: url('font-futura.ttf') format('truetype');
+}
+
+@font-face{
+  font-family: 'Futura Bold';
+  src: url('font-futura-bold.ttf') format('truetype');
+}
+
 .logo {
     background: rgb(20,50,59);
     margin: 0px auto;
@@ -60,19 +70,19 @@ nav {
     background: rgb(20,50,59);
     margin: 0px auto;
     text-align: center;
-    font-family: Futura;
+    font-family: 'Futura';
 }
 
 h1 { color: rgb(255,255,255);
      margin-top: 20px;
-     font-family: Futura;
+     font-family: 'Futura Bold';
      font-size: 130%;
-     text-weight: lighter; }
+}
 
 h2 { color: rgb(255,255,255);
-     font-family: Futura;
+     font-family: 'Futura';
      font-size: 105%;
-     text-weight: lighter; }
+}
 
 li {
     list-style-type: none;
