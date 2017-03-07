@@ -3,6 +3,9 @@
 #include<stdlib.h>
 #include<stdio.h>
 
+#define M_PI           3.14159265358979323846  /* pi */
+#define M_SQRT2    1.41421356237309504880   // sqrt(2)
+
 int __maxidx(double* data, int size )
 {
 	double max = data[0];
@@ -657,7 +660,7 @@ double variance(double* data, int size)
 	return v/(size-1);
 }
 
-double pvalue(double v, double* conddist, int size )
+double pvalue(double v, const double* conddist, int size )
 {
 	int from = 0;
 	int to = size - 1;

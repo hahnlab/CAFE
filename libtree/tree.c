@@ -1,7 +1,8 @@
-#include<tree.h>
+#include "tree.h"
 #include<fcntl.h>
 #include<string.h>
 #include<stdlib.h>
+#include "memalloc.h"
 
 void tree_new_fill(pTree ptree, tree_func_node_new nfunc ) 
 {
@@ -14,7 +15,7 @@ void tree_new_fill(pTree ptree, tree_func_node_new nfunc )
 	ptree->prefix = NULL;
 }
 
-pTree tree_new(tree_func_node_new nfunc, va_list ap1) 
+pTree tree_new(tree_func_node_new nfunc, int size) 
 {
 	pTree ptree = (pTree)memory_new(1,sizeof(Tree));
 	if ( nfunc == NULL ) 
@@ -103,7 +104,7 @@ void tree_traveral_prefix(pTree ptree, tree_func_node func, ...)
 	va_start( ap, func );
 	pStack pstack = stack_new();
 	stack_push(pstack,ptree->root);	
-	while( stack_is_empty(pstack) )
+	while( stack_has_items(pstack) )
 	{
 		pTreeNode pnode = (pTreeNode)stack_pop(pstack);
 		// from right to left
@@ -128,7 +129,7 @@ void tree_traveral_postfix(pTree ptree, tree_func_node func, ...)
 	va_start( ap, func );
 	pStack pstack = stack_new();
 	stack_push(pstack,ptree->root);	
-	while( stack_is_empty(pstack) )
+	while( stack_has_items(pstack) )
 	{
 		pTreeNode pnode = (pTreeNode)pstack->head->data;
 		int visit_count = -1;
@@ -172,7 +173,7 @@ void tree_traveral_infix(pTree ptree, tree_func_node func, ... )
 	va_start( ap, func );
 	pStack pstack = stack_new();
 	stack_push(pstack,ptree->root);	
-	while( stack_is_empty(pstack) )
+	while( stack_has_items(pstack) )
 	{
 		pTreeNode pnode = (pTreeNode)pstack->head->data;
 		if ( pnode->children )

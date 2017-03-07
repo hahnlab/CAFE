@@ -1,0 +1,20 @@
+Installation Instructions
+*************************
+
+This release provides a precompiled binary file suitable for execution on a Linux machine. If you would prefer to compile your own version, download the source code and run the following commands:
+
+Installation from Source
+========================
+* cd to the root directory of the CAFE source
+* Type "make"
+* The cafe executable will be built in the "release" directory.
+
+Optional Feature
+================
+If the GNU readline library is installed on your system and you wish to use it to provide a command history for CAFE, instead type the following command: "make USE_READLINE=1"
+
+
+Basic Installation
+==================
+Copy the binary file "release/cafe" to somewhere on your path. /usr/local/bin is often used.
+

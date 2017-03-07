@@ -18,6 +18,11 @@ typedef struct tagTree
 	pArrayList   postfix, prefix;
 }Tree;
 
+/**
+	Simple structure representing a generic node in a generic tree. Has an ID and
+	pointers to parent and children. Implementers of tree_func_node_new are
+	expected to return a value that can be cast to this structure.
+*/
 typedef struct tagTreeNode 
 {
 	pTreeNode 	parent;
@@ -31,11 +36,11 @@ typedef struct tagTreeNode
 ****************************************************************************/
 
 typedef pTreeNode (*tree_func_node_new)(pTree ptree);
-typedef pTree (*tree_func_new)(tree_func_node_new nfunc, va_list ap);
+typedef pTree (*tree_func_new)(tree_func_node_new nfunc, int size);
 typedef void (*tree_func_node)(pTree ptree, pTreeNode pnode, va_list ap);
 typedef void (*tree_func_node_copy)(pTreeNode psrc, pTreeNode pdest );
 
-extern pTree tree_new(tree_func_node_new nfunc, va_list ap);
+extern pTree tree_new(tree_func_node_new nfunc, int size);
 extern void tree_new_fill(pTree ptree, tree_func_node_new nfunc ) ;
 extern void tree_free(pTree ptree);
 extern pTreeNode tree_new_empty_node();
@@ -83,7 +88,7 @@ extern void phylogeny_node_copy(pTreeNode psrc, pTreeNode pdest );
 extern pTree phylogeny_load_from_string(char* sztree, 
 								 tree_func_new new_tree_func, 
 								 tree_func_node_new new_tree_node_func, 
-		                         phylogeny_func_parse_node parsefunc, ... );
+		                         phylogeny_func_parse_node parsefunc, int size);
 extern pTree phylogeny_root_tree(pTree ptree, 
 							tree_func_node_new new_tree_node_func, 
 							phylogeny_func_parse_node parsefunc, ... );
@@ -93,7 +98,7 @@ extern pTree phylogeny_load_from_file(char* sztree,
 		                         phylogeny_func_parse_node parsefunc );
 extern void phylogeny_free(pTree ptree);
 
-extern pTreeNode phylogeny_new_empty_node();
+extern pTreeNode phylogeny_new_empty_node(pTree ptree);
 extern void phylogeny_clear_node(pPhylogenyNode pnode);
 extern pTree phylogeny_copy(pTree psrc);
 extern pTree phylogeny_new(char* sztree, phylogeny_func_parse_node parsefunc );
@@ -109,101 +114,6 @@ extern pString phylogeny_string_newick(pTree ptree, phylogeny_func_name_modify f
 #define PS_SKIP_BL	0x1000
 #define PS_NWICK	0x0000
 #define PS_NHX 		0x0FFE
-
-/****************************************************************************
- * Paml
-****************************************************************************/
-
-typedef struct
-{
-	PhylogenyNode super;
-	double N, S;
-	double dN, dS, omega;
-	double accudS;
-}PamlNode;
-typedef PamlNode* pPamlNode;
-
-typedef struct
-{
-	Tree super;
-	int    num_genes;
-	char** gene_names;
-	int    model;
-	double* omega;
-	double* prob;
-	double  lnL;
-	double  meanOmega;
-	pPamlNode* nodelist;
-	double** nei_gojobori_w;
-	double** nei_gojobori_dN;
-	double** nei_gojobori_dS;
-}PamlTree;
-
-typedef PamlTree* pPamlTree;
-
-extern pPamlTree paml_tree_new(char* file);
-extern void paml_tree_free(pPamlTree ptree);
-extern pString paml_tree_metapost(pPamlTree ptree, int id, char* title, double width, double height);
-extern void paml_tree_print_info(pPamlTree ptree);
-extern pString paml_tree_string(pPamlTree ptree);
-extern void paml_tree_accu_dS_from_root(pPamlTree ptree);
-extern void paml_tree_accu_dS_from_node(pPamlTree ptree, pPamlNode pstartnode, double** dS_matrix);
-extern void paml_tree_accu_dS_from_bottom_with_longer_dS(pPamlTree ptree);
-extern void paml_tree_accu_dS_from_bottom_with_average_dS(pPamlTree ptree);
-extern int paml_tree_get_nodes_over_threshold(pPamlTree ptree, double threshold, int* rtn);
-extern double paml_tree_average_nei_gojobori(pPamlTree ptree);
-extern double paml_tree_average_w(pPamlTree ptree);
-extern int paml_tree_check_significant(pPamlTree ptree, pPamlTree parg, double t);
-extern int paml_tree_delete_nodes_by_reg( pPamlTree ptree, tree_func_node freenode );
-extern int paml_tree_delete_node( pPamlTree ptree, pPamlNode pnode, tree_func_node freenode );
-extern pTree paml_tree_split_tree(pTree ptree, pTreeNode pnode, tree_func_node freenode );
-
-/****************************************************************************
- * Gene and Species Tree
-****************************************************************************/
-typedef struct
-{
-	PhylogenyNode super;
-	pVector vsubspecies;
-	int* 	mask;
-	int 	gain;
-	int 	numduplicated;
-	int 	size;			// family size
-}SpeciesTreeNode;
-
-typedef SpeciesTreeNode* pSpeciesTreeNode;
-
-typedef struct
-{
-	PhylogenyNode super;
-	pVector vsubspecies;
-	pSpeciesTreeNode psnode;
-}GeneTreeNode;
-
-typedef struct
-{
-	Tree super;
-	pTree species_tree;
-	int* species_tid;
-}GeneTree;
-
-typedef GeneTree* pGeneTree;
-
-typedef GeneTreeNode* pGeneTreeNode;
-
-extern void gene_tree_free(pGeneTree ptree);
-extern void species_tree_free(pTree ptree);
-extern pTree species_tree_new(char* sztree, phylogeny_func_parse_node fparse );
-extern pGeneTree gene_tree_new(char* sztree, pTree pstree, phylogeny_func_parse_node fparse );
-extern pString gene_tree_string(pGeneTree ptree, int mode);
-extern pString species_tree_string(pTree ptree, int mode);
-extern int gene_tree_map_species(pGeneTree pgtree);
-extern int gene_tree_duplication_count(pGeneTree pgtree);
-extern void gene_tree_duplication_count_report(pTree pstree, FILE* fout);
-extern void species_tree_clear_gain(pTree pstree);
-
-extern pString species_tree_metapost(pTree pstree, int id, char* title, double width, double height );
-extern pString gene_tree_metapost(pGeneTree pstree, int id, char* title, double width, double height );
 
 /****************************************************************************
  * MetaPhost Config

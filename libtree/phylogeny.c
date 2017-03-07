@@ -1,11 +1,16 @@
-#include<tree.h>
-#include<io.h>
+#include "tree.h"
 #include<string.h>
 #include<stdlib.h>
 #include<sys/types.h>
 #include<utils.h>
 #include<utils_string.h>
+
+#include "memalloc.h"
+
+#ifdef 	__linux__
 #include<unistd.h>
+#include <strings.h>
+#endif
 
 void phylogeny_clear_node(pPhylogenyNode pnode)
 {
@@ -150,24 +155,6 @@ void phylogeny_free(pTree ptree)
 }
 
 
-pTree phylogeny_load_from_file(char* fname,
-							   tree_func_new new_tree_func, 
-							   tree_func_node_new new_tree_node_func, 
-		                       phylogeny_func_parse_node parsefunc )
-{
-	int i;
-	char* sztree = file_read_all(fname);	
-	for( i = 0 ; i < sztree[i]; i++ )
-	{
-		if ( sztree[i] == '\n' ) sztree[i] = ' ';
-	}
-	pTree ptree = phylogeny_load_from_string(sztree, new_tree_func, 
-							   new_tree_node_func, parsefunc ); 
-	memory_free(sztree);
-	sztree = NULL;
-	return ptree;
-}
-
 char* phylogeny_interpret_node(pTree ptree, pTreeNode ptnode, char* sztree)
 {
 	register char c;
@@ -212,7 +199,7 @@ char* phylogeny_interpret_node(pTree ptree, pTreeNode ptnode, char* sztree)
 						*(char*)(sztree-1) = '\0';
 						i = 0;
 					}
-					char *next = index(sztree,']');	
+					char *next = strchr(sztree,']');	
 					if ( next == NULL ) 
 					{
 						print_error(__FILE__,(char*)__FUNCTION__,__LINE__, "keep format : [&&NHX ... ]");		
@@ -224,9 +211,9 @@ char* phylogeny_interpret_node(pTree ptree, pTreeNode ptnode, char* sztree)
 					char* tmp;
 					while( *++ptr )
 					{
-						char* eq = index(ptr,'=');
+						char* eq = strchr(ptr,'=');
 						*eq++ = '\0';
-						if ( (tmp= index(eq,':')))
+						if ( (tmp= strchr(eq,':')))
 						{
 							*tmp = '\0';
 						}
@@ -295,7 +282,6 @@ int phylogeny_check_tree_string(char* sztree)
 	size_t len = strlen(sztree);
 	int i,grp_cnt = 0; 
 	uintptr_t leaf_cnt = -1;
-	int start = 0;
 	int err = 0;
 	pStack pstack = stack_new();
 	for ( i = 0 ; i < len ; i++ )
@@ -303,21 +289,12 @@ int phylogeny_check_tree_string(char* sztree)
 		if ( sztree[i] == ' ' ) continue;
 		if ( sztree[i] == '(' ) 
 		{
-			start = i;
 			if ( leaf_cnt != -1 ) stack_push( pstack, (void*)leaf_cnt );
 			leaf_cnt = 0;
 			grp_cnt++;
 		}
 		else if ( sztree[i] == ')') 
 		{
-/*			if ( leaf_cnt != 1 )
-			{
-				char buf[STRING_STEP_SIZE];
-				strncpy( buf, &sztree[start], i - start + 1);
-				buf[i-start+1] = '\0';
-				fprintf(stderr,"Each node must contain two leaves. Check %s\n", buf );
-				err = 2;
-			}*/
 			leaf_cnt = (uintptr_t)stack_pop( pstack );
 			grp_cnt--;
 		}
@@ -328,7 +305,7 @@ int phylogeny_check_tree_string(char* sztree)
 	}
 	if ( grp_cnt != 0 )
 	{
-		fprintf( stderr, "Unbalance of paranthesis\n");
+		fprintf(stderr, "Tree error (Unbalanced parentheses): %s\n", sztree);
 		err = 1;
 	}	
 	stack_free(pstack);
@@ -338,12 +315,9 @@ int phylogeny_check_tree_string(char* sztree)
 pTree phylogeny_load_from_string(char* sztree, 
 								 tree_func_new new_tree_func, 
 								 tree_func_node_new new_tree_node_func, 
-		                         phylogeny_func_parse_node parsefunc, ... )
+		                         phylogeny_func_parse_node parsefunc, int size)
 {
-	va_list ap; 
-	va_start(ap,parsefunc);
-	pTree ptree = new_tree_func(new_tree_node_func, ap);
-	va_end(ap);
+	pTree ptree = new_tree_func(new_tree_node_func, size);
 	ptree->data = vector_new();
 	pTreeNode cur = ptree->root;
 	int bfirst = 1;
@@ -514,7 +488,7 @@ pString phylogeny_string(pTree ptree, phylogeny_func_name_modify fmod)
 	pString pstr = string_new();
 	pStack pstack = stack_new();
 	stack_push(pstack,ptree->root);	
-	while( stack_is_empty(pstack) )
+	while( stack_has_items(pstack) )
 	{
 		pTreeNode ptnode = (pTreeNode)pstack->head->data;
 		pPhylogenyNode pnode = (pPhylogenyNode)ptnode;
@@ -569,7 +543,7 @@ pString phylogeny_string(pTree ptree, phylogeny_func_name_modify fmod)
 
 pTree phylogeny_new(char* sztree, phylogeny_func_parse_node parsefunc )
 {
-	return	phylogeny_load_from_string(sztree, tree_new, phylogeny_new_empty_node, parsefunc );
+	return	phylogeny_load_from_string(sztree, tree_new, phylogeny_new_empty_node, parsefunc, 0 );
 }
 
 pTree phylogeny_copy(pTree psrc)

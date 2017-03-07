@@ -1,7 +1,7 @@
 
 #include <stdlib.h>
-#include "utils.h"
 #include "utils_string.h"
+#include "memalloc.h"
 
 pString string_new_step(size_t step)
 {
@@ -18,7 +18,7 @@ pString string_new()
 	return string_new_step(STRING_STEP_SIZE);
 }
 
-pString string_new_with_string(char* newstr )
+pString string_new_with_string(const char* newstr )
 {
 	size_t len = strlen(newstr);
 	pString pstr = string_new_step(len+1);		
@@ -48,7 +48,7 @@ void string_reset(pString pstr)
 	pstr->buf[0] = '\0';
 }
 
-void string_add(pString pstr, char* add)
+void string_add(pString pstr, const char* add)
 {
 	size_t len = strlen(add);
 	if ( pstr->alloc_size < len + pstr->length )	
@@ -65,7 +65,7 @@ void string_add(pString pstr, char* add)
 	pstr->length += len;
 }
 
-void string_fadd(pString pstr, char* msg, ... )
+void string_fadd(pString pstr, const char* msg, ... )
 {
 	char buf[STRING_BUF_SIZE];
 	va_list ap;
@@ -247,7 +247,7 @@ void string_pchar_join(char* buf, char* stuff, int num, char** list)
 	}
 }
 
-pString string_join(char* stuff, int num, char** list)
+pString string_join(const char* stuff, int num, char** list)
 {
 	int i;
 	pString pstr = string_new_with_string(list[0]);
