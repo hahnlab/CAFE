@@ -28,10 +28,17 @@ int main(int argc, char* argv[])
 	if ( argc == 2 )
 	{
 		std::vector<std::string> tokens;
-		tokens.push_back(argv[0]);
-		tokens.push_back(argv[1]);
-		cafe_cmd_source(globals, tokens);
-		cafe_cmd_exit(globals, tokens);
+		if (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)
+		{
+			write_version(std::cout);
+		}
+		else
+		{
+			tokens.push_back(argv[0]);
+			tokens.push_back(argv[1]);
+			cafe_cmd_source(globals, tokens);
+			cafe_cmd_exit(globals, tokens);
+		}
 	}
 	else
 	{

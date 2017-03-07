@@ -72,7 +72,6 @@ using namespace std;
 map<string, cafe_command2> get_dispatcher()
 {
 	map<string, cafe_command2> dispatcher;
-	dispatcher["gainloss"] = cafe_cmd_gainloss;
 	dispatcher["source"] = cafe_cmd_source;
 	dispatcher["lambda"] = cafe_cmd_lambda;
 	dispatcher["?"] = cafe_cmd_list;
@@ -84,28 +83,31 @@ map<string, cafe_command2> get_dispatcher()
 	dispatcher["genfamily"] = cafe_cmd_generate_random_family;
 	dispatcher["log"] = cafe_cmd_log;
 	dispatcher["version"] = cafe_cmd_version;
-	dispatcher["info"] = cafe_cmd_print_param;
 	dispatcher["load"] = cafe_cmd_load;
-	dispatcher["family"] = cafe_cmd_family;
-	dispatcher["score"] = cafe_cmd_score;
-	dispatcher["save"] = cafe_cmd_save;
 	dispatcher["tree"] = cafe_cmd_tree;
-	dispatcher["extinct"] = cafe_cmd_extinct;
-	dispatcher["viterbi"] = cafe_cmd_viterbi;
 	dispatcher["pvalue"] = cafe_cmd_pvalue;
 	dispatcher["lhtest"] = cafe_cmd_lhtest;
 	dispatcher["simerror"] = cafe_cmd_simerror;
 	dispatcher["errormodel"] = cafe_cmd_errormodel;
 	dispatcher["esterror"] = cafe_cmd_esterror;
-	dispatcher["retrieve"] = cafe_cmd_retrieve;
 	dispatcher["noerrormodel"] = cafe_cmd_noerrormodel;
-	dispatcher["branchlength"] = cafe_cmd_branchlength;
-	dispatcher["accuracy"] = cafe_cmd_accuracy;
-	dispatcher["simextinct"] = cafe_cmd_simextinct;
-	dispatcher["cvfamily"] = cafe_cmd_cvfamily;
-	dispatcher["cvspecies"] = cafe_cmd_cvspecies;
 	dispatcher["rootdist"] = cafe_cmd_rootdist;
 	dispatcher["lambdamu"] = cafe_cmd_lambdamu;
+#ifdef DEBUG
+	dispatcher["score"] = cafe_cmd_score;
+	dispatcher["simextinct"] = cafe_cmd_simextinct;
+	dispatcher["branchlength"] = cafe_cmd_branchlength;
+	dispatcher["accuracy"] = cafe_cmd_accuracy;
+	dispatcher["gainloss"] = cafe_cmd_gainloss;
+	dispatcher["info"] = cafe_cmd_print_param;
+	dispatcher["cvfamily"] = cafe_cmd_cvfamily;
+	dispatcher["cvspecies"] = cafe_cmd_cvspecies;
+	dispatcher["extinct"] = cafe_cmd_extinct;
+	dispatcher["family"] = cafe_cmd_family;
+	dispatcher["retrieve"] = cafe_cmd_retrieve;
+	dispatcher["save"] = cafe_cmd_save;
+	dispatcher["viterbi"] = cafe_cmd_viterbi;
+#endif
 
 
 	return dispatcher;
