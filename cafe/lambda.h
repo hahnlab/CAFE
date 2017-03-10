@@ -7,41 +7,55 @@
 extern "C" {
 #include "family.h"
 #include "cafe_shell.h"
+#include "gmatrix.h"
 }
 
 class Globals;
 
 enum LAMBDA_TYPE { UNDEFINED_LAMBDA, SINGLE_LAMBDA, MULTIPLE_LAMBDAS };
 
+struct lambda_range
+{
+	double start;
+	double step;
+	double end;
+};
+
 struct lambda_args
 {
 	bool search;
 	LAMBDA_TYPE lambda_type;
 	double vlambda;
-	CafeParam tmp_param;
-	Argument dist;
-	Argument out;
+	std::string outfile;
 	int bdone;
 	bool each;
 	bool write_files;
 	std::string name;
+	std::vector<lambda_range> range;
+	std::vector<double> lambdas;
+	std::vector<double> k_weights;
+	pTree lambda_tree;
+	bool checkconv;
+	int num_params;
+	int fixcluster0;
 
-	lambda_args() : search(false), lambda_type(UNDEFINED_LAMBDA), vlambda(0.0), tmp_param(), bdone(0), each(false),
-		write_files(false)
+	lambda_args() : search(false), lambda_type(UNDEFINED_LAMBDA), vlambda(0.0), bdone(0), each(false),
+		write_files(false), lambda_tree(NULL), checkconv(false), num_params(0), fixcluster0(0)
 	{
-		memset(&tmp_param, 0, sizeof(CafeParam));
-		tmp_param.posterior = 1;
-		memset(&dist, 0, sizeof(Argument));
-		memset(&out, 0, sizeof(Argument));
 	}
+
 };
 
 lambda_args get_arguments(std::vector<Argument> pargs);
-std::vector<Argument> lambda_build_argument(std::vector<std::string> tokens);
 int cafe_cmd_lambda(Globals& globals, std::vector<std::string> tokens);
 void set_all_lambdas(pCafeParam param, double value);
-void write_lambda_distribution(pArgument parg, FILE* fp);
+pGMatrix cafe_lambda_distribution(pCafeParam param, const std::vector<lambda_range>& range);
 
+const int INIT_PARAMS = 1;
+const int INIT_KWEIGHTS = 2;
+void initialize_params_and_k_weights(pCafeParam param, int what);
+void set_parameters(pCafeParam param, lambda_args& params);
+void lambda_set(pCafeParam param, lambda_args& params);
 
 #endif
 

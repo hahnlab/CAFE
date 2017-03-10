@@ -130,9 +130,9 @@ TEST(LambdaTests, Test_arguments)
 	std::vector<Argument> pal = build_argument_list(strs);
 	lambda_args args = get_arguments(pal);
 	CHECK_FALSE(args.search);
-	CHECK_FALSE(args.tmp_param.checkconv);
-	CHECK_TRUE(args.tmp_param.lambda_tree != 0);
-	LONGS_EQUAL(2, args.tmp_param.num_lambdas);
+	CHECK_FALSE(args.checkconv);
+	CHECK_TRUE(args.lambda_tree != 0);
+	LONGS_EQUAL(2, args.lambdas.size());
 	DOUBLES_EQUAL(0, args.vlambda, .001);
 	LONGS_EQUAL(UNDEFINED_LAMBDA, args.lambda_type);
 
@@ -144,7 +144,7 @@ TEST(LambdaTests, Test_arguments)
 	strs.push_back("-checkconv");
 	pal = build_argument_list(strs);
 	args = get_arguments(pal);
-	CHECK_TRUE(args.tmp_param.checkconv);
+	CHECK_TRUE(args.checkconv);
 
 	strs.push_back("-v");
 	strs.push_back("14.6");
@@ -157,12 +157,12 @@ TEST(LambdaTests, Test_arguments)
 	strs.push_back("19");
 	pal = build_argument_list(strs);
 	args = get_arguments(pal);
-	LONGS_EQUAL(19, args.tmp_param.parameterized_k_value);
+	LONGS_EQUAL(19, args.k_weights.size());
 
 	strs.push_back("-f");
 	pal = build_argument_list(strs);
 	args = get_arguments(pal);
-	LONGS_EQUAL(1, args.tmp_param.fixcluster0);
+	LONGS_EQUAL(1, args.fixcluster0);
 };
 
 
@@ -178,11 +178,11 @@ TEST(LambdaTests, Test_l_argument)
 	strs.push_back("21.8");
 	std::vector<Argument> pal = build_argument_list(strs);
 	lambda_args args = get_arguments(pal);
-	LONGS_EQUAL(3, args.tmp_param.num_params);
+	LONGS_EQUAL(3, args.num_params);
 	LONGS_EQUAL(MULTIPLE_LAMBDAS, args.lambda_type);
-	DOUBLES_EQUAL(15.6, args.tmp_param.lambda[0], .001);
-	DOUBLES_EQUAL(9.2, args.tmp_param.lambda[1], .001);
-	DOUBLES_EQUAL(21.8, args.tmp_param.lambda[2], .001);
+	DOUBLES_EQUAL(15.6, args.lambdas[0], .001);
+	DOUBLES_EQUAL(9.2, args.lambdas[1], .001);
+	DOUBLES_EQUAL(21.8, args.lambdas[2], .001);
 };
 
 TEST(LambdaTests, Test_p_argument)
@@ -197,10 +197,10 @@ TEST(LambdaTests, Test_p_argument)
 	strs.push_back("21.8");
 	std::vector<Argument> pal = build_argument_list(strs);
 	lambda_args args = get_arguments(pal);
-	LONGS_EQUAL(3, args.tmp_param.num_params);
-	DOUBLES_EQUAL(15.6, args.tmp_param.k_weights[0], .001);
-	DOUBLES_EQUAL(9.2, args.tmp_param.k_weights[1], .001);
-	DOUBLES_EQUAL(21.8, args.tmp_param.k_weights[2], .001);
+	LONGS_EQUAL(3, args.num_params);
+	DOUBLES_EQUAL(15.6, args.k_weights[0], .001);
+	DOUBLES_EQUAL(9.2, args.k_weights[1], .001);
+	DOUBLES_EQUAL(21.8, args.k_weights[2], .001);
 };
 
 TEST(LambdaTests, Test_r_argument)
@@ -210,13 +210,16 @@ TEST(LambdaTests, Test_r_argument)
 	std::vector<std::string> strs;
 	strs.push_back("lambda");
 	strs.push_back("-r");
+	strs.push_back("1:2:3");
 	strs.push_back("-o");
 	strs.push_back("test.txt");
 	std::vector<Argument> pal = build_argument_list(strs);
 	lambda_args args = get_arguments(pal);
-	STRCMP_EQUAL("-r", args.dist.opt);
-	LONGS_EQUAL(1, args.out.argc);
-	STRCMP_EQUAL("test.txt", args.out.argv[0]);
+	STRCMP_EQUAL("test.txt", args.outfile.c_str());
+	LONGS_EQUAL(1, args.range.size());
+	DOUBLES_EQUAL(1, args.range[0].start, .001);
+	DOUBLES_EQUAL(2, args.range[0].step, .001);
+	DOUBLES_EQUAL(3, args.range[0].end, .001);
 };
 
 TEST(LambdaTests, set_all_lambdas)
@@ -230,4 +233,77 @@ TEST(LambdaTests, set_all_lambdas)
 	DOUBLES_EQUAL(17.9, param.lambda[10], 0.01);
 	DOUBLES_EQUAL(17.9, param.lambda[14], 0.01);
 };
+
+TEST(LambdaTests, initialize_params_and_k_weights)
+{
+	CafeParam param;
+	param.parameters = NULL;
+	param.k_weights = NULL;
+	param.num_params = 5;
+	initialize_params_and_k_weights(&param, INIT_PARAMS);
+	CHECK(param.parameters != NULL);
+	CHECK(param.k_weights == NULL);
+
+	param.parameters = NULL;
+	param.parameterized_k_value = 5;
+	initialize_params_and_k_weights(&param, INIT_KWEIGHTS);
+	CHECK(param.parameters == NULL);
+	CHECK(param.k_weights != NULL);
+}
+
+TEST(LambdaTests, set_parameters)
+{
+	lambda_args args;
+	CafeParam param;
+
+	double bar[] = { 6,7,8,9,10 };
+
+	args.k_weights.resize(7);
+	args.fixcluster0 = 3;
+	args.lambdas.push_back(1);
+	args.lambdas.push_back(2);
+	copy(bar, bar + 5, args.k_weights.begin());
+	args.num_params = 14;
+
+	param.parameters = NULL;
+	param.k_weights = NULL;
+	param.num_lambdas = 1;
+
+	set_parameters(&param, args);
+	LONGS_EQUAL(7, param.parameterized_k_value);
+	LONGS_EQUAL(14, param.num_params);
+	DOUBLES_EQUAL(1.0, param.parameters[0], 0.001);
+	DOUBLES_EQUAL(2.0, param.parameters[1], 0.001);
+	DOUBLES_EQUAL(6.0, param.parameters[4], 0.001);
+	DOUBLES_EQUAL(7.0, param.parameters[5], 0.001);
+	DOUBLES_EQUAL(8.0, param.parameters[6], 0.001);
+	DOUBLES_EQUAL(9.0, param.parameters[7], 0.001);
+	DOUBLES_EQUAL(10.0, param.parameters[8], 0.001);
+}
+
+void mock_set_params(pCafeParam param, double* parameters)
+{
+
+}
+
+TEST(LambdaTests, lambda_set)
+{
+	double bar[] = { 6,7,8,9,10 };
+
+	lambda_args args;
+	CafeParam param;
+	args.k_weights.resize(7);
+	args.fixcluster0 = 3;
+	args.lambdas.push_back(1);
+	args.lambdas.push_back(2);
+	copy(bar, bar + 5, args.k_weights.begin());
+	param.parameters = NULL;
+	param.k_weights = NULL;
+	param.num_lambdas = 1;
+	param.param_set_func = mock_set_params;
+	args.num_params = 14;
+
+	lambda_set(&param, args);
+}
+
 

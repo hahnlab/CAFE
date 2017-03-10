@@ -131,53 +131,6 @@ void cafe_lambda_set_default(pCafeParam param, double* lambda)
 	}
 }
 
-/**************************************************************************
- * Lambda 
-**************************************************************************/
-double __cafe_best_lambda_search(double* plambda, void* args);
-
-pGMatrix cafe_lambda_distribution(pCafeParam param, int numrange, double** range )
-{
-	int i, j;
-	int* size = (int*)memory_new(numrange,sizeof(int));
-	double* plambda = (double*)memory_new(numrange,sizeof(double)); 
-	int* idx = (int*)memory_new(numrange, sizeof(int));
-	for ( i = 0 ; i < numrange; i++ )
-	{
-		size[i] = 1 + rint((range[i][2] - range[i][0])/range[i][1]);
-	}
-	pGMatrix pgm = gmatrix_double_new(numrange,size);
-
-	for ( i = 0 ; i < pgm->num_elements; i++ )
-	{
-		gmatrix_dim_index(pgm,i,idx);
-		for ( j = 0 ; j < numrange ; j++ )
-		{
-			plambda[j] = range[j][1] * idx[j] + range[j][0];
-		}
-		double v = -__cafe_best_lambda_search(plambda,(void*)param);
-		gmatrix_double_set_with_index(pgm, v, i );
-		if ( -v > 1e300 )
-		{
-			for ( j = 0 ; j < param->pfamily->flist->size ; j++ )
-			{
-				pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[j];
-				pitem->maxlh = -1;
-			}
-		}
-	}
-
-	memory_free(idx);
-	idx = NULL;
-	memory_free(size);
-	size = NULL;
-	memory_free(plambda);
-	plambda = NULL;
-	return pgm;
-}
-
-
-
 void show_sizes(FILE* f, pCafeTree pcafe, family_size_range* range, pCafeFamilyItem pitem, int i)
 {
 	fprintf(f, ">> %d %d\n", i, pitem->ref);

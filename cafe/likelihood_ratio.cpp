@@ -3,7 +3,6 @@
 #include "likelihood_ratio.h"
 
 extern "C" {
-#include <pthread.h>
 #include "cafe.h"
 #include <family.h>
 
@@ -28,8 +27,6 @@ struct LRT2LParam
 	std::vector<double*> &lambda_cache;
 	pBirthDeathCacheArray* PBDC;
 };
-
-pthread_mutex_t mutex_cafe_lh2 = PTHREAD_MUTEX_INITIALIZER;
 
 void likelihood_ratio_report(pCafeFamily pfamily, 
 	pCafeTree pcafe, 

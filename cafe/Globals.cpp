@@ -36,6 +36,7 @@ Globals::Globals() : viterbi(new viterbi_parameters())
 	param.MAP = NULL;
 	param.prior_rfsize = NULL;
 	param.parameters = NULL;
+	param.str_fdata = NULL;
 	viterbi->viterbiPvalues = NULL;
 	viterbi->cutPvalues = NULL;
 	mu_tree = NULL;
