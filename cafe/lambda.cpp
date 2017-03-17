@@ -345,10 +345,7 @@ int cafe_cmd_lambda(Globals& globals, vector<string> tokens)
 {
 	pCafeParam param = &globals.param;
 	
-	if(!param->pcafe)
-	{
-		throw std::runtime_error("ERROR(lambda): You did not specify tree: command 'tree'\n" );
-	}
+	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE);
 
 	pCafeTree pcafe = param->pcafe;
 	vector<Argument> pargs = build_argument_list(tokens);

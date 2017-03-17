@@ -8,8 +8,8 @@
 
 extern "C" {
 #include <cafe_shell.h>
-	int __cafe_cmd_lambda_tree(pArgument parg);
 	void cafe_shell_set_lambda(pCafeParam param, double* parameters);
+	int __cafe_cmd_lambda_tree(pArgument parg);
 };
 
 static void init_cafe_tree(Globals& globals)
@@ -37,9 +37,11 @@ TEST_GROUP(LambdaTests)
 {
 };
 
-TEST(LambdaTests, TestCmdLambda_FailsWithoutTree)
+TEST(LambdaTests, cafe_cmd_lambda_fails_without_tree)
 {
 	Globals globals;
+	CafeFamily fam;
+	globals.param.pfamily = &fam;
 
 	try
 	{ 
@@ -48,29 +50,24 @@ TEST(LambdaTests, TestCmdLambda_FailsWithoutTree)
 	}
 	catch (std::runtime_error& ex)
 	{
-		const char *expected = "ERROR(lambda): You did not specify tree: command 'tree'";
+		const char *expected = "ERROR: The tree was not loaded. Please load a tree with the 'tree' command.";
 		STRCMP_CONTAINS(expected, ex.what());
 	}
 }
 
-TEST(LambdaTests, PrepareCafeParamFailsWithoutLoad)
+TEST(LambdaTests, cafe_cmd_lambda_fails_without_load)
 {
 	Globals globals;
-	const char *newick_tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)";
 
-	char buf[100];
-	strcpy(buf, "tree ");
-	strcat(buf, newick_tree);
-	cafe_shell_dispatch_command(globals, buf);
 	try
 	{
-		globals.Prepare();
+		lambda_cmd_helper(globals);
 		FAIL("Expected exception not thrown");
 	}
-	catch (std::runtime_error& err)
+	catch (std::runtime_error& ex)
 	{
-		const char *expected = "ERROR(lambda): Please load family (\"load\") and cafe tree (\"tree\") before running \"lambda\" command.";
-		STRCMP_EQUAL(expected, err.what());
+		const char *expected = "ERROR: The gene families were not loaded. Please load gene families with the 'load' command";
+		STRCMP_CONTAINS(expected, ex.what());
 	}
 }
 

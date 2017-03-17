@@ -18,25 +18,49 @@ extern "C" {
 */
 Globals::Globals() : viterbi(new viterbi_parameters())
 {
+	param.checkconv = 0;
+	param.cv_species_name = NULL;
+	param.cv_test_count_list = NULL;
+	param.cv_test_species_list = NULL;
+	param.eqbg = 0;
 	param.family_size.root_min = 1;
 	param.family_size.root_max = 1;
 	param.family_size.min = 0;
 	param.family_size.max = 1;
-	param.param_set_func = cafe_shell_set_lambda;
+	param.fixcluster0 = 0;
 	param.flog = stdout;
-	param.num_threads = 1;
-	param.num_random_samples = 1000;
-	param.pvalue = 0.01;
-	param.quiet = 0;
-	param.pcafe = NULL;
-	param.pfamily = NULL;
+	param.fout = NULL;
+	param.k_weights = NULL;
 	param.lambda = NULL;
 	param.lambda_tree = NULL;
-	param.ML = NULL;
+	param.likelihoodRatios = NULL;
 	param.MAP = NULL;
-	param.prior_rfsize = NULL;
+	param.ML = NULL;
+	param.max_branch_length = 0;
+	param.mu = NULL;
+	param.num_branches = 0;
+	param.num_lambdas = 0;
+	param.num_mus = 0;
+	param.num_params = 0;
+	param.num_random_samples = 1000;
+	param.num_threads = 1;
+	param.old_branchlength = NULL;
+	param.p_z_membership = NULL;
+	param.param_set_func = cafe_shell_set_lambda;
 	param.parameters = NULL;
+	param.parameterized_k_value = 0;
+	param.pcafe = NULL;
+	param.pfamily = NULL;
+	param.posterior = 0;
+	param.prior_rfsize = NULL;
+	param.pvalue = 0.01;
+	param.quiet = 0;
+	param.root_dist = NULL;
 	param.str_fdata = NULL;
+	param.str_log = NULL;
+	param.sum_branch_length = 0;
+
+
 	viterbi->viterbiPvalues = NULL;
 	viterbi->cutPvalues = NULL;
 	mu_tree = NULL;
@@ -137,11 +161,6 @@ void Globals::Clear(int btree_skip)
 
 void Globals::Prepare()
 {
-	if (param.pfamily == NULL || param.pcafe == NULL)
-	{
-		throw std::runtime_error("ERROR(lambda): Please load family (\"load\") and cafe tree (\"tree\") before running \"lambda\" command.");
-	}
-
 	param.lambda = NULL;
 	param.mu = NULL;
 	if (param.lambda_tree) {
