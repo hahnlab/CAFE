@@ -27,24 +27,13 @@ extern "C" {
 
 using namespace std;
 
-void get_doubles_array(vector<double>& loc, pArgument parg)
-{
-	loc.resize(parg->argc);
-	for (int j = 0; j < parg->argc; j++)
-	{
-		sscanf(parg->argv[j], "%lf", &loc[j]);
-	}
-}
-
 bool is_out(Argument arg)
 {
 	return !strcmp(arg.opt, "-o");
 }
 
-lambda_args get_arguments(vector<Argument> pargs)
+void lambda_arg_base::load(vector<Argument> pargs)
 {
-	lambda_args result;
-
 	for (size_t i = 0; i < pargs.size(); i++)
 	{
 		pArgument parg = &pargs[i];
@@ -52,73 +41,80 @@ lambda_args get_arguments(vector<Argument> pargs)
 		// Search for whole family 
 		if (!strcmp(parg->opt, "-s"))
 		{
-			result.search = true;
+			search = true;
 		}
 		else if (!strcmp(parg->opt, "-checkconv"))
 		{
-			result.checkconv = true;
+			checkconv = true;
 		}
 		else if (!strcmp(parg->opt, "-t"))
 		{
-			result.bdone = __cafe_cmd_lambda_tree(parg);
-			if (result.bdone < 0) {
+			bdone = __cafe_cmd_lambda_tree(parg);
+			if (bdone < 0) {
 				throw std::exception();
 			}
 			pString pstr = phylogeny_string(cafe_param->lambda_tree, NULL);
 			cafe_log(cafe_param, "Lambda Tree: %s\n", pstr->buf);
 			string_free(pstr);
-			result.lambda_tree = cafe_param->lambda_tree;
-			result.lambdas.resize(cafe_param->num_lambdas);
+			lambda_tree = cafe_param->lambda_tree;
+			lambdas.resize(cafe_param->num_lambdas);
 
-		}
-		else if (!strcmp(parg->opt, "-v"))
-		{
-			sscanf(parg->argv[0], "%lf", &result.vlambda);
-			result.lambda_type = SINGLE_LAMBDA;
 		}
 		else if (!strcmp(parg->opt, "-l"))
 		{
-			get_doubles_array(result.lambdas, parg);
-			result.num_params += result.lambdas.size();
-			result.lambda_type = MULTIPLE_LAMBDAS;
+			get_doubles_array(lambdas, parg);
+			num_params += lambdas.size();
+			lambda_type = MULTIPLE_LAMBDAS;
 
 		}
 		else if (!strcmp(parg->opt, "-p"))
 		{
-			get_doubles_array(result.k_weights, parg);
-			result.num_params += result.k_weights.size();
-		}
-		else if (!strcmp(parg->opt, "-r"))
-		{
-			result.range.resize(parg->argc);
-			int j;
-			for (j = 0; j < parg->argc; j++)
-			{
-				sscanf(parg->argv[j], "%lf:%lf:%lf", &result.range[j].start, &result.range[j].step, &result.range[j].end);
-			}
-		}
-		else if (!strcmp(parg->opt, "-e"))
-		{
-			result.write_files = true;
-			result.each = true;
+			get_doubles_array(k_weights, parg);
+			num_params += k_weights.size();
 		}
 		else if (!strcmp(parg->opt, "-k"))
 		{
 			int k = 0;
 			sscanf(parg->argv[0], "%d", &k);
-			result.k_weights.resize(k);
+			k_weights.resize(k);
 		}
 		else if (!strcmp(parg->opt, "-f"))
 		{
-			result.fixcluster0 = 1;
+			fixcluster0 = 1;
+		}
+	}
+}
+
+void lambda_args::load(std::vector<Argument> pargs)
+{
+	lambda_arg_base::load(pargs);
+	for (size_t i = 0; i < pargs.size(); i++)
+	{
+		pArgument parg = &pargs[i];
+		if (!strcmp(parg->opt, "-v"))
+		{
+			sscanf(parg->argv[0], "%lf", &vlambda);
+			lambda_type = SINGLE_LAMBDA;
+		} 
+		else if (!strcmp(parg->opt, "-r"))
+		{
+			range.resize(parg->argc);
+			int j;
+			for (j = 0; j < parg->argc; j++)
+			{
+				sscanf(parg->argv[j], "%lf:%lf:%lf", &range[j].start, &range[j].step, &range[j].end);
+			}
+		}
+		else if (!strcmp(parg->opt, "-e"))
+		{
+			write_files = true;
+			each = true;
 		}
 		else if (!strcmp(parg->opt, "-o"))
 		{
-			result.outfile = parg->argv[0];
+			outfile = parg->argv[0];
 		}
 	}
-
-	return result;
 }
 
 void set_all_lambdas(pCafeParam param, double value)
@@ -199,31 +195,6 @@ void write_lambda_distribution(pCafeParam param, const std::vector<lambda_range>
 	gmatrix_free(pgm);
 }
 
-
-void validate_lambda_count(int expected, int actual, pTree pTree, int k_value)
-{
-	// check if the numbers of lambdas and proportions put in matches the number of parameters
-	if (expected != actual) {
-		ostringstream ost;
-		ost << "ERROR(lambda): Number of parameters not correct. \n";
-		ost << "The number of -l lambdas are " << actual << "they need to be " << expected << "\n";
-		if (pTree || k_value > 0)
-			ost << "Based on";
-		if (pTree)
-		{
-			pString pstr = phylogeny_string(pTree, NULL);
-			ost << " the tree " << pstr->buf;
-			string_free(pstr);
-		}
-		if (k_value > 0)
-		{
-			if (pTree) ost << " and ";
-			ost << "the -k clusters " << k_value << ".\n";
-		}
-		throw std::runtime_error(ost.str().c_str());
-	}
-}
-
 void initialize_params_and_k_weights(pCafeParam param, int what)
 {
 	if (what & INIT_PARAMS)
@@ -246,7 +217,7 @@ void set_parameters(pCafeParam param, lambda_args& params)
 	param->fixcluster0 = params.fixcluster0;
 	param->num_params = (params.lambdas.size()*(params.k_weights.size() - params.fixcluster0)) + (params.k_weights.size() - 1);
 
-	validate_lambda_count(param->num_params, params.num_params, params.lambda_tree, param->parameterized_k_value);
+	params.validate_parameter_count(param->num_params);
 
 	initialize_params_and_k_weights(param, INIT_PARAMS | INIT_KWEIGHTS);
 
@@ -268,7 +239,7 @@ void lambda_set(pCafeParam param, lambda_args& params)
 		else {	// search whole dataset branch specific
 			param->num_params = param->num_lambdas;
 
-			validate_lambda_count(param->num_params, params.num_params, params.lambda_tree, -1);
+			params.validate_parameter_count(param->num_params);
 
 			// copy user input into parameters
 			initialize_params_and_k_weights(param, INIT_PARAMS);
@@ -284,7 +255,7 @@ void lambda_set(pCafeParam param, lambda_args& params)
 		else {	// search whole dataset whole tree
 			param->num_params = param->num_lambdas;
 
-			validate_lambda_count(param->num_params, params.num_params, NULL, -1);
+			params.validate_parameter_count(param->num_params);
 
 			// copy user input into parameters
 			initialize_params_and_k_weights(param, INIT_PARAMS);
@@ -352,7 +323,8 @@ int cafe_cmd_lambda(Globals& globals, vector<string> tokens)
 
 	globals.Prepare();
 
-	lambda_args params = get_arguments(pargs);
+	lambda_args params;
+	params.load(pargs);
 
 	if (params.lambda_type == SINGLE_LAMBDA && params.vlambda > 0 )
 	{

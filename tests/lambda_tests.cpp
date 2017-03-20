@@ -4,9 +4,11 @@
 #include "CppUTest/CommandLineTestRunner.h"
 #include "cafe_commands.h"
 #include "lambda.h"
+#include "lambdamu.h"
 #include "Globals.h"
 
 extern "C" {
+#include "cafe.h"
 #include <cafe_shell.h>
 	void cafe_shell_set_lambda(pCafeParam param, double* parameters);
 	int __cafe_cmd_lambda_tree(pArgument parg);
@@ -125,7 +127,8 @@ TEST(LambdaTests, Test_arguments)
 	strs.push_back("-t");
 	strs.push_back("(((2,2)1,(1,1)1)1,1)");
 	std::vector<Argument> pal = build_argument_list(strs);
-	lambda_args args = get_arguments(pal);
+	lambda_args args;
+	args.load(pal);
 	CHECK_FALSE(args.search);
 	CHECK_FALSE(args.checkconv);
 	CHECK_TRUE(args.lambda_tree != 0);
@@ -135,30 +138,30 @@ TEST(LambdaTests, Test_arguments)
 
 	strs.push_back("-s");
 	pal = build_argument_list(strs);
-	args = get_arguments(pal);
+	args.load(pal);
 	CHECK_TRUE(args.search);
 
 	strs.push_back("-checkconv");
 	pal = build_argument_list(strs);
-	args = get_arguments(pal);
+	args.load(pal);
 	CHECK_TRUE(args.checkconv);
 
 	strs.push_back("-v");
 	strs.push_back("14.6");
 	pal = build_argument_list(strs);
-	args = get_arguments(pal);
+	args.load(pal);
 	DOUBLES_EQUAL(14.6, args.vlambda, .001);
 	LONGS_EQUAL(SINGLE_LAMBDA, args.lambda_type);
 
 	strs.push_back("-k");
 	strs.push_back("19");
 	pal = build_argument_list(strs);
-	args = get_arguments(pal);
+	args.load(pal);
 	LONGS_EQUAL(19, args.k_weights.size());
 
 	strs.push_back("-f");
 	pal = build_argument_list(strs);
-	args = get_arguments(pal);
+	args.load(pal);
 	LONGS_EQUAL(1, args.fixcluster0);
 };
 
@@ -174,7 +177,8 @@ TEST(LambdaTests, Test_l_argument)
 	strs.push_back("9.2");
 	strs.push_back("21.8");
 	std::vector<Argument> pal = build_argument_list(strs);
-	lambda_args args = get_arguments(pal);
+	lambda_args args;
+	args.load(pal);
 	LONGS_EQUAL(3, args.num_params);
 	LONGS_EQUAL(MULTIPLE_LAMBDAS, args.lambda_type);
 	DOUBLES_EQUAL(15.6, args.lambdas[0], .001);
@@ -193,7 +197,8 @@ TEST(LambdaTests, Test_p_argument)
 	strs.push_back("9.2");
 	strs.push_back("21.8");
 	std::vector<Argument> pal = build_argument_list(strs);
-	lambda_args args = get_arguments(pal);
+	lambda_args args;
+	args.load(pal);
 	LONGS_EQUAL(3, args.num_params);
 	DOUBLES_EQUAL(15.6, args.k_weights[0], .001);
 	DOUBLES_EQUAL(9.2, args.k_weights[1], .001);
@@ -211,7 +216,8 @@ TEST(LambdaTests, Test_r_argument)
 	strs.push_back("-o");
 	strs.push_back("test.txt");
 	std::vector<Argument> pal = build_argument_list(strs);
-	lambda_args args = get_arguments(pal);
+	lambda_args args;
+	args.load(pal);
 	STRCMP_EQUAL("test.txt", args.outfile.c_str());
 	LONGS_EQUAL(1, args.range.size());
 	DOUBLES_EQUAL(1, args.range[0].start, .001);
@@ -303,4 +309,138 @@ TEST(LambdaTests, lambda_set)
 	lambda_set(&param, args);
 }
 
+static pCafeTree create_tree()
+{
+	family_size_range range;
+	range.min = 0;
+	range.max = 5;
+	range.root_min = 0;
+	range.root_max = 5;
+	const char *newick_tree = "(((2,2)1,(1,1)1)1,1)";
+	char tree[100];
+	strcpy(tree, newick_tree);
+	return cafe_tree_new(tree, &range, 0, 0);
+}
 
+TEST(LambdaTests, lambda_args__validate_parameter_count)
+{
+	lambda_args args;
+	args.num_params = 5;
+	args.lambda_tree = (pTree)create_tree();
+	args.k_weights.resize(11);
+	try
+	{
+		args.validate_parameter_count(7);
+		FAIL("Expected exception not thrown");
+	}
+	catch (std::runtime_error& ex)
+	{
+		STRCMP_CONTAINS("ERROR (lambda): The total number of parameters was not correct.\n", ex.what());
+		STRCMP_CONTAINS("The total number of lambdas (-l) and proportions (-p) are 5", ex.what());
+		STRCMP_CONTAINS("but 7 were expected\n", ex.what());
+		STRCMP_CONTAINS("based on the tree (((2,2)1,(1,1)1)1,1) and the 11 clusters (-k).\n", ex.what());
+	}
+
+	try
+	{
+		args.k_weights.clear();
+		args.validate_parameter_count(7);
+		FAIL("Expected exception not thrown");
+	}
+	catch (std::runtime_error& ex)
+	{
+		STRCMP_CONTAINS("ERROR (lambda): The total number of parameters was not correct.\n", ex.what());
+		STRCMP_CONTAINS("The total number of lambdas (-l) are 5", ex.what());
+		STRCMP_CONTAINS("but 7 were expected\n", ex.what());
+		STRCMP_CONTAINS("based on the tree (((2,2)1,(1,1)1)1,1)\n", ex.what());
+	}
+
+	try
+	{
+		args.k_weights.resize(11);
+		args.lambda_tree = NULL;
+		args.validate_parameter_count(7);
+		FAIL("Expected exception not thrown");
+	}
+	catch (std::runtime_error& ex)
+	{
+		STRCMP_CONTAINS("ERROR (lambda): The total number of parameters was not correct.\n", ex.what());
+		STRCMP_CONTAINS("The total number of lambdas (-l) and proportions (-p) are 5", ex.what());
+		STRCMP_CONTAINS("but 7 were expected\n", ex.what());
+	}
+
+	try
+	{
+		args.k_weights.clear();
+		args.validate_parameter_count(7);
+		FAIL("Expected exception not thrown");
+	}
+	catch (std::runtime_error& ex)
+	{
+		STRCMP_CONTAINS("ERROR (lambda): The total number of parameters was not correct.\n", ex.what());
+		STRCMP_CONTAINS("The total number of lambdas (-l) are 5", ex.what());
+		STRCMP_CONTAINS("but 7 were expected\n", ex.what());
+	}
+}
+
+TEST(LambdaTests, lambdamu_args__validate_parameter_count)
+{
+	lambdamu_args args;
+	args.num_params = 5;
+	args.lambda_tree = (pTree)create_tree();
+	args.k_weights.resize(11);
+
+	try
+	{
+		args.validate_parameter_count(7);
+		FAIL("Expected exception not thrown");
+	}
+	catch (std::runtime_error& ex)
+	{
+		STRCMP_CONTAINS("ERROR (lambdamu): The total number of parameters was not correct.\n", ex.what());
+		STRCMP_CONTAINS("The total number of lambdas (-l) and mus (-m) and proportions (-p) are 5", ex.what());
+		STRCMP_CONTAINS("but 7 were expected\n", ex.what());
+		STRCMP_CONTAINS("based on the tree (((2,2)1,(1,1)1)1,1) and the 11 clusters (-k).\n", ex.what());
+	}
+
+	try
+	{
+		args.k_weights.clear();
+		args.validate_parameter_count(7);
+		FAIL("Expected exception not thrown");
+	}
+	catch (std::runtime_error& ex)
+	{
+		STRCMP_CONTAINS("ERROR (lambdamu): The total number of parameters was not correct.\n", ex.what());
+		STRCMP_CONTAINS("The total number of lambdas (-l) and mus (-m) are 5", ex.what());
+		STRCMP_CONTAINS("but 7 were expected\n", ex.what());
+		STRCMP_CONTAINS("based on the tree (((2,2)1,(1,1)1)1,1)\n", ex.what());
+	}
+
+	try
+	{
+		args.lambda_tree = NULL;
+		args.k_weights.resize(11);
+		args.validate_parameter_count(7);
+		FAIL("Expected exception not thrown");
+	}
+	catch (std::runtime_error& ex)
+	{
+		STRCMP_CONTAINS("ERROR (lambdamu): The total number of parameters was not correct.\n", ex.what());
+		STRCMP_CONTAINS("The total number of lambdas (-l) and mus (-m) and proportions (-p) are 5", ex.what());
+		STRCMP_CONTAINS("but 7 were expected\n", ex.what());
+	}
+
+	try
+	{
+		args.k_weights.clear();
+		args.validate_parameter_count(7);
+		FAIL("Expected exception not thrown");
+	}
+	catch (std::runtime_error& ex)
+	{
+		STRCMP_CONTAINS("ERROR (lambdamu): The total number of parameters was not correct.\n", ex.what());
+		STRCMP_CONTAINS("The total number of lambdas (-l) and mus (-m) are 5", ex.what());
+		STRCMP_CONTAINS("but 7 were expected\n", ex.what());
+	}
+}
