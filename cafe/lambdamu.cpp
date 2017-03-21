@@ -44,25 +44,40 @@ void lambdamu_args::load(std::vector<Argument> args)
 	}
 }
 
-void lambdamu_search(pCafeParam param, lambdamu_args& params)
+int lambdamu_args::get_num_params() const
+{
+	if (lambda_tree == NULL)
+	{
+		if (k_weights.size() > 0) {
+			return (lambdas.size()*(k_weights.size() - fixcluster0)) +
+				(mus.size()*(k_weights.size() - fixcluster0)) +
+				(k_weights.size() - 1);
+		}
+		else
+			return lambdas.size() + (mus.size() - eqbg);
+	}
+	else
+	{
+		if (k_weights.size() > 0) {
+
+			return (lambdas.size()*(k_weights.size() - fixcluster0)) +
+				((mus.size() - eqbg)*(k_weights.size() - fixcluster0)) +
+				(k_weights.size() - 1);
+		}
+		else
+		{
+			return lambdas.size() + mus.size();
+		}
+	}
+}
+
+
+void lambdamu_prepare_search(pCafeParam param, lambdamu_args& params)
 {
 	// prepare parameters
 	if (params.lambda_tree != NULL) {
 		// param->num_lambdas determined by lambda tree.
 		param->eqbg = params.eqbg;
-		if (params.k_weights.size() > 0) {
-			param->parameterized_k_value = params.k_weights.size();
-			param->fixcluster0 = params.fixcluster0;
-			param->num_params = (params.lambdas.size()*(params.k_weights.size() - params.fixcluster0)) +
-				((params.mus.size() - params.eqbg)*(params.k_weights.size() - params.fixcluster0)) +
-				(params.k_weights.size() - 1);
-
-		}
-		else {	// search whole dataset branch specific
-			param->num_params = params.lambdas.size() + (params.mus.size() - params.eqbg);
-
-		}
-		initialize_params_and_k_weights(param, INIT_PARAMS | (params.lambda_tree == NULL ? 0 : INIT_KWEIGHTS));
 	}
 	else {
 		param->num_lambdas = 1;
@@ -72,22 +87,16 @@ void lambdamu_search(pCafeParam param, lambdamu_args& params)
 		if (params.eqbg) {
 			throw runtime_error("ERROR(lambdamu): Cannot use option eqbg without specifying a lambda tree. \n");
 		}
-		if (params.k_weights.size() > 0) {
-			param->parameterized_k_value = params.k_weights.size();
-			param->fixcluster0 = params.fixcluster0;
-			param->num_params = (params.lambdas.size()*(params.k_weights.size() - params.fixcluster0)) +
-				(params.mus.size()*(params.k_weights.size() - params.fixcluster0)) +
-				(params.k_weights.size() - 1);
-		}
-		else {	// search whole dataset whole tree
-			param->num_params = params.lambdas.size() + params.mus.size();
-		}
-		initialize_params_and_k_weights(param, INIT_PARAMS | (params.k_weights.empty() ? 0 : INIT_KWEIGHTS));
 	}
-	// search
-	if (params.checkconv) { param->checkconv = 1; }
-	cafe_best_lambda_mu_by_fminsearch(param, param->num_lambdas, param->num_mus, param->parameterized_k_value);
 
+	if (params.k_weights.size() > 0) {
+		param->parameterized_k_value = params.k_weights.size();
+		param->fixcluster0 = params.fixcluster0;
+	}
+
+	param->num_params = params.get_num_params();
+	initialize_params_and_k_weights(param, INIT_PARAMS | (params.k_weights.empty() ? 0 : INIT_KWEIGHTS));
+	if (params.checkconv) { param->checkconv = 1; }
 }
 
 void lambda_arg_base::validate_parameter_count(int expected)
@@ -127,9 +136,7 @@ void lambdamu_set(pCafeParam param, lambdamu_args& params)
 		if (!params.k_weights.empty()) {	// search clustered branch specific
 			param->parameterized_k_value = params.k_weights.size();
 			param->fixcluster0 = params.fixcluster0;
-			param->num_params = (params.lambdas.size()*(params.k_weights.size() - params.fixcluster0)) +
-				((params.mus.size() - params.eqbg)*(params.k_weights.size() - params.fixcluster0)) +
-				(params.k_weights.size() - 1);
+			param->num_params = params.get_num_params();
 
 			params.validate_parameter_count(param->num_params);
 
@@ -173,9 +180,7 @@ void lambdamu_set(pCafeParam param, lambdamu_args& params)
 		if (params.k_weights.size() > 0) {				// search clustered whole tree
 			param->parameterized_k_value = params.k_weights.size();
 			param->fixcluster0 = params.fixcluster0;
-			param->num_params = (params.lambdas.size()*(params.k_weights.size() - params.fixcluster0)) +
-				(params.mus.size()*(params.k_weights.size() - params.fixcluster0)) +
-				(params.k_weights.size() - 1);
+			param->num_params = params.get_num_params();
 
 			params.validate_parameter_count(param->num_params);
 
@@ -228,7 +233,10 @@ int cafe_cmd_lambdamu(Globals& globals, std::vector<std::string> tokens)
 
 	// search or set
 	if (params.search) {
-		lambdamu_search(param, params);
+		lambdamu_prepare_search(param, params);
+		// search
+		cafe_best_lambda_mu_by_fminsearch(param, param->num_lambdas, param->num_mus, param->parameterized_k_value);
+
 	}
 	else {
 		lambdamu_set(param, params);

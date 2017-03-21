@@ -43,6 +43,11 @@ struct lambda_arg_base
 	virtual const char* command() = 0;
 	virtual const char* args() = 0;
 	void validate_parameter_count(int expected);
+
+	virtual int get_num_params() const
+	{
+		return (lambdas.size()*(k_weights.size() - fixcluster0)) + (k_weights.size() - 1);
+	}
 };
 
 struct lambda_args : lambda_arg_base

@@ -215,7 +215,7 @@ void set_parameters(pCafeParam param, lambda_args& params)
 {
 	param->parameterized_k_value = params.k_weights.size();
 	param->fixcluster0 = params.fixcluster0;
-	param->num_params = (params.lambdas.size()*(params.k_weights.size() - params.fixcluster0)) + (params.k_weights.size() - 1);
+	param->num_params = params.get_num_params();
 
 	params.validate_parameter_count(param->num_params);
 

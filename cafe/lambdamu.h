@@ -15,6 +15,7 @@ struct lambdamu_args : lambda_arg_base
 	virtual const char* command() { return "lambdamu"; }
 	virtual const char* args() { return "lambdas (-l) and mus (-m)"; }
 
+	virtual int get_num_params() const;
 };
 
 void lambdamu_set(pCafeParam param, lambdamu_args& params);
