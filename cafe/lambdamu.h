@@ -17,4 +17,6 @@ struct lambdamu_args : lambda_arg_base
 
 };
 
+void lambdamu_set(pCafeParam param, lambdamu_args& params);
+
 #endif

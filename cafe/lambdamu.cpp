@@ -57,20 +57,12 @@ void lambdamu_search(pCafeParam param, lambdamu_args& params)
 				((params.mus.size() - params.eqbg)*(params.k_weights.size() - params.fixcluster0)) +
 				(params.k_weights.size() - 1);
 
-			if (param->parameters) memory_free(param->parameters);
-			param->parameters = NULL;
-			param->parameters = (double*)memory_new(param->num_params, sizeof(double));
-			if (param->k_weights) { memory_free(param->k_weights); }
-			param->k_weights = NULL;
-			param->k_weights = (double*)memory_new(param->parameterized_k_value, sizeof(double));
 		}
 		else {	// search whole dataset branch specific
 			param->num_params = params.lambdas.size() + (params.mus.size() - params.eqbg);
 
-			if (param->parameters) memory_free(param->parameters);
-			param->parameters = NULL;
-			param->parameters = (double*)memory_new(param->num_params, sizeof(double));
 		}
+		initialize_params_and_k_weights(param, INIT_PARAMS | (params.lambda_tree == NULL ? 0 : INIT_KWEIGHTS));
 	}
 	else {
 		param->num_lambdas = 1;
@@ -86,21 +78,11 @@ void lambdamu_search(pCafeParam param, lambdamu_args& params)
 			param->num_params = (params.lambdas.size()*(params.k_weights.size() - params.fixcluster0)) +
 				(params.mus.size()*(params.k_weights.size() - params.fixcluster0)) +
 				(params.k_weights.size() - 1);
-
-			if (param->parameters) memory_free(param->parameters);
-			param->parameters = NULL;
-			param->parameters = (double*)memory_new(param->num_params, sizeof(double));
-			if (param->k_weights) { memory_free(param->k_weights); }
-			param->k_weights = NULL;
-			param->k_weights = (double*)memory_new(param->parameterized_k_value, sizeof(double));
 		}
 		else {	// search whole dataset whole tree
 			param->num_params = params.lambdas.size() + params.mus.size();
-
-			if (param->parameters) memory_free(param->parameters);
-			param->parameters = NULL;
-			param->parameters = (double*)memory_new(param->num_params, sizeof(double));
 		}
+		initialize_params_and_k_weights(param, INIT_PARAMS | (params.k_weights.empty() ? 0 : INIT_KWEIGHTS));
 	}
 	// search
 	if (params.checkconv) { param->checkconv = 1; }
@@ -152,17 +134,21 @@ void lambdamu_set(pCafeParam param, lambdamu_args& params)
 			params.validate_parameter_count(param->num_params);
 
 			// copy user input into parameters
-			if (param->parameters) memory_free(param->parameters);
-			param->parameters = NULL;
-			param->parameters = (double*)memory_new(param->num_params, sizeof(double));
-			memcpy(param->parameters, &params.lambdas[0], sizeof(double)*params.lambdas.size()*(params.k_weights.size() - params.fixcluster0));
-			memcpy(&param->parameters[param->num_lambdas*(param->parameterized_k_value - params.fixcluster0)], &params.mus[0], sizeof(double)*((params.mus.size() - params.eqbg)*(params.k_weights.size() - params.fixcluster0)));
-			memcpy(&param->parameters[(param->num_lambdas*(param->parameterized_k_value - params.fixcluster0)) +
-				((params.mus.size() - params.eqbg)*(params.k_weights.size() - params.fixcluster0))], &params.k_weights[0], sizeof(double)*(params.k_weights.size() - 1));
-			// prepare space for k_weights
-			if (param->k_weights) memory_free(param->k_weights);
-			param->k_weights = NULL;
-			param->k_weights = (double*)memory_new(param->parameterized_k_value - 1, sizeof(double));
+			initialize_params_and_k_weights(param, INIT_PARAMS | INIT_KWEIGHTS);
+
+			// Not sure what values of fixcluster0 might cause this to NOT overrun
+			size_t num_lambdas = params.lambdas.size()*(params.k_weights.size() - params.fixcluster0);
+			size_t num_mus = ((params.mus.size() - params.eqbg)*(params.k_weights.size() - params.fixcluster0));
+
+			copy(params.lambdas.begin(), params.lambdas.begin() + min(num_lambdas, params.lambdas.size()), param->parameters);
+
+			int first_mu = param->num_lambdas*(params.k_weights.size() - params.fixcluster0);
+			copy(params.mus.begin(), params.mus.begin() + min(num_mus, params.lambdas.size()), param->parameters + first_mu);
+
+			int first_k_weight = (param->num_lambdas*(params.k_weights.size() - params.fixcluster0)) +
+				((params.mus.size() - params.eqbg)*(params.k_weights.size() - params.fixcluster0));
+
+			copy(params.k_weights.begin(), params.k_weights.end() - 1, param->parameters + first_k_weight);
 		}
 		else {	// search whole dataset branch specific
 			param->num_params = params.lambdas.size() + (params.mus.size() - params.eqbg);
@@ -170,12 +156,10 @@ void lambdamu_set(pCafeParam param, lambdamu_args& params)
 			params.validate_parameter_count(param->num_params);
 
 			// copy user input into parameters
-			if (param->parameters) memory_free(param->parameters);
-			param->parameters = NULL;
-			param->parameters = (double*)memory_new(param->num_params, sizeof(double));
-			memcpy(param->parameters, &params.lambdas[0], sizeof(double)*params.lambdas.size());
-			memcpy(&param->parameters[param->num_lambdas], &params.mus[0], sizeof(double)*(params.mus.size() - params.eqbg));
+			initialize_params_and_k_weights(param, INIT_PARAMS);
 
+			copy(params.lambdas.begin(), params.lambdas.end(), param->parameters);
+			copy(params.mus.begin(), params.mus.end() - params.eqbg, param->parameters + param->num_lambdas);
 		}
 	}
 	else {
@@ -196,17 +180,17 @@ void lambdamu_set(pCafeParam param, lambdamu_args& params)
 			params.validate_parameter_count(param->num_params);
 
 			// copy user input into parameters
-			if (param->parameters) memory_free(param->parameters);
-			param->parameters = NULL;
-			param->parameters = (double*)memory_new(param->num_params, sizeof(double));
-			memcpy(param->parameters, &params.lambdas[0], sizeof(double)*params.lambdas.size()*(params.k_weights.size() - params.fixcluster0));
-			memcpy(&param->parameters[param->num_lambdas*(param->parameterized_k_value - params.fixcluster0)], &params.mus[0], sizeof(double)*params.mus.size()*(param->parameterized_k_value - params.fixcluster0));
-			memcpy(&param->parameters[param->num_lambdas*(param->parameterized_k_value - params.fixcluster0) + params.mus.size()*(param->parameterized_k_value - params.fixcluster0)], &params.k_weights[0], sizeof(double)*(params.k_weights.size() - 1));
-			// prepare space for k_weights
-			if (param->k_weights) memory_free(param->k_weights);
-			param->k_weights = NULL;
-			param->k_weights = (double*)memory_new(param->parameterized_k_value - 1, sizeof(double));
+			initialize_params_and_k_weights(param, INIT_PARAMS | INIT_KWEIGHTS);
 
+			size_t num_lambdas = params.lambdas.size()*(params.k_weights.size() - params.fixcluster0);
+			copy(params.lambdas.begin(), params.lambdas.begin() + min(params.lambdas.size(), num_lambdas), param->parameters);
+
+			int first_mu = param->num_lambdas*(params.k_weights.size() - params.fixcluster0);
+			size_t num_mus = params.mus.size()*(params.k_weights.size() - params.fixcluster0);
+			copy(params.mus.begin(), params.mus.begin() + min(params.mus.size(), num_mus), param->parameters + first_mu);
+
+			int first_k_weight = param->num_lambdas*(params.k_weights.size() - params.fixcluster0) + params.mus.size()*(param->parameterized_k_value - params.fixcluster0);
+			copy(params.k_weights.begin(), params.k_weights.end() - 1, param->parameters + first_k_weight);
 		}
 		else {	// search whole dataset whole tree
 			param->num_params = params.lambdas.size() + params.mus.size();
@@ -215,14 +199,12 @@ void lambdamu_set(pCafeParam param, lambdamu_args& params)
 			params.validate_parameter_count(param->num_params);
 
 			// copy user input into parameters
-			if (param->parameters) memory_free(param->parameters);
-			param->parameters = NULL;
-			param->parameters = (double*)memory_new(param->num_params, sizeof(double));
-			memcpy(param->parameters, &params.lambdas[0], sizeof(double)*params.lambdas.size());
-			memcpy(&param->parameters[params.lambdas.size()], &params.mus[0], sizeof(double)*params.mus.size());
+			initialize_params_and_k_weights(param, INIT_PARAMS);
+
+			copy(params.lambdas.begin(), params.lambdas.end(), param->parameters);
+			copy(params.mus.begin(), params.mus.end(), param->parameters + params.lambdas.size());
 		}
 	}
-	param->param_set_func(param, param->parameters);
 }
 
 int cafe_cmd_lambdamu(Globals& globals, std::vector<std::string> tokens)
@@ -250,6 +232,7 @@ int cafe_cmd_lambdamu(Globals& globals, std::vector<std::string> tokens)
 	}
 	else {
 		lambdamu_set(param, params);
+		cafe_shell_set_lambda_mu(param, param->parameters);
 	}
 
 	if (param->pfamily)

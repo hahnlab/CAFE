@@ -292,12 +292,12 @@ void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters)
 		memcpy(param->parameters, parameters, param->num_params*sizeof(double));
 	}
 	// set lambda and mu
-	cafe_param->lambda = cafe_param->parameters;
+	param->lambda = param->parameters;
 	if (param->parameterized_k_value > 0) {
-		cafe_param->mu = &(cafe_param->parameters[param->num_lambdas*(param->parameterized_k_value-param->fixcluster0)]);
+		param->mu = &(param->parameters[param->num_lambdas*(param->parameterized_k_value-param->fixcluster0)]);
 	}
 	else {
-		cafe_param->mu = &(cafe_param->parameters[param->num_lambdas]);
+		param->mu = &(param->parameters[param->num_lambdas]);
 	}
 
 	// set k_weights

@@ -263,7 +263,6 @@ void lambda_set(pCafeParam param, lambda_args& params)
 			copy(params.lambdas.begin(), params.lambdas.begin() + param->num_lambdas, param->parameters);
 		}
 	}
-	param->param_set_func(param, param->parameters);
 
 }
 
@@ -373,6 +372,7 @@ int cafe_cmd_lambda(Globals& globals, vector<string> tokens)
 	}
 	else {
 		lambda_set(param, params);
+		cafe_shell_set_lambda(param, param->parameters);
 	}
 		
 	FILE* fpout = stdout;

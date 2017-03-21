@@ -444,3 +444,102 @@ TEST(LambdaTests, lambdamu_args__validate_parameter_count)
 		STRCMP_CONTAINS("but 7 were expected\n", ex.what());
 	}
 }
+
+TEST(LambdaTests, lambdamu_set)
+{
+	lambdamu_args args;
+	args.lambdas.push_back(.1);
+	args.lambdas.push_back(.2);
+	args.mus.push_back(.3);
+	args.mus.push_back(.4);
+	args.num_params = 4;
+	args.eqbg = 0;
+	args.lambda_tree = (pTree)create_tree();
+
+	CafeParam param;
+	param.parameters = NULL;
+	param.k_weights = NULL;
+	param.num_lambdas = 2;
+	param.param_set_func = mock_set_params;
+	lambdamu_set(&param, args);
+	LONGS_EQUAL(4, param.num_params);
+	DOUBLES_EQUAL(.1, param.parameters[0], .001);
+	DOUBLES_EQUAL(.2, param.parameters[1], .001);
+	DOUBLES_EQUAL(.3, param.parameters[2], .001);
+	DOUBLES_EQUAL(.4, param.parameters[3], .001);
+}
+
+TEST(LambdaTests, lambdamu_set_without_lambda_tree)
+{
+	lambdamu_args args;
+	args.lambdas.push_back(.1);
+	args.lambdas.push_back(.2);
+	args.mus.push_back(.3);
+	args.mus.push_back(.4);
+	args.num_params = 2;
+	args.eqbg = 0;
+	args.lambda_tree = NULL;
+
+	CafeParam param;
+	param.parameters = NULL;
+	param.k_weights = NULL;
+	param.num_lambdas = 2;
+	param.param_set_func = mock_set_params;
+	lambdamu_set(&param, args);
+	LONGS_EQUAL(2, param.num_params);
+	DOUBLES_EQUAL(.1, param.parameters[0], .001);
+	DOUBLES_EQUAL(.3, param.parameters[1], .001);
+}
+
+TEST(LambdaTests, lambdamu_set_with_k_weights)
+{
+	lambdamu_args args;
+	args.lambdas.push_back(.1);
+	args.mus.push_back(.3);
+	args.k_weights.push_back(.5);
+	args.k_weights.push_back(.6);
+
+	args.num_params = 5;
+	args.eqbg = 0;
+	args.fixcluster0 = 0;
+	args.lambda_tree = NULL;
+
+	CafeParam param;
+	param.parameters = NULL;
+	param.k_weights = NULL;
+	param.num_lambdas = 2;
+	param.param_set_func = mock_set_params;
+	lambdamu_set(&param, args);
+	LONGS_EQUAL(5, param.num_params);
+	DOUBLES_EQUAL(.1, param.parameters[0], .001);
+	DOUBLES_EQUAL(.3, param.parameters[2], .001);
+	DOUBLES_EQUAL(.5, param.parameters[4], .001);
+}
+
+TEST(LambdaTests, lambdamu_set_with_k_weights_and_tree)
+{
+	lambdamu_args args;
+	args.lambdas.push_back(.1);
+	args.lambdas.push_back(.2);
+	args.mus.push_back(.3);
+	args.mus.push_back(.4);
+	args.k_weights.push_back(.5);
+	args.k_weights.push_back(.6);
+
+	args.num_params = 9;
+	args.eqbg = 0;
+	args.fixcluster0 = 0;
+	args.lambda_tree = (pTree)create_tree();
+
+	Globals globals;
+	globals.param.num_lambdas = 2;
+	lambdamu_set(&globals.param, args);
+	LONGS_EQUAL(9, globals.param.num_params);
+	DOUBLES_EQUAL(.1, globals.param.parameters[0], .001);
+	DOUBLES_EQUAL(.2, globals.param.parameters[1], .001);
+
+	DOUBLES_EQUAL(.3, globals.param.parameters[4], .001);
+	DOUBLES_EQUAL(.4, globals.param.parameters[5], .001);
+
+	DOUBLES_EQUAL(.5, globals.param.parameters[8], .001);
+}
