@@ -1,4 +1,5 @@
 #include "viterbi.h"
+#include "Globals.h"
 
 extern "C" {
 #include <family.h>
@@ -168,8 +169,9 @@ void* __cafe_viterbi_thread_func(void* ptr)
 	return (NULL);
 }
 
-pArrayList cafe_viterbi(pCafeParam param, viterbi_parameters& viterbi, pArrayList pCD)
+pArrayList cafe_viterbi(Globals& globals, viterbi_parameters& viterbi, pArrayList pCD)
 {
+	pCafeParam param = &globals.param;
 	cafe_log(param, "Running Viterbi algorithm....\n");
 
 	pViterbiParam ptparam = (pViterbiParam)memory_new(param->num_threads, sizeof(ViterbiParam));
@@ -187,7 +189,7 @@ pArrayList cafe_viterbi(pCafeParam param, viterbi_parameters& viterbi, pArrayLis
 		ptparam[i].pcafe = param->pcafe;
 		ptparam[i].num_threads = param->num_threads;
 
-		ptparam[i].num_random_samples = param->num_random_samples;
+		ptparam[i].num_random_samples = globals.num_random_samples;
 		ptparam[i].viterbi = &viterbi;
 		ptparam[i].pvalue = param->pvalue;
 		ptparam[i].from = i;

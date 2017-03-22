@@ -667,29 +667,41 @@ int get_family_size(pTree ptree, int id)
 	}
 	return -1;
 }
+
 TEST(FirstTestGroup, cafe_tree_random_familysize)
 {
 	pCafeTree tree = create_tree(range);
-	probability_cache = NULL;
-	CafeParam param;
-	param.pcafe = tree;
+	pBirthDeathCacheArray cache = birthdeath_cache_init(10);
+	cafe_tree_set_birthdeath(tree, cache);
 
-	family_size_range range;
-	range.min = 1;
-	range.max = 10;
-	range.root_min = 1;
-	range.root_max = 3;
-	reset_birthdeath_cache(param.pcafe, 0, &range);
+//	reset_birthdeath_cache(param.pcafe, 0, &range);
 	pCafeNode node5 = (pCafeNode)tree->super.nlist->array[5];
 	for (int i = 0; i <= 10; ++i)
 		for (int j = 0; j <= 10; ++j)
 			square_matrix_set(node5->birthdeath_matrix, i, j, .1);
 
-	int max = cafe_tree_random_familysize(tree, 10);
-	LONGS_EQUAL(10, max);
-	LONGS_EQUAL(10, get_family_size((pTree)tree, 3));
-	LONGS_EQUAL(10, get_family_size((pTree)tree, 7));
+	int max = cafe_tree_random_familysize(tree, 5, cache);
+	LONGS_EQUAL(8, max);
+	LONGS_EQUAL(5, get_family_size((pTree)tree, 3));
+	LONGS_EQUAL(5, get_family_size((pTree)tree, 7));
 	LONGS_EQUAL(8, get_family_size((pTree)tree, 5));
+}
+
+TEST(FirstTestGroup, cafe_tree_random_familysize__must_be_less_than_cache_size)
+{
+	const int CACHE_SIZE = 10;
+	pCafeTree tree = create_tree(range);
+	pBirthDeathCacheArray cache = birthdeath_cache_init(CACHE_SIZE);
+	cafe_tree_set_birthdeath(tree, cache);
+
+	//	reset_birthdeath_cache(param.pcafe, 0, &range);
+	pCafeNode node5 = (pCafeNode)tree->super.nlist->array[5];
+	for (int i = 0; i <= 10; ++i)
+		for (int j = 0; j <= 10; ++j)
+			square_matrix_set(node5->birthdeath_matrix, i, j, .001);
+
+	int max = cafe_tree_random_familysize(tree, 5, cache);
+	CHECK(max < CACHE_SIZE);
 }
 
 TEST(FirstTestGroup, reset_birthdeath_cache)
@@ -831,8 +843,8 @@ TEST(FirstTestGroup, run_viterbi_sim)
 	cafe_family_set_species_index(pfamily, tree);
 	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
 	cafe_family_add_item(pfamily, build_arraylist(values, 7));
-	probability_cache = birthdeath_cache_init(tree->size_of_factor);
-	cafe_tree_set_birthdeath(tree);
+	pBirthDeathCacheArray cache = birthdeath_cache_init(tree->size_of_factor);
+	cafe_tree_set_birthdeath(tree, cache);
 
 	roots roots;
 	run_viterbi_sim(tree, pfamily, roots);

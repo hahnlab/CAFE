@@ -89,7 +89,7 @@ double __cafe_lhr_get_likelihood_for_diff_lambdas(pCafeParam param, int idx, int
 		memcpy(param->lambda, lambda_cache[t], sizeof(double)*param->num_lambdas);
 		param->param_set_func(param, param->lambda);
 		probability_cache = PBDC[t];
-		cafe_tree_set_birthdeath(param->pcafe);
+		cafe_tree_set_birthdeath(param->pcafe, probability_cache);
 	}
 	int i;
 	cafe_family_set_size(param->pfamily, idx, param->pcafe);

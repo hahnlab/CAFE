@@ -163,7 +163,6 @@ struct tagCafeParam
 	double pvalue;
 	
 	int  num_threads;
-	int  num_random_samples;
 
 	double** likelihoodRatios;
 
@@ -177,5 +176,5 @@ struct tagCafeParam
 
 extern void thread_run_with_arraylist(int numthreads, void* (*run)(void*), pArrayList pal );
 // cafe tree
-extern void cafe_tree_set_birthdeath(pCafeTree pcafe);
+extern void cafe_tree_set_birthdeath(pCafeTree pcafe, pBirthDeathCacheArray cache);
 #endif

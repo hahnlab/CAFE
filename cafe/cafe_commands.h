@@ -134,6 +134,7 @@ struct roots
 void run_viterbi_sim(pCafeTree pcafe, pCafeFamily pfamily, roots& roots);
 int init_histograms(int rfsize, roots& roots, int nsamples);
 void get_doubles_array(std::vector<double>& loc, pArgument parg);
+void log_param_values(std::ostream& ost, Globals& globals);
 
 const int REQUIRES_FAMILY = 0x01;
 const int REQUIRES_TREE = 0x02;

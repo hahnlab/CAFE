@@ -1018,17 +1018,22 @@ void node_set_birthdeath_matrix(pCafeNode pcnode, pBirthDeathCacheArray cache, i
 
 void do_node_set_birthdeath(pTree ptree, pTreeNode ptnode, va_list ap1)
 {
+	va_list ap;
+	va_copy(ap, ap1);
+	pBirthDeathCacheArray cache = va_arg(ap, pBirthDeathCacheArray);
+	va_end(ap);
+
 	pCafeTree pcafe = (pCafeTree)ptree;
-	node_set_birthdeath_matrix((pCafeNode)ptnode, probability_cache, pcafe->k);
+	node_set_birthdeath_matrix((pCafeNode)ptnode, cache, pcafe->k);
 }
 
 
 /**
 *	Set each node's birthdeath matrix based on its values of branchlength, lambdas, and mus
 **/
-void cafe_tree_set_birthdeath(pCafeTree pcafe)
+void cafe_tree_set_birthdeath(pCafeTree pcafe, pBirthDeathCacheArray cache)
 {
-	tree_traveral_prefix((pTree)pcafe, do_node_set_birthdeath);
+	tree_traveral_prefix((pTree)pcafe, do_node_set_birthdeath, cache);
 }
 
 void cafe_tree_node_copy(pTreeNode psrc, pTreeNode pdest)
@@ -1070,8 +1075,8 @@ pCafeTree cafe_tree_split(pCafeTree pcafe, int idx )
 	{
 		__cafe_tree_copy_new_fill(pcafe,psub);
 	}
-	cafe_tree_set_birthdeath(pcafe);
-	cafe_tree_set_birthdeath(psub);
+	cafe_tree_set_birthdeath(pcafe, probability_cache);
+	cafe_tree_set_birthdeath(psub, probability_cache);
 	return psub;
 }
 
@@ -1084,6 +1089,7 @@ void __cafe_tree_node_random_familysize(pTree ptree, pTreeNode pnode, va_list ap
 	va_list ap;
 	va_copy(ap, ap1);
 	int *max = va_arg(ap, int*);
+	int max_family_size = va_arg(ap, int);
 	va_end(ap);
 
 	if ( tree_is_root(ptree,pnode) ) return;
@@ -1091,12 +1097,11 @@ void __cafe_tree_node_random_familysize(pTree ptree, pTreeNode pnode, va_list ap
 	double rnd = unifrnd();					
 	double cumul = 0;
 	pCafeNode pcnode = (pCafeNode)pnode;
-	int maxFamilysize = probability_cache->maxFamilysize;
-	int s = ((pCafeNode)pnode->parent)->familysize;
+	int parent_family_size = ((pCafeNode)pnode->parent)->familysize;
 	int c = 0;
-	for (; c < maxFamilysize ; c++ )
+	for (; c < max_family_size-1; c++ )
 	{
-		cumul += square_matrix_get(pcnode->birthdeath_matrix, s, c);
+		cumul += square_matrix_get(pcnode->birthdeath_matrix, parent_family_size, c);
 		if ( cumul >= rnd ) break;
 	}
 	pcnode->familysize = c;
@@ -1109,11 +1114,11 @@ void __cafe_tree_node_random_familysize(pTree ptree, pTreeNode pnode, va_list ap
 /**
 *	Sets the family size of each node to random value between 0 and the tree's pbdc_array maxFamilySize.
 **/
-int cafe_tree_random_familysize(pCafeTree pcafe, int rootFamilysize )
+int cafe_tree_random_familysize(pCafeTree pcafe, int rootFamilysize, pBirthDeathCacheArray birthdeath )
 {
 	int max = 0;
 	((pCafeNode)pcafe->super.root)->familysize = rootFamilysize;
-	tree_traveral_prefix( (pTree)pcafe, __cafe_tree_node_random_familysize, &max);
+	tree_traveral_prefix( (pTree)pcafe, __cafe_tree_node_random_familysize, &max, birthdeath->maxFamilysize);
 	return max;
 }
 

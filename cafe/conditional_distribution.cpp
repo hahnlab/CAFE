@@ -36,7 +36,7 @@ std::vector<double> get_random_probabilities(pCafeTree pcafe, int rootFamilysize
 
 	for (int i = 0; i < trials; i++)
 	{
-		int max = cafe_tree_random_familysize(pcafe, rootFamilysize);
+		int max = cafe_tree_random_familysize(pcafe, rootFamilysize, probability_cache);
 		if (pcafe->super.nlist)
 		{
 			pcafe->familysizes[1] = MIN(max + MAX(50, max / 5), pcafe->familysizes[1]);

@@ -371,7 +371,7 @@ int cafe_shell_set_branchlength()
 			}
 		}
 	}
-	if (probability_cache) cafe_tree_set_birthdeath(cafe_param->pcafe);
+	if (probability_cache) cafe_tree_set_birthdeath(cafe_param->pcafe, probability_cache);
 	return 0;
 }
 
@@ -608,31 +608,6 @@ void set_range_from_family(family_size_range* range, pCafeFamily family)
 
 
 
-
-void log_param_values(pCafeParam param)
-{
-	cafe_log(param, "-----------------------------------------------------------\n");
-	cafe_log(param, "Family information: %s\n", param->str_fdata->buf);
-	cafe_log(param, "Log: %s\n", param->flog == stdout ? "stdout" : param->str_log->buf);
-	if (param->pcafe)
-	{
-		pString pstr = phylogeny_string((pTree)param->pcafe, NULL);
-		cafe_log(param, "Tree: %s\n", pstr->buf);
-		string_free(pstr);
-	}
-	cafe_log(param, "The number of families is %d\n", param->pfamily->flist->size);
-	cafe_log(param, "Root Family size : %d ~ %d\n", param->family_size.root_min, param->family_size.root_max);
-	cafe_log(param, "Family size : %d ~ %d\n", param->family_size.min, param->family_size.max);
-	cafe_log(param, "P-value: %f\n", param->pvalue);
-	cafe_log(param, "Num of Threads: %d\n", param->num_threads);
-	cafe_log(param, "Num of Random: %d\n", param->num_random_samples);
-	if (param->lambda)
-	{
-		pString pstr = cafe_tree_string_with_lambda(param->pcafe);
-		cafe_log(param, "Lambda: %s\n", pstr->buf);
-		string_free(pstr);
-	}
-}
 
 extern double __cafe_best_lambda_search(double* plambda, void* args);
 extern double __cafe_best_lambda_mu_search(double* pparams, void* args);

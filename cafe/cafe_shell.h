@@ -40,7 +40,6 @@ int cafe_cmd_esterror(int argc, char* argv[]);
 int cafe_cmd_simerror(int argc, char* argv[]);
 
 int set_log_file(pCafeParam param, const char *file_name);
-void log_param_values(pCafeParam param);
 
 void initialize_k_bd(pCafeParam param, double *parameters);
 void set_birth_death_probabilities4(struct probabilities *probs, int num_lambdas, int fix_cluster, int taxa_id, double* parameters);

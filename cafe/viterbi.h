@@ -9,6 +9,8 @@ extern "C"
 void compute_viterbis(pCafeNode node, int k, double *factors, int rootfamilysize_start, int rootfamilysize_end, int familysize_start, int familysize_end);
 }
 
+class Globals;
+
 struct change
 {
 	change(int e, int r, int d) : expand(e), remain(r), decrease(d)
@@ -49,7 +51,7 @@ void viterbi_parameters_init(viterbi_parameters *viterbi, int nnodes, int nrows)
 
 void viterbi_set_max_pvalue(viterbi_parameters* viterbi, int index, double val);
 void viterbi_parameters_clear(viterbi_parameters* viterbi, int nnodes);
-pArrayList cafe_viterbi(pCafeParam param, viterbi_parameters& viterbi, pArrayList pCD);
+pArrayList cafe_viterbi(Globals& globals, viterbi_parameters& viterbi, pArrayList pCD);
 
 
 #endif

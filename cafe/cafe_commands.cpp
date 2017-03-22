@@ -10,6 +10,7 @@
 #include <iterator>
 #include <algorithm>
 #include <stdexcept>
+#include <stack>
 
 #include<dirent.h>
 
@@ -656,7 +657,7 @@ int cafe_cmd_generate_random_family(Globals& globals, std::vector<std::string> t
 						}
 					}
 					// now randomly sample familysize
-					cafe_tree_random_familysize(param->pcafe, i);
+					cafe_tree_random_familysize(param->pcafe, i, probability_cache);
 
 					int *k_value = param->parameterized_k_value > 0 ? &k_arr[idx] : NULL;
 					write_leaves(ofst, pcafe, k_value, i, id, true);
@@ -719,16 +720,16 @@ struct load_args get_load_arguments(vector<Argument> pargs)
 	return args;
 }
 
-void copy_args_to_param(pCafeParam param, struct load_args& args)
+void copy_args_to_param(Globals& globals, struct load_args& args)
 {
 	if (args.num_threads > 0)
-		param->num_threads = args.num_threads;
+		globals.param.num_threads = args.num_threads;
 	if (args.num_random_samples > 0)
-		param->num_random_samples = args.num_random_samples;
+		globals.num_random_samples = args.num_random_samples;
 	if (args.pvalue > 0.0)
-		param->pvalue = args.pvalue;
+		globals.param.pvalue = args.pvalue;
 	if (!args.log_file_name.empty())
-		set_log_file(param, args.log_file_name.c_str());
+		set_log_file(&globals.param, args.log_file_name.c_str());
 }
 
 /**
@@ -748,7 +749,7 @@ int cafe_cmd_load(Globals& globals, std::vector<std::string> tokens)
 	globals.Clear(1);
 
 	struct load_args args = get_load_arguments(build_argument_list(tokens));
-	copy_args_to_param(param, args);
+	copy_args_to_param(globals, args);
 
 	if (args.filter && param->pcafe == NULL)
 	{
@@ -784,7 +785,9 @@ int cafe_cmd_load(Globals& globals, std::vector<std::string> tokens)
 	{
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
 	}
-	log_param_values(param);
+	log_buffer buf(&globals.param);
+	ostream ost(&buf);
+	log_param_values(ost, globals);
 	return 0;
 }
 
@@ -840,13 +843,11 @@ struct family_args get_family_arguments(vector<Argument> pargs)
 */
 int cafe_cmd_report(Globals& globals, std::vector<std::string> tokens)
 {
-	pCafeParam param = &globals.param;
-
-	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE | REQUIRES_LAMBDA);
+	prereqs(&globals.param, REQUIRES_FAMILY | REQUIRES_TREE | REQUIRES_LAMBDA);
 
 	report_parameters params = get_report_parameters(tokens);
 
-	cafe_do_report(param, *globals.viterbi, &params);
+	cafe_do_report(globals, *globals.viterbi, &params);
 	return 0;
 }
 
@@ -1172,9 +1173,9 @@ int cafe_cmd_pvalue(Globals& globals, std::vector<std::string> tokens)
 		{
 			throw io_error("pvalue", args.outfile, true);
 		}
-		matrix m = cafe_conditional_distribution(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
+		matrix m = cafe_conditional_distribution(param->pcafe, &param->family_size, param->num_threads, globals.num_random_samples);
 		pArrayList cond_dist = to_arraylist(m);
-		write_pvalues(ofst, cond_dist, param->num_random_samples);
+		write_pvalues(ofst, cond_dist, globals.num_random_samples);
 		arraylist_free(cond_dist, free);
 	}
 	else if (args.infile.size() > 0)
@@ -1185,22 +1186,22 @@ int cafe_cmd_pvalue(Globals& globals, std::vector<std::string> tokens)
 		{
 			throw io_error("pvalue", args.outfile, true);
 		}
-		read_pvalues(ifst, param->num_random_samples);
+		read_pvalues(ifst, globals.num_random_samples);
 		cafe_log(param, "Done Loading p-values ... \n");
 	}
 	else if (args.index >= 0)
 	{
-		pvalues_for_family(param->pcafe, param->pfamily, &param->family_size, param->num_threads, param->num_random_samples, args.index);
+		pvalues_for_family(param->pcafe, param->pfamily, &param->family_size, param->num_threads, globals.num_random_samples, args.index);
 	}
 	else if (tokens.size() > 1)
 	{
 		prereqs(param, REQUIRES_TREE);
-		print_pvalues(cout, param->pcafe, cafe_shell_parse_familysize((pTree)param->pcafe, tokens), param->num_random_samples);
+		print_pvalues(cout, param->pcafe, cafe_shell_parse_familysize((pTree)param->pcafe, tokens), globals.num_random_samples);
 	}
 	else
 	{
 		prereqs(param, REQUIRES_TREE);
-		print_pvalues(cout, param->pcafe, cafe_shell_set_familysize(), param->num_random_samples);
+		print_pvalues(cout, param->pcafe, cafe_shell_set_familysize(), globals.num_random_samples);
 	}
 	return 0;
 }
@@ -1548,7 +1549,7 @@ void tree_set_branch_lengths(pCafeTree pcafe, std::vector<int> lengths)
 			fprintf(stderr, "ERROR: the branch length of node %d is not changed\n", (int)i);
 		}
 	}
-	if (probability_cache) cafe_tree_set_birthdeath(pcafe);
+	if (probability_cache) cafe_tree_set_birthdeath(pcafe, probability_cache);
 
 }
 
@@ -1745,7 +1746,7 @@ int cafe_cmd_simextinct(Globals& globals, std::vector<std::string> tokens)
 		int cnt_zero = 0;
 		for (i = 0; i < num_trials; i++)
 		{
-			cafe_tree_random_familysize(param->pcafe, r);
+			cafe_tree_random_familysize(param->pcafe, r, probability_cache);
 			data[i] = __cafe_cmd_extinct_count_zero((pTree)param->pcafe);
 			cnt_zero += data[i];
 		}
@@ -1898,10 +1899,10 @@ int cafe_cmd_gainloss(Globals& globals, std::vector<std::string> tokens)
 		{
 			param->param_set_func(param, param->parameters);
 			reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
-			ConditionalDistribution::reset(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
+			ConditionalDistribution::reset(param->pcafe, &param->family_size, param->num_threads, globals.num_random_samples);
 		}
 		pArrayList cd = ConditionalDistribution::to_arraylist();
-		cafe_viterbi(param, *globals.viterbi, cd);
+		cafe_viterbi(globals, *globals.viterbi, cd);
 		arraylist_free(cd, NULL);
 	}
 
@@ -1942,7 +1943,9 @@ int cafe_cmd_gainloss(Globals& globals, std::vector<std::string> tokens)
 */
 int cafe_cmd_print_param(Globals& globals, std::vector<std::string> tokens)
 {
-	log_param_values(&globals.param);
+	log_buffer buf(&globals.param);
+	ostream ost(&buf);
+	log_param_values(ost, globals);
 	return 0;
 }
 
@@ -2227,7 +2230,7 @@ int cafe_cmd_extinct(Globals& globals, std::vector<std::string> tokens)
 				int sum = 0;
 				for (j = 0; j < roots.num[i]; j++)
 				{
-					cafe_tree_random_familysize(pcafe, i);
+					cafe_tree_random_familysize(pcafe, i, probability_cache);
 					simdata[f] = __cafe_cmd_extinct_count_zero((pTree)pcafe);
 					data[k++] = simdata[f];
 					sum += simdata[f];
@@ -2359,7 +2362,11 @@ int cafe_cmd_family(Globals& globals, std::vector<std::string> tokens)
 		prereqs(param, REQUIRES_TREE);
 
 		cafe_family_filter(param);
-		log_param_values(param);
+
+		log_buffer buf(&globals.param);
+		ostream ost(&buf);
+
+		log_param_values(ost, globals);
 		return 0;
 	}
 	if (idx < 0)
@@ -2487,6 +2494,33 @@ int cafe_cmd_viterbi(Globals& globals, std::vector<std::string> tokens)
 	}
 
 	return 0;
+}
+
+void log_param_values(std::ostream& ost, Globals& globals)
+{
+	pCafeParam param = &globals.param;
+
+	ost << "-----------------------------------------------------------\n";
+	ost << "Family information: " << param->str_fdata->buf << "\n";
+	ost << "Log: " << (param->flog == stdout ? "stdout" : param->str_log->buf) << "\n";
+	if (param->pcafe)
+	{
+		pString pstr = phylogeny_string((pTree)param->pcafe, NULL);
+		ost << "Tree: " << pstr->buf << "\n";
+		string_free(pstr);
+	}
+	ost << "The number of families is " << param->pfamily->flist->size << "\n";
+	ost << "Root Family size : " << param->family_size.root_min << " ~ " << param->family_size.root_max << "\n";
+	ost << "Family size : " << param->family_size.min << " ~ " << param->family_size.max << "\n";
+	ost << "P-value: " << param->pvalue << "\n";
+	ost << "Num of Threads: " << param->num_threads << "\n";
+	ost << "Num of Random: " << globals.num_random_samples << "\n";
+	if (param->lambda)
+	{
+		pString pstr = cafe_tree_string_with_lambda(param->pcafe);
+		ost << "Lambda: " << pstr->buf << "\n";
+		string_free(pstr);
+	}
 }
 
 

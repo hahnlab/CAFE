@@ -66,7 +66,7 @@ report_parameters get_report_parameters(std::vector<std::string> tokens);
 int cafe_cmd_report(Globals& globals, std::vector<std::string> tokens);
 void write_viterbi(std::ostream& ost, const Report& viterbi);
 void write_families_header(std::ostream& ost, bool cutPvalues, bool likelihoodRatios);
-void cafe_do_report(pCafeParam param, viterbi_parameters& viterbi, report_parameters* params);
+void cafe_do_report(Globals& globals, viterbi_parameters& viterbi, report_parameters* params);
 int cafe_report_retrieve_data(const char* file, pCafeParam param, viterbi_parameters& viterbi);
 
 std::ostream& operator<<(std::ostream& ost, const family_line_item& item);

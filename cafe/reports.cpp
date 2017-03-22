@@ -11,6 +11,7 @@
 #include "pvalue.h"
 #include "branch_cutting.h"
 #include "viterbi.h"
+#include "Globals.h"
 
 using namespace std;
 
@@ -413,8 +414,9 @@ report_parameters get_report_parameters(std::vector<std::string> tokens)
 }
 
 
-void cafe_do_report(pCafeParam param, viterbi_parameters& viterbi, report_parameters* params)
+void cafe_do_report(Globals& globals, viterbi_parameters& viterbi, report_parameters* params)
 {
+	pCafeParam param = &globals.param;
 	if (!params->just_save)
 	{
 		cafe_tree_set_parameters(param->pcafe, &param->family_size, 0);
@@ -434,17 +436,17 @@ void cafe_do_report(pCafeParam param, viterbi_parameters& viterbi, report_parame
 	{
 		param->param_set_func(param, param->parameters);
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
-		ConditionalDistribution::reset(param->pcafe, &param->family_size, param->num_threads, param->num_random_samples);
+		ConditionalDistribution::reset(param->pcafe, &param->family_size, param->num_threads, globals.num_random_samples);
 	}
 
 	if (params->branchcutting || params->likelihood)
 	{
 		pArrayList cd = ConditionalDistribution::to_arraylist();
-		cafe_viterbi(param, viterbi, cd);
+		cafe_viterbi(globals, viterbi, cd);
 		arraylist_free(cd, NULL);
 		
 		if (params->branchcutting) 
-			cafe_branch_cutting(param, viterbi);
+			cafe_branch_cutting(globals, viterbi);
 		
 		if (params->likelihood) 
 			cafe_likelihood_ratio_test(param, viterbi.maximumPvalues);
@@ -470,7 +472,7 @@ void cafe_do_report(pCafeParam param, viterbi_parameters& viterbi, report_parame
 		if (!params->just_save)
 		{
 			pArrayList cd = ConditionalDistribution::to_arraylist();
-			cafe_viterbi(param, viterbi, cd);
+			cafe_viterbi(globals, viterbi, cd);
 			arraylist_free(cd, NULL);
 		}
 		Report r(param, viterbi);

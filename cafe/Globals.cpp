@@ -16,7 +16,7 @@ extern "C" {
 * \brief Initializes the global \ref cafe_param that holds the data acted upon by cafe. Called at program startup.
 *
 */
-Globals::Globals() : viterbi(new viterbi_parameters())
+Globals::Globals() : viterbi(new viterbi_parameters()), num_random_samples(1000)
 {
 	param.checkconv = 0;
 	param.cv_species_name = NULL;
@@ -42,7 +42,6 @@ Globals::Globals() : viterbi(new viterbi_parameters())
 	param.num_lambdas = 0;
 	param.num_mus = 0;
 	param.num_params = 0;
-	param.num_random_samples = 1000;
 	param.num_threads = 1;
 	param.old_branchlength = NULL;
 	param.p_z_membership = NULL;
@@ -75,6 +74,8 @@ Globals::~Globals()
 
 void Globals::Clear(int btree_skip)
 {
+	num_random_samples = 1000;
+
 	if (param.str_fdata)
 	{
 		string_free(param.str_fdata);
@@ -155,7 +156,6 @@ void Globals::Clear(int btree_skip)
 	param.family_size.max = 1;
 	param.param_set_func = cafe_shell_set_lambda;
 	param.num_threads = 1;
-	param.num_random_samples = 1000;
 	param.pvalue = 0.01;
 }
 
