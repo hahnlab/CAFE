@@ -1666,6 +1666,33 @@ int cafe_cmd_rootdist(Globals& globals, std::vector<std::string> tokens)
 	return 0;
 }
 
+void log_param_values(std::ostream& ost, Globals& globals)
+{
+	pCafeParam param = &globals.param;
+
+	ost << "-----------------------------------------------------------\n";
+	ost << "Family information: " << param->str_fdata->buf << "\n";
+	ost << "Log: " << (param->flog == stdout ? "stdout" : param->str_log->buf) << "\n";
+	if (param->pcafe)
+	{
+		pString pstr = phylogeny_string((pTree)param->pcafe, NULL);
+		ost << "Tree: " << pstr->buf << "\n";
+		string_free(pstr);
+	}
+	ost << "The number of families is " << param->pfamily->flist->size << "\n";
+	ost << "Root Family size : " << param->family_size.root_min << " ~ " << param->family_size.root_max << "\n";
+	ost << "Family size : " << param->family_size.min << " ~ " << param->family_size.max << "\n";
+	ost << "P-value: " << param->pvalue << "\n";
+	ost << "Num of Threads: " << param->num_threads << "\n";
+	ost << "Num of Random: " << globals.num_random_samples << "\n";
+	if (param->lambda)
+	{
+		pString pstr = cafe_tree_string_with_lambda(param->pcafe);
+		ost << "Lambda: " << pstr->buf << "\n";
+		string_free(pstr);
+	}
+}
+
 
 #ifdef DEBUG
 /**
@@ -2494,33 +2521,6 @@ int cafe_cmd_viterbi(Globals& globals, std::vector<std::string> tokens)
 	}
 
 	return 0;
-}
-
-void log_param_values(std::ostream& ost, Globals& globals)
-{
-	pCafeParam param = &globals.param;
-
-	ost << "-----------------------------------------------------------\n";
-	ost << "Family information: " << param->str_fdata->buf << "\n";
-	ost << "Log: " << (param->flog == stdout ? "stdout" : param->str_log->buf) << "\n";
-	if (param->pcafe)
-	{
-		pString pstr = phylogeny_string((pTree)param->pcafe, NULL);
-		ost << "Tree: " << pstr->buf << "\n";
-		string_free(pstr);
-	}
-	ost << "The number of families is " << param->pfamily->flist->size << "\n";
-	ost << "Root Family size : " << param->family_size.root_min << " ~ " << param->family_size.root_max << "\n";
-	ost << "Family size : " << param->family_size.min << " ~ " << param->family_size.max << "\n";
-	ost << "P-value: " << param->pvalue << "\n";
-	ost << "Num of Threads: " << param->num_threads << "\n";
-	ost << "Num of Random: " << globals.num_random_samples << "\n";
-	if (param->lambda)
-	{
-		pString pstr = cafe_tree_string_with_lambda(param->pcafe);
-		ost << "Lambda: " << pstr->buf << "\n";
-		string_free(pstr);
-	}
 }
 
 
