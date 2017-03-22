@@ -18,24 +18,32 @@
 	<nav>
 	  <ul>
 	    <li class="nav"><a class="nav" href="index.html">HOME</a></li>
-	    <li class="nav"><a class="nav" href="download.html">DOWNLOAD</a></li>
-	    <li class="nav"><a class="nav" href="">MANUAL</a></li>
-	    <li class="nav"><a class="nav" href="">FAQ</a></li>
+	    <li class="nav"><a class="nav" href="">DOWNLOAD</a></li>
+	    <li class="nav"><a class="nav" href="manual.html">MANUAL</a></li>
+	    <li class="nav"><a class="nav" href="faq.html">FAQ</a></li>
 	    <li class="nav"><a class="nav" href="citation.html">CITATION</a></li>
-	    <li class="nav"><a class="nav" href="">CONTACT</a></li>
+	    <li class="nav"><a class="nav" href="contact.html">CONTACT</a></li>
 	  </ul>
 	</nav>
       </div>
       
       <div class="content grid_8">
 	<h1>Downloading and installing CAFE</h1>
+	<h2>Download</h2>
 	<p>CAFE's files can be downloaded in two different ways:</p>
 	<ol>
 	  <li class="downl">Download the latest release tarball <a href="https://github.com/hahnlab/CAFE/archive/v3.1.tar.gz">here</a>, put the tarball in a folder of your choice, and from that folder extract the files with command (replacing "some_version" with the version you downloaded):</li>
 	  <p style="text-indent: 1em;"><font size="-1" face="Courier New">$ tar -zxvf CAFE-some_version.tar.gz</font></p>
 	  <li class="downl">If you have <font face="Courier New">git</font> installed, you can clone CAFE's repository by moving to a directory of your choice and entering the command:</li>
-	  <p style="text-indent: 1em;"><font size=-1" face="Courier New">$ git clone https://github.com/hahnlab/CAFE.git</p>
+	  <p style="text-indent: 1em;"><font size=-1" face="Courier New">$ git clone https://github.com/hahnlab/CAFE.git</font></p>
 	</ol>
+	<h2>Installation</h2>
+	<p>CAFE comes with a precompiled executable file (<font size"-1" face="Courier New">/path/to/CAFE/release/cafe</font>) that should work on Linux machines.
+	If you prefer to compile from source yourself, move to the CAFE folder, and run:</p>
+ 	<p style="text-indent: 1em;"><font size="-1" face="Courier New">$ make</font></p>
+	<p>Then just copy the binary file to somewhere on your path, such as <font face="Courier New">/usr/local/bin/</font>. 
+	Alternatively, add <font face="Courier New">/path/to/CAFE/release/</font> to your <font face="Courier New">$PATH</font> variable (in your <font face="Courier New">.bashrc</font> or <font face="Courier New">.bash_profile)</font>.
+	</p>
       </div>
 
     <!-- <div class="container_12"> -->
