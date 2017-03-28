@@ -147,15 +147,15 @@ void lambdamu_set(pCafeParam param, lambdamu_args& params)
 			size_t num_lambdas = params.lambdas.size()*(params.k_weights.size() - params.fixcluster0);
 			size_t num_mus = ((params.mus.size() - params.eqbg)*(params.k_weights.size() - params.fixcluster0));
 
-			copy(params.lambdas.begin(), params.lambdas.begin() + min(num_lambdas, params.lambdas.size()), param->parameters);
+			input_values_set_lambdas(&param->input, &params.lambdas[0], min(num_lambdas, params.lambdas.size()));
 
 			int first_mu = param->num_lambdas*(params.k_weights.size() - params.fixcluster0);
-			copy(params.mus.begin(), params.mus.begin() + min(num_mus, params.lambdas.size()), param->parameters + first_mu);
+			input_values_set_mus(&param->input, &params.mus[0], first_mu, min(num_mus, params.mus.size()));
 
 			int first_k_weight = (param->num_lambdas*(params.k_weights.size() - params.fixcluster0)) +
 				((params.mus.size() - params.eqbg)*(params.k_weights.size() - params.fixcluster0));
 
-			copy(params.k_weights.begin(), params.k_weights.end() - 1, param->parameters + first_k_weight);
+			input_values_set_mus(&param->input, &params.k_weights[0], first_k_weight, min(num_mus, params.k_weights.size()-1));
 		}
 		else {	// search whole dataset branch specific
 			param->num_params = params.lambdas.size() + (params.mus.size() - params.eqbg);
@@ -165,8 +165,8 @@ void lambdamu_set(pCafeParam param, lambdamu_args& params)
 			// copy user input into parameters
 			initialize_params_and_k_weights(param, INIT_PARAMS);
 
-			copy(params.lambdas.begin(), params.lambdas.end(), param->parameters);
-			copy(params.mus.begin(), params.mus.end() - params.eqbg, param->parameters + param->num_lambdas);
+			input_values_set_lambdas(&param->input, &params.lambdas[0], params.lambdas.size());
+			input_values_set_mus(&param->input, &params.mus[0], param->num_lambdas, params.mus.size() - params.eqbg);
 		}
 	}
 	else {
@@ -188,14 +188,14 @@ void lambdamu_set(pCafeParam param, lambdamu_args& params)
 			initialize_params_and_k_weights(param, INIT_PARAMS | INIT_KWEIGHTS);
 
 			size_t num_lambdas = params.lambdas.size()*(params.k_weights.size() - params.fixcluster0);
-			copy(params.lambdas.begin(), params.lambdas.begin() + min(params.lambdas.size(), num_lambdas), param->parameters);
+			copy(params.lambdas.begin(), params.lambdas.begin() + min(params.lambdas.size(), num_lambdas), param->input.parameters);
 
 			int first_mu = param->num_lambdas*(params.k_weights.size() - params.fixcluster0);
 			size_t num_mus = params.mus.size()*(params.k_weights.size() - params.fixcluster0);
-			copy(params.mus.begin(), params.mus.begin() + min(params.mus.size(), num_mus), param->parameters + first_mu);
+			copy(params.mus.begin(), params.mus.begin() + min(params.mus.size(), num_mus), param->input.parameters + first_mu);
 
 			int first_k_weight = param->num_lambdas*(params.k_weights.size() - params.fixcluster0) + params.mus.size()*(param->parameterized_k_value - params.fixcluster0);
-			copy(params.k_weights.begin(), params.k_weights.end() - 1, param->parameters + first_k_weight);
+			copy(params.k_weights.begin(), params.k_weights.end() - 1, param->input.parameters + first_k_weight);
 		}
 		else {	// search whole dataset whole tree
 			param->num_params = params.lambdas.size() + params.mus.size();
@@ -206,8 +206,8 @@ void lambdamu_set(pCafeParam param, lambdamu_args& params)
 			// copy user input into parameters
 			initialize_params_and_k_weights(param, INIT_PARAMS);
 
-			copy(params.lambdas.begin(), params.lambdas.end(), param->parameters);
-			copy(params.mus.begin(), params.mus.end(), param->parameters + params.lambdas.size());
+			copy(params.lambdas.begin(), params.lambdas.end(), param->input.parameters);
+			copy(params.mus.begin(), params.mus.end(), param->input.parameters + params.lambdas.size());
 		}
 	}
 }
@@ -240,7 +240,7 @@ int cafe_cmd_lambdamu(Globals& globals, std::vector<std::string> tokens)
 	}
 	else {
 		lambdamu_set(param, params);
-		cafe_shell_set_lambda_mu(param, param->parameters);
+		cafe_shell_set_lambda_mu(param, param->input.parameters);
 	}
 
 	if (param->pfamily)

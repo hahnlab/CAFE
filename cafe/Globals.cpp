@@ -46,7 +46,7 @@ Globals::Globals() : viterbi(new viterbi_parameters()), num_random_samples(1000)
 	param.old_branchlength = NULL;
 	param.p_z_membership = NULL;
 	param.param_set_func = cafe_shell_set_lambda;
-	param.parameters = NULL;
+	input_values_init(&param.input);
 	param.parameterized_k_value = 0;
 	param.pcafe = NULL;
 	param.pfamily = NULL;
@@ -117,11 +117,7 @@ void Globals::Clear(int btree_skip)
 		cafe_family_free(param.pfamily);
 		param.pfamily = NULL;
 	}
-	if (param.parameters)
-	{
-		memory_free(param.parameters);
-		param.parameters = NULL;
-	}
+	input_values_destruct(&param.input);
 	if (param.lambda)
 	{
 		//memory_free( param.lambda ); param.lambda points to param.parameters

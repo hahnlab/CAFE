@@ -3,6 +3,7 @@
 
 #include<tree.h>
 #include<birthdeath.h>
+#include "input_values.h"
 
 #define FAMILYSIZEMAX	1000
 typedef struct 
@@ -131,7 +132,8 @@ struct tagCafeParam
 	/// prior is a poisson distribution on the root size based on leaves' size
 	double* prior_rfsize;
 
-	double* parameters;
+	input_values input;
+	//double* parameters;
 	int num_params;
 	param_func param_set_func;
 

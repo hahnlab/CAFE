@@ -1218,7 +1218,7 @@ TEST(FirstTestGroup, initialize_k_weights)
 	for (double i = 0; i < 100; ++i)
 		params[i] = i / 100.0;
 	param.k_weights = &weights[0];
-	param.parameters = &params[0];
+	param.input.parameters = &params[0];
 	param.parameterized_k_value = 5;
 	param.fixcluster0 = 3;
 	param.num_lambdas = 1;
@@ -1252,7 +1252,7 @@ TEST(FirstTestGroup, initialize_k_weights2)
 	for (double i = 0; i < 100; ++i)
 		params[i] = i / 100.0;
 	param.k_weights = &weights[0];
-	param.parameters = &params[0];
+	param.input.parameters = &params[0];
 	param.parameterized_k_value = 5;
 	param.fixcluster0 = 3;
 	param.num_lambdas = 1;

@@ -240,17 +240,17 @@ TEST(LambdaTests, set_all_lambdas)
 TEST(LambdaTests, initialize_params_and_k_weights)
 {
 	CafeParam param;
-	param.parameters = NULL;
+	param.input.parameters = NULL;
 	param.k_weights = NULL;
 	param.num_params = 5;
 	initialize_params_and_k_weights(&param, INIT_PARAMS);
-	CHECK(param.parameters != NULL);
+	CHECK(param.input.parameters != NULL);
 	CHECK(param.k_weights == NULL);
 
-	param.parameters = NULL;
+	param.input.parameters = NULL;
 	param.parameterized_k_value = 5;
 	initialize_params_and_k_weights(&param, INIT_KWEIGHTS);
-	CHECK(param.parameters == NULL);
+	CHECK(param.input.parameters == NULL);
 	CHECK(param.k_weights != NULL);
 }
 
@@ -268,20 +268,20 @@ TEST(LambdaTests, set_parameters)
 	copy(bar, bar + 5, args.k_weights.begin());
 	args.num_params = 14;
 
-	param.parameters = NULL;
+	param.input.parameters = NULL;
 	param.k_weights = NULL;
 	param.num_lambdas = 1;
 
 	set_parameters(&param, args);
 	LONGS_EQUAL(7, param.parameterized_k_value);
 	LONGS_EQUAL(14, param.num_params);
-	DOUBLES_EQUAL(1.0, param.parameters[0], 0.001);
-	DOUBLES_EQUAL(2.0, param.parameters[1], 0.001);
-	DOUBLES_EQUAL(6.0, param.parameters[4], 0.001);
-	DOUBLES_EQUAL(7.0, param.parameters[5], 0.001);
-	DOUBLES_EQUAL(8.0, param.parameters[6], 0.001);
-	DOUBLES_EQUAL(9.0, param.parameters[7], 0.001);
-	DOUBLES_EQUAL(10.0, param.parameters[8], 0.001);
+	DOUBLES_EQUAL(1.0, param.input.parameters[0], 0.001);
+	DOUBLES_EQUAL(2.0, param.input.parameters[1], 0.001);
+	DOUBLES_EQUAL(6.0, param.input.parameters[4], 0.001);
+	DOUBLES_EQUAL(7.0, param.input.parameters[5], 0.001);
+	DOUBLES_EQUAL(8.0, param.input.parameters[6], 0.001);
+	DOUBLES_EQUAL(9.0, param.input.parameters[7], 0.001);
+	DOUBLES_EQUAL(10.0, param.input.parameters[8], 0.001);
 }
 
 void mock_set_params(pCafeParam param, double* parameters)
@@ -300,7 +300,7 @@ TEST(LambdaTests, lambda_set)
 	args.lambdas.push_back(1);
 	args.lambdas.push_back(2);
 	copy(bar, bar + 5, args.k_weights.begin());
-	param.parameters = NULL;
+	param.input.parameters = NULL;
 	param.k_weights = NULL;
 	param.num_lambdas = 1;
 	param.param_set_func = mock_set_params;
@@ -457,16 +457,16 @@ TEST(LambdaTests, lambdamu_set)
 	args.lambda_tree = (pTree)create_tree();
 
 	CafeParam param;
-	param.parameters = NULL;
+	param.input.parameters = NULL;
 	param.k_weights = NULL;
 	param.num_lambdas = 2;
 	param.param_set_func = mock_set_params;
 	lambdamu_set(&param, args);
 	LONGS_EQUAL(4, param.num_params);
-	DOUBLES_EQUAL(.1, param.parameters[0], .001);
-	DOUBLES_EQUAL(.2, param.parameters[1], .001);
-	DOUBLES_EQUAL(.3, param.parameters[2], .001);
-	DOUBLES_EQUAL(.4, param.parameters[3], .001);
+	DOUBLES_EQUAL(.1, param.input.parameters[0], .001);
+	DOUBLES_EQUAL(.2, param.input.parameters[1], .001);
+	DOUBLES_EQUAL(.3, param.input.parameters[2], .001);
+	DOUBLES_EQUAL(.4, param.input.parameters[3], .001);
 }
 
 TEST(LambdaTests, lambdamu_set_without_lambda_tree)
@@ -481,14 +481,14 @@ TEST(LambdaTests, lambdamu_set_without_lambda_tree)
 	args.lambda_tree = NULL;
 
 	CafeParam param;
-	param.parameters = NULL;
+	param.input.parameters = NULL;
 	param.k_weights = NULL;
 	param.num_lambdas = 2;
 	param.param_set_func = mock_set_params;
 	lambdamu_set(&param, args);
 	LONGS_EQUAL(2, param.num_params);
-	DOUBLES_EQUAL(.1, param.parameters[0], .001);
-	DOUBLES_EQUAL(.3, param.parameters[1], .001);
+	DOUBLES_EQUAL(.1, param.input.parameters[0], .001);
+	DOUBLES_EQUAL(.3, param.input.parameters[1], .001);
 }
 
 TEST(LambdaTests, lambdamu_set_with_k_weights)
@@ -505,15 +505,15 @@ TEST(LambdaTests, lambdamu_set_with_k_weights)
 	args.lambda_tree = NULL;
 
 	CafeParam param;
-	param.parameters = NULL;
+	param.input.parameters = NULL;
 	param.k_weights = NULL;
 	param.num_lambdas = 2;
 	param.param_set_func = mock_set_params;
 	lambdamu_set(&param, args);
 	LONGS_EQUAL(5, param.num_params);
-	DOUBLES_EQUAL(.1, param.parameters[0], .001);
-	DOUBLES_EQUAL(.3, param.parameters[2], .001);
-	DOUBLES_EQUAL(.5, param.parameters[4], .001);
+	DOUBLES_EQUAL(.1, param.input.parameters[0], .001);
+	DOUBLES_EQUAL(.3, param.input.parameters[2], .001);
+	DOUBLES_EQUAL(.5, param.input.parameters[4], .001);
 }
 
 TEST(LambdaTests, lambdamu_set_with_k_weights_and_tree)
@@ -535,11 +535,11 @@ TEST(LambdaTests, lambdamu_set_with_k_weights_and_tree)
 	globals.param.num_lambdas = 2;
 	lambdamu_set(&globals.param, args);
 	LONGS_EQUAL(9, globals.param.num_params);
-	DOUBLES_EQUAL(.1, globals.param.parameters[0], .001);
-	DOUBLES_EQUAL(.2, globals.param.parameters[1], .001);
+	DOUBLES_EQUAL(.1, globals.param.input.parameters[0], .001);
+	DOUBLES_EQUAL(.2, globals.param.input.parameters[1], .001);
 
-	DOUBLES_EQUAL(.3, globals.param.parameters[4], .001);
-	DOUBLES_EQUAL(.4, globals.param.parameters[5], .001);
+	DOUBLES_EQUAL(.3, globals.param.input.parameters[4], .001);
+	DOUBLES_EQUAL(.4, globals.param.input.parameters[5], .001);
 
-	DOUBLES_EQUAL(.5, globals.param.parameters[8], .001);
+	DOUBLES_EQUAL(.5, globals.param.input.parameters[8], .001);
 }

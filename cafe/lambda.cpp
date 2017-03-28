@@ -199,13 +199,11 @@ void initialize_params_and_k_weights(pCafeParam param, int what)
 {
 	if (what & INIT_PARAMS)
 	{
-		if (param->parameters) 
-			memory_free(param->parameters);
-		param->parameters = (double*)memory_new(param->num_params, sizeof(double));
+		input_values_construct(&param->input, param->num_params);
 	}
 	if (what & INIT_KWEIGHTS)
 	{
-		if (param->k_weights) 
+		if (param->k_weights)
 			memory_free(param->k_weights);
 		param->k_weights = (double*)memory_new(param->parameterized_k_value, sizeof(double));
 	}
@@ -221,11 +219,11 @@ void set_parameters(pCafeParam param, lambda_args& params)
 
 	initialize_params_and_k_weights(param, INIT_PARAMS | INIT_KWEIGHTS);
 
-	copy(params.lambdas.begin(), params.lambdas.end(), param->parameters);
+	input_values_set_lambdas(&param->input, &params.lambdas[0], params.lambdas.size());
 
 	int num_k_weights = params.k_weights.size() - 1;
 	int first_k_weight = (param->num_lambdas*(param->parameterized_k_value - params.fixcluster0));
-	copy(params.k_weights.begin(), params.k_weights.begin() + num_k_weights, param->parameters + first_k_weight);
+	input_values_set_k_weights(&param->input, &params.k_weights[0], first_k_weight, num_k_weights);
 
 }
 
@@ -243,8 +241,7 @@ void lambda_set(pCafeParam param, lambda_args& params)
 
 			// copy user input into parameters
 			initialize_params_and_k_weights(param, INIT_PARAMS);
-			copy(params.lambdas.begin(), params.lambdas.end(), param->parameters);
-			//memcpy(param->parameters, params.lambda, sizeof(double)*params.num_lambdas);
+			input_values_set_lambdas(&param->input, &params.lambdas[0], params.lambdas.size());
 		}
 	}
 	else {
@@ -259,8 +256,7 @@ void lambda_set(pCafeParam param, lambda_args& params)
 
 			// copy user input into parameters
 			initialize_params_and_k_weights(param, INIT_PARAMS);
-			//memcpy(param->parameters, params.lambda, sizeof(double)*params.num_lambdas);
-			copy(params.lambdas.begin(), params.lambdas.begin() + param->num_lambdas, param->parameters);
+			input_values_set_lambdas(&param->input, &params.lambdas[0], param->num_lambdas);
 		}
 	}
 
@@ -372,7 +368,7 @@ int cafe_cmd_lambda(Globals& globals, vector<string> tokens)
 	}
 	else {
 		lambda_set(param, params);
-		cafe_shell_set_lambda(param, param->parameters);
+		cafe_shell_set_lambda(param, param->input.parameters);
 	}
 		
 	FILE* fpout = stdout;

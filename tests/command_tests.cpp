@@ -116,7 +116,7 @@ TEST(CommandTests, cafe_cmd_exit)
 	pCafeParam param = &globals.param;
 	param->str_log = NULL;
 	param->lambda_tree = NULL;
-	param->parameters = (double *)memory_new(10, sizeof(double));
+	input_values_construct(&param->input, 10);
 	param->pfamily = NULL;
 	param->pcafe = NULL;
 	param->prior_rfsize = NULL;
@@ -128,7 +128,7 @@ TEST(CommandTests, cafe_cmd_exit)
 
 	cafe_cmd_exit(globals, tokens);
 
-	LONGS_EQUAL(0, param->parameters);
+	LONGS_EQUAL(0, param->input.parameters);
 	LONGS_EQUAL(0, param->ML);
 }
 

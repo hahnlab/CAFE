@@ -193,13 +193,13 @@ void copy_weights(double *out, double *in, int count)
 void initialize_k_weights(pCafeParam param)
 {
 	int start = param->num_lambdas*(param->parameterized_k_value - param->fixcluster0);
-	copy_weights(param->k_weights, param->parameters + start, param->parameterized_k_value);
+	copy_weights(param->k_weights, param->input.parameters + start, param->parameterized_k_value);
 }
 
 void initialize_k_weights2(pCafeParam param)
 {
 	int start = param->num_lambdas*(param->parameterized_k_value - param->fixcluster0) + (param->num_mus - param->eqbg)*(param->parameterized_k_value - param->fixcluster0);
-	copy_weights(param->k_weights, param->parameters + start, param->parameterized_k_value);
+	copy_weights(param->k_weights, param->input.parameters + start, param->parameterized_k_value);
 }
 
 void initialize_z_membership(pCafeParam param)
@@ -270,11 +270,11 @@ void initialize_k_bd2(pCafeParam param, double *parameters)
 }
 void cafe_shell_set_lambda(pCafeParam param, double* parameters)
 {
-	if (param->parameters[0] != parameters[0]) 
-		memcpy(param->parameters, parameters, param->num_params*sizeof(double));
+	if (param->input.parameters[0] != parameters[0])
+		memcpy(param->input.parameters, parameters, param->num_params*sizeof(double));
 	
 	// set lambda
-	param->lambda = param->parameters;
+	param->lambda = param->input.parameters;
 	
 	// set k_weights
 	if (param->parameterized_k_value > 0) {
@@ -288,16 +288,16 @@ void cafe_shell_set_lambda(pCafeParam param, double* parameters)
 
 void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters)
 {
-	if (param->parameters[0] != parameters[0]) {
-		memcpy(param->parameters, parameters, param->num_params*sizeof(double));
+	if (param->input.parameters[0] != parameters[0]) {
+		memcpy(param->input.parameters, parameters, param->num_params*sizeof(double));
 	}
 	// set lambda and mu
-	param->lambda = param->parameters;
+	param->lambda = param->input.parameters;
 	if (param->parameterized_k_value > 0) {
-		param->mu = &(param->parameters[param->num_lambdas*(param->parameterized_k_value-param->fixcluster0)]);
+		param->mu = &(param->input.parameters[param->num_lambdas*(param->parameterized_k_value-param->fixcluster0)]);
 	}
 	else {
-		param->mu = &(param->parameters[param->num_lambdas]);
+		param->mu = &(param->input.parameters[param->num_lambdas]);
 	}
 
 	// set k_weights
@@ -620,17 +620,17 @@ double cafe_shell_score()
 	double score = 0;
 	if (cafe_param->parameterized_k_value > 0) {
 		if (cafe_param->num_mus > 0) {
-			score = -__cafe_cluster_lambda_mu_search(cafe_param->parameters, (void*)cafe_param);
+			score = -__cafe_cluster_lambda_mu_search(cafe_param->input.parameters, (void*)cafe_param);
 			// print
 			char buf[STRING_STEP_SIZE];
 			buf[0] = '\0';
 			for( i=0; i<cafe_param->num_lambdas; i++) {
-				string_pchar_join_double(buf,",", cafe_param->parameterized_k_value, &cafe_param->parameters[i*cafe_param->parameterized_k_value] );
+				string_pchar_join_double(buf,",", cafe_param->parameterized_k_value, &cafe_param->input.parameters[i*cafe_param->parameterized_k_value] );
 				cafe_log(cafe_param,"Lambda branch %d: %s\n", i, buf);
 				buf[0] = '\0';
 			}
 			for (i=0; i<cafe_param->num_mus; i++) {
-				string_pchar_join_double(buf,",", cafe_param->parameterized_k_value, &cafe_param->parameters[cafe_param->num_lambdas*cafe_param->parameterized_k_value+i*cafe_param->parameterized_k_value]);
+				string_pchar_join_double(buf,",", cafe_param->parameterized_k_value, &cafe_param->input.parameters[cafe_param->num_lambdas*cafe_param->parameterized_k_value+i*cafe_param->parameterized_k_value]);
 				cafe_log(cafe_param,"Mu branch %d: %s \n", i, buf);
 				buf[0] = '\0';
 			}
@@ -642,11 +642,11 @@ double cafe_shell_score()
 			
 		}
 		else {  
-			score = -__cafe_cluster_lambda_search(cafe_param->parameters, (void*)cafe_param);
+			score = -__cafe_cluster_lambda_search(cafe_param->input.parameters, (void*)cafe_param);
 			// print
 			char buf[STRING_STEP_SIZE];
 			buf[0] = '\0';
-			string_pchar_join_double(buf,",", cafe_param->num_lambdas*cafe_param->parameterized_k_value, cafe_param->parameters );
+			string_pchar_join_double(buf,",", cafe_param->num_lambdas*cafe_param->parameterized_k_value, cafe_param->input.parameters );
 			cafe_log(cafe_param,"Lambda : %s\n", buf);
 			buf[0] = '\0';
 			if (cafe_param->parameterized_k_value > 0) {
@@ -658,22 +658,22 @@ double cafe_shell_score()
 	}
 	else {
 		if (cafe_param->num_mus > 0) {
-			score = -__cafe_best_lambda_mu_search(cafe_param->parameters, (void*)cafe_param);
+			score = -__cafe_best_lambda_mu_search(cafe_param->input.parameters, (void*)cafe_param);
 			// print
 			char buf[STRING_STEP_SIZE];
 			buf[0] = '\0';
-			string_pchar_join_double(buf,",", cafe_param->num_lambdas, cafe_param->parameters );
+			string_pchar_join_double(buf,",", cafe_param->num_lambdas, cafe_param->input.parameters );
 			cafe_log(cafe_param,"Lambda : %s ", buf, score);
 			buf[0] = '\0';
-			string_pchar_join_double(buf,",", cafe_param->num_mus, cafe_param->parameters+cafe_param->num_lambdas );
+			string_pchar_join_double(buf,",", cafe_param->num_mus, cafe_param->input.parameters+cafe_param->num_lambdas );
 			cafe_log(cafe_param,"Mu : %s & Score: %f\n", buf, score);		
 		}
 		else {
-			score = -__cafe_best_lambda_search(cafe_param->parameters, (void*)cafe_param);
+			score = -__cafe_best_lambda_search(cafe_param->input.parameters, (void*)cafe_param);
 			// print
 			char buf[STRING_STEP_SIZE];
 			buf[0] = '\0';
-			string_pchar_join_double(buf,",", cafe_param->num_lambdas, cafe_param->parameters );
+			string_pchar_join_double(buf,",", cafe_param->num_lambdas, cafe_param->input.parameters );
 			cafe_log(cafe_param,"Lambda : %s & Score: %f\n", buf, score);		
 		}
 	}

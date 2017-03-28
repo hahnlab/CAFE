@@ -434,7 +434,7 @@ void cafe_do_report(Globals& globals, viterbi_parameters& viterbi, report_parame
 
 	if (ConditionalDistribution::matrix.empty())
 	{
-		param->param_set_func(param, param->parameters);
+		param->param_set_func(param, param->input.parameters);
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
 		ConditionalDistribution::reset(param->pcafe, &param->family_size, param->num_threads, globals.num_random_samples);
 	}

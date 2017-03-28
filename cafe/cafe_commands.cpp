@@ -597,7 +597,7 @@ int cafe_cmd_generate_random_family(Globals& globals, std::vector<std::string> t
 		prereqs(param, REQUIRES_FAMILY | REQUIRES_LAMBDA);
 
 		num_families = param->pfamily->flist->size;
-		param->param_set_func(param, param->parameters);
+		param->param_set_func(param, param->input.parameters);
 		param->root_dist = get_root_dist(pcafe, param->pfamily, param->parameterized_k_value, &param->family_size);
 	}
 	else {
@@ -608,7 +608,7 @@ int cafe_cmd_generate_random_family(Globals& globals, std::vector<std::string> t
 		}
 		prereqs(param, REQUIRES_LAMBDA);
 		cafe_log(param, "Using user defined root size distribution for simulation... \n");
-		param->param_set_func(param, param->parameters);
+		param->param_set_func(param, param->input.parameters);
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
 	}
 
@@ -1924,7 +1924,7 @@ int cafe_cmd_gainloss(Globals& globals, std::vector<std::string> tokens)
 	{
 		if (ConditionalDistribution::matrix.empty())
 		{
-			param->param_set_func(param, param->parameters);
+			param->param_set_func(param, param->input.parameters);
 			reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
 			ConditionalDistribution::reset(param->pcafe, &param->family_size, param->num_threads, globals.num_random_samples);
 		}
