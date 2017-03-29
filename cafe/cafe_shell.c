@@ -179,29 +179,6 @@ void set_birth_death_probabilities4(struct probabilities *probs, int num_lambdas
 	}
 }
 
-void copy_weights(double *out, double *in, int count)
-{
-	int i;
-	double sumofweights = 0;
-	for (i = 0; i < count - 1; i++) {
-		out[i] = in[i];
-		sumofweights += in[i];
-	}
-	out[i] = 1 - sumofweights;
-
-}
-void initialize_k_weights(pCafeParam param)
-{
-	int start = param->num_lambdas*(param->parameterized_k_value - param->fixcluster0);
-	copy_weights(param->k_weights, param->input.parameters + start, param->parameterized_k_value);
-}
-
-void initialize_k_weights2(pCafeParam param)
-{
-	int start = param->num_lambdas*(param->parameterized_k_value - param->fixcluster0) + (param->num_mus - param->eqbg)*(param->parameterized_k_value - param->fixcluster0);
-	copy_weights(param->k_weights, param->input.parameters + start, param->parameterized_k_value);
-}
-
 void initialize_z_membership(pCafeParam param)
 {
 	if (param->p_z_membership == NULL) {
@@ -278,7 +255,8 @@ void cafe_shell_set_lambda(pCafeParam param, double* parameters)
 	
 	// set k_weights
 	if (param->parameterized_k_value > 0) {
-		initialize_k_weights(param);
+		int start = param->num_lambdas*(param->parameterized_k_value - param->fixcluster0);
+		input_values_copy_weights(param->k_weights, &param->input, start, param->parameterized_k_value);
 		initialize_z_membership(param);
 	}
 	
@@ -302,7 +280,8 @@ void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters)
 
 	// set k_weights
 	if (param->parameterized_k_value > 0) {
-		initialize_k_weights2(param);
+		int start = param->num_lambdas*(param->parameterized_k_value - param->fixcluster0) + (param->num_mus - param->eqbg)*(param->parameterized_k_value - param->fixcluster0);
+		input_values_copy_weights(param->k_weights, &param->input, start, param->parameterized_k_value);
 		initialize_z_membership(param);
 	}
 	

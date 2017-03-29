@@ -80,3 +80,15 @@ void input_values_set_mus(input_values *dest, double *src, int start, int count)
 	for (int i = 0; i < count; ++i)
 		dest->parameters[start + i] = src[i];
 }
+
+void input_values_copy_weights(double *out, input_values *src, int start, int count)
+{
+	int i;
+	double sumofweights = 0;
+	for (i = 0; i < count - 1; i++) {
+		out[i] = src->parameters[start + i];
+		sumofweights += src->parameters[start + i];
+	}
+	out[i] = 1 - sumofweights;
+
+}

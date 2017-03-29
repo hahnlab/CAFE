@@ -1212,18 +1212,14 @@ TEST(FirstTestGroup, set_birth_death_probabilities3)
 
 TEST(FirstTestGroup, initialize_k_weights)
 {
-	CafeParam param;
+	input_values values;
 	std::vector<double> weights(10);
 	std::vector<double> params(100);
 	for (double i = 0; i < 100; ++i)
 		params[i] = i / 100.0;
-	param.k_weights = &weights[0];
-	param.input.parameters = &params[0];
-	param.parameterized_k_value = 5;
-	param.fixcluster0 = 3;
-	param.num_lambdas = 1;
+	values.parameters = &params[0];
 
-	initialize_k_weights(&param);
+	input_values_copy_weights(&weights[0], &values, 2, 5);
 
 	DOUBLES_EQUAL(.02, weights[0], .0001);
 	DOUBLES_EQUAL(.03, weights[1], .0001);
@@ -1231,10 +1227,7 @@ TEST(FirstTestGroup, initialize_k_weights)
 	DOUBLES_EQUAL(.05, weights[3], .0001);
 	DOUBLES_EQUAL(.86, weights[4], .0001);
 
-	param.num_lambdas = 5;
-	param.parameterized_k_value = 6;
-
-	initialize_k_weights(&param);
+	input_values_copy_weights(&weights[0], &values, 15, 6);
 
 	DOUBLES_EQUAL(.15, weights[0], .0001);
 	DOUBLES_EQUAL(.16, weights[1], .0001);
@@ -1242,42 +1235,6 @@ TEST(FirstTestGroup, initialize_k_weights)
 	DOUBLES_EQUAL(.18, weights[3], .0001);
 	DOUBLES_EQUAL(.19, weights[4], .0001);
 	DOUBLES_EQUAL(.15, weights[5], .0001);
-}
-
-TEST(FirstTestGroup, initialize_k_weights2)
-{
-	CafeParam param;
-	std::vector<double> weights(10);
-	std::vector<double> params(100);
-	for (double i = 0; i < 100; ++i)
-		params[i] = i / 100.0;
-	param.k_weights = &weights[0];
-	param.input.parameters = &params[0];
-	param.parameterized_k_value = 5;
-	param.fixcluster0 = 3;
-	param.num_lambdas = 1;
-	param.num_mus = 5;
-	param.eqbg = 1;
-
-	initialize_k_weights2(&param);
-
-	DOUBLES_EQUAL(.1, weights[0], .0001);
-	DOUBLES_EQUAL(.11, weights[1], .0001);
-	DOUBLES_EQUAL(.12, weights[2], .0001);
-	DOUBLES_EQUAL(.13, weights[3], .0001);
-	DOUBLES_EQUAL(.54, weights[4], .0001);
-
-	param.num_mus = 7;
-	param.parameterized_k_value = 6;
-
-	initialize_k_weights2(&param);
-
-	DOUBLES_EQUAL(.21, weights[0], .0001);
-	DOUBLES_EQUAL(.22, weights[1], .0001);
-	DOUBLES_EQUAL(.23, weights[2], .0001);
-	DOUBLES_EQUAL(.24, weights[3], .0001);
-	DOUBLES_EQUAL(.25, weights[4], .0001);
-	DOUBLES_EQUAL(-.15, weights[5], .0001);
 }
 
 TEST(PValueTests, pvalue)

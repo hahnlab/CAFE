@@ -25,3 +25,4 @@ void input_values_destruct(input_values* vals);
 void input_values_set_lambdas(input_values *dest, double *src, int count);
 void input_values_set_mus(input_values *dest, double *src, int start, int count);
 void input_values_set_k_weights(input_values *dest, double *src, int start, int count);
+void input_values_copy_weights(double *out, input_values *src, int start, int count);
