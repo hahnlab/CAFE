@@ -29,7 +29,7 @@ extern char* string_pchar_chomp(char* pstr);
 extern int string_pchar_cmp_ignore_case(char* cmp1, char* cmp2);
 extern pArrayList string_pchar_split(char* buf, char delim);
 extern pArrayList string_pchar_space_split(char* buf);
-extern void string_pchar_join_double(char* rtn, char* sp, int argc, double* values);
+extern void string_pchar_join_double(char* rtn, const char* sp, int argc, double* values);
 extern void string_pchar_join(char* buf, char* stuff, int num, char** list);
 extern pString string_join(const char* stuff, int num, char** list);
 

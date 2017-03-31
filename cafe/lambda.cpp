@@ -23,6 +23,7 @@ extern "C" {
 	void cafe_shell_set_lambda(pCafeParam param, double* parameters);
 	int __cafe_cmd_lambda_tree(pArgument parg);
 	double __cafe_best_lambda_search(double* plambda, void* args);
+	double __cafe_cluster_lambda_search(double* parameters, void* args);
 }
 
 using namespace std;

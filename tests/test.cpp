@@ -1131,7 +1131,7 @@ TEST(FirstTestGroup, initialize_k_bd_with_lambda)
 	CHECK_FALSE(node->k_bd == NULL);
 }
 
-TEST(FirstTestGroup, cafe_shell_clear_param_clears_probability_cache)
+TEST(FirstTestGroup, globals_Clear__clears_probability_cache)
 {
 	Globals globals;
 	memset(&globals.param, 0, sizeof(CafeParam));
@@ -1144,6 +1144,50 @@ TEST(FirstTestGroup, cafe_shell_clear_param_clears_probability_cache)
 	globals.Clear(0);
 
 	POINTERS_EQUAL(NULL, probability_cache);
+}
+
+TEST(FirstTestGroup, input_values_randomize__with_k)
+{
+	input_values input;
+	std::vector<double> k_weights(10);
+	input_values_init(&input);
+	input_values_construct(&input, 100);
+	input_values_randomize(&input, 2, 0, 5, 4, 1, &k_weights[0]);
+
+	DOUBLES_EQUAL(0.565, input.parameters[0], .001);
+	DOUBLES_EQUAL(0.61, input.parameters[1], .001);
+	DOUBLES_EQUAL(0.505, input.parameters[2], .001);
+	DOUBLES_EQUAL(0.179, input.parameters[3], .001);
+	DOUBLES_EQUAL(0.816, input.parameters[4], .001);
+
+	DOUBLES_EQUAL(0.017, input.parameters[8], .001);
+	DOUBLES_EQUAL(0.216, input.parameters[9], .001);
+	DOUBLES_EQUAL(0.041, input.parameters[10], .001);
+	DOUBLES_EQUAL(0.057, input.parameters[11], .001);
+
+	DOUBLES_EQUAL(0.017, k_weights[0], .001);
+	DOUBLES_EQUAL(0.216, k_weights[1], .001);
+	DOUBLES_EQUAL(0.041, k_weights[2], .001);
+	DOUBLES_EQUAL(0.057, k_weights[3], .001);
+	DOUBLES_EQUAL(0.667, k_weights[4], .001);
+}
+
+TEST(FirstTestGroup, input_values_randomize__without_k)
+{
+	input_values input;
+	input_values_init(&input);
+	input_values_construct(&input, 100);
+	input_values_randomize(&input, 5, 3, 0, -1, 1, NULL);
+
+	DOUBLES_EQUAL(0.565, input.parameters[0], .001);
+	DOUBLES_EQUAL(0.61, input.parameters[1], .001);
+	DOUBLES_EQUAL(0.505, input.parameters[2], .001);
+	DOUBLES_EQUAL(0.179, input.parameters[3], .001);
+	DOUBLES_EQUAL(0.816, input.parameters[4], .001);
+
+	DOUBLES_EQUAL(0.183, input.parameters[5], .001);
+	DOUBLES_EQUAL(0.584, input.parameters[6], .001);
+	DOUBLES_EQUAL(0.422, input.parameters[7], .001);
 }
 
 TEST(FirstTestGroup, set_birth_death_probabilities3)

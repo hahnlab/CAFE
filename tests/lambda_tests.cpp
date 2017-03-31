@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <sstream>
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
@@ -542,4 +543,13 @@ TEST(LambdaTests, lambdamu_set_with_k_weights_and_tree)
 	DOUBLES_EQUAL(.4, globals.param.input.parameters[5], .001);
 
 	DOUBLES_EQUAL(.5, globals.param.input.parameters[8], .001);
+}
+
+TEST(LambdaTests, best_lambda_mu_by_fminsearch)
+{
+	std::ostringstream ost;
+	Globals globals;
+#if 0	// TODO
+	best_lambda_mu_by_fminsearch(&globals.param, 1, 1, 1, ost);
+#endif
 }

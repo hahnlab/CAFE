@@ -15,6 +15,7 @@
 #include<dirent.h>
 
 #include "lambda.h"
+#include "lambdamu.h"
 #include "cafe_commands.h"
 #include "reports.h"
 #include "pvalue.h"
@@ -50,7 +51,6 @@ extern "C" {
 	pErrorMeasure cafe_shell_estimate_error_double_measure(const char* error1, const char* error2, int b_symmetric, int max_diff, int b_peakzero);
 	pErrorMeasure cafe_shell_estimate_error_true_measure(const char* errorfile, const char* truefile, int b_symmetric, int max_diff, int b_peakzero);
 	pErrorStruct cafe_shell_create_error_matrix_from_estimate(pErrorMeasure errormeasure);
-	int cafe_shell_write_error_matrix(pErrorStruct errormodel, FILE* fp);
 	int cafe_shell_set_branchlength();
 	void set_range_from_family(family_size_range* range, pCafeFamily family);
 	double _cafe_cross_validate_by_family(const char* queryfile, const char* truthfile, const char* errortype);
@@ -58,6 +58,8 @@ extern "C" {
 	int __cafe_cmd_lambda_tree(pArgument parg);
 	void cafe_shell_set_lambda(pCafeParam param, double* parameters);
 	void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters);
+	double __cafe_best_lambda_search(double* plambda, void* args);
+	double __cafe_cluster_lambda_search(double* parameters, void* args);
 }
 
 using namespace std;
@@ -1695,6 +1697,72 @@ void log_param_values(std::ostream& ost, Globals& globals)
 
 
 #ifdef DEBUG
+double cafe_shell_score(Globals& globals)
+{
+	int i = 0;
+	double score = 0;
+	if (globals.param.parameterized_k_value > 0) {
+		if (globals.param.num_mus > 0) {
+			score = -cafe_cluster_lambda_mu_search(globals.param.input.parameters, (void*)&globals.param);
+			// print
+			char buf[STRING_STEP_SIZE];
+			buf[0] = '\0';
+			for (i = 0; i<globals.param.num_lambdas; i++) {
+				string_pchar_join_double(buf, ",", globals.param.parameterized_k_value, &globals.param.input.parameters[i*globals.param.parameterized_k_value]);
+				cafe_log(&globals.param, "Lambda branch %d: %s\n", i, buf);
+				buf[0] = '\0';
+			}
+			for (i = 0; i<globals.param.num_mus; i++) {
+				string_pchar_join_double(buf, ",", globals.param.parameterized_k_value, &globals.param.input.parameters[globals.param.num_lambdas*globals.param.parameterized_k_value + i*globals.param.parameterized_k_value]);
+				cafe_log(&globals.param, "Mu branch %d: %s \n", i, buf);
+				buf[0] = '\0';
+			}
+			if (globals.param.parameterized_k_value > 0) {
+				string_pchar_join_double(buf, ",", globals.param.parameterized_k_value, globals.param.k_weights);
+				cafe_log(&globals.param, "p : %s\n", buf);
+			}
+			cafe_log(&globals.param, "Score: %f\n", score);
+
+		}
+		else {
+			score = -__cafe_cluster_lambda_search(globals.param.input.parameters, (void*)&globals.param);
+			// print
+			char buf[STRING_STEP_SIZE];
+			buf[0] = '\0';
+			string_pchar_join_double(buf, ",", globals.param.num_lambdas*globals.param.parameterized_k_value, globals.param.input.parameters);
+			cafe_log(&globals.param, "Lambda : %s\n", buf);
+			buf[0] = '\0';
+			if (globals.param.parameterized_k_value > 0) {
+				string_pchar_join_double(buf, ",", globals.param.parameterized_k_value, globals.param.k_weights);
+				cafe_log(&globals.param, "p : %s\n", buf);
+			}
+			cafe_log(&globals.param, "Score: %f\n", score);
+		}
+	}
+	else {
+		if (globals.param.num_mus > 0) {
+			score = -cafe_best_lambda_mu_search(globals.param.input.parameters, (void*)&globals.param);
+			// print
+			char buf[STRING_STEP_SIZE];
+			buf[0] = '\0';
+			string_pchar_join_double(buf, ",", globals.param.num_lambdas, globals.param.input.parameters);
+			cafe_log(&globals.param, "Lambda : %s ", buf, score);
+			buf[0] = '\0';
+			string_pchar_join_double(buf, ",", globals.param.num_mus, globals.param.input.parameters + globals.param.num_lambdas);
+			cafe_log(&globals.param, "Mu : %s & Score: %f\n", buf, score);
+		}
+		else {
+			score = -__cafe_best_lambda_search(globals.param.input.parameters, (void*)&globals.param);
+			// print
+			char buf[STRING_STEP_SIZE];
+			buf[0] = '\0';
+			string_pchar_join_double(buf, ",", globals.param.num_lambdas, globals.param.input.parameters);
+			cafe_log(&globals.param, "Lambda : %s & Score: %f\n", buf, score);
+		}
+	}
+	return score;
+}
+
 /**
 \ingroup Commands
 \brief Score
@@ -1704,7 +1772,7 @@ int cafe_cmd_score(Globals& globals, std::vector<std::string> tokens)
 {
 	pCafeParam param = &globals.param;
 
-	double score = cafe_shell_score();
+	double score = cafe_shell_score(globals);
 	cafe_log(param, "%lf\n", score);
 	if (param->parameterized_k_value > 0) {
 		cafe_family_print_cluster_membership(param);
@@ -2011,6 +2079,8 @@ int cafe_cmd_cvfamily(Globals& globals, std::vector<std::string> tokens)
 	// set up the training-validation set
 	cafe_family_split_cvfiles_byfamily(param, cv_fold);
 
+	log_buffer buf(&globals.param);
+	ostream log(&buf);
 	//
 	for (int i = 0; i<cv_fold; i++)
 	{
@@ -2037,7 +2107,7 @@ int cafe_cmd_cvfamily(Globals& globals, std::vector<std::string> tokens)
 		}
 		// re-train 
 		if (param->num_mus > 0) {
-			cafe_best_lambda_mu_by_fminsearch(param, param->num_lambdas, param->num_mus, param->parameterized_k_value);
+			best_lambda_mu_by_fminsearch(param, param->num_lambdas, param->num_mus, param->parameterized_k_value, log);
 		}
 		else {
 			cafe_best_lambda_by_fminsearch(param, param->num_lambdas, param->parameterized_k_value);
@@ -2064,7 +2134,7 @@ int cafe_cmd_cvfamily(Globals& globals, std::vector<std::string> tokens)
 	}
 	// re-train 
 	if (param->num_mus > 0) {
-		cafe_best_lambda_mu_by_fminsearch(param, param->num_lambdas, param->num_mus, param->parameterized_k_value);
+		best_lambda_mu_by_fminsearch(param, param->num_lambdas, param->num_mus, param->parameterized_k_value, log);
 	}
 	else {
 		cafe_best_lambda_by_fminsearch(param, param->num_lambdas, param->parameterized_k_value);
@@ -2082,6 +2152,8 @@ int cafe_cmd_cvfamily(Globals& globals, std::vector<std::string> tokens)
 */
 int cafe_cmd_cvspecies(Globals& globals, std::vector<std::string> tokens)
 {
+	log_buffer buf(&globals.param);
+	ostream log(&buf);
 	pCafeParam param = &globals.param;
 
 	int i;
@@ -2121,7 +2193,7 @@ int cafe_cmd_cvspecies(Globals& globals, std::vector<std::string> tokens)
 			}
 			// re-train 
 			if (param->num_mus > 0) {
-				cafe_best_lambda_mu_by_fminsearch(param, param->num_lambdas, param->num_mus, param->parameterized_k_value);
+				best_lambda_mu_by_fminsearch(param, param->num_lambdas, param->num_mus, param->parameterized_k_value, log);
 			}
 			else {
 				cafe_best_lambda_by_fminsearch(param, param->num_lambdas, param->parameterized_k_value);
@@ -2148,7 +2220,7 @@ int cafe_cmd_cvspecies(Globals& globals, std::vector<std::string> tokens)
 		}
 		// re-train 
 		if (param->num_mus > 0) {
-			cafe_best_lambda_mu_by_fminsearch(param, param->num_lambdas, param->num_mus, param->parameterized_k_value);
+			best_lambda_mu_by_fminsearch(param, param->num_lambdas, param->num_mus, param->parameterized_k_value, log);
 		}
 		else {
 			cafe_best_lambda_by_fminsearch(param, param->num_lambdas, param->parameterized_k_value);

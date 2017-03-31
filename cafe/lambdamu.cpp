@@ -2,11 +2,13 @@
 #include <sstream>
 #include <iterator>
 #include <algorithm>
+#include <cmath>
 
 #include "lambdamu.h"
 #include "Globals.h"
 #include "cafe_commands.h"
 #include "lambda.h"
+#include "log_buffer.h"
 
 using namespace std;
 
@@ -215,6 +217,8 @@ void lambdamu_set(pCafeParam param, lambdamu_args& params)
 int cafe_cmd_lambdamu(Globals& globals, std::vector<std::string> tokens)
 {
 	pCafeParam param = &globals.param;
+	log_buffer buf(&globals.param);
+	ostream log(&buf);
 
 	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE);
 
@@ -235,7 +239,7 @@ int cafe_cmd_lambdamu(Globals& globals, std::vector<std::string> tokens)
 	if (params.search) {
 		lambdamu_prepare_search(param, params);
 		// search
-		cafe_best_lambda_mu_by_fminsearch(param, param->num_lambdas, param->num_mus, param->parameterized_k_value);
+		best_lambda_mu_by_fminsearch(param, param->num_lambdas, param->num_mus, param->parameterized_k_value, log);
 
 	}
 	else {
@@ -259,3 +263,198 @@ int cafe_cmd_lambdamu(Globals& globals, std::vector<std::string> tokens)
 	}
 	return 0;
 }
+
+double cafe_cluster_lambda_mu_search(double* parameters, void* args)
+{
+	int i;
+	pCafeParam param = (pCafeParam)args;
+	pCafeTree pcafe = (pCafeTree)param->pcafe;
+	double score = 0;
+	int skip = 0;
+	for (i = 0; i < param->num_params; i++)
+	{
+		if (parameters[i] < 0)
+		{
+			skip = 1;
+			score = log(0);
+			break;
+		}
+	}
+	if (!skip)
+	{
+		param->param_set_func(param, parameters);
+
+		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
+		score = cafe_get_clustered_posterior(param);
+		cafe_free_birthdeath_cache(pcafe);
+		cafe_tree_node_free_clustered_likelihoods(param);
+	}
+	char buf[STRING_STEP_SIZE];
+	buf[0] = '\0';
+	for (i = 0; i<param->num_lambdas; i++) {
+		string_pchar_join_double(buf, ",", (param->parameterized_k_value - param->fixcluster0), &parameters[i*(param->parameterized_k_value - param->fixcluster0)]);
+		fprintf(stdout, "Lambda branch %d: %s\n", i, buf);
+		buf[0] = '\0';
+	}
+	for (i = 0; i<param->num_mus; i++) {
+		string_pchar_join_double(buf, ",", (param->parameterized_k_value - param->fixcluster0), &parameters[param->num_lambdas*(param->parameterized_k_value - param->fixcluster0) + i*(param->parameterized_k_value - param->fixcluster0)]);
+		fprintf(stdout, "Mu branch %d: %s \n", i, buf);
+		buf[0] = '\0';
+	}
+	if (param->parameterized_k_value > 0) {
+		string_pchar_join_double(buf, ",", param->parameterized_k_value, param->k_weights);
+		fprintf(stdout, "p : %s\n", buf);
+	}
+	//cafe_log(param, "Score: %f\n", score);
+	fprintf(stdout, ".");
+	return -score;
+}
+
+
+
+// need to define a function with lambda and mu. 
+// this function is provided as the equation to fmin search.
+// also need to make a new param_set_func that includes mu.
+
+double cafe_best_lambda_mu_search(double* parameters, void* args)
+{
+	int i;
+	pCafeParam param = (pCafeParam)args;
+	pCafeTree pcafe = (pCafeTree)param->pcafe;
+	double score = 0;
+	int skip = 0;
+	for (i = 0; i < param->num_params; i++)
+	{
+		if (parameters[i] < 0)
+		{
+			skip = 1;
+			score = log(0);
+			break;
+		}
+	}
+	if (!skip)
+	{
+		param->param_set_func(param, parameters);
+
+		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
+		score = cafe_get_posterior(param->pfamily, param->pcafe, &param->family_size, param->ML, param->MAP, param->prior_rfsize, param->quiet);
+		cafe_free_birthdeath_cache(pcafe);
+	}
+	char buf[STRING_STEP_SIZE];
+	buf[0] = '\0';
+	string_pchar_join_double(buf, ",", param->num_lambdas, parameters);
+	cafe_log(param, "Lambda : %s ", buf, score);
+	buf[0] = '\0';
+	string_pchar_join_double(buf, ",", param->num_mus - param->eqbg, parameters + param->num_lambdas);
+	cafe_log(param, "Mu : %s & Score: %f\n", buf, score);
+	cafe_log(param, ".");
+	return -score;
+}
+
+
+void best_lambda_mu_by_fminsearch(pCafeParam param, int lambda_len, int mu_len, int k, ostream& log)
+{
+	int i;
+	int max_runs = 10;
+	vector<double> scores(max_runs);
+	int converged = 0;
+	int runs = 0;
+
+	do
+	{
+		if (param->num_params > 0)
+		{
+			int kfix = k - param->fixcluster0;
+			double max_branch_length = param->max_branch_length;
+			double *k_weights = param->k_weights;
+
+			input_values_randomize(&param->input, param->num_lambdas, param->num_mus, param->parameterized_k_value,
+				kfix, max_branch_length, k_weights);
+		}
+
+		copy_range_to_tree(param->pcafe, &param->family_size);
+
+		pFMinSearch pfm;
+		if (k > 0) {
+			pfm = fminsearch_new_with_eq(cafe_cluster_lambda_mu_search, param->num_params, param);
+		}
+		else {
+			pfm = fminsearch_new_with_eq(cafe_best_lambda_mu_search, param->num_params, param);
+		}
+		pfm->tolx = 1e-6;
+		pfm->tolf = 1e-6;
+		fminsearch_min(pfm, param->input.parameters);
+		double *re = fminsearch_get_minX(pfm);
+		for (i = 0; i < param->num_params; i++) param->input.parameters[i] = re[i];
+
+		log << "\n";
+		log << "Lambda Search Result: " << pfm->iters << "\n";
+		// print
+		if (k>0) {
+			char buf[STRING_STEP_SIZE];
+			buf[0] = '\0';
+			for (i = 0; i<param->num_lambdas; i++) {
+				if (param->fixcluster0) {
+					strncat(buf, "0,", 2);
+					string_pchar_join_double(buf, ",", (param->parameterized_k_value - param->fixcluster0), &param->input.parameters[i*(param->parameterized_k_value - param->fixcluster0)]);
+				}
+				else {
+					string_pchar_join_double(buf, ",", param->parameterized_k_value, &param->input.parameters[i*param->parameterized_k_value]);
+				}
+				log << "Lambda branch " << i << ": " << buf << "\n";
+				buf[0] = '\0';
+			}
+			for (i = 0; i<param->num_mus - param->eqbg; i++) {
+				if (param->fixcluster0) {
+					strncat(buf, "0,", 2);
+					string_pchar_join_double(buf, ",", (param->parameterized_k_value - param->fixcluster0), &param->input.parameters[param->num_lambdas*(param->parameterized_k_value - param->fixcluster0) + i*(param->parameterized_k_value - param->fixcluster0)]);
+				}
+				else {
+					string_pchar_join_double(buf, ",", param->parameterized_k_value, &param->input.parameters[param->num_lambdas*param->parameterized_k_value + i*param->parameterized_k_value]);
+				}
+				log << "Mu branch " << i << ": " << buf << "\n";
+				buf[0] = '\0';
+			}
+			if (param->parameterized_k_value > 0) {
+				string_pchar_join_double(buf, ",", param->parameterized_k_value, param->k_weights);
+				log << "p : " << buf << "\n";
+				log << "p0 : " << param->input.parameters[param->num_lambdas*(param->parameterized_k_value - param->fixcluster0) + (param->num_mus - param->eqbg)*(param->parameterized_k_value - param->fixcluster0) + 0] << "\n";
+			}
+			log << "Score: " << *pfm->fv << "\n";
+		}
+		else {
+			char buf[STRING_STEP_SIZE];
+			buf[0] = '\0';
+			string_pchar_join_double(buf, ",", param->num_lambdas, param->input.parameters);
+			log << "Lambda : " << buf << " & Score: " << *pfm->fv;
+			buf[0] = '\0';
+			string_pchar_join_double(buf, ",", param->num_mus - param->eqbg, param->input.parameters + param->num_lambdas);
+			log << "Mu : " << buf << " & Score: " << *pfm->fv << "\n";
+		}
+		if (runs > 0) {
+			double minscore = *std::min_element(scores.begin(), scores.end());
+			if (abs(minscore - (*pfm->fv)) < 10 * pfm->tolf) {
+				converged = 1;
+			}
+		}
+		scores[runs] = *pfm->fv;
+		fminsearch_free(pfm);
+
+		copy_range_to_tree(param->pcafe, &param->family_size);
+
+		runs++;
+
+	} while (param->checkconv && !converged && runs<max_runs);
+
+
+	//	string_free(pstr);
+	if (param->checkconv) {
+		if (converged) {
+			log << "score converged in " << runs << " runs.\n";
+		}
+		else {
+			log << "score failed to converge in " << max_runs << " runs.\n";
+		}
+	}
+}
+

@@ -19,5 +19,8 @@ struct lambdamu_args : lambda_arg_base
 };
 
 void lambdamu_set(pCafeParam param, lambdamu_args& params);
+void best_lambda_mu_by_fminsearch(pCafeParam param, int lambda_len, int mu_len, int k, std::ostream& log);
+double cafe_cluster_lambda_mu_search(double* parameters, void* args);
+double cafe_best_lambda_mu_search(double* parameters, void* args);
 
 #endif
