@@ -1571,9 +1571,7 @@ std::string get_input_file(std::vector<std::string> tokens)
 
 		if (!strcmp(parg->opt, "-i"))
 		{
-			ostringstream ost;
-			copy(parg->argv, parg->argv + parg->argc, std::ostream_iterator<string>(ost, " "));
-			return ost.str();
+      return parg->argv[0];
 		}
 	}
 
@@ -1629,7 +1627,7 @@ int cafe_cmd_rootdist(Globals& globals, std::vector<std::string> tokens)
 	else if (!file.empty())
 	{
 		FILE* fp = fopen(file.c_str(), "r");
-		char buf[STRING_BUF_SIZE];
+    char buf[STRING_BUF_SIZE];
 		if (fp == NULL)
 		{
 			throw io_error("rootdist", file, false);
