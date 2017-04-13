@@ -738,6 +738,32 @@ TEST(FirstTestGroup, get_num_trials)
 	LONGS_EQUAL(17, get_num_trials(tokens));
 }
 
+TEST(FirstTestGroup, viterbi_set_values)
+{
+  viterbi_parameters v;
+  pCafeTree tree = create_tree(range);
+  viterbi_parameters_init(&v, ((pTree)tree)->nlist->size, 1);
+  pBirthDeathCacheArray arr = birthdeath_cache_init(10);
+  cafe_tree_set_birthdeath(tree, arr);
+  pCafeNode pcnode = (pCafeNode)((pTree)tree)->nlist->array[1];
+  pcnode->familysize = 5;
+  pCafeNode child[2] = { (pCafeNode)((pTreeNode)pcnode)->children->head->data,
+    (pCafeNode)((pTreeNode)pcnode)->children->tail->data };
+  child[0]->familysize = 8;
+  child[1]->familysize = 3;
+
+  square_matrix_set(child[0]->birthdeath_matrix, 5, 8, 5);
+  square_matrix_set(child[0]->birthdeath_matrix, 5, 1, 5);
+  square_matrix_set(child[1]->birthdeath_matrix, 5, 3, 9);
+  viterbi_set_values(&v, pcnode, 0, 0, 1);
+
+
+  // TODO set values that return other than 0
+  DOUBLES_EQUAL(2.5, v.viterbiPvalues[0][0], .001);
+  DOUBLES_EQUAL(5, v.viterbiPvalues[1][0], .001);
+
+}
+
 TEST(FirstTestGroup, initialize_leaf_likelihoods)
 {
 	int rows = 5;

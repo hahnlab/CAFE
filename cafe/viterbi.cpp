@@ -74,6 +74,31 @@ typedef ViterbiParam*  pViterbiParam;
 
 pthread_mutex_t mutex_cafe_viterbi = PTHREAD_MUTEX_INITIALIZER;
 
+void viterbi_set_values(viterbi_parameters *viterbi, pCafeNode pcnode, int i, int j, int max_family_size)
+{
+  pCafeNode child[2] = { (pCafeNode)((pTreeNode)pcnode)->children->head->data,
+    (pCafeNode)((pTreeNode)pcnode)->children->tail->data };
+  for (int k = 0; k < 2; k++)
+  {
+    square_matrix *matrix = child[k]->birthdeath_matrix;
+    double p = square_matrix_get(matrix, pcnode->familysize, child[k]->familysize);
+    int n = 2 * j + k;
+    for (int m = 0; m <= max_family_size; m++)
+    {
+      double node_to_m_prob = square_matrix_get(matrix, pcnode->familysize, m);
+      if (node_to_m_prob == p)
+      {
+        viterbi->viterbiPvalues[n][i] += node_to_m_prob / 2.0;
+      }
+      else if (node_to_m_prob < p)
+      {
+        viterbi->viterbiPvalues[n][i] += node_to_m_prob;
+      }
+    }
+  }
+
+}
+
 void viterbi_section(pCafeFamily pcf, double pvalue, int num_random_samples, viterbi_parameters *viterbi, int i, pCafeTree pcafe, double *cP, pArrayList pCD)
 {
 	pTree ptree = (pTree)pcafe;
@@ -126,24 +151,7 @@ void viterbi_section(pCafeFamily pcf, double pvalue, int num_random_samples, vit
 	for (int j = 0; j < nnodes; j++)
 	{
 		pCafeNode pcnode = (pCafeNode)ptree->nlist->array[2 * j + 1];
-		pCafeNode child[2] = { (pCafeNode)((pTreeNode)pcnode)->children->head->data,
-			(pCafeNode)((pTreeNode)pcnode)->children->tail->data };
-		for (int k = 0; k < 2; k++)
-		{
-			double p = square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, child[k]->familysize);
-			int n = 2 * j + k;
-			for (int m = 0; m <= pcafe->familysizes[1]; m++)
-			{
-				if (square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, m) == p)
-				{
-					viterbi->viterbiPvalues[n][i] += square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, m) / 2.0;
-				}
-				else if (square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, m) < p)
-				{
-					viterbi->viterbiPvalues[n][i] += square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, m);
-				}
-			}
-		}
+    viterbi_set_values(viterbi, pcnode, i, j, pcafe->familysizes[1]);
 	}
 }
 

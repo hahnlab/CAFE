@@ -52,6 +52,7 @@ void viterbi_parameters_init(viterbi_parameters *viterbi, int nnodes, int nrows)
 void viterbi_set_max_pvalue(viterbi_parameters* viterbi, int index, double val);
 void viterbi_parameters_clear(viterbi_parameters* viterbi, int nnodes);
 pArrayList cafe_viterbi(Globals& globals, viterbi_parameters& viterbi, pArrayList pCD);
+void viterbi_set_values(viterbi_parameters *viterbi, pCafeNode pcnode, int i, int j, int max_family_size);
 
 
 #endif
