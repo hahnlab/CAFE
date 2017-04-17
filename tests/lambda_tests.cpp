@@ -98,8 +98,21 @@ TEST(LambdaTests, TestCmdLambda)
 	init_cafe_tree(globals);
 	birthdeath_cache_init(2);
 	char buf[100];
-	strcpy(buf, "load -i ../example/example_data.tab");
-	cafe_shell_dispatch_command(globals, buf);
+	strcpy(buf, "FAMILYDESC FAMILY Dog Chimp Human Mouse Rat");
+	//cafe_shell_dispatch_command(globals, buf);
+
+	pArrayList data = string_pchar_split(buf, ' ');
+	globals.param.pfamily = cafe_family_init(data);
+
+	strcpy(buf, "OTOPETRIN ENSF00000002390 7 7 13 18 7");
+	data = string_pchar_split(buf, ' ');
+	cafe_family_add_item(globals.param.pfamily, data);
+
+	init_family_size(&globals.param.family_size, globals.param.pfamily->max_size);
+	cafe_tree_set_parameters(globals.param.pcafe, &globals.param.family_size, 0);
+	cafe_family_set_species_index(globals.param.pfamily, globals.param.pcafe);
+	globals.param.ML = (double*)calloc(globals.param.pfamily->flist->size, sizeof(double));
+	globals.param.MAP = (double*)calloc(globals.param.pfamily->flist->size, sizeof(double));
 
 	LONGS_EQUAL(0, lambda_cmd_helper(globals));
 };
