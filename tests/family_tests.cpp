@@ -40,20 +40,34 @@ TEST_GROUP(FamilyTests)
 {
 };
 
-TEST(FamilyTests, TestCafeFamilyNew)
+TEST(FamilyTests, TestCafeFamily)
 {
 	pCafeFamily fam;
 	char fname[100];
 	strcpy(fname, "Nonexistent.tab");
 	POINTERS_EQUAL(NULL, cafe_family_new(fname, 1));
 
-	strcpy(fname, "../example/example_data.tab");
-	fam = cafe_family_new(fname, 1);
+	char buf[100];
+	strcpy(buf, "FAMILYDESC FAMILY Dog Chimp Human Mouse Rat");
+
+	pArrayList data = string_pchar_split(buf, ' ');
+	fam = cafe_family_init(data);
+
+	strcpy(buf, "OTOPETRIN ENSF1 3 5 7 11 13");
+	data = string_pchar_split(buf, ' ');
+	cafe_family_add_item(fam, data);
+
 	LONGS_EQUAL(5, fam->num_species);
+	LONGS_EQUAL(1, fam->flist->size);
+
 	STRCMP_EQUAL("Dog", fam->species[0]);
-	LONGS_EQUAL(59, fam->flist->size);
 	STRCMP_EQUAL("Rat", fam->species[4]);
-	LONGS_EQUAL(59, fam->flist->size);
+
+	pCafeFamilyItem item = cafe_family_get_family_item(fam, "ENSF1");
+	CHECK(item != NULL);
+	LONGS_EQUAL(3, item->count[0]);
+	LONGS_EQUAL(13, item->count[4]);
+	STRCMP_EQUAL("OTOPETRIN", item->desc);
 }
 
 
