@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <iostream>
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 #include <math.h>
@@ -273,6 +274,8 @@ static pArrayList build_arraylist(const char *items[], int count)
 
 TEST(FirstTestGroup, Test_cafe_get_posterior)
 {
+  probability_cache = NULL;
+
 	CafeParam param;
 	param.flog = stdout;
 	param.quiet = 1;
@@ -307,13 +310,39 @@ TEST(FirstTestGroup, Test_cafe_get_posterior)
 	CHECK_FALSE(isfinite(cafe_get_posterior(param.pfamily, param.pcafe, &param.family_size, param.ML, param.MAP, param.prior_rfsize, param.quiet)));
 };
 
-TEST(TreeTests, compute_internal_node_likelihoode)
+void build_matrix(square_matrix& m)
 {
+  square_matrix_init(&m, 3);
+  square_matrix_set(&m, 0, 0, 1);
+  square_matrix_set(&m, 0, 1, 2);
+  square_matrix_set(&m, 0, 2, 3);
+  square_matrix_set(&m, 1, 0, 4);
+  square_matrix_set(&m, 1, 1, 5);
+  square_matrix_set(&m, 1, 2, 6);
+  square_matrix_set(&m, 2, 0, 7);
+  square_matrix_set(&m, 2, 1, 8);
+  square_matrix_set(&m, 2, 2, 9);
+}
+
+
+TEST(TreeTests, compute_internal_node_likelihood)
+{
+  square_matrix matrix;
+  build_matrix(matrix);
 	pCafeTree pcafe = create_tree(range);
 	pCafeNode node = (pCafeNode)pcafe->super.nlist->array[3];
-	probability_cache = birthdeath_cache_init(pcafe->size_of_factor);
-	compute_internal_node_likelihood((pTree)pcafe, (pTreeNode)node);
-	DOUBLES_EQUAL(0, node->likelihoods[0], .001);
+  pCafeNode child[2] = { (pCafeNode)((pTreeNode)node)->children->head->data,
+    (pCafeNode)((pTreeNode)node)->children->tail->data };
+  child[0]->birthdeath_matrix = &matrix;
+  child[1]->birthdeath_matrix = &matrix;
+  double likelihoods[] = { .5, .5, .5 };
+  child[0]->likelihoods = likelihoods;
+  child[1]->likelihoods = likelihoods;
+  pcafe->familysizes[0] = 0;
+  pcafe->familysizes[1] = 2;
+
+  compute_internal_node_likelihood((pTree)pcafe, (pTreeNode)node);
+	DOUBLES_EQUAL(9, node->likelihoods[0], .001);
 }
 
 TEST(FirstTestGroup, cafe_set_prior_rfsize_empirical)
@@ -626,6 +655,20 @@ TEST(FirstTestGroup, square_matrix_resize)
 	square_matrix_resize(&matrix, 1);
 	LONGS_EQUAL(1, square_matrix_get(&matrix, 0, 0));
 }
+
+TEST(FirstTestGroup, square_matrix_multiply)
+{
+  square_matrix matrix;
+  build_matrix(matrix);
+  double m2[3] = { 7, 9, 11 };
+  double result[3];
+  square_matrix_multiply(&matrix, m2, 0, 2, 0, 2, result );
+
+  DOUBLES_EQUAL(58, result[0], .001);
+  DOUBLES_EQUAL(139, result[1], .001);
+  DOUBLES_EQUAL(220, result[2], .001);
+}
+
 TEST(FirstTestGroup, compute_birthdeath_rates)
 {
 	chooseln_cache_init(3);
@@ -642,6 +685,40 @@ TEST(FirstTestGroup, compute_birthdeath_rates)
 	DOUBLES_EQUAL(.007, square_matrix_get(matrix, 2, 0), 0.001);
 	DOUBLES_EQUAL(.131, square_matrix_get(matrix, 2, 1), 0.001);
 	DOUBLES_EQUAL(.591, square_matrix_get(matrix, 2, 2), 0.001);
+}
+
+std::ostream& operator<<(std::ostream& ost, square_matrix& matrix)
+{
+  for (int s = 0; s < matrix.size; s++)
+  {
+    for (int c = 0; c < matrix.size; c++)
+    {
+      ost << "(" << s << "," << c << ")" << square_matrix_get(&matrix, s, c) << "\t";
+    }
+    ost << "\n";
+  }
+
+  return ost;
+}
+
+TEST(FirstTestGroup, compute_birthdeath_rates_without_mu)
+{
+  chooseln_cache_init(25);
+  struct square_matrix* matrix = compute_birthdeath_rates(1, 0.01, -1, 20);
+//  std::cout << "Child matrix" << std::endl << *matrix << std::endl << "Done" << std::endl;
+
+  LONGS_EQUAL(21, matrix->size);
+
+  // matrix.values should be set to a 3x3 array of doubles
+  DOUBLES_EQUAL(.0099, square_matrix_get(matrix, 1, 0), 0.000001);
+  DOUBLES_EQUAL(.980296, square_matrix_get(matrix, 1, 1), 0.000001);
+  DOUBLES_EQUAL(.0097059, square_matrix_get(matrix, 1, 2), 0.000001);
+  DOUBLES_EQUAL(9.8e-05, square_matrix_get(matrix, 2, 0), 0.0000001);
+  DOUBLES_EQUAL(.0194118, square_matrix_get(matrix, 2, 1), 0.000001);
+  DOUBLES_EQUAL(.961173, square_matrix_get(matrix, 2, 2), 0.000001);
+  DOUBLES_EQUAL(9.7059e-07, square_matrix_get(matrix, 3, 0), 0.000001);
+  DOUBLES_EQUAL(0.000288294, square_matrix_get(matrix, 3, 1), 0.000001);
+  DOUBLES_EQUAL(0.0285468, square_matrix_get(matrix, 3, 2), 0.000001);
 }
 
 TEST(FirstTestGroup, clear_tree_viterbis)

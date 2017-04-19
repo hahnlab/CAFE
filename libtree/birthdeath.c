@@ -166,6 +166,18 @@ void square_matrix_resize(struct square_matrix* matrix, int new_size)
 	matrix->size = new_size;
 }
 
+void square_matrix_multiply(struct square_matrix* matrix, double *vector, int row_start, int row_end, int col_start, int col_end, double *result)
+{
+  for (int s = row_start, i = 0; s <= row_end; s++, i++)
+  {
+    result[i] = 0;
+    for (int c = col_start, j = 0; c <= col_end; c++, j++)
+    {
+      result[i] += square_matrix_get(matrix, s, c) * vector[j];
+    }
+  }
+}
+
 void init_zero_matrix(struct square_matrix *matrix)
 {
 	for (int s = 1; s < matrix->size; s++)
@@ -246,7 +258,7 @@ struct square_matrix* compute_birthdeath_rates(double branchlength, double lambd
 		coeff = 1 - alpha - beta;
 	}
 
-	init_matrix(matrix, coeff);
+  init_matrix(matrix, coeff);
 
 	if (coeff > 0 && coeff != 1)
 	{

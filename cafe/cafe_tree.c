@@ -341,23 +341,14 @@ void compute_internal_node_likelihood(pTree ptree, pTreeNode ptnode)
 		(pCafeNode)((pTreeNode)pcnode)->children->tail->data };
 	for (idx = 0; idx < 2; idx++)
 	{
-		{
 			factors[idx] = tree_factors[idx];
-			memset(factors[idx], 0, pcafe->size_of_factor*sizeof(double));
-			for (int s = root_start, i = 0; s <= root_end; s++, i++)
-			{
-				for (int c = family_start, j = 0; c <= family_end; c++, j++)
-				{
-					if (!child[idx]->birthdeath_matrix)
-						node_set_birthdeath_matrix(child[idx], probability_cache, pcafe->k);
+      if (!child[idx]->birthdeath_matrix)
+        node_set_birthdeath_matrix(child[idx], probability_cache, pcafe->k);
 
-					factors[idx][i] += square_matrix_get(child[idx]->birthdeath_matrix, s, c) * child[idx]->likelihoods[j];		
-					// p(node=c,child|s) = p(node=c|s)p(child|node=c) integrated over all c
-					// remember child likelihood[c]'s never sum up to become 1 because they are likelihoods conditioned on c's.
-					// incoming nodes to don't sum to 1. outgoing nodes sum to 1
-				}
-			}
-		}
+      square_matrix_multiply(child[idx]->birthdeath_matrix, child[idx]->likelihoods, root_start, root_end, family_start, family_end, factors[idx]);
+      // p(node=c,child|s) = p(node=c|s)p(child|node=c) integrated over all c
+      // remember child likelihood[c]'s never sum up to become 1 because they are likelihoods conditioned on c's.
+      // incoming nodes to don't sum to 1. outgoing nodes sum to 1
 	}
 	int size = root_end - root_start + 1;
 	for (i = 0; i < size; i++)
