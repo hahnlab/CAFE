@@ -166,6 +166,18 @@ void square_matrix_resize(struct square_matrix* matrix, int new_size)
 	matrix->size = new_size;
 }
 
+void square_matrix_print(struct square_matrix* matrix)
+{
+  for (int s = 0; s < matrix->size; s++)
+  {
+    for (int c = 0; c < matrix->size; c++)
+    {
+      printf("%f ", square_matrix_get(matrix, s, c));
+    }
+    printf("\n");
+  }
+}
+
 void square_matrix_multiply(struct square_matrix* matrix, double *vector, int row_start, int row_end, int col_start, int col_end, double *result)
 {
   for (int s = row_start, i = 0; s <= row_end; s++, i++)

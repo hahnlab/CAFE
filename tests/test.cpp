@@ -345,6 +345,48 @@ TEST(TreeTests, compute_internal_node_likelihood)
 	DOUBLES_EQUAL(9, node->likelihoods[0], .001);
 }
 
+TEST(TreeTests, compute_tree_likelihood)
+{
+  probability_cache = NULL;
+
+  const char *newick_tree = "((A:1,B:1):1,(C:1,D:1):1);";
+  char tree[100];
+  strcpy(tree, newick_tree);
+  range.min = 0;
+  range.max = 7;
+  range.root_min = 0;
+  range.root_max = 7;
+  pCafeTree pTree = cafe_tree_new(tree, &range, 0, 0);
+
+  for (int i = 0; i < pTree->super.nlist->size; ++i)
+  {
+    pCafeNode node = (pCafeNode)pTree->super.nlist->array[i];
+    node->birth_death_probabilities.lambda = 0.01;
+    node->birth_death_probabilities.mu = -1;
+  }
+  pCafeNode nodeA = (pCafeNode)pTree->super.nlist->array[0];
+  nodeA->familysize = 5;
+  pCafeNode nodeB = (pCafeNode)pTree->super.nlist->array[2];
+  nodeB->familysize = 3;
+
+  pCafeNode nodeC = (pCafeNode)pTree->super.nlist->array[4];
+  nodeC->familysize = 2;
+  pCafeNode nodeD = (pCafeNode)pTree->super.nlist->array[6];
+  nodeD->familysize = 4;
+
+  reset_birthdeath_cache(pTree, 0, &range);
+
+  compute_tree_likelihoods(pTree);
+  double *likelihood = get_likelihoods(pTree);
+  DOUBLES_EQUAL(0, likelihood[0], .0000000001);
+  DOUBLES_EQUAL(1.42138e-13, likelihood[1], 1.0e-13);
+  DOUBLES_EQUAL(2.87501e-09, likelihood[2], 1.0e-13);
+  DOUBLES_EQUAL(4.11903e-07, likelihood[3], 1.0e-7);
+  DOUBLES_EQUAL(6.73808e-07, likelihood[4], 1.0e-7);
+ // DOUBLES_EQUAL(2.06047e-08, likelihood[5], 1.0e-13);
+
+}
+
 TEST(FirstTestGroup, cafe_set_prior_rfsize_empirical)
 {
 	CafeParam param;
