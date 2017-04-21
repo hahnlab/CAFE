@@ -5,7 +5,7 @@ before_install:
 - sudo apt-get install CppUTest doxygen graphviz
 script:
 - cd $TRAVIS_BUILD_DIR
-- configure
+- ./configure
 - make
 - make test
 - cd test
