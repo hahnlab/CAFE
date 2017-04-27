@@ -142,40 +142,47 @@ void show_sizes(FILE* f, pCafeTree pcafe, family_size_range* range, pCafeFamilyI
 	fprintf(f, "Family size: %d ~ %d\n", range->min, range->max);
 }
 
+void compute_posterior(pCafeFamily pfamily, int family_index, pCafeTree pcafe, double *ML, double *MAP, double *prior_rfsize)
+{
+  cafe_family_set_size(pfamily, family_index, pcafe);	// this part is just setting the leave counts.
+  compute_tree_likelihoods(pcafe);
+
+  double *likelihood = get_likelihoods(pcafe);		// likelihood of the whole tree = multiplication of likelihood of all nodes
+
+  ML[family_index] = __max(likelihood, pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
+  pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[family_index];
+  if (pitem->maxlh < 0)
+  {
+    pitem->maxlh = __maxidx(likelihood, pcafe->rfsize);
+  }
+  // get posterior by adding lnPrior to lnLikelihood
+  double* posterior = (double*)memory_new(pcafe->size_of_factor, sizeof(double));
+  for (int j = 0; j < pcafe->rfsize; j++)	// j: root family size
+  {
+    // likelihood and posterior both starts from 1 instead of 0 
+    posterior[j] = exp(log(likelihood[j]) + log(prior_rfsize[j]));	//prior_rfsize also starts from 1
+  }
+
+  MAP[family_index] = __max(posterior, pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
+  memory_free(posterior);
+  posterior = NULL;
+}
+
 double cafe_get_posterior(pCafeFamily pfamily, pCafeTree pcafe, family_size_range*range, double *ML, double *MAP, double *prior_rfsize, int quiet)
 {
-	int i, j;
+  if (!prior_rfsize)
+  {
+    fprintf(stderr, "ERROR: empirical posterior not defined.\n");
+    return -1;
+  }
+	int i;
 	double score = 0;
-	double* likelihood = NULL;
 	for ( i = 0 ; i < pfamily->flist->size ; i++ )	// i: family index
 	{
 		pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[i];
 		if ( pitem->ref < 0 || pitem->ref == i ) 
 		{
-			cafe_family_set_size(pfamily, i, pcafe);	// this part is just setting the leave counts.
-			compute_tree_likelihoods(pcafe);
-			likelihood = get_likelihoods(pcafe);		// likelihood of the whole tree = multiplication of likelihood of all nodes
-			ML[i] = __max(likelihood, pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
-			if ( pitem->maxlh < 0 )
-			{
-				pitem->maxlh = __maxidx(likelihood, pcafe->rfsize);	
-			}
-			// get posterior by adding lnPrior to lnLikelihood
-			double* posterior = (double*)memory_new(pcafe->size_of_factor,sizeof(double));
-			if(prior_rfsize) {		// prior is a poisson distribution on the root size based on leaves' size
-				for(j = 0; j < pcafe->rfsize; j++)	// j: root family size
-				{
-					// likelihood and posterior both starts from 1 instead of 0 
-					posterior[j] = exp(log(likelihood[j])+log(prior_rfsize[j]));	//prior_rfsize also starts from 1
-				}				
-			}
-            else {
-                fprintf(stderr,"ERROR: empirical posterior not defined.\n");      
-                return -1;
-            }
-			MAP[i] = __max(posterior, pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
-			memory_free(posterior);
-			posterior = NULL;
+      compute_posterior(pfamily, i, pcafe, ML, MAP, prior_rfsize);
 		}
 		else
 		{

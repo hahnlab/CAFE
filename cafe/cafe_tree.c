@@ -279,7 +279,7 @@ void initialize_leaf_likelihoods(pTree ptree, pTreeNode ptnode)
 	else {
 		// number of likelihoods should be set from the tree's size_of_factor, 
 		// therefore the familysize must be less than this
-		assert(pcnode->familysize < pcafe->size_of_factor);
+		assert(pcnode->familysize >= 0 && pcnode->familysize < pcafe->size_of_factor);
 		memset((void*)pcnode->likelihoods, 0, pcafe->size_of_factor*sizeof(double));
 		pcnode->likelihoods[pcnode->familysize] = 1;
 	}
@@ -347,17 +347,16 @@ void compute_internal_node_likelihood(pTree ptree, pTreeNode ptnode)
 
       assert(child[idx]->birthdeath_matrix != NULL);
       square_matrix_multiply(child[idx]->birthdeath_matrix, child[idx]->likelihoods, root_start, root_end, family_start, family_end, factors[idx]);
-
       // p(node=c,child|s) = p(node=c|s)p(child|node=c) integrated over all c
       // remember child likelihood[c]'s never sum up to become 1 because they are likelihoods conditioned on c's.
       // incoming nodes to don't sum to 1. outgoing nodes sum to 1
 	}
 	int size = root_end - root_start + 1;
-	for (i = 0; i < size; i++)
+  for (i = 0; i < size; i++)
 	{
 		pcnode->likelihoods[i] = factors[0][i] * factors[1][i];
-	}
-	memory_free(tree_factors[0]);
+  }
+  memory_free(tree_factors[0]);
 	memory_free(tree_factors[1]);
 }
 

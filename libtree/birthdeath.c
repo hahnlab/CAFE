@@ -172,7 +172,7 @@ void square_matrix_print(struct square_matrix* matrix)
   {
     for (int c = 0; c < matrix->size; c++)
     {
-      printf("%f ", square_matrix_get(matrix, s, c));
+      printf("%e ", square_matrix_get(matrix, s, c));
     }
     printf("\n");
   }
@@ -372,7 +372,11 @@ struct square_matrix* birthdeath_cache_get_matrix(pBirthDeathCacheArray pbdc_arr
 	struct square_matrix* matrix = hash_table_lookup(pbdc_array->table, &key, sizeof(struct BirthDeathCacheKey));
 	if (matrix == NULL)
 	{
-		matrix = compute_birthdeath_rates(key.branchlength, key.lambda, key.mu, pbdc_array->maxFamilysize);
+#ifdef VERBOSE
+    if (lambda < 0.000000000001)
+      printf("WARNING: building matrix for 0 lambda\n");
+#endif
+    matrix = compute_birthdeath_rates(key.branchlength, key.lambda, key.mu, pbdc_array->maxFamilysize);
 		hash_table_add(pbdc_array->table, &key, sizeof(struct BirthDeathCacheKey), matrix, sizeof(struct square_matrix*));
 	}
 	return matrix;
