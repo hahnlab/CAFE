@@ -72,6 +72,7 @@ extern double cafe_tree_mp_remark(pString str, pTree ptree, pMetapostConfig pmc,
 extern int cafe_tree_random_familysize(pCafeTree pcafe, int rootFamilysize, pBirthDeathCacheArray cache);
 void node_set_birthdeath_matrix(pCafeNode pcnode, pBirthDeathCacheArray cache, int num_lambdas);
 double cafe_set_prior_rfsize_poisson_lambda(pCafeParam param, double* lambda);
+double *find_poisson_lambda(pCafeParam param, pCafeFamily pfamily, int *p_num_params);
 
 
 /****************************************************************************

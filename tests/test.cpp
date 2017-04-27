@@ -392,19 +392,57 @@ TEST(TreeTests, compute_tree_likelihood)
 
 }
 
+TEST(FirstTestGroup, find_poisson_lambda)
+{
+  CafeParam param;
+  param.quiet = 0;
+  param.flog = stdout;
+  param.prior_rfsize = NULL;
+  const char *species[] = { "", "", "A", "B", "C", "D" };
+  param.pfamily = cafe_family_init(build_arraylist(species, 6));
+  const char *v1[] = { "description", "ENS01", "6", "11", "3", "7" };
+  cafe_family_add_item(param.pfamily, build_arraylist(v1, 6));
+  const char *v2[] = { "description", "ENS02", "6", "11", "3", "7" };
+  cafe_family_add_item(param.pfamily, build_arraylist(v2, 6));
+  const char *v3[] = { "description", "ENS03", "6", "11", "3", "7" };
+  cafe_family_add_item(param.pfamily, build_arraylist(v3, 6));
+  const char *v4[] = { "description", "ENS04", "6", "11", "3", "7" };
+  cafe_family_add_item(param.pfamily, build_arraylist(v4, 6));
+
+  param.pcafe = create_small_tree(range);
+
+  cafe_family_set_species_index(param.pfamily, param.pcafe);
+
+  int num_params;
+  double *parameters = find_poisson_lambda(&param, param.pfamily, &num_params);
+  LONGS_EQUAL(1, num_params);
+  DOUBLES_EQUAL(5.75, parameters[0], .001);
+  free(parameters);
+}
+
 TEST(FirstTestGroup, cafe_set_prior_rfsize_empirical)
 {
-	CafeParam param;
-	param.flog = stdout;
-	param.prior_rfsize = NULL;
-	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
-	param.pfamily = cafe_family_init(build_arraylist(species, 7));
-	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
-	cafe_family_add_item(param.pfamily, build_arraylist(values, 7));
+  CafeParam param;
+  param.quiet = 0;
+  param.flog = stdout;
+  param.prior_rfsize = NULL;
+  const char *species[] = { "", "", "A", "B", "C", "D" };
+  param.pfamily = cafe_family_init(build_arraylist(species, 6));
+  const char *v1[] = { "description", "ENS01", "6", "11", "3", "7" };
+  cafe_family_add_item(param.pfamily, build_arraylist(v1, 6));
+  const char *v2[] = { "description", "ENS02", "6", "11", "3", "7" };
+  cafe_family_add_item(param.pfamily, build_arraylist(v2, 6));
+  const char *v3[] = { "description", "ENS03", "6", "11", "3", "7" };
+  cafe_family_add_item(param.pfamily, build_arraylist(v3, 6));
+  const char *v4[] = { "description", "ENS04", "6", "11", "3", "7" };
+  cafe_family_add_item(param.pfamily, build_arraylist(v4, 6));
 
-	param.pcafe = create_tree(range);
-	cafe_set_prior_rfsize_empirical(&param);
-	DOUBLES_EQUAL(0.0, param.prior_rfsize[0], .001);
+  param.pcafe = create_small_tree(range);
+
+  cafe_family_set_species_index(param.pfamily, param.pcafe);
+
+  cafe_set_prior_rfsize_empirical(&param);
+  DOUBLES_EQUAL(0.0, param.prior_rfsize[0], .001);
 }
 
 TEST(FirstTestGroup, cafe_set_prior_rfsize_poisson_lambda)

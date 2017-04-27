@@ -389,53 +389,64 @@ double cafe_set_prior_rfsize_poisson_lambda(pCafeParam param, double* lambda)
 	return 0;
 }
 
+double *find_poisson_lambda(pCafeParam param, pCafeFamily pfamily, int *p_num_params)
+{
+  int i = 0;
+  int idx = 0;
+
+  // estimate the distribution of family size based on observed leaf counts.
+  // first collect all leaves sizes into an ArrayList.
+  pArrayList pLeavesSize = arraylist_new(pfamily->flist->size*pfamily->num_species);
+  for (idx = 0; idx<pfamily->flist->size; idx++) {
+    pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[idx];
+    for (i = 0; i < pfamily->num_species; i++)
+    {
+      if (pfamily->index[i] < 0) continue;
+      int* leafcnt = memory_new(1, sizeof(int));
+      memcpy(leafcnt, &(pitem->count[i]), sizeof(int));
+      if (*leafcnt > 0) {		// ignore the zero counts ( we condition that rootsize is at least one )
+        *leafcnt = (*leafcnt) - 1;
+        arraylist_add(pLeavesSize, (void*)leafcnt);
+      }
+    }
+  }
+
+  // now estimate parameter based on data and distribution (poisson or gamma). 
+  pFMinSearch pfm;
+  int num_params = 1;
+  *p_num_params = num_params;
+  pfm = fminsearch_new_with_eq(__lnLPoisson, num_params, pLeavesSize);
+  //int num_params = 2;
+  //pfm = fminsearch_new_with_eq(__lnLGamma,num_params,pLeavesSize);
+  pfm->tolx = 1e-6;
+  pfm->tolf = 1e-6;
+  double* parameters = memory_new(num_params, sizeof(double));
+  for (i = 0; i < num_params; i++) parameters[i] = unifrnd();
+  fminsearch_min(pfm, parameters);
+  double *re = fminsearch_get_minX(pfm);
+  for (i = 0; i < num_params; i++) parameters[i] = re[i];
+
+  cafe_log(param, "Empirical Prior Estimation Result: %d\n", pfm->iters);
+  cafe_log(param, "Poisson lambda: %f & Score: %f\n", parameters[0], *pfm->fv);
+
+  // clean
+  fminsearch_free(pfm);
+  arraylist_free(pLeavesSize, NULL);
+
+  return parameters;
+}
+
 /// set empirical prior on rootsize based on the assumption that rootsize follows leaf size distribution
 double cafe_set_prior_rfsize_empirical(pCafeParam param)
 {
-	int i=0;
-	int idx = 0;
-
-	// estimate the distribution of family size based on observed leaf counts.
-	// first collect all leaves sizes into an ArrayList.
-	pArrayList pLeavesSize = arraylist_new(param->pfamily->flist->size*param->pfamily->num_species);	
-	for( idx=0; idx<param->pfamily->flist->size; idx++) {
-		pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[idx];
-		for ( i = 0 ; i < param->pfamily->num_species ; i++ )
-		{
-			if( param->pfamily->index[i] < 0 ) continue;
-			int* leafcnt = memory_new(1, sizeof(int));
-			memcpy(leafcnt, &(pitem->count[i]), sizeof(int));
-			if (*leafcnt > 0) {		// ignore the zero counts ( we condition that rootsize is at least one )
-				*leafcnt = (*leafcnt) - 1;
-				arraylist_add(pLeavesSize, (void*)leafcnt);
-			}
-		}
-	}
-
-	// now estimate parameter based on data and distribution (poisson or gamma). 
-	pFMinSearch pfm;
-	int num_params = 1;
-	pfm = fminsearch_new_with_eq(__lnLPoisson,num_params,pLeavesSize);
-	//int num_params = 2;
-	//pfm = fminsearch_new_with_eq(__lnLGamma,num_params,pLeavesSize);
-	pfm->tolx = 1e-6;
-	pfm->tolf = 1e-6;
-	double* parameters = memory_new(num_params, sizeof(double));
-	for ( i = 0; i < num_params; i++ ) parameters[i] = unifrnd();
-	fminsearch_min(pfm, parameters);
-	double *re = fminsearch_get_minX(pfm);
-	for ( i = 0; i < num_params; i++ ) parameters[i] = re[i];
-	cafe_log(param,"Empirical Prior Estimation Result: %d\n", pfm->iters );
-	cafe_log(param,"Poisson lambda: %f & Score: %f\n", parameters[0], *pfm->fv);	
+  int num_params;
+  double *parameters = find_poisson_lambda(param, param->pfamily, &num_params);
 	double *prior_poisson_lambda = memory_new_with_init(num_params, sizeof(double), (void*) parameters);
 	//cafe_log(param,"Gamma alpha: %f, beta: %f & Score: %f\n", parameters[0], parameters[1], *pfm->fv);	
 	
 	// set rfsize based on estimated prior
 	cafe_set_prior_rfsize_poisson_lambda(param, prior_poisson_lambda);
 
-	// clean
-	fminsearch_free(pfm);
-	arraylist_free(pLeavesSize, NULL);
 	memory_free(parameters);
 	return 0;
 }
