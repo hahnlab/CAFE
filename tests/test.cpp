@@ -345,10 +345,8 @@ TEST(TreeTests, compute_internal_node_likelihood)
 	DOUBLES_EQUAL(9, node->likelihoods[0], .001);
 }
 
-TEST(TreeTests, compute_tree_likelihood)
+pCafeTree create_small_tree(family_size_range& range)
 {
-  probability_cache = NULL;
-
   const char *newick_tree = "((A:1,B:1):1,(C:1,D:1):1);";
   char tree[100];
   strcpy(tree, newick_tree);
@@ -356,7 +354,14 @@ TEST(TreeTests, compute_tree_likelihood)
   range.max = 7;
   range.root_min = 0;
   range.root_max = 7;
-  pCafeTree pTree = cafe_tree_new(tree, &range, 0, 0);
+  return cafe_tree_new(tree, &range, 0, 0);
+}
+
+TEST(TreeTests, compute_tree_likelihood)
+{
+  probability_cache = NULL;
+
+  pCafeTree pTree = create_small_tree(range);
 
   for (int i = 0; i < pTree->super.nlist->size; ++i)
   {
@@ -400,6 +405,26 @@ TEST(FirstTestGroup, cafe_set_prior_rfsize_empirical)
 	param.pcafe = create_tree(range);
 	cafe_set_prior_rfsize_empirical(&param);
 	DOUBLES_EQUAL(0.0, param.prior_rfsize[0], .001);
+}
+
+TEST(FirstTestGroup, cafe_set_prior_rfsize_poisson_lambda)
+{
+  CafeParam param;
+  param.pcafe = create_small_tree(range);
+  param.pcafe->rootfamilysizes[0] = 1;
+  param.prior_rfsize = NULL;
+
+  double poisson_lambda = 5.75;
+  cafe_set_prior_rfsize_poisson_lambda(&param, &poisson_lambda);
+
+  DOUBLES_EQUAL(0.00318278, param.prior_rfsize[0], 0.00001);
+  DOUBLES_EQUAL(0.018301, param.prior_rfsize[1], 0.00001);
+  DOUBLES_EQUAL(0.0526153, param.prior_rfsize[2], 0.00001);
+  DOUBLES_EQUAL(0.100846, param.prior_rfsize[3], 0.00001);
+  DOUBLES_EQUAL(0.144966, param.prior_rfsize[4], 0.00001);
+  DOUBLES_EQUAL(0.166711, param.prior_rfsize[5], 0.00001);
+
+  DOUBLES_EQUAL(0.000, param.prior_rfsize[999], .000000001);
 }
 
 TEST(FirstTestGroup, list_commands)
