@@ -135,3 +135,15 @@ pArrayList ConditionalDistribution::to_arraylist()
 		arraylist_add(result, &matrix[i][0]);
 	return result;
 }
+
+void cafe_tree_p_values(pCafeTree pcafe, double* pvalues, pArrayList pconddist, int cdlen)
+{
+  compute_tree_likelihoods(pcafe);
+  double* lh = get_likelihoods(pcafe);
+  int s;
+  for (s = 0; s < pcafe->rfsize; s++)
+  {
+    pvalues[s] = pvalue(lh[s], (double*)pconddist->array[s], cdlen);
+  }
+}
+

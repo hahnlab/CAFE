@@ -1,5 +1,6 @@
 #include "viterbi.h"
 #include "Globals.h"
+#include "pvalue.h"
 
 extern "C" {
 #include <family.h>

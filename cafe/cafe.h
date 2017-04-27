@@ -63,7 +63,6 @@ extern double** cafe_tree_clustered_likelihood(pCafeTree pcafe);
 extern void cafe_tree_viterbi(pCafeTree pcafe);
 extern void cafe_tree_clustered_viterbi(pCafeTree pcafe, int num_likelihoods);
 extern void cafe_tree_viterbi_posterior(pCafeTree pcafe, pCafeParam param);
-extern void cafe_tree_p_values(pCafeTree pcafe, double* p,  pArrayList pconddist, int cdlen);
 
 extern pCafeParam cafe_copy_parameters(pCafeParam psrc);
 extern void cafe_free_copy_parameters(pCafeParam param);

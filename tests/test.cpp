@@ -420,6 +420,28 @@ TEST(FirstTestGroup, find_poisson_lambda)
   free(parameters);
 }
 
+TEST(FirstTestGroup, cafe_tree_p_values)
+{
+  MemoryLeakWarningPlugin::turnOffNewDeleteOverloads(); // something about conditional distributions causes memory leak reports
+  std::vector<double> result(10);
+  
+  pCafeTree pTree = create_small_tree(range);
+
+  probability_cache = NULL;
+  reset_birthdeath_cache(pTree, 0, &range);
+  matrix m = cafe_conditional_distribution(pTree, &range, 1, 5);
+  pArrayList cd = arraylist_new(1000);
+  for (size_t i = 0; i < m.size(); ++i)
+    arraylist_add(cd, &m[i][0]);
+  
+  cafe_tree_p_values(pTree, &result[0], cd, 1);
+  
+  // TODO: generate non-zero pvalues
+  DOUBLES_EQUAL(0, result[0], 0.001);
+
+  arraylist_free(cd, NULL);
+}
+
 TEST(FirstTestGroup, cafe_set_prior_rfsize_empirical)
 {
   CafeParam param;
@@ -1146,7 +1168,6 @@ TEST(FirstTestGroup, cut_branch)
 
 	CHECK(cb.pCDSs[node_id].second.empty());
 	//POINTERS_EQUAL(NULL, cb.pCDSs[node_id].second);
-
 }
 
 TEST(FirstTestGroup, conditional_distribution)
