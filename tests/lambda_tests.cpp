@@ -7,6 +7,7 @@
 #include "lambda.h"
 #include "lambdamu.h"
 #include "Globals.h"
+#include <gene_family.h>
 
 extern "C" {
 #include "cafe.h"

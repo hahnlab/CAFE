@@ -9,9 +9,9 @@
 #include "reports.h"
 #include "Globals.h"
 #include "viterbi.h"
+#include "gene_family.h"
 
 extern "C" {
-#include <family.h>
 #include "cafe.h"
 };
 

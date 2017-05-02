@@ -363,27 +363,6 @@ void cafe_family_read_validate_species(pCafeParam param, const char* file)
 	return;
 }
 
-pCafeFamily cafe_family_init(pArrayList data)
-{
-	pCafeFamily pcf = (pCafeFamily)memory_new(1, sizeof(CafeFamily));
-	pcf->flist = arraylist_new(11000);
-	pcf->species = (char**)memory_new((data->size - 2), sizeof(char*));
-	for (int i = 2; i < data->size; i++)
-	{
-		pcf->species[i - 2] = (char*)data->array[i];
-	}
-
-	pcf->num_species = data->size - 2;
-	pcf->max_size = 0;
-	pcf->index = (int*)memory_new(pcf->num_species, sizeof(int));
-	for (int i = 0; i < pcf->num_species; ++i)
-	{
-		pcf->index[i] = -1;
-	}
-
-	return pcf;
-}
-
 void cafe_family_add_item(pCafeFamily pcf, pArrayList data)
 {
 	pCafeFamilyItem pitem = (pCafeFamilyItem)memory_new(1, sizeof(CafeFamilyItem));
@@ -417,44 +396,6 @@ void cafe_family_add_item(pCafeFamily pcf, pArrayList data)
 		}
 	}
 	arraylist_add(pcf->flist, pitem);
-}
-
-pCafeFamily cafe_family_new(const char* file, int bpatcheck)
-{
-	FILE* fp = fopen(file,"r");
-	char buf[STRING_BUF_SIZE];
-	if ( fp == NULL )
-	{
-		fprintf( stderr, "Cannot open file: %s\n", file );
-		return NULL;
-	}
-	if ( fgets(buf,STRING_BUF_SIZE,fp) == NULL )
-	{
-		fclose(fp);
-		fprintf( stderr, "Empty file: %s\n", file );
-		return NULL;
-	}
-	string_pchar_chomp(buf);
-	pArrayList data = string_pchar_split( buf, '\t');
-	pCafeFamily pcf = cafe_family_init(data);
-	memory_free(data->array[0]);
-	memory_free(data->array[1]);
-	data->array[0] = NULL;
-	data->array[1] = NULL;
-	arraylist_free(data, NULL);
-
-	for(int i = 0 ; fgets(buf,STRING_BUF_SIZE,fp) ; i++ )	
-	{
-		data = string_pchar_split(buf, '\t');
-		cafe_family_add_item(pcf, data);
-		arraylist_free(data,NULL);
-	}
-	if ( bpatcheck )
-	{
-		__cafe_famliy_check_the_pattern(pcf);
-	}
-	fclose(fp);
-	return pcf;
 }
 
 void cafe_family_item_free(pCafeFamilyItem pitem )

@@ -78,15 +78,12 @@ void compute_posterior(pCafeFamily pfamily, int family_index, pCafeTree pcafe, d
 /****************************************************************************
  * Cafe Family
 ****************************************************************************/
-pCafeFamily cafe_family_init(pArrayList data);
 void cafe_family_add_item(pCafeFamily pcf, pArrayList data);
-extern pCafeFamily cafe_family_new(const char* file, int bpatcheck);
 extern void cafe_family_item_free(pCafeFamilyItem pitem );
 extern void cafe_family_free(pCafeFamily pcf);
 extern void cafe_family_set_size(pCafeFamily pcf, int idx, pCafeTree pcafe);
 extern int cafe_family_set_species_index(pCafeFamily pcf, pCafeTree pcafe );
 extern int cafe_family_get_species_index(pCafeFamily pcf, char* speciesname); 
-extern void cafe_family_set_size_for_split(pCafeFamily pcf, int idx, pCafeTree pcafe);
 extern void cafe_family_set_size_with_family(pCafeFamily pcf, int idx, pCafeTree pcafe );
 extern void cafe_family_set_truesize_with_family(pCafeFamily pcf, int idx, pCafeTree pcafe );
 extern void cafe_family_set_size_by_species(char* speciesname, int size, pCafeTree pcafe);

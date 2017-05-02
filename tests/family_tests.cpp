@@ -1,5 +1,6 @@
 #include <sstream>
 #include "CppUTest/TestHarness.h"
+#include "gene_family.h"
 
 #include "cafe_commands.h"
 

@@ -6,6 +6,7 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
 #include <math.h>
+#include "gene_family.h"
 
 extern "C" {
 #include <utils_string.h>

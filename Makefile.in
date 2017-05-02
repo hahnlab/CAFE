@@ -23,7 +23,7 @@ CSRCS=cafe_family.c cafe_main.c cafe_report.c cafe_tree.c cafe_shell.c birthdeat
         input_values.c matrix_exponential.c regexpress.c utils_string.c gmatrix.c \
         hashtable.c mathfunc.c memalloc.c utils.c
 CXXSRCS=branch_cutting.cpp cafe_commands.cpp conditional_distribution.cpp \
-        error_model.cpp Globals.cpp lambda.cpp lambdamu.cpp log_buffer.cpp reports.cpp \
+        error_model.cpp gene_family.cpp Globals.cpp lambda.cpp lambdamu.cpp log_buffer.cpp reports.cpp \
         likelihood_ratio.cpp pvalue.cpp simerror.cpp viterbi.cpp
 TESTSRCS=command_tests.cpp error_model_tests.cpp family_tests.cpp lambda_tests.cpp test.cpp
 COBJS=$(CSRCS:.c=.o)

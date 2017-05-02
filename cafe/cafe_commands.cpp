@@ -25,6 +25,7 @@
 #include "log_buffer.h"
 #include "Globals.h"
 #include "viterbi.h"
+#include "gene_family.h"
 
 /**
 	\defgroup Commands Commands that are available in CAFE
@@ -53,7 +54,6 @@ extern "C" {
 	pErrorStruct cafe_shell_create_error_matrix_from_estimate(pErrorMeasure errormeasure);
 	int cafe_shell_set_branchlength();
 	void set_range_from_family(family_size_range* range, pCafeFamily family);
-	double _cafe_cross_validate_by_family(const char* queryfile, const char* truthfile, const char* errortype);
 	double _cafe_cross_validate_by_species(const char* validatefile, const char* errortype);
 	int __cafe_cmd_lambda_tree(pArgument parg);
 	void cafe_shell_set_lambda(pCafeParam param, double* parameters);
@@ -2112,7 +2112,7 @@ int cafe_cmd_cvfamily(Globals& globals, std::vector<std::string> tokens)
 		}
 
 		//cross-validate
-		double MSE = _cafe_cross_validate_by_family(queryfile, validatefile, "MSE");
+		double MSE = cross_validate_by_family(queryfile, validatefile, "MSE");
 		MSE_allfolds += MSE;
 		cafe_log(param, "MSE fold %d %f\n", i + 1, MSE);
 

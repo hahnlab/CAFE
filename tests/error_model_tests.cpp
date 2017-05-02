@@ -1,7 +1,10 @@
-#include <vector>
-#include "CppUTest/TestHarness.h"
-#include <error_model.h>
 #include <sstream>
+#include <vector>
+
+#include "CppUTest/TestHarness.h"
+
+#include <error_model.h>
+#include <gene_family.h>
 
 extern "C" {
 //#include <cafe_shell.h>
