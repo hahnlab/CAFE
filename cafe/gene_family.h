@@ -15,7 +15,7 @@ const int COMMA_AS_WHITESPACE = 1;
 std::vector<std::string> tokenize(std::string s, int flags);
 
 pCafeFamily cafe_family_init(const std::vector<std::string>& species_list);
-pCafeFamily load_gene_families(std::istream& ist, int bpatcheck);
+pCafeFamily load_gene_families(std::istream& ist, int bpatcheck, char separator);
 void cafe_family_free(pCafeFamily pcf);
 
 void cafe_family_add_item(pCafeFamily pcf, const std::vector<std::string>& data);

@@ -33,7 +33,7 @@ TEST_GROUP(FamilyTests)
 TEST(FamilyTests, TestCafeFamily)
 {
 	std::ifstream ifst("Nonexistent.tab");
-	POINTERS_EQUAL(NULL, load_gene_families(ifst, 1));
+	POINTERS_EQUAL(NULL, load_gene_families(ifst, 1, '\t'));
 
   pCafeFamily fam = cafe_family_init({ "Dog", "Chimp", "Human", "Mouse", "Rat" });
 
@@ -55,13 +55,13 @@ TEST(FamilyTests, TestCafeFamily)
 
 }
 
-TEST(FamilyTests, cafe_family_load)
+TEST(FamilyTests, load_gene_families_tab_separated)
 {
   std::ifstream ifst("Nonexistent.tab");
-  POINTERS_EQUAL(NULL, load_gene_families(ifst, 1));
+  POINTERS_EQUAL(NULL, load_gene_families(ifst, 1, '\t'));
 
   std::istringstream ist("FAMILYDESC\tFAMILY\tA\tB\nOTOPETRIN\tENSF2\t2\t10\n");
-  pCafeFamily fam = load_gene_families(ist, 0);
+  pCafeFamily fam = load_gene_families(ist, 0, '\t');
   LONGS_EQUAL(2, fam->num_species);
   STRCMP_EQUAL("A", fam->species[0]);
   STRCMP_EQUAL("B", fam->species[1]);
@@ -74,6 +74,39 @@ TEST(FamilyTests, cafe_family_load)
   LONGS_EQUAL(10, item->count[1]);
   STRCMP_EQUAL("OTOPETRIN", item->desc);
   cafe_family_free(fam);
+}
+
+TEST(FamilyTests, load_gene_families_comma_separated)
+{
+  std::istringstream ist("FAMILY DESC,FAMILY,A,B\nOXYSTEROL BINDING RELATED,ENSF2,2,10\n");
+  pCafeFamily fam = load_gene_families(ist, 0, ',');
+  LONGS_EQUAL(2, fam->num_species);
+  STRCMP_EQUAL("A", fam->species[0]);
+  STRCMP_EQUAL("B", fam->species[1]);
+
+  LONGS_EQUAL(1, fam->flist->size);
+
+  pCafeFamilyItem item = cafe_family_get_family_item(fam, "ENSF2");
+  CHECK(item != NULL);
+  LONGS_EQUAL(2, item->count[0]);
+  LONGS_EQUAL(10, item->count[1]);
+  STRCMP_EQUAL("OXYSTEROL BINDING RELATED", item->desc);
+  cafe_family_free(fam);
+}
+
+TEST(FamilyTests, load_gene_families_is_not_whitespace_separated)
+{
+  std::istringstream ist("FAMILYDESC FAMILY A B C\n");
+  try
+  {
+    pCafeFamily fam = load_gene_families(ist, 0, '\t');
+    FAIL("Exception should have been thrown");
+    cafe_family_free(fam);
+  }
+  catch (std::runtime_error& err)
+  {
+    STRCMP_EQUAL("Failed to identify species for gene families", err.what());
+  }
 }
 
 TEST(FamilyTests, cafe_family_set_size)
