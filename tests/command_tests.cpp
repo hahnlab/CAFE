@@ -186,7 +186,7 @@ TEST(CommandTests, cafe_cmd_log)
 
 TEST(CommandTests, get_load_arguments)
 {
-	vector<string> command = tokenize("load -t 1 -r 2 -p 0.05 -l log.txt -i fam.txt");
+	vector<string> command = tokenize("load -t 1 -r 2 -p 0.05 -l log.txt -i fam.txt", REGULAR_WHITESPACE);
 	struct load_args args = get_load_arguments(build_argument_list(command));
 	LONGS_EQUAL(1, args.num_threads);
 	LONGS_EQUAL(2, args.num_random_samples);

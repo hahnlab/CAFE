@@ -14,10 +14,30 @@ void __cafe_famliy_check_the_pattern(pCafeFamily pcf);
 
 using namespace std;
 
-vector<string> tokenize(string s)
+class my_ctype : public std::ctype<char> {
+  mask my_table[table_size + 1];
+public:
+  my_ctype(size_t refs = 0)
+    : std::ctype<char>(my_table, false, refs)
+  {
+    // copy the original character classifaction table.
+    std::copy(classic_table(),
+      classic_table() + table_size,
+      my_table);
+    // and change ',' to be classed as white space.
+    my_table[','] = (mask)space;
+  }
+};
+
+vector<string> tokenize(string s, int flags)
 {
-  vector<string> result;
   istringstream iss(s);
+  if (flags & COMMA_AS_WHITESPACE)
+  {
+    std::locale x(std::locale::classic(), new my_ctype);
+    iss.imbue(x);
+  }
+  vector<string> result;
 
   while (iss.good()) {
     string tmp;
@@ -80,7 +100,7 @@ pCafeFamily load_gene_families(std::istream& ist, int bpatcheck)
   ist.getline(buf, STRING_BUF_SIZE);
   string_pchar_chomp(buf);
 
-  vector<string> species_list = tokenize(buf);
+  vector<string> species_list = tokenize(buf, COMMA_AS_WHITESPACE);
   species_list.erase(species_list.begin(), species_list.begin()+2); // first two items are description and ID - delete them
   pCafeFamily pcf = cafe_family_init(species_list);
 
@@ -89,7 +109,7 @@ pCafeFamily load_gene_families(std::istream& ist, int bpatcheck)
     if (!ist)
       break;
 
-    cafe_family_add_item(pcf, tokenize(buf));
+    cafe_family_add_item(pcf, tokenize(buf, COMMA_AS_WHITESPACE));
   }
   if (bpatcheck)
   {

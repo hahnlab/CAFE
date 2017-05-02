@@ -172,15 +172,27 @@ TEST(FirstTestGroup, Tokenize)
 {
 	char c[10];
 	c[0] = 0;
-	LONGS_EQUAL(0, tokenize(c).size());
+	LONGS_EQUAL(0, tokenize(c, REGULAR_WHITESPACE).size());
 	strcpy(c, " ");
-	LONGS_EQUAL(0, tokenize(c).size());
+	LONGS_EQUAL(0, tokenize(c, REGULAR_WHITESPACE).size());
 
 	strcpy(c, "a b\r\n");
-	std::vector<std::string> arr = tokenize(c);
+	std::vector<std::string> arr = tokenize(c, REGULAR_WHITESPACE);
 	LONGS_EQUAL(2, arr.size());
 	STRCMP_EQUAL("a", arr[0].c_str());
 	STRCMP_EQUAL("b", arr[1].c_str());
+
+  strcpy(c, "c,d,e\r\n");
+  arr = tokenize(c, REGULAR_WHITESPACE);
+  LONGS_EQUAL(1, arr.size());
+  STRCMP_EQUAL("c,d,e", arr[0].c_str());
+
+  strcpy(c, "c,d,e\r\n");
+  arr = tokenize(c, COMMA_AS_WHITESPACE);
+  LONGS_EQUAL(3, arr.size());
+  STRCMP_EQUAL("c", arr[0].c_str());
+  STRCMP_EQUAL("d", arr[1].c_str());
+  STRCMP_EQUAL("e", arr[2].c_str());
 }
 
 TEST(TreeTests, TestCafeTree)

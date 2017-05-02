@@ -395,7 +395,7 @@ int cafe_shell_dispatch_command(Globals& globals, char* cmd)
 
 	map<string, cafe_command2> dispatcher = get_dispatcher();
 
-	vector<string> tokens = tokenize(cmd);
+  vector<string> tokens = tokenize(cmd, REGULAR_WHITESPACE);
 
 	int rtn = 0;
 

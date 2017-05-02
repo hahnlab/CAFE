@@ -9,7 +9,10 @@ extern "C" {
 #include "family.h"
 }
 
-std::vector<std::string> tokenize(std::string s);
+const int REGULAR_WHITESPACE = 0;
+const int COMMA_AS_WHITESPACE = 1;
+
+std::vector<std::string> tokenize(std::string s, int flags);
 
 pCafeFamily cafe_family_init(const std::vector<std::string>& species_list);
 pCafeFamily load_gene_families(std::istream& ist, int bpatcheck);

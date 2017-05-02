@@ -55,7 +55,6 @@ std::map<std::string, cafe_command2> get_dispatcher();
 int cafe_shell_dispatch_command(Globals& globals, char* cmd);
 void list_commands(std::ostream& ost);
 
-std::vector<std::string> tokenize(std::string s);
 std::vector<Argument> build_argument_list(std::vector<std::string> tokens);
 
 // these functions should be moved to another file
