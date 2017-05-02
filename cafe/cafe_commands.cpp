@@ -750,7 +750,8 @@ int cafe_cmd_load(Globals& globals, std::vector<std::string> tokens)
 	}
 
 	param->str_fdata = string_new_with_string(args.family_file_name.c_str());
-	param->pfamily = cafe_family_new(args.family_file_name.c_str(), 1);
+  ifstream ifst(args.family_file_name);
+	param->pfamily = load_gene_families(ifst, 1);
 	if (param->pfamily == NULL) 
 		throw runtime_error("Failed to load file\n");
 
@@ -1924,7 +1925,8 @@ int cafe_cmd_accuracy(Globals& globals, std::vector<std::string> tokens)
 	if (!truthfile.empty())
 	{
 		// read in truth data
-		pCafeFamily truthfamily = cafe_family_new(truthfile.c_str(), 1);
+    ifstream ifst(truthfile);
+		pCafeFamily truthfamily = load_gene_families(ifst, 1);
 		if (truthfamily == NULL) {
 			fprintf(stderr, "failed to read in true values %s\n", truthfile.c_str());
 			return -1;
@@ -2075,7 +2077,8 @@ int cafe_cmd_cvfamily(Globals& globals, std::vector<std::string> tokens)
 		sprintf(validatefile, "%s.%d.valid", param->str_fdata->buf, i + 1);
 
 		// read in training data
-		pCafeFamily tmpfamily = cafe_family_new(trainfile, 1);
+    ifstream ifst(trainfile);
+		pCafeFamily tmpfamily = load_gene_families(ifst, 1);
 		if (tmpfamily == NULL) {
 			fprintf(stderr, "failed to read in training data %s\n", trainfile);
 			return -1;
@@ -2159,7 +2162,8 @@ int cafe_cmd_cvspecies(Globals& globals, std::vector<std::string> tokens)
 			sprintf(validatefile, "%s.%s.valid", param->str_fdata->buf, species_names_original[i]);
 
 			// read in training data
-			pCafeFamily tmpfamily = cafe_family_new(trainfile, 1);
+      std::ifstream ifst(trainfile);
+			pCafeFamily tmpfamily = load_gene_families(ifst, 1);
 			if (tmpfamily == NULL) {
 				fprintf(stderr, "failed to read in training data %s\n", trainfile);
 				fprintf(stderr, "did you load the family data with the cross-validation option (load -i <familyfile> -cv)?\n");

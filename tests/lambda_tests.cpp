@@ -99,14 +99,10 @@ TEST(LambdaTests, TestCmdLambda)
 	globals.param.quiet = 1;
 	init_cafe_tree(globals);
 	birthdeath_cache_init(2);
-	char buf[100];
-	//cafe_shell_dispatch_command(globals, buf);
 
   globals.param.pfamily = cafe_family_init({"Dog", "Chimp", "Human", "Mouse", "Rat" });
 
-	strcpy(buf, "OTOPETRIN ENSF00000002390 7 7 13 18 7");
-	pArrayList data = string_pchar_split(buf, ' ');
-	cafe_family_add_item(globals.param.pfamily, data);
+  cafe_family_add_item(globals.param.pfamily, { "OTOPETRIN", "ENSF00000002390", "7", "7", "13", "18", "7" });
 
 	init_family_size(&globals.param.family_size, globals.param.pfamily->max_size);
 	cafe_tree_set_parameters(globals.param.pcafe, &globals.param.family_size, 0);

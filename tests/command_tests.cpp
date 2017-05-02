@@ -237,18 +237,6 @@ TEST(CommandTests, cafe_cmd_save)
 
 }
 
-static pArrayList build_arraylist(const char *items[], int count)
-{
-	pArrayList psplit = arraylist_new(20);
-	for (int i = 0; i < count; ++i)
-	{
-		char *str = (char*)memory_new(strlen(items[i]) + 1, sizeof(char));
-		strcpy(str, items[i]);
-		arraylist_add(psplit, str);
-	}
-	return psplit;
-}
-
 TEST(CommandTests, cafe_cmd_tree)
 {
 	tokens.push_back("tree");
@@ -274,8 +262,7 @@ TEST(CommandTests, cafe_cmd_tree_syncs_family_if_loaded)
 
 	std::vector<std::string> species = { "chimp", "human", "mouse", "rat", "dog" };
 	globals.param.pfamily = cafe_family_init(species);
-	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
-	cafe_family_add_item(globals.param.pfamily, build_arraylist(values, 7));
+	cafe_family_add_item(globals.param.pfamily, { "description", "id", "3", "5", "7", "11", "13" });
 
 	LONGS_EQUAL(-1, globals.param.pfamily->index[0]);
 	cafe_cmd_tree(globals, tokens);
@@ -311,8 +298,7 @@ void prepare_viterbi(CafeParam& param)
 	param.lambda = lambdas;
 
 	param.pfamily = cafe_family_init({ "chimp", "human", "mouse", "rat", "dog" });
-	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
-	cafe_family_add_item(param.pfamily, build_arraylist(values, 7));
+	cafe_family_add_item(param.pfamily, { "description", "id", "3", "5", "7", "11", "13" });
 
 	cafe_family_set_species_index(param.pfamily, param.pcafe);
 

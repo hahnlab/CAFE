@@ -1,4 +1,6 @@
 #include <sstream>
+#include <fstream>
+
 #include "CppUTest/TestHarness.h"
 #include "gene_family.h"
 
@@ -10,19 +12,6 @@ extern "C" {
 #include <tree.h>
 #include <cafe.h>
 };
-
-static pArrayList build_arraylist(const char *items[], int count)
-{
-	pArrayList psplit = arraylist_new(20);
-	for (int i = 0; i < count; ++i)
-	{
-		char *str = (char*)memory_new(strlen(items[i]) + 1, sizeof(char));
-		strcpy(str, items[i]);
-		arraylist_add(psplit, str);
-	}
-	return psplit;
-}
-
 
 static pCafeTree create_tree()
 {
@@ -43,19 +32,12 @@ TEST_GROUP(FamilyTests)
 
 TEST(FamilyTests, TestCafeFamily)
 {
-	pCafeFamily fam;
-	char fname[100];
-	strcpy(fname, "Nonexistent.tab");
-	POINTERS_EQUAL(NULL, cafe_family_new(fname, 1));
+	std::ifstream ifst("Nonexistent.tab");
+	POINTERS_EQUAL(NULL, load_gene_families(ifst, 1));
 
-	char buf[100];
+  pCafeFamily fam = cafe_family_init({ "Dog", "Chimp", "Human", "Mouse", "Rat" });
 
-	pArrayList data = string_pchar_split(buf, ' ');
-	fam = cafe_family_init({ "Dog", "Chimp", "Human", "Mouse", "Rat" });
-
-	strcpy(buf, "OTOPETRIN ENSF1 3 5 7 11 13");
-	data = string_pchar_split(buf, ' ');
-	cafe_family_add_item(fam, data);
+  cafe_family_add_item(fam, { "OTOPETRIN", "ENSF1", "3", "5", "7", "11", "13" });
 
 	LONGS_EQUAL(5, fam->num_species);
 	LONGS_EQUAL(1, fam->flist->size);
@@ -73,12 +55,31 @@ TEST(FamilyTests, TestCafeFamily)
 
 }
 
+TEST(FamilyTests, cafe_family_load)
+{
+  std::ifstream ifst("Nonexistent.tab");
+  POINTERS_EQUAL(NULL, load_gene_families(ifst, 1));
+
+  std::istringstream ist("FAMILYDESC\tFAMILY\tA\tB\nOTOPETRIN\tENSF2\t2\t10\n");
+  pCafeFamily fam = load_gene_families(ist, 0);
+  LONGS_EQUAL(2, fam->num_species);
+  STRCMP_EQUAL("A", fam->species[0]);
+  STRCMP_EQUAL("B", fam->species[1]);
+
+  LONGS_EQUAL(1, fam->flist->size);
+
+  pCafeFamilyItem item = cafe_family_get_family_item(fam, "ENSF2");
+  CHECK(item != NULL);
+  LONGS_EQUAL(2, item->count[0]);
+  LONGS_EQUAL(10, item->count[1]);
+  STRCMP_EQUAL("OTOPETRIN", item->desc);
+  cafe_family_free(fam);
+}
 
 TEST(FamilyTests, cafe_family_set_size)
 {
 	pCafeFamily pcf = cafe_family_init({"chimp", "human", "mouse", "rat", "dog" });
-	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
-	cafe_family_add_item(pcf, build_arraylist(values, 7));
+	cafe_family_add_item(pcf, { "description", "id", "3", "5", "7", "11", "13" });
 
 	pCafeTree ptree = create_tree();
 	cafe_family_set_species_index(pcf, ptree);
@@ -113,8 +114,7 @@ TEST(FamilyTests, cafe_family_add_item)
 {
 	pCafeFamily pcf = cafe_family_init({"chimp", "human", "mouse", "rat", "dog" });
 
-	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
-	cafe_family_add_item(pcf, build_arraylist(values, 7));
+	cafe_family_add_item(pcf, { "description", "id", "3", "5", "7", "11", "13" });
 	LONGS_EQUAL(1, pcf->flist->size);
 	pCafeFamilyItem pitem = (pCafeFamilyItem)arraylist_get(pcf->flist, 0);
 	STRCMP_EQUAL("description", pitem->desc);
@@ -162,8 +162,7 @@ TEST(FamilyTests, cafe_family_set_size_with_family_forced)
 	pCafeFamily pcf = cafe_family_init({"chimp", "human", "mouse", "rat", "dog" });
 	pCafeTree cafe_tree = create_tree();
 	cafe_family_set_species_index(pcf, cafe_tree);
-	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
-	cafe_family_add_item(pcf, build_arraylist(values, 7));
+	cafe_family_add_item(pcf, { "description", "id", "3", "5", "7", "11", "13" });
 
 	// SUT
 	cafe_family_set_size_with_family_forced(pcf, 0, cafe_tree);
@@ -178,8 +177,7 @@ TEST(FamilyTests, write_family_gainloss)
 {
 	std::ostringstream ost;
 	pCafeFamily pcf = cafe_family_init({"chimp", "human", "mouse", "rat", "dog" });
-	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
-	cafe_family_add_item(pcf, build_arraylist(values, 7));
+	cafe_family_add_item(pcf, { "description", "id", "3", "5", "7", "11", "13" });
 	pCafeTree tree1 = create_tree();
 	cafe_family_set_species_index(pcf, tree1);
 	pCafeTree tree2 = cafe_tree_copy(tree1);
@@ -196,8 +194,7 @@ TEST(FamilyTests, write_family)
 {
 	std::ostringstream ost;
 	pCafeFamily pcf = cafe_family_init({"chimp", "human", "mouse", "rat", "dog" });
-	const char *values[] = { "my_description", "my_id", "3", "5", "7", "11", "13" };
-	cafe_family_add_item(pcf, build_arraylist(values, 7));
+	cafe_family_add_item(pcf, { "my_description", "my_id", "3", "5", "7", "11", "13" });
 
 	write_family(ost, pcf);
 	STRCMP_CONTAINS("Desc\tFamily ID\tchimp\thuman\tmouse\trat\tdog\n", ost.str().c_str())
