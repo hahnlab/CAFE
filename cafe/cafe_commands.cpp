@@ -126,21 +126,6 @@ void get_doubles_array(vector<double>& loc, pArgument parg)
 }
 
 
-vector<string> tokenize(string s)
-{
-	vector<string> result;
-	istringstream iss(s);
-
-	while (iss.good()) {
-		string tmp;
-		iss >> tmp;
-		if (tmp.size() > 0)
-			result.push_back(tmp);
-	}
-
-	return result;
-}
-
 io_error::io_error(string source, string file, bool write) : runtime_error("")
 {
 	ostringstream ost;

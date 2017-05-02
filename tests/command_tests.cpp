@@ -272,8 +272,8 @@ TEST(CommandTests, cafe_cmd_tree_syncs_family_if_loaded)
 	globals.param.pcafe = NULL;
 	globals.param.old_branchlength = NULL;
 
-	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
-	globals.param.pfamily = cafe_family_init(build_arraylist(species, 7));
+	std::vector<std::string> species = { "chimp", "human", "mouse", "rat", "dog" };
+	globals.param.pfamily = cafe_family_init(species);
 	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
 	cafe_family_add_item(globals.param.pfamily, build_arraylist(values, 7));
 
@@ -282,6 +282,8 @@ TEST(CommandTests, cafe_cmd_tree_syncs_family_if_loaded)
 	LONGS_EQUAL(0, globals.param.pfamily->index[0]);
 	LONGS_EQUAL(2, globals.param.pfamily->index[1]);
 	LONGS_EQUAL(4, globals.param.pfamily->index[2]);
+
+  cafe_family_free(globals.param.pfamily);
 }
 
 TEST(CommandTests, cafe_cmd_tree_missing_branch_length)
@@ -308,8 +310,7 @@ void prepare_viterbi(CafeParam& param)
 	double lambdas[] = { 1.5, 2.5, 3.5 };
 	param.lambda = lambdas;
 
-	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
-	param.pfamily = cafe_family_init(build_arraylist(species, 7));
+	param.pfamily = cafe_family_init({ "chimp", "human", "mouse", "rat", "dog" });
 	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
 	cafe_family_add_item(param.pfamily, build_arraylist(values, 7));
 
@@ -338,6 +339,8 @@ TEST(CommandTests, cafe_cmd_viterbi_id_not_existing)
 	{
 		STRCMP_EQUAL("ERROR(viterbi): fish not found", e.what());
 	}
+
+  cafe_family_free(globals.param.pfamily);
 }
 
 TEST(CommandTests, cafe_cmd_viterbi_family_out_of_range)
@@ -357,6 +360,8 @@ TEST(CommandTests, cafe_cmd_viterbi_family_out_of_range)
 	{
 		STRCMP_EQUAL("ERROR(viterbi): Out of range[0~1]: 1000", e.what());
 	}
+
+  cafe_family_free(globals.param.pfamily);
 }
 
 TEST(CommandTests, cafe_cmd_viterbi_args)
@@ -386,6 +391,8 @@ TEST(CommandTests, viterbi_write)
 	viterbi_write(ost, globals.param.pcafe, globals.param.pfamily);
 	STRCMP_CONTAINS("id\t0\t(((chimp_3:6,human_5:6)_0:81,(mouse_7:17,rat_11:17)_0:70)_0:6,dog_13:9)_0\t0\n", ost.str().c_str());
 	STRCMP_CONTAINS("Score: -inf\n", ost.str().c_str());
+
+  cafe_family_free(globals.param.pfamily);
 
 
 }

@@ -11,7 +11,7 @@ CC     = gcc
 VPATH = cafe:libcommon:libtree:tests
 INCLUDE:=-I cafe -I libtree -I libcommon
 CFLAGS = -Wall -std=c11 $(INCLUDE)
-CXXFLAGS = -Wall $(INCLUDE)
+CXXFLAGS = -Wall -std=c++11 $(INCLUDE)
 LINKFLAGS = -lpthread -lm
 TESTLIBS=-lCppUTest -lCppUTestExt 
 

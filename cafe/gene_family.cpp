@@ -1,4 +1,5 @@
 #include "gene_family.h"
+#include <sstream>
 
 extern "C" {
 #include "cafe.h"
@@ -6,18 +7,38 @@ extern pCafeParam cafe_param;
 void __cafe_famliy_check_the_pattern(pCafeFamily pcf);
 }
 
-pCafeFamily cafe_family_init(pArrayList data)
+using namespace std;
+
+vector<string> tokenize(string s)
 {
-  pCafeFamily pcf = (pCafeFamily)memory_new(1, sizeof(CafeFamily));
-  pcf->flist = arraylist_new(11000);
-  pcf->species = (char**)memory_new((data->size - 2), sizeof(char*));
-  for (int i = 2; i < data->size; i++)
-  {
-    pcf->species[i - 2] = (char*)data->array[i];
+  vector<string> result;
+  istringstream iss(s);
+
+  while (iss.good()) {
+    string tmp;
+    iss >> tmp;
+    if (tmp.size() > 0)
+      result.push_back(tmp);
   }
 
-  pcf->num_species = data->size - 2;
+  return result;
+}
+
+
+pCafeFamily cafe_family_init(const std::vector<std::string>& species_list)
+{
+  pCafeFamily pcf = (pCafeFamily)memory_new(1, sizeof(CafeFamily));
+  pcf->num_species = species_list.size();
   pcf->max_size = 0;
+  pcf->flist = arraylist_new(11000);
+
+  pcf->species = (char**)memory_new(species_list.size(), sizeof(char*));
+  for (size_t i = 0; i < species_list.size(); i++)
+  {
+    pcf->species[i] = new char[species_list[i].size()+1];
+    strcpy(pcf->species[i], species_list[i].c_str());
+  }
+
   pcf->index = (int*)memory_new(pcf->num_species, sizeof(int));
   for (int i = 0; i < pcf->num_species; ++i)
   {
@@ -27,6 +48,21 @@ pCafeFamily cafe_family_init(pArrayList data)
   return pcf;
 }
 
+void cafe_family_free(pCafeFamily pcf)
+{
+  for (int i = 0; i < pcf->num_species; i++) 
+  { 
+    delete [] pcf->species[i];  
+    pcf->species[i] = NULL;
+  }
+  memory_free(pcf->species);
+  pcf->species = NULL;
+  memory_free(pcf->index);
+  pcf->index = NULL;
+  arraylist_free(pcf->flist, (freefunc)cafe_family_item_free);
+  memory_free(pcf);
+  pcf = NULL;
+}
 
 pCafeFamily cafe_family_new(const char* file, int bpatcheck)
 {
@@ -44,17 +80,14 @@ pCafeFamily cafe_family_new(const char* file, int bpatcheck)
     return NULL;
   }
   string_pchar_chomp(buf);
-  pArrayList data = string_pchar_split(buf, '\t');
-  pCafeFamily pcf = cafe_family_init(data);
-  memory_free(data->array[0]);
-  memory_free(data->array[1]);
-  data->array[0] = NULL;
-  data->array[1] = NULL;
-  arraylist_free(data, NULL);
+
+  vector<string> species_list = tokenize(buf);
+  species_list.erase(species_list.begin(), species_list.begin()+2); // first two items are description and ID - delete them
+  pCafeFamily pcf = cafe_family_init(species_list);
 
   for (int i = 0; fgets(buf, STRING_BUF_SIZE, fp); i++)
   {
-    data = string_pchar_split(buf, '\t');
+    pArrayList data = string_pchar_split(buf, '\t');
     cafe_family_add_item(pcf, data);
     arraylist_free(data, NULL);
   }

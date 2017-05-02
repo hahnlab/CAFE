@@ -284,8 +284,7 @@ TEST(FirstTestGroup, Test_cafe_get_posterior)
 	param.quiet = 1;
 	param.prior_rfsize = NULL;
 	param.pcafe = create_tree(range);
-	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
-	param.pfamily = cafe_family_init(build_arraylist(species, 7));
+	param.pfamily = cafe_family_init({"chimp", "human", "mouse", "rat", "dog" });
 	cafe_family_set_species_index(param.pfamily, param.pcafe);
 	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
 	cafe_family_add_item(param.pfamily, build_arraylist(values, 7));
@@ -311,6 +310,8 @@ TEST(FirstTestGroup, Test_cafe_get_posterior)
 
 	cafe_set_prior_rfsize_empirical(&param);
 	CHECK_FALSE(isfinite(cafe_get_posterior(param.pfamily, param.pcafe, &param.family_size, param.ML, param.MAP, param.prior_rfsize, param.quiet)));
+
+  cafe_family_free(param.pfamily);
 };
 
 void build_matrix(square_matrix& m)
@@ -401,8 +402,7 @@ TEST(FirstTestGroup, find_poisson_lambda)
   param.quiet = 0;
   param.flog = stdout;
   param.prior_rfsize = NULL;
-  const char *species[] = { "", "", "A", "B", "C", "D" };
-  param.pfamily = cafe_family_init(build_arraylist(species, 6));
+  param.pfamily = cafe_family_init({ "A", "B", "C", "D" });
   const char *v1[] = { "description", "ENS01", "6", "11", "3", "7" };
   cafe_family_add_item(param.pfamily, build_arraylist(v1, 6));
   const char *v2[] = { "description", "ENS02", "6", "11", "3", "7" };
@@ -421,6 +421,7 @@ TEST(FirstTestGroup, find_poisson_lambda)
   LONGS_EQUAL(1, num_params);
   DOUBLES_EQUAL(5.75, parameters[0], .001);
   free(parameters);
+  cafe_family_free(param.pfamily);
 }
 
 TEST(FirstTestGroup, compute_likelihoods)
@@ -432,8 +433,7 @@ TEST(FirstTestGroup, compute_likelihoods)
   range.root_max = 60;
   double lambda = 0.01;
   pCafeTree pcafe = cafe_tree_new(tree, &range, lambda, 0);
-  const char *species[] = { "", "", "A", "B", "C", "D" };
-  pCafeFamily pfamily = cafe_family_init(build_arraylist(species, 6));
+  pCafeFamily pfamily = cafe_family_init({ "A", "B", "C", "D" });
   const char *v1[] = { "description", "ENS01", "5", "10", "2", "6" };
   cafe_family_add_item(pfamily, build_arraylist(v1, 6));
   for (int i = 0; i < pcafe->super.nlist->size; ++i)
@@ -450,19 +450,14 @@ TEST(FirstTestGroup, compute_likelihoods)
 
   double *likelihood = get_likelihoods(pcafe);		// likelihood of the whole tree = multiplication of likelihood of all nodes
   printf("Likelihood 1: %e\n", likelihood[1]);
+
+  cafe_family_free(pfamily);
 }
 TEST(FirstTestGroup, compute_posterior)
 {
-  const char *species[] = { "", "", "A", "B", "C", "D" };
-  pCafeFamily pfamily = cafe_family_init(build_arraylist(species, 6));
+  pCafeFamily pfamily = cafe_family_init({ "A", "B", "C", "D" });
   const char *v1[] = { "description", "ENS01", "5", "10", "2", "6" };
   cafe_family_add_item(pfamily, build_arraylist(v1, 6));
-  //  const char *v2[] = { "description", "ENS02", "6", "11", "3", "7" };
-  //  cafe_family_add_item(pfamily, build_arraylist(v2, 6));
-  //  const char *v3[] = { "description", "ENS03", "6", "11", "3", "7" };
-  //  cafe_family_add_item(pfamily, build_arraylist(v3, 6));
-  //  const char *v4[] = { "description", "ENS04", "6", "11", "3", "7" };
-  //  cafe_family_add_item(pfamily, build_arraylist(v4, 6));
 
   const char *newick_tree = "((A:1,B:1):1,(C:1,D:1):1);";
   char tree[100];
@@ -518,6 +513,8 @@ TEST(FirstTestGroup, compute_posterior)
   // TODO this succeeds or fails depending on whether you run all tests or just this one
   // Need to find the offending cache
   //DOUBLES_EQUAL(1.260322e-15, MAP[0], .001e-16);
+
+  cafe_family_free(pfamily);
 }
 
 TEST(FirstTestGroup, cafe_tree_p_values)
@@ -554,8 +551,7 @@ TEST(FirstTestGroup, cafe_set_prior_rfsize_empirical)
   param.quiet = 0;
   param.flog = stdout;
   param.prior_rfsize = NULL;
-  const char *species[] = { "", "", "A", "B", "C", "D" };
-  param.pfamily = cafe_family_init(build_arraylist(species, 6));
+  param.pfamily = cafe_family_init({ "A", "B", "C", "D" });
   const char *v1[] = { "description", "ENS01", "6", "11", "3", "7" };
   cafe_family_add_item(param.pfamily, build_arraylist(v1, 6));
   const char *v2[] = { "description", "ENS02", "6", "11", "3", "7" };
@@ -571,6 +567,8 @@ TEST(FirstTestGroup, cafe_set_prior_rfsize_empirical)
 
   cafe_set_prior_rfsize_empirical(&param);
   DOUBLES_EQUAL(0.0, param.prior_rfsize[0], .001);
+  cafe_family_free(param.pfamily);
+
 }
 
 TEST(FirstTestGroup, cafe_set_prior_rfsize_poisson_lambda)
@@ -790,8 +788,7 @@ TEST(ReportTests, write_families_line)
 	range.max = range.root_max = 10;
 	pCafeTree tree = create_tree(range);
 	globals.param.pcafe = tree;
-	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
-	globals.param.pfamily = cafe_family_init(build_arraylist(species, 7));
+	globals.param.pfamily = cafe_family_init({"chimp", "human", "mouse", "rat", "dog"});
 	cafe_family_set_species_index(globals.param.pfamily, tree);
 	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
 	cafe_family_add_item(globals.param.pfamily, build_arraylist(values, 7));
@@ -824,6 +821,8 @@ TEST(ReportTests, write_families_line)
 	family_line_item item3(globals.param.pfamily, globals.param.pcafe, globals.param.likelihoodRatios, *globals.viterbi, 0, "NodeZero");
 	ost3 << item3;
 	STRCMP_EQUAL("NodeZero\t(((chimp_3:6,human_5:6)_0:81,(mouse_7:17,rat_11:17)_0:70)_0:6,dog_13:9)_0\t0.1\t((0.025,0),(0,0),(0,0))\t(0,0,0,0,0,0,0,0,0)", ost3.str().c_str());
+
+  cafe_family_free(globals.param.pfamily);
 }
 
 TEST(FirstTestGroup, cafe_tree_new_empty_node)
@@ -1174,8 +1173,7 @@ TEST(FirstTestGroup, write_leaves)
 TEST(FirstTestGroup, run_viterbi_sim)
 {
 	pCafeTree tree = create_tree(range);
-	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
-	pCafeFamily pfamily = cafe_family_init(build_arraylist(species, 7));
+	pCafeFamily pfamily = cafe_family_init({"chimp", "human", "mouse", "rat", "dog" });
 	cafe_family_set_species_index(pfamily, tree);
 	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
 	cafe_family_add_item(pfamily, build_arraylist(values, 7));
@@ -1188,6 +1186,8 @@ TEST(FirstTestGroup, run_viterbi_sim)
 	DOUBLES_EQUAL(0, roots.extinct[0], .01);
 	LONGS_EQUAL(0, roots.total_extinct);
 	LONGS_EQUAL(1, roots.num[0]);
+
+  cafe_family_free(pfamily);
 
 }
 
@@ -1291,8 +1291,7 @@ TEST(FirstTestGroup, set_size_for_split)
 {
 	pCafeTree tree = create_tree(range);
 
-	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
-	pCafeFamily pfamily = cafe_family_init(build_arraylist(species, 7));
+	pCafeFamily pfamily = cafe_family_init({ "chimp", "human", "mouse", "rat", "dog" });
 	cafe_family_set_species_index(pfamily, tree);
 	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
 	cafe_family_add_item(pfamily, build_arraylist(values, 7));
@@ -1304,6 +1303,8 @@ TEST(FirstTestGroup, set_size_for_split)
 	LONGS_EQUAL(7, ((pCafeNode)(pPhylogenyNode)tree->super.nlist->array[4])->familysize);
 	LONGS_EQUAL(11, ((pCafeNode)(pPhylogenyNode)tree->super.nlist->array[6])->familysize);
 	LONGS_EQUAL(13, ((pCafeNode)(pPhylogenyNode)tree->super.nlist->array[8])->familysize);
+
+  cafe_family_free(pfamily);
 }
 
 TEST(FirstTestGroup, compute_cutpvalues)
@@ -1313,8 +1314,7 @@ TEST(FirstTestGroup, compute_cutpvalues)
 	probability_cache = NULL;
 	reset_birthdeath_cache(tree, 0, &range);
 
-	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
-	pCafeFamily pfamily = cafe_family_init(build_arraylist(species, 7));
+	pCafeFamily pfamily = cafe_family_init({ "chimp", "human", "mouse", "rat", "dog" });
 	cafe_family_set_species_index(pfamily, tree);
 	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
 	cafe_family_add_item(pfamily, build_arraylist(values, 7));
@@ -1340,14 +1340,16 @@ TEST(FirstTestGroup, compute_cutpvalues)
 	}
 	compute_cutpvalues(tree, pfamily, 5, 0, 0, 1, viterbi, 0.05, p1, p2, cb);
 	DOUBLES_EQUAL(0.6, viterbi.cutPvalues[0][0], .001);
+
+  cafe_family_free(pfamily);
+
 }
 
 TEST(FirstTestGroup, simulate_misclassification)
 {
-	const char *species[] = { "", "", "chimp" };
 	const int num_species = 3;
 
-	pCafeFamily pfamily = cafe_family_init(build_arraylist(species, num_species));
+  pCafeFamily pfamily = cafe_family_init({ "chimp" });
 	const char *values[] = { "description", "id", "3" };
 	cafe_family_add_item(pfamily, build_arraylist(values, num_species));
 
@@ -1368,6 +1370,7 @@ TEST(FirstTestGroup, simulate_misclassification)
 
 	STRCMP_CONTAINS("Desc\tFamily ID\tchimp\n", ost.str().c_str());
 	STRCMP_CONTAINS("description\tid\t1\n", ost.str().c_str());
+  cafe_family_free(pfamily);
 
 }
 
@@ -1643,7 +1646,6 @@ TEST(PValueTests, pvalue)
 
 TEST(PValueTests, pvalues_for_family)
 {
-	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
 	family_size_range range;
 	range.min = 0;
 	range.max = 15;
@@ -1651,7 +1653,7 @@ TEST(PValueTests, pvalues_for_family)
 	range.root_max = 15;
 
 	pCafeTree pcafe = create_tree(range);
-	pCafeFamily pfamily = cafe_family_init(build_arraylist(species, 7));
+	pCafeFamily pfamily = cafe_family_init({ "chimp", "human", "mouse", "rat", "dog" });
 	cafe_family_set_species_index(pfamily, pcafe);
 	const char *values[] = { "description", "id", "3", "5", "7", "11", "13" };
 	cafe_family_add_item(pfamily, build_arraylist(values, 7));
@@ -1665,6 +1667,8 @@ TEST(PValueTests, pvalues_for_family)
 	range.root_min = 1;
 	range.root_max = 1;
 	pvalues_for_family(pcafe, pfamily, &range, 1, 1, 0);
+
+  cafe_family_free(pfamily);
 
 }
 
@@ -1693,11 +1697,11 @@ TEST(LikelihoodRatio, cafe_likelihood_ratio_test)
 	range.max = range.root_max = 15;
 	pCafeTree tree = create_tree(range);
 	param.pcafe = tree;
-	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
-	param.pfamily = cafe_family_init(build_arraylist(species, 7));
+	param.pfamily = cafe_family_init({ "chimp", "human", "mouse", "rat", "dog" });
 	param.num_threads = 1;
 	cafe_likelihood_ratio_test(&param, maximumPvalues);
 	DOUBLES_EQUAL(0, param.likelihoodRatios[0][0], .0001);
+  cafe_family_free(param.pfamily);
 }
 
 TEST(LikelihoodRatio, likelihood_ratio_report)
@@ -1706,8 +1710,7 @@ TEST(LikelihoodRatio, likelihood_ratio_report)
 	range.min = range.root_min = 0;
 	range.max = range.root_max = 15;
 	pCafeTree tree = create_tree(range);
-	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
-	pCafeFamily pfamily = cafe_family_init(build_arraylist(species, 7));
+	pCafeFamily pfamily = cafe_family_init({ "chimp", "human", "mouse", "rat", "dog" });
 	const char *values[] = { "description", "family1", "3", "5", "7", "11", "13" };
 	cafe_family_add_item(pfamily, build_arraylist(values, 7));
 	cafe_family_set_species_index(pfamily, tree);
@@ -1731,6 +1734,8 @@ TEST(LikelihoodRatio, likelihood_ratio_report)
 
 	fclose(out);
 	STRCMP_EQUAL("family1\t(((chimp_3:6,human_5:6):81,(mouse_7:17,rat_11:17):70):6,dog_13:9)\t(0, 3.000000,0.000000)\t5\t0.025347\n", outbuf);
+
+  cafe_family_free(pfamily);
 }
 
 TEST(LikelihoodRatio, update_branchlength)

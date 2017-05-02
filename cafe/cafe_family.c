@@ -485,20 +485,6 @@ int cafe_family_get_species_index(pCafeFamily pcf, char* speciesname)
     return returnidx;
 }
 
-void cafe_family_free(pCafeFamily pcf)
-{
-	int i;
-	for( i = 0 ; i < pcf->num_species; i++ ) {memory_free( pcf->species[i] );  pcf->species[i] = NULL; }
-	memory_free(pcf->species);
-	pcf->species = NULL;
-	memory_free(pcf->index);
-	pcf->index = NULL;
-	arraylist_free( pcf->flist, (freefunc)cafe_family_item_free );	
-	memory_free(pcf);
-	pcf = NULL;
-}
-
-
 /*! \brief Copy sizes of an individual gene family into the tree
 *
 * Takes the given gene family and copies the size of the family in the species
@@ -667,7 +653,7 @@ int cafe_family_get_index(pCafeFamily pcf, const char* szid)
 	return flist->size == i ? -1 : i;
 }
 
-pCafeFamilyItem cafe_family_get_family_item(pCafeFamily pcf, char* szid )
+pCafeFamilyItem cafe_family_get_family_item(pCafeFamily pcf, const char* szid )
 {
 	int i = cafe_family_get_index( pcf, szid );	
 	if ( i == -1 ) return NULL;
