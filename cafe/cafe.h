@@ -117,6 +117,6 @@ void reset_k_likelihoods(pCafeNode pcnode, int k, int num_factors);
 
 double cafe_get_clustered_posterior(pCafeParam param);
 
-#define CAFE_VERSION "3.2"
+#define CAFE_VERSION "4.0.1"
 
 #endif

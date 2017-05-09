@@ -6,6 +6,7 @@ This release provides a precompiled binary file suitable for execution on a Linu
 Installation from Source
 ========================
 * cd to the root directory of the CAFE source
+* Type "./configure"
 * Type "make"
 * The cafe executable will be built in the "release" directory.
 

@@ -33,8 +33,8 @@ along each branch in the tree
 
 # Install
 
-Run "make" from the home directory. If the readline library is available on the system, running
-"make USE_READLINE=1" will allow CAFE to support a command line history.
+Run "./configure" and "make" from the home directory. If the readline library is available 
+on the system, running "make USE_READLINE=1" will allow CAFE to support a command line history.
 
 # History
 
