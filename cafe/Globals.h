@@ -22,6 +22,8 @@ public:
 	void Clear(int btree_skip);
 	void Prepare();
 
+	int  num_random_samples;
+
 };
 
 #endif

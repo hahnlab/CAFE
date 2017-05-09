@@ -224,7 +224,7 @@ pArrayList string_pchar_space_split(char* buf)
 	return parg;
 }
 
-void string_pchar_join_double(char* rtn, char* sp, int argc, double* values)
+void string_pchar_join_double(char* rtn, const char* sp, int argc, double* values)
 {
 	int i;
 	char buf[STRING_STEP_SIZE];

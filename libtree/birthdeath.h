@@ -12,12 +12,15 @@ struct square_matrix {
 void square_matrix_init(struct square_matrix* matrix, int sz);
 void square_matrix_set(struct square_matrix* matrix, int x, int y, double val);
 void square_matrix_resize(struct square_matrix* matrix, int new_size);
+void square_matrix_multiply(struct square_matrix* matrix, double *vector, int row_start, int row_end, int col_start, int col_end, double *result);
+
 static inline double square_matrix_get(struct square_matrix *matrix, int x, int y)
 {
 	assert(x < matrix->size);
 	assert(y < matrix->size);
 	return matrix->values[x*matrix->size+y];
 }
+
 
 
 struct BirthDeathCacheKey

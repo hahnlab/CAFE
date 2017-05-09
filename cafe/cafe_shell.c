@@ -179,29 +179,6 @@ void set_birth_death_probabilities4(struct probabilities *probs, int num_lambdas
 	}
 }
 
-void copy_weights(double *out, double *in, int count)
-{
-	int i;
-	double sumofweights = 0;
-	for (i = 0; i < count - 1; i++) {
-		out[i] = in[i];
-		sumofweights += in[i];
-	}
-	out[i] = 1 - sumofweights;
-
-}
-void initialize_k_weights(pCafeParam param)
-{
-	int start = param->num_lambdas*(param->parameterized_k_value - param->fixcluster0);
-	copy_weights(param->k_weights, param->parameters + start, param->parameterized_k_value);
-}
-
-void initialize_k_weights2(pCafeParam param)
-{
-	int start = param->num_lambdas*(param->parameterized_k_value - param->fixcluster0) + (param->num_mus - param->eqbg)*(param->parameterized_k_value - param->fixcluster0);
-	copy_weights(param->k_weights, param->parameters + start, param->parameterized_k_value);
-}
-
 void initialize_z_membership(pCafeParam param)
 {
 	if (param->p_z_membership == NULL) {
@@ -270,15 +247,16 @@ void initialize_k_bd2(pCafeParam param, double *parameters)
 }
 void cafe_shell_set_lambda(pCafeParam param, double* parameters)
 {
-	if (param->parameters[0] != parameters[0]) 
-		memcpy(param->parameters, parameters, param->num_params*sizeof(double));
+	if (param->input.parameters[0] != parameters[0])
+		memcpy(param->input.parameters, parameters, param->num_params*sizeof(double));
 	
 	// set lambda
-	param->lambda = param->parameters;
+	param->lambda = param->input.parameters;
 	
 	// set k_weights
 	if (param->parameterized_k_value > 0) {
-		initialize_k_weights(param);
+		int start = param->num_lambdas*(param->parameterized_k_value - param->fixcluster0);
+		input_values_copy_weights(param->k_weights, &param->input, start, param->parameterized_k_value);
 		initialize_z_membership(param);
 	}
 	
@@ -288,21 +266,22 @@ void cafe_shell_set_lambda(pCafeParam param, double* parameters)
 
 void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters)
 {
-	if (param->parameters[0] != parameters[0]) {
-		memcpy(param->parameters, parameters, param->num_params*sizeof(double));
+	if (param->input.parameters[0] != parameters[0]) {
+		memcpy(param->input.parameters, parameters, param->num_params*sizeof(double));
 	}
 	// set lambda and mu
-	cafe_param->lambda = cafe_param->parameters;
+	param->lambda = param->input.parameters;
 	if (param->parameterized_k_value > 0) {
-		cafe_param->mu = &(cafe_param->parameters[param->num_lambdas*(param->parameterized_k_value-param->fixcluster0)]);
+		param->mu = &(param->input.parameters[param->num_lambdas*(param->parameterized_k_value-param->fixcluster0)]);
 	}
 	else {
-		cafe_param->mu = &(cafe_param->parameters[param->num_lambdas]);
+		param->mu = &(param->input.parameters[param->num_lambdas]);
 	}
 
 	// set k_weights
 	if (param->parameterized_k_value > 0) {
-		initialize_k_weights2(param);
+		int start = param->num_lambdas*(param->parameterized_k_value - param->fixcluster0) + (param->num_mus - param->eqbg)*(param->parameterized_k_value - param->fixcluster0);
+		input_values_copy_weights(param->k_weights, &param->input, start, param->parameterized_k_value);
 		initialize_z_membership(param);
 	}
 	
@@ -371,7 +350,7 @@ int cafe_shell_set_branchlength()
 			}
 		}
 	}
-	if (probability_cache) cafe_tree_set_birthdeath(cafe_param->pcafe);
+	if (probability_cache) cafe_tree_set_birthdeath(cafe_param->pcafe, probability_cache);
 	return 0;
 }
 
@@ -472,74 +451,6 @@ void __cafe_cmd_viterbi_family_print(int idx)
 
 
 
-double _cafe_cross_validate_by_family(const char* queryfile, const char* truthfile, const char* errortype) 
-{
-	int i, j;
-	double MSE = 0;
-	double MAE = 0;
-	double SSE = 0;
-	double SAE = 0;
-	cafe_family_read_query_family(cafe_param, queryfile);
-	if ( cafe_param->cv_test_count_list == NULL ) return -1;
-	
-	// read in validation data
-	pCafeFamily truthfamily = cafe_family_new( truthfile, 1 );
-	if ( truthfamily == NULL ) {
-		fprintf(stderr, "failed to read in true values %s\n", truthfile);
-		return -1;
-	}
-	
-	// now compare reconstructed count to true count	
-	pCafeTree pcafe = cafe_param->pcafe;
-	pCafeTree truthtree = cafe_tree_copy(pcafe);
-	// set parameters
-	if ( truthtree )
-	{
-		cafe_family_set_species_index(truthfamily, truthtree);
-	}
-
-	reset_birthdeath_cache(cafe_param->pcafe, cafe_param->parameterized_k_value, &cafe_param->family_size);
-	
-	for(i=0; i< cafe_param->cv_test_count_list->size; i++) 
-	{
-		int* testcnt = (int*)cafe_param->cv_test_count_list->array[i];
-		cafe_family_set_size(truthfamily, i, truthtree);
-		cafe_family_set_size_by_species(cafe_param->cv_test_species_list->array[i], *testcnt, pcafe);
-		if (cafe_param->posterior) {
-			cafe_tree_viterbi_posterior(pcafe, cafe_param);
-		}
-		else {
-			cafe_tree_viterbi(pcafe);
-		}
-		// leaf nodes SSE
-		SSE = 0;
-		SAE = 0;
-		int nodecnt = 0;
-		for (j=0; j<pcafe->super.nlist->size; j=j+2) {
-			int error = ((pCafeNode)truthtree->super.nlist->array[j])->familysize-((pCafeNode)pcafe->super.nlist->array[j])->familysize;
-			SSE += pow(error, 2);
-			SAE += abs(error);
-			nodecnt++;
-		}
-		MSE += SSE/nodecnt;
-		MSE += SAE/nodecnt;
-	}
-	cafe_free_birthdeath_cache(pcafe);
-
-	MSE = MSE/cafe_param->cv_test_count_list->size;
-	MAE = MAE/cafe_param->cv_test_count_list->size;
-	cafe_log( cafe_param, "MSE %f\n", MSE );
-	cafe_log( cafe_param, "MAE %f\n", MSE );
-
-	double returnerror = -1;
-	if (strncmp(errortype, "MSE", 3)==0) {
-		returnerror = MSE;
-	}
-	else if (strncmp(errortype, "MAE", 3)==0) {
-		returnerror = MAE;
-	}
-	return returnerror;
-}
 
 
 
@@ -602,107 +513,6 @@ double _cafe_cross_validate_by_species(const char* validatefile, const char* err
 void set_range_from_family(family_size_range* range, pCafeFamily family)
 {
 	init_family_size(range, family->max_size);
-}
-
-
-
-
-
-
-void log_param_values(pCafeParam param)
-{
-	cafe_log(param, "-----------------------------------------------------------\n");
-	cafe_log(param, "Family information: %s\n", param->str_fdata->buf);
-	cafe_log(param, "Log: %s\n", param->flog == stdout ? "stdout" : param->str_log->buf);
-	if (param->pcafe)
-	{
-		pString pstr = phylogeny_string((pTree)param->pcafe, NULL);
-		cafe_log(param, "Tree: %s\n", pstr->buf);
-		string_free(pstr);
-	}
-	cafe_log(param, "The number of families is %d\n", param->pfamily->flist->size);
-	cafe_log(param, "Root Family size : %d ~ %d\n", param->family_size.root_min, param->family_size.root_max);
-	cafe_log(param, "Family size : %d ~ %d\n", param->family_size.min, param->family_size.max);
-	cafe_log(param, "P-value: %f\n", param->pvalue);
-	cafe_log(param, "Num of Threads: %d\n", param->num_threads);
-	cafe_log(param, "Num of Random: %d\n", param->num_random_samples);
-	if (param->lambda)
-	{
-		pString pstr = cafe_tree_string_with_lambda(param->pcafe);
-		cafe_log(param, "Lambda: %s\n", pstr->buf);
-		string_free(pstr);
-	}
-}
-
-extern double __cafe_best_lambda_search(double* plambda, void* args);
-extern double __cafe_best_lambda_mu_search(double* pparams, void* args);
-extern double __cafe_cluster_lambda_search(double* plambda, void* args);
-extern double __cafe_cluster_lambda_mu_search(double* pparams, void* args);
-
-double cafe_shell_score()
-{
-	int i=0;
-	double score = 0;
-	if (cafe_param->parameterized_k_value > 0) {
-		if (cafe_param->num_mus > 0) {
-			score = -__cafe_cluster_lambda_mu_search(cafe_param->parameters, (void*)cafe_param);
-			// print
-			char buf[STRING_STEP_SIZE];
-			buf[0] = '\0';
-			for( i=0; i<cafe_param->num_lambdas; i++) {
-				string_pchar_join_double(buf,",", cafe_param->parameterized_k_value, &cafe_param->parameters[i*cafe_param->parameterized_k_value] );
-				cafe_log(cafe_param,"Lambda branch %d: %s\n", i, buf);
-				buf[0] = '\0';
-			}
-			for (i=0; i<cafe_param->num_mus; i++) {
-				string_pchar_join_double(buf,",", cafe_param->parameterized_k_value, &cafe_param->parameters[cafe_param->num_lambdas*cafe_param->parameterized_k_value+i*cafe_param->parameterized_k_value]);
-				cafe_log(cafe_param,"Mu branch %d: %s \n", i, buf);
-				buf[0] = '\0';
-			}
-			if (cafe_param->parameterized_k_value > 0) {
-				string_pchar_join_double(buf,",", cafe_param->parameterized_k_value, cafe_param->k_weights );
-				cafe_log(cafe_param, "p : %s\n", buf);
-			}
-			cafe_log(cafe_param, "Score: %f\n", score);
-			
-		}
-		else {  
-			score = -__cafe_cluster_lambda_search(cafe_param->parameters, (void*)cafe_param);
-			// print
-			char buf[STRING_STEP_SIZE];
-			buf[0] = '\0';
-			string_pchar_join_double(buf,",", cafe_param->num_lambdas*cafe_param->parameterized_k_value, cafe_param->parameters );
-			cafe_log(cafe_param,"Lambda : %s\n", buf);
-			buf[0] = '\0';
-			if (cafe_param->parameterized_k_value > 0) {
-				string_pchar_join_double(buf,",", cafe_param->parameterized_k_value, cafe_param->k_weights );
-				cafe_log(cafe_param, "p : %s\n", buf);
-			}
-			cafe_log(cafe_param, "Score: %f\n", score);		
-		}
-	}
-	else {
-		if (cafe_param->num_mus > 0) {
-			score = -__cafe_best_lambda_mu_search(cafe_param->parameters, (void*)cafe_param);
-			// print
-			char buf[STRING_STEP_SIZE];
-			buf[0] = '\0';
-			string_pchar_join_double(buf,",", cafe_param->num_lambdas, cafe_param->parameters );
-			cafe_log(cafe_param,"Lambda : %s ", buf, score);
-			buf[0] = '\0';
-			string_pchar_join_double(buf,",", cafe_param->num_mus, cafe_param->parameters+cafe_param->num_lambdas );
-			cafe_log(cafe_param,"Mu : %s & Score: %f\n", buf, score);		
-		}
-		else {
-			score = -__cafe_best_lambda_search(cafe_param->parameters, (void*)cafe_param);
-			// print
-			char buf[STRING_STEP_SIZE];
-			buf[0] = '\0';
-			string_pchar_join_double(buf,",", cafe_param->num_lambdas, cafe_param->parameters );
-			cafe_log(cafe_param,"Lambda : %s & Score: %f\n", buf, score);		
-		}
-	}
-	return score;
 }
 
 int set_log_file(pCafeParam param, const char *log_file)

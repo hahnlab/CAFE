@@ -1,7 +1,10 @@
-#include <vector>
-#include "CppUTest/TestHarness.h"
-#include <error_model.h>
 #include <sstream>
+#include <vector>
+
+#include "CppUTest/TestHarness.h"
+
+#include <error_model.h>
+#include <gene_family.h>
 
 extern "C" {
 //#include <cafe_shell.h>
@@ -28,18 +31,6 @@ static pCafeTree create_tree()
 	char tree[100];
 	strcpy(tree, newick_tree);
 	return cafe_tree_new(tree, &range, 0, 0);
-}
-
-static pArrayList build_arraylist(const char *items[], int count)
-{
-	pArrayList psplit = arraylist_new(20);
-	for (int i = 0; i < count; ++i)
-	{
-		char *str = (char*)memory_new(strlen(items[i]) + 1, sizeof(char));
-		strcpy(str, items[i]);
-		arraylist_add(psplit, str);
-	}
-	return psplit;
 }
 
 TEST(ErrorModel, get_error_model)
@@ -97,8 +88,7 @@ TEST(ErrorModel, add_and_remove_error_model)
 {
 	pCafeTree tree = create_tree();
 
-	const char *species[] = { "", "", "chimp", "human", "mouse", "rat", "dog" };
-	pCafeFamily pfamily = cafe_family_init(build_arraylist(species, 7));
+	pCafeFamily pfamily = cafe_family_init({"chimp", "human", "mouse", "rat", "dog"});
 	cafe_family_set_species_index(pfamily, tree);
 
 	ErrorStruct err;
@@ -112,5 +102,7 @@ TEST(ErrorModel, add_and_remove_error_model)
 	arraylist_add(pfamily->errors, perr);
 	remove_error_model(pfamily, tree, "human");
 	POINTERS_EQUAL(NULL, pfamily->error_ptr[1]);
+
+  cafe_family_free(pfamily);
 }
 

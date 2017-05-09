@@ -63,36 +63,29 @@ extern double** cafe_tree_clustered_likelihood(pCafeTree pcafe);
 extern void cafe_tree_viterbi(pCafeTree pcafe);
 extern void cafe_tree_clustered_viterbi(pCafeTree pcafe, int num_likelihoods);
 extern void cafe_tree_viterbi_posterior(pCafeTree pcafe, pCafeParam param);
-extern void cafe_tree_p_values(pCafeTree pcafe, double* p,  pArrayList pconddist, int cdlen);
 
 extern pCafeParam cafe_copy_parameters(pCafeParam psrc);
 extern void cafe_free_copy_parameters(pCafeParam param);
 
 extern double cafe_tree_mp_remark(pString str, pTree ptree, pMetapostConfig pmc, va_list ap);
-extern double cafe_tree_mp_annotation(pString str, pTreeNode pnode, pMetapostConfig pmc, va_list ap);
-extern pMetapostConfig cafe_tree_get_default_mpconfig(int id, double width, double height );
-extern pString cafe_tree_metapost(pCafeTree pcafe, int id, char* title, double width, double height);
-extern int cafe_tree_random_familysize(pCafeTree pcafe, int rootFamilysize );
+extern int cafe_tree_random_familysize(pCafeTree pcafe, int rootFamilysize, pBirthDeathCacheArray cache);
 void node_set_birthdeath_matrix(pCafeNode pcnode, pBirthDeathCacheArray cache, int num_lambdas);
+double cafe_set_prior_rfsize_poisson_lambda(pCafeParam param, double* lambda);
+double *find_poisson_lambda(pCafeParam param, pCafeFamily pfamily, int *p_num_params);
+void compute_posterior(pCafeFamily pfamily, int family_index, pCafeTree pcafe, double *ML, double *MAP, double *prior_rfsize);
 
 
 /****************************************************************************
  * Cafe Family
 ****************************************************************************/
-pCafeFamily cafe_family_init(pArrayList data);
-void cafe_family_add_item(pCafeFamily pcf, pArrayList data);
-extern pCafeFamily cafe_family_new(const char* file, int bpatcheck);
-extern void cafe_family_item_free(pCafeFamilyItem pitem );
-extern void cafe_family_free(pCafeFamily pcf);
 extern void cafe_family_set_size(pCafeFamily pcf, int idx, pCafeTree pcafe);
 extern int cafe_family_set_species_index(pCafeFamily pcf, pCafeTree pcafe );
 extern int cafe_family_get_species_index(pCafeFamily pcf, char* speciesname); 
-extern void cafe_family_set_size_for_split(pCafeFamily pcf, int idx, pCafeTree pcafe);
 extern void cafe_family_set_size_with_family(pCafeFamily pcf, int idx, pCafeTree pcafe );
 extern void cafe_family_set_truesize_with_family(pCafeFamily pcf, int idx, pCafeTree pcafe );
 extern void cafe_family_set_size_by_species(char* speciesname, int size, pCafeTree pcafe);
 extern int cafe_family_get_index(pCafeFamily pcf, const char* szid);
-extern pCafeFamilyItem cafe_family_get_family_item(pCafeFamily pcf, char* szid );
+extern pCafeFamilyItem cafe_family_get_family_item(pCafeFamily pcf, const char* szid );
 extern void cafe_family_set_size_with_family_forced(pCafeFamily pcf, int idx, pCafeTree pcafe);
 extern void cafe_family_filter( pCafeParam param );
 extern int cafe_family_print_cluster_membership(pCafeParam param);
@@ -111,17 +104,18 @@ extern void cafe_family_read_query_family(pCafeParam param, const char* file);
 extern void cafe_log(pCafeParam param, const char* msg, ... );
 extern void reset_birthdeath_cache(pCafeTree tree, int k_value, family_size_range* range);
 extern double* cafe_best_lambda_by_fminsearch(pCafeParam param, int lambda_len, int k);
-extern double* cafe_best_lambda_mu_by_fminsearch(pCafeParam param, int lambda_len, int mu_len, int k );
-extern double* cafe_best_lambda_mu_eqbg_by_fminsearch(pCafeParam param, int lambda_len, int mu_len );
 extern double* cafe_each_best_lambda_by_fminsearch(pCafeParam param, int lambda_len );
 extern void cafe_lambda_set_default(pCafeParam param, double* lambda);
 
 extern void cafe_free_birthdeath_cache(pCafeTree pcafe);
 extern void cafe_likelihood_ratio_test(pCafeParam param, double *maximumPvalues);
-extern pGMatrix cafe_lambda_distribution(pCafeParam param, int numrange, double** range );
+void input_values_randomize(input_values *vals, int lambda_len, int mu_len, int k,
+	int kfix, double max_branch_length, double *k_weights);
 
 void initialize_leaf_likelihoods_for_viterbi(double **matrix, int num_rows, int range, int familysize, int num_cols, pErrorStruct errormodel);
 void reset_k_likelihoods(pCafeNode pcnode, int k, int num_factors);
+
+double cafe_get_clustered_posterior(pCafeParam param);
 
 #define CAFE_VERSION "3.2"
 

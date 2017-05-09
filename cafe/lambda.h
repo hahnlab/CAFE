@@ -21,17 +21,12 @@ struct lambda_range
 	double end;
 };
 
-struct lambda_args
+struct lambda_arg_base
 {
 	bool search;
 	LAMBDA_TYPE lambda_type;
-	double vlambda;
-	std::string outfile;
 	int bdone;
-	bool each;
-	bool write_files;
 	std::string name;
-	std::vector<lambda_range> range;
 	std::vector<double> lambdas;
 	std::vector<double> k_weights;
 	pTree lambda_tree;
@@ -39,14 +34,36 @@ struct lambda_args
 	int num_params;
 	int fixcluster0;
 
-	lambda_args() : search(false), lambda_type(UNDEFINED_LAMBDA), vlambda(0.0), bdone(0), each(false),
-		write_files(false), lambda_tree(NULL), checkconv(false), num_params(0), fixcluster0(0)
+	lambda_arg_base() : search(false), lambda_type(UNDEFINED_LAMBDA), bdone(0), 
+		lambda_tree(NULL), checkconv(false), num_params(0), fixcluster0(0)
 	{
 	}
 
+	virtual void load(std::vector<Argument> pargs);
+	virtual const char* command() = 0;
+	virtual const char* args() = 0;
+	void validate_parameter_count(int expected);
+
+	virtual int get_num_params() const
+	{
+		return (lambdas.size()*(k_weights.size() - fixcluster0)) + (k_weights.size() - 1);
+	}
 };
 
-lambda_args get_arguments(std::vector<Argument> pargs);
+struct lambda_args : lambda_arg_base
+{
+	lambda_args() : lambda_arg_base(), vlambda(0.0), each(false), write_files(false) {}
+	virtual void load(std::vector<Argument> pargs);
+	double vlambda;
+	std::string outfile;
+	bool each;
+	bool write_files;
+	std::vector<lambda_range> range;
+
+	virtual const char* command() { return "lambda"; }
+	virtual const char* args() { return "lambdas (-l)"; }
+};
+
 int cafe_cmd_lambda(Globals& globals, std::vector<std::string> tokens);
 void set_all_lambdas(pCafeParam param, double value);
 pGMatrix cafe_lambda_distribution(pCafeParam param, const std::vector<lambda_range>& range);
@@ -56,6 +73,5 @@ const int INIT_KWEIGHTS = 2;
 void initialize_params_and_k_weights(pCafeParam param, int what);
 void set_parameters(pCafeParam param, lambda_args& params);
 void lambda_set(pCafeParam param, lambda_args& params);
-
 #endif
 

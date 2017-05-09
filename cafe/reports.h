@@ -11,15 +11,6 @@ extern "C" {
 
 #include "viterbi.h"
 
-struct report_parameters
-{
-	bool branchcutting;
-	bool likelihood;
-	bool lh2; 
-	bool just_save;
-	bool html;
-	std::string name;
-};
 
 class Globals;
 class viterbi_parameters;
@@ -39,6 +30,9 @@ struct family_line_item
 
 struct Report
 {
+  enum Formats { Unknown, Text, HTML, JSON };
+  static int report_format;
+
 	std::string tree;
 	std::string lambda_tree;
 	std::string id_tree;
@@ -53,23 +47,28 @@ struct Report
 	Report(pCafeParam param, viterbi_parameters& viterbi);
 };
 
-struct HtmlReport
+struct report_parameters
 {
-	Report report;
-	HtmlReport(const Report& r) : report(r)
-	{
-
-	}
+  bool branchcutting;
+  bool likelihood;
+  bool lh2;
+  bool just_save;
+  Report::Formats format;
+  std::string name;
 };
+
 
 report_parameters get_report_parameters(std::vector<std::string> tokens);
 int cafe_cmd_report(Globals& globals, std::vector<std::string> tokens);
 void write_viterbi(std::ostream& ost, const Report& viterbi);
 void write_families_header(std::ostream& ost, bool cutPvalues, bool likelihoodRatios);
-void cafe_do_report(pCafeParam param, viterbi_parameters& viterbi, report_parameters* params);
+void cafe_do_report(Globals& globals, viterbi_parameters& viterbi, report_parameters* params);
 int cafe_report_retrieve_data(const char* file, pCafeParam param, viterbi_parameters& viterbi);
 
 std::ostream& operator<<(std::ostream& ost, const family_line_item& item);
 std::ostream& operator<<(std::ostream& ost, const Report& report);
 
+/// These I/O manipulators allow selecting the report format
+std::ios_base& json(std::ios_base& os);
+std::ios_base& html(std::ios_base& os);
 #endif

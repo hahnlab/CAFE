@@ -55,7 +55,6 @@ std::map<std::string, cafe_command2> get_dispatcher();
 int cafe_shell_dispatch_command(Globals& globals, char* cmd);
 void list_commands(std::ostream& ost);
 
-std::vector<std::string> tokenize(std::string s);
 std::vector<Argument> build_argument_list(std::vector<std::string> tokens);
 
 // these functions should be moved to another file
@@ -133,6 +132,8 @@ struct roots
 
 void run_viterbi_sim(pCafeTree pcafe, pCafeFamily pfamily, roots& roots);
 int init_histograms(int rfsize, roots& roots, int nsamples);
+void get_doubles_array(std::vector<double>& loc, pArgument parg);
+void log_param_values(std::ostream& ost, Globals& globals);
 
 const int REQUIRES_FAMILY = 0x01;
 const int REQUIRES_TREE = 0x02;

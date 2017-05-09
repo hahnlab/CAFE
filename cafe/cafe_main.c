@@ -142,40 +142,47 @@ void show_sizes(FILE* f, pCafeTree pcafe, family_size_range* range, pCafeFamilyI
 	fprintf(f, "Family size: %d ~ %d\n", range->min, range->max);
 }
 
+void compute_posterior(pCafeFamily pfamily, int family_index, pCafeTree pcafe, double *ML, double *MAP, double *prior_rfsize)
+{
+  cafe_family_set_size(pfamily, family_index, pcafe);	// this part is just setting the leave counts.
+  compute_tree_likelihoods(pcafe);
+
+  double *likelihood = get_likelihoods(pcafe);		// likelihood of the whole tree = multiplication of likelihood of all nodes
+
+  ML[family_index] = __max(likelihood, pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
+  pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[family_index];
+  if (pitem->maxlh < 0)
+  {
+    pitem->maxlh = __maxidx(likelihood, pcafe->rfsize);
+  }
+  // get posterior by adding lnPrior to lnLikelihood
+  double* posterior = (double*)memory_new(pcafe->size_of_factor, sizeof(double));
+  for (int j = 0; j < pcafe->rfsize; j++)	// j: root family size
+  {
+    // likelihood and posterior both starts from 1 instead of 0 
+    posterior[j] = exp(log(likelihood[j]) + log(prior_rfsize[j]));	//prior_rfsize also starts from 1
+  }
+
+  MAP[family_index] = __max(posterior, pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
+  memory_free(posterior);
+  posterior = NULL;
+}
+
 double cafe_get_posterior(pCafeFamily pfamily, pCafeTree pcafe, family_size_range*range, double *ML, double *MAP, double *prior_rfsize, int quiet)
 {
-	int i, j;
+  if (!prior_rfsize)
+  {
+    fprintf(stderr, "ERROR: empirical posterior not defined.\n");
+    return -1;
+  }
+	int i;
 	double score = 0;
-	double* likelihood = NULL;
 	for ( i = 0 ; i < pfamily->flist->size ; i++ )	// i: family index
 	{
 		pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[i];
 		if ( pitem->ref < 0 || pitem->ref == i ) 
 		{
-			cafe_family_set_size(pfamily, i, pcafe);	// this part is just setting the leave counts.
-			compute_tree_likelihoods(pcafe);
-			likelihood = get_likelihoods(pcafe);		// likelihood of the whole tree = multiplication of likelihood of all nodes
-			ML[i] = __max(likelihood, pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
-			if ( pitem->maxlh < 0 )
-			{
-				pitem->maxlh = __maxidx(likelihood, pcafe->rfsize);	
-			}
-			// get posterior by adding lnPrior to lnLikelihood
-			double* posterior = (double*)memory_new(pcafe->size_of_factor,sizeof(double));
-			if(prior_rfsize) {		// prior is a poisson distribution on the root size based on leaves' size
-				for(j = 0; j < pcafe->rfsize; j++)	// j: root family size
-				{
-					// likelihood and posterior both starts from 1 instead of 0 
-					posterior[j] = exp(log(likelihood[j])+log(prior_rfsize[j]));	//prior_rfsize also starts from 1
-				}				
-			}
-            else {
-                fprintf(stderr,"ERROR: empirical posterior not defined.\n");      
-                return -1;
-            }
-			MAP[i] = __max(posterior, pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
-			memory_free(posterior);
-			posterior = NULL;
+      compute_posterior(pfamily, i, pcafe, ML, MAP, prior_rfsize);
 		}
 		else
 		{
@@ -199,104 +206,46 @@ double cafe_get_posterior(pCafeFamily pfamily, pCafeTree pcafe, family_size_rang
 	return score;
 }
 
-void __cafe_randomize_cluster_parameters(pCafeParam param, int lambda_len, int mu_len, int k) 
+void input_values_randomize(input_values *vals, int lambda_len, int mu_len, int k,
+	int kfix, double max_branch_length, double *k_weights)
 {
 	int i,j;
 	if (mu_len < 0) {mu_len = 0;}
 	if (k > 0) 
 	{
-		for ( i = 0; i < lambda_len*(k-param->fixcluster0); i++ )
+		for ( i = 0; i < lambda_len*kfix; i++ )
 		{
-			param->parameters[i] = 1.0/param->max_branch_length * unifrnd();
+			vals->parameters[i] = 1.0/max_branch_length * unifrnd();
 		}
-		for ( i = 0; i < mu_len*(k-param->fixcluster0); i++ )
+		int first_mu = lambda_len*kfix;
+		for ( i = 0; i < mu_len*kfix; i++ )
 		{
-            int idx = lambda_len*(k-param->fixcluster0)+i;
-			param->parameters[idx] = 1.0/param->max_branch_length * unifrnd();
+			vals->parameters[first_mu+i] = 1.0/max_branch_length * unifrnd();
 		}
 		double sumofweights = 0;
 		for (j = 0; j < k; j++) {
-			param->k_weights[j] = unifrnd();
-			sumofweights += param->k_weights[j];
+			k_weights[j] = unifrnd();
+			sumofweights += k_weights[j];
 		}
 		for (j = 0; j < k; j++) {
-			param->k_weights[j] = param->k_weights[j]/sumofweights;
+			k_weights[j] = k_weights[j]/sumofweights;
 		}
 		for (j = 0; j < k-1; j++) {
-			param->parameters[(lambda_len+mu_len)*(k-param->fixcluster0)+j] = param->k_weights[j];
+			vals->parameters[(lambda_len+mu_len)*(kfix)+j] = k_weights[j];
 		}
 	}
 	else {
 		for ( i = 0; i < lambda_len; i++ )
 		{
-			param->parameters[i] = 1.0/param->max_branch_length * unifrnd();
+			vals->parameters[i] = 1.0/max_branch_length * unifrnd();
 		}
+		int first_mu = lambda_len;
 		for ( i = 0; i < mu_len; i++ )
 		{
-            int idx = lambda_len+i;
-			param->parameters[idx] = 1.0/param->max_branch_length * unifrnd();
+			vals->parameters[first_mu+i] = 1.0/max_branch_length * unifrnd();
 		}
 	}
 }
-
-void __cafe_scaleup_cluster_parameters(pCafeParam param, int lambda_len, int mu_len, int k) 
-{
-	int i;
-	if (mu_len < 0) {mu_len = 0;}
-	if (k > 0) 
-	{
-		for ( i = 0; i < lambda_len*(k-param->fixcluster0); i++ )
-		{
-            param->parameters[i] = param->parameters[i]*param->sum_branch_length; //scale by sum_branch_length;
-		}
-		for ( i = 0; i < mu_len*(k-param->fixcluster0); i++ )
-		{
-            int idx = lambda_len*(k-param->fixcluster0)+i;
-            param->parameters[idx] = param->parameters[idx]*param->sum_branch_length; //scale by sum_branch_length;
-		}
-	}
-	else {
-		for ( i = 0; i < lambda_len; i++ )
-		{
-            param->parameters[i] = param->parameters[i]*param->sum_branch_length; //scale by sum_branch_length;
-		}
-		for ( i = 0; i < mu_len; i++ )
-		{
-            int idx = lambda_len+i;
-            param->parameters[idx] = param->parameters[idx]*param->sum_branch_length; //scale by sum_branch_length;
-		}
-	}
-}
-
-void __cafe_scaledown_cluster_parameters(pCafeParam param, int lambda_len, int mu_len, int k) 
-{
-	int i;
-	if (mu_len < 0) {mu_len = 0;}
-	if (k > 0) 
-	{
-		for ( i = 0; i < lambda_len*(k-param->fixcluster0); i++ )
-		{
-            param->parameters[i] = param->parameters[i]/param->sum_branch_length; //scale by sum_branch_length;
-		}
-		for ( i = 0; i < mu_len*(k-param->fixcluster0); i++ )
-		{
-            int idx = lambda_len*(k-param->fixcluster0)+i;
-            param->parameters[idx] = param->parameters[idx]/param->sum_branch_length; //scale by sum_branch_length;
-		}
-	}
-	else {
-		for ( i = 0; i < lambda_len; i++ )
-		{
-            param->parameters[i] = param->parameters[i]/param->sum_branch_length; //scale by sum_branch_length;
-		}
-		for ( i = 0; i < mu_len; i++ )
-		{
-            int idx = lambda_len+i;
-            param->parameters[idx] = param->parameters[idx]/param->sum_branch_length; //scale by sum_branch_length;
-		}
-	}
-}
-
 
 double cafe_get_clustered_posterior(pCafeParam param)
 {
@@ -447,53 +396,64 @@ double cafe_set_prior_rfsize_poisson_lambda(pCafeParam param, double* lambda)
 	return 0;
 }
 
+double *find_poisson_lambda(pCafeParam param, pCafeFamily pfamily, int *p_num_params)
+{
+  int i = 0;
+  int idx = 0;
+
+  // estimate the distribution of family size based on observed leaf counts.
+  // first collect all leaves sizes into an ArrayList.
+  pArrayList pLeavesSize = arraylist_new(pfamily->flist->size*pfamily->num_species);
+  for (idx = 0; idx<pfamily->flist->size; idx++) {
+    pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[idx];
+    for (i = 0; i < pfamily->num_species; i++)
+    {
+      if (pfamily->index[i] < 0) continue;
+      int* leafcnt = memory_new(1, sizeof(int));
+      memcpy(leafcnt, &(pitem->count[i]), sizeof(int));
+      if (*leafcnt > 0) {		// ignore the zero counts ( we condition that rootsize is at least one )
+        *leafcnt = (*leafcnt) - 1;
+        arraylist_add(pLeavesSize, (void*)leafcnt);
+      }
+    }
+  }
+
+  // now estimate parameter based on data and distribution (poisson or gamma). 
+  pFMinSearch pfm;
+  int num_params = 1;
+  *p_num_params = num_params;
+  pfm = fminsearch_new_with_eq(__lnLPoisson, num_params, pLeavesSize);
+  //int num_params = 2;
+  //pfm = fminsearch_new_with_eq(__lnLGamma,num_params,pLeavesSize);
+  pfm->tolx = 1e-6;
+  pfm->tolf = 1e-6;
+  double* parameters = memory_new(num_params, sizeof(double));
+  for (i = 0; i < num_params; i++) parameters[i] = unifrnd();
+  fminsearch_min(pfm, parameters);
+  double *re = fminsearch_get_minX(pfm);
+  for (i = 0; i < num_params; i++) parameters[i] = re[i];
+
+  cafe_log(param, "Empirical Prior Estimation Result: %d\n", pfm->iters);
+  cafe_log(param, "Poisson lambda: %f & Score: %f\n", parameters[0], *pfm->fv);
+
+  // clean
+  fminsearch_free(pfm);
+  arraylist_free(pLeavesSize, NULL);
+
+  return parameters;
+}
+
 /// set empirical prior on rootsize based on the assumption that rootsize follows leaf size distribution
 double cafe_set_prior_rfsize_empirical(pCafeParam param)
 {
-	int i=0;
-	int idx = 0;
-
-	// estimate the distribution of family size based on observed leaf counts.
-	// first collect all leaves sizes into an ArrayList.
-	pArrayList pLeavesSize = arraylist_new(param->pfamily->flist->size*param->pfamily->num_species);	
-	for( idx=0; idx<param->pfamily->flist->size; idx++) {
-		pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[idx];
-		for ( i = 0 ; i < param->pfamily->num_species ; i++ )
-		{
-			if( param->pfamily->index[i] < 0 ) continue;
-			int* leafcnt = memory_new(1, sizeof(int));
-			memcpy(leafcnt, &(pitem->count[i]), sizeof(int));
-			if (*leafcnt > 0) {		// ignore the zero counts ( we condition that rootsize is at least one )
-				*leafcnt = (*leafcnt) - 1;
-				arraylist_add(pLeavesSize, (void*)leafcnt);
-			}
-		}
-	}
-
-	// now estimate parameter based on data and distribution (poisson or gamma). 
-	pFMinSearch pfm;
-	int num_params = 1;
-	pfm = fminsearch_new_with_eq(__lnLPoisson,num_params,pLeavesSize);
-	//int num_params = 2;
-	//pfm = fminsearch_new_with_eq(__lnLGamma,num_params,pLeavesSize);
-	pfm->tolx = 1e-6;
-	pfm->tolf = 1e-6;
-	double* parameters = memory_new(num_params, sizeof(double));
-	for ( i = 0; i < num_params; i++ ) parameters[i] = unifrnd();
-	fminsearch_min(pfm, parameters);
-	double *re = fminsearch_get_minX(pfm);
-	for ( i = 0; i < num_params; i++ ) parameters[i] = re[i];
-	cafe_log(param,"Empirical Prior Estimation Result: %d\n", pfm->iters );
-	cafe_log(param,"Poisson lambda: %f & Score: %f\n", parameters[0], *pfm->fv);	
+  int num_params;
+  double *parameters = find_poisson_lambda(param, param->pfamily, &num_params);
 	double *prior_poisson_lambda = memory_new_with_init(num_params, sizeof(double), (void*) parameters);
 	//cafe_log(param,"Gamma alpha: %f, beta: %f & Score: %f\n", parameters[0], parameters[1], *pfm->fv);	
 	
 	// set rfsize based on estimated prior
 	cafe_set_prior_rfsize_poisson_lambda(param, prior_poisson_lambda);
 
-	// clean
-	fminsearch_free(pfm);
-	arraylist_free(pLeavesSize, NULL);
 	memory_free(parameters);
 	return 0;
 }
@@ -540,93 +500,6 @@ double __cafe_cluster_lambda_search(double* parameters, void* args)
 
 
 
-
-double __cafe_cluster_lambda_mu_search(double* parameters, void* args)
-{
-	int i;
-	pCafeParam param = (pCafeParam)args;
-	pCafeTree pcafe = (pCafeTree)param->pcafe;
-	double score = 0;
-	int skip = 0;
-	for ( i = 0 ; i < param->num_params ; i++ )
-	{
-		if ( parameters[i] < 0 ) 
-		{ 
-			skip  = 1;
-			score = log(0);
-			break;
-		}
-	}
-	if ( !skip )
-	{
-		param->param_set_func(param,parameters);
-
-		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
-		score = cafe_get_clustered_posterior(param);
-		cafe_free_birthdeath_cache(pcafe);
-		cafe_tree_node_free_clustered_likelihoods(param);
-	}
-	char buf[STRING_STEP_SIZE];
-	buf[0] = '\0';
-	for( i=0; i<param->num_lambdas; i++) {
-	string_pchar_join_double(buf,",", (param->parameterized_k_value-param->fixcluster0), &parameters[i*(param->parameterized_k_value-param->fixcluster0)] );
-	fprintf(stdout, "Lambda branch %d: %s\n", i, buf);
-	buf[0] = '\0';
-	}
-	for (i=0; i<param->num_mus; i++) {
-	string_pchar_join_double(buf,",", (param->parameterized_k_value-param->fixcluster0), &parameters[param->num_lambdas*(param->parameterized_k_value-param->fixcluster0)+i*(param->parameterized_k_value-param->fixcluster0)]);
-	fprintf(stdout, "Mu branch %d: %s \n", i, buf);
-	buf[0] = '\0';
-	}
-	if (param->parameterized_k_value > 0) {
-		string_pchar_join_double(buf,",", param->parameterized_k_value, param->k_weights );
-		fprintf(stdout, "p : %s\n", buf);
-	}
-	//cafe_log(param, "Score: %f\n", score);
-	fprintf(stdout, ".");
-	return -score;
-}
-
-
-
-// need to define a function with lambda and mu. 
-// this function is provided as the equation to fmin search.
-// also need to make a new param_set_func that includes mu.
-
-double __cafe_best_lambda_mu_search(double* parameters, void* args)
-{
-	int i;
-	pCafeParam param = (pCafeParam)args;
-	pCafeTree pcafe = (pCafeTree)param->pcafe;
-	double score = 0;
-	int skip = 0;
-	for ( i = 0 ; i < param->num_params ; i++ )
-	{
-		if ( parameters[i] < 0 ) 
-		{ 
-			skip  = 1;
-			score = log(0);
-			break;
-		}
-	}
-	if ( !skip )
-	{
-		param->param_set_func(param,parameters);
-
-		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
-		score = cafe_get_posterior(param->pfamily, param->pcafe, &param->family_size, param->ML, param->MAP, param->prior_rfsize, param->quiet);
-		cafe_free_birthdeath_cache(pcafe);
-	}
-	char buf[STRING_STEP_SIZE];
-	buf[0] = '\0';
-	string_pchar_join_double(buf,",", param->num_lambdas, parameters );
-	cafe_log(param,"Lambda : %s ", buf, score);
-	buf[0] = '\0';
-	string_pchar_join_double(buf,",", param->num_mus-param->eqbg, parameters+param->num_lambdas );
-	cafe_log(param,"Mu : %s & Score: %f\n", buf, score);
-	cafe_log(param, ".");
-	return -score;
-}
 
 double __cafe_best_lambda_search(double* plambda, void* args)
 {
@@ -676,8 +549,11 @@ double* cafe_best_lambda_by_fminsearch(pCafeParam param, int lambda_len, int k )
 		
 		if ( param->num_params > 0 )
 		{
-			__cafe_randomize_cluster_parameters( param, param->num_lambdas, param->num_mus, param->parameterized_k_value);
-            //__cafe_scaleup_cluster_parameters( param, param->num_lambdas, param->num_mus, param->parameterized_k_value);
+			int kfix = k - param->fixcluster0;
+			double max_branch_length = param->max_branch_length;
+			double *k_weights = param->k_weights;
+			input_values_randomize(&param->input, param->num_lambdas, param->num_mus, param->parameterized_k_value,
+				kfix, max_branch_length, k_weights);
 		}
 		
 		copy_range_to_tree(param->pcafe, &param->family_size);
@@ -693,15 +569,11 @@ double* cafe_best_lambda_by_fminsearch(pCafeParam param, int lambda_len, int k )
 			pfm->tolx = 1e-6;
 			pfm->tolf = 1e-6;
 		}
-		fminsearch_min(pfm, param->parameters);
+		fminsearch_min(pfm, param->input.parameters);
 		double *re = fminsearch_get_minX(pfm);
-		for ( i = 0 ; i < param->num_params ; i++ ) param->parameters[i] = re[i];
+		for ( i = 0 ; i < param->num_params ; i++ ) param->input.parameters[i] = re[i];
         
-        
-        //__cafe_scaledown_cluster_parameters( param, param->num_lambdas, param->num_mus, param->parameterized_k_value);
-        
-
-		double current_p = param->parameters[(lambda_len)*(k-param->fixcluster0)];
+		double current_p = param->input.parameters[(lambda_len)*(k-param->fixcluster0)];
 		double prev_p;
 		if (k>0) 
 		{
@@ -713,17 +585,17 @@ double* cafe_best_lambda_by_fminsearch(pCafeParam param, int lambda_len, int k )
 					}
 				}
 				for (j = 0; j<k-1; j++) {
-					param->parameters[(lambda_len)*(k-param->fixcluster0)+j] = sumofweights[j]/param->pfamily->flist->size;
+					param->input.parameters[(lambda_len)*(k-param->fixcluster0)+j] = sumofweights[j]/param->pfamily->flist->size;
 				}
 				memory_free(sumofweights);
 
-				fminsearch_min(pfm, param->parameters);	
+				fminsearch_min(pfm, param->input.parameters);
 				
 				double *re = fminsearch_get_minX(pfm);
-				for ( i = 0 ; i < param->num_params ; i++ ) param->parameters[i] = re[i];
+				for ( i = 0 ; i < param->num_params ; i++ ) param->input.parameters[i] = re[i];
 				
 				prev_p = current_p;
-				current_p = param->parameters[(lambda_len)*(k-param->fixcluster0)];
+				current_p = param->input.parameters[(lambda_len)*(k-param->fixcluster0)];
 			} while (current_p - prev_p > pfm->tolx);
 		}
 		
@@ -734,24 +606,24 @@ double* cafe_best_lambda_by_fminsearch(pCafeParam param, int lambda_len, int k )
 			buf[0] = '\0';
 			if (param->fixcluster0) {
 				strncat(buf, "0,", 2);
-				string_pchar_join_double(buf,",", param->num_lambdas*(param->parameterized_k_value-param->fixcluster0), param->parameters );
+				string_pchar_join_double(buf,",", param->num_lambdas*(param->parameterized_k_value-param->fixcluster0), param->input.parameters );
 			}
 			else {
-				string_pchar_join_double(buf,",", param->num_lambdas*param->parameterized_k_value, param->parameters );
+				string_pchar_join_double(buf,",", param->num_lambdas*param->parameterized_k_value, param->input.parameters );
 			}
 			cafe_log(param,"Lambda : %s\n", buf);
 			buf[0] = '\0';
 			if (param->parameterized_k_value > 0) {
 				string_pchar_join_double(buf,",", param->parameterized_k_value, param->k_weights );
 				cafe_log(param, "p : %s\n", buf);
-				cafe_log(param, "p0 : %f\n", param->parameters[param->num_lambdas*(param->parameterized_k_value-param->fixcluster0)+0]);
+				cafe_log(param, "p0 : %f\n", param->input.parameters[param->num_lambdas*(param->parameterized_k_value-param->fixcluster0)+0]);
 			}
 			cafe_log(param, "Score: %f\n", *pfm->fv);
 		}
 		else {
 			char buf[STRING_STEP_SIZE];
 			buf[0] = '\0';
-			string_pchar_join_double(buf,",", param->num_lambdas, param->parameters );
+			string_pchar_join_double(buf,",", param->num_lambdas, param->input.parameters );
 			cafe_log(param,"Lambda : %s & Score: %f\n", buf, *pfm->fv);
 		}
 		if (runs > 0) {
@@ -779,113 +651,7 @@ double* cafe_best_lambda_by_fminsearch(pCafeParam param, int lambda_len, int k )
 		}
 	}
 	memory_free(scores);
-	return param->parameters;
-}
-
-double* cafe_best_lambda_mu_by_fminsearch(pCafeParam param, int lambda_len, int mu_len, int k )
-{
-	int i;
-	int max_runs = 10;
-	double* scores = memory_new(max_runs, sizeof(double));
-	int converged = 0;
-	int runs = 0;
-	
-	do
-	{
-		if ( param->num_params > 0 )
-		{
-			__cafe_randomize_cluster_parameters( param, param->num_lambdas, param->num_mus, param->parameterized_k_value);
-            //__cafe_scaleup_cluster_parameters( param, param->num_lambdas, param->num_mus, param->parameterized_k_value);
-		}
-		
-		copy_range_to_tree(param->pcafe, &param->family_size);
-		
-		pFMinSearch pfm;
-		if (k > 0) {
-			pfm = fminsearch_new_with_eq(__cafe_cluster_lambda_mu_search, param->num_params, param);
-		}
-		else {
-			pfm = fminsearch_new_with_eq(__cafe_best_lambda_mu_search, param->num_params, param);
-		}
-		pfm->tolx = 1e-6;
-		pfm->tolf = 1e-6;
-		fminsearch_min(pfm, param->parameters);
-		double *re = fminsearch_get_minX(pfm);
-		for ( i = 0 ; i < param->num_params ; i++ ) param->parameters[i] = re[i];
-        
-        //__cafe_scaledown_cluster_parameters( param, param->num_lambdas, param->num_mus, param->parameterized_k_value);
-		
-		cafe_log(param, "\n");
-		cafe_log(param,"Lambda Search Result: %d\n", pfm->iters );
-		// print
-		if (k>0) {
-			char buf[STRING_STEP_SIZE];
-			buf[0] = '\0';
-			for( i=0; i<param->num_lambdas; i++) {
-				if (param->fixcluster0) {
-					strncat(buf, "0,", 2);
-					string_pchar_join_double(buf,",", (param->parameterized_k_value-param->fixcluster0),  &param->parameters[i*(param->parameterized_k_value-param->fixcluster0)] );
-				}
-				else {
-					string_pchar_join_double(buf,",", param->parameterized_k_value, &param->parameters[i*param->parameterized_k_value] );
-				}
-				cafe_log(param,"Lambda branch %d: %s\n", i, buf);
-				buf[0] = '\0';
-			}
-			for (i=0; i<param->num_mus-param->eqbg; i++) {
-				if (param->fixcluster0) {
-					strncat(buf, "0,", 2);
-					string_pchar_join_double(buf,",", (param->parameterized_k_value-param->fixcluster0),  &param->parameters[param->num_lambdas*(param->parameterized_k_value-param->fixcluster0)+i*(param->parameterized_k_value-param->fixcluster0)] );
-				}
-				else {
-					string_pchar_join_double(buf,",", param->parameterized_k_value, &param->parameters[param->num_lambdas*param->parameterized_k_value+i*param->parameterized_k_value]);
-				}
-				cafe_log(param,"Mu branch %d: %s \n", i, buf);
-				buf[0] = '\0';
-			}
-			if (param->parameterized_k_value > 0) {
-				string_pchar_join_double(buf,",", param->parameterized_k_value, param->k_weights );
-				cafe_log(param, "p : %s\n", buf);
-				cafe_log(param, "p0 : %f\n", param->parameters[param->num_lambdas*(param->parameterized_k_value-param->fixcluster0)+(param->num_mus-param->eqbg)*(param->parameterized_k_value-param->fixcluster0)+0]);
-			}
-			cafe_log(param, "Score: %f\n", *pfm->fv);
-		}
-		else {
-			char buf[STRING_STEP_SIZE];
-			buf[0] = '\0';
-			string_pchar_join_double(buf,",", param->num_lambdas, param->parameters );
-			cafe_log(param,"Lambda : %s ", buf, *pfm->fv);
-			buf[0] = '\0';
-			string_pchar_join_double(buf,",", param->num_mus-param->eqbg, param->parameters+param->num_lambdas );
-			cafe_log(param,"Mu : %s & Score: %f\n", buf, *pfm->fv);		
-		}
-		if (runs > 0) {
-			double minscore = __min(scores, runs);
-			if (abs(minscore - (*pfm->fv)) < 10*pfm->tolf) {
-				converged = 1;
-			}
-		}
-		scores[runs] = *pfm->fv;
-		fminsearch_free(pfm);
-		
-		copy_range_to_tree(param->pcafe, &param->family_size);
-		
-		runs++;
-        
-	} while (param->checkconv && !converged && runs<max_runs); 
-		
-
-//	string_free(pstr);
-	if (param->checkconv) {
-		if (converged) {
-			cafe_log(param,"score converged in %d runs.\n", runs);
-		}
-		else {
-			cafe_log(param,"score failed to converge in %d runs.\n", max_runs);
-		}
-	}
-	memory_free(scores);
-	return param->parameters;
+	return param->input.parameters;
 }
 
 void reset_birthdeath_cache(pCafeTree tree, int k_value, family_size_range* range)
@@ -895,7 +661,7 @@ void reset_birthdeath_cache(pCafeTree tree, int k_value, family_size_range* rang
 		birthdeath_cache_array_free(probability_cache);
 	}
 	probability_cache = birthdeath_cache_init(MAX(range->max, range->root_max));
-	cafe_tree_set_birthdeath(tree);
+	cafe_tree_set_birthdeath(tree, probability_cache);
 }
 
 double __cafe_each_best_lambda_search(double* plambda, void* args)

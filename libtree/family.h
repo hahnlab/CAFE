@@ -3,6 +3,7 @@
 
 #include<tree.h>
 #include<birthdeath.h>
+#include "input_values.h"
 
 #define FAMILYSIZEMAX	1000
 typedef struct 
@@ -131,7 +132,8 @@ struct tagCafeParam
 	/// prior is a poisson distribution on the root size based on leaves' size
 	double* prior_rfsize;
 
-	double* parameters;
+	input_values input;
+	//double* parameters;
 	int num_params;
 	param_func param_set_func;
 
@@ -163,7 +165,6 @@ struct tagCafeParam
 	double pvalue;
 	
 	int  num_threads;
-	int  num_random_samples;
 
 	double** likelihoodRatios;
 
@@ -177,5 +178,5 @@ struct tagCafeParam
 
 extern void thread_run_with_arraylist(int numthreads, void* (*run)(void*), pArrayList pal );
 // cafe tree
-extern void cafe_tree_set_birthdeath(pCafeTree pcafe);
+extern void cafe_tree_set_birthdeath(pCafeTree pcafe, pBirthDeathCacheArray cache);
 #endif

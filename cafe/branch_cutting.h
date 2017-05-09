@@ -8,6 +8,7 @@ extern "C" {
 }
 
 class viterbi_parameters;
+class Globals;
 
 typedef std::vector<std::vector<double> > matrix;
 
@@ -23,7 +24,7 @@ public:
 };
 
 void set_size_for_split(pCafeFamily pcf, int idx, pCafeTree pcafe);
-void cafe_branch_cutting(pCafeParam param, viterbi_parameters& viterbi);
+void cafe_branch_cutting(Globals& globals, viterbi_parameters& viterbi);
 void cut_branch(CutBranch& cb, pTree ptree, pCafeTree paramCafe, family_size_range& range, int num_threads, int num_random_samples, int b, std::ostream& ost);
 void compute_cutpvalues(pCafeTree pparamcafe, pCafeFamily family, int num_random_samples, int b, int range_start, int range_stop, viterbi_parameters& viterbi, double pvalue, double *p1, double** p2, CutBranch& cb);
 

@@ -224,151 +224,6 @@ double cafe_tree_mp_remark(pString pstr, pTree ptree, pMetapostConfig pmc, va_li
 	return pmc->height + 0.5;
 }
 
-/*******************************************************************************
- *	Viterbi
- *******************************************************************************/
-/* this is for finding the ML path 
-instead of summing the likelihood across all possible innernodes
-choose the maximum likelihood across all possible innernodes */
-void __cafe_tree_node_compute_viterbi(pTree ptree, pTreeNode ptnode, va_list ap1 )
-{
-	pCafeTree pcafe = (pCafeTree)ptree;
-	pCafeNode pcnode = (pCafeNode)ptnode;
-	//double lambda = pcafe->lambda;
-
-	double *tree_factors[2];
-	tree_factors[0] = memory_new(pcafe->size_of_factor, sizeof(double));
-	tree_factors[1] = memory_new(pcafe->size_of_factor, sizeof(double));
-	int size;
-	int s,c,i,j; 
-	int* rootfamilysizes;
-	int* familysizes;
-
-	if ( tree_is_leaf(ptnode) )
-	{
-		if ( tree_is_root(ptree, ptnode->parent) )
-		{
-			rootfamilysizes = pcafe->rootfamilysizes;
-		}
-		else
-		{
-			rootfamilysizes = pcafe->familysizes;
-		}
-		double* factors = tree_factors[0];
-		memset( factors, 0, pcafe->size_of_factor*sizeof(double));
-		for ( s = rootfamilysizes[0], i = 0; s <= rootfamilysizes[1] ; s++, i++ )
-		{
-			if (pcnode->familysize < 0) { 
-				//fprintf(stderr, "family size not set\n");
-				pcnode->likelihoods[i] = 1;					
-				double tmp = 0;
-				for( c = pcafe->familysizes[0], j = 0 ; c <= pcafe->familysizes[1] ; c++, j++ )
-				{
-					tmp = square_matrix_get(pcnode->birthdeath_matrix, s, c);
-					if ( tmp > factors[i] )
-					{
-						factors[i] = tmp;
-						pcnode->viterbi[i] = j;
-					}
-				}
-			}
-			else {
-                if (pcnode->errormodel) {
-                    memset((void*)pcnode->likelihoods, 0, pcafe->size_of_factor*sizeof(double));
-                    //int start = pcnode->familysize+pcnode->errormodel->fromdiff;
-                    //int end = pcnode->familysize+pcnode->errormodel->todiff;
-                    //if (start<0) {i=0;j=i-start;} else {i=start;j=0;}
-                    for( j=0; j<pcafe->size_of_factor; j++) {
-                        // conditional probability of measuring i=familysize when true count is j
-                        pcnode->likelihoods[j] = pcnode->errormodel->errormatrix[pcnode->familysize][j];
-                    }
-                }
-                else {
-                //pcnode->likelihoods[i] = pcnode->bd[s][pcnode->familysize];
-                memset((void*)pcnode->likelihoods, 0, pcafe->size_of_factor*sizeof(double));
-                pcnode->likelihoods[pcnode->familysize] = 1;	                    
-                }
-			}
-		}
-	}
-	else
-	{
-		if ( tree_is_root(ptree,ptnode) )
-		{
-			rootfamilysizes = pcafe->rootfamilysizes;
-			familysizes = pcafe->familysizes;
-		}
-		else
-		{
-			rootfamilysizes = familysizes = pcafe->familysizes;
-		}
-		int idx;
-		double *factors[2] = { NULL, NULL };
-		pCafeNode child[2] = { (pCafeNode)((pTreeNode)pcnode)->children->head->data, 
-							   (pCafeNode)((pTreeNode)pcnode)->children->tail->data };
-		for ( idx = 0 ; idx < 2 ; idx++ )
-		{
-			{
-				factors[idx] = tree_factors[idx];
-				memset( factors[idx], 0, pcafe->size_of_factor*sizeof(double));
-				for( s = rootfamilysizes[0], i = 0 ; s <= rootfamilysizes[1] ; s++, i++ )
-				{
-					double tmp = 0;
-					for( c = familysizes[0], j = 0 ; c <= familysizes[1] ; c++, j++ )
-					{
-						tmp = square_matrix_get(child[idx]->birthdeath_matrix, s, c) * child[idx]->likelihoods[j];
-						if ( tmp > factors[idx][i] )
-						{
-							factors[idx][i] = tmp;
-							child[idx]->viterbi[i] = j;
-						}
-					}
-				}
-			}
-		}
-		size = rootfamilysizes[1] - rootfamilysizes[0] + 1;
-		for ( i = 0 ; i < size ; i++ )
-		{
-			pcnode->likelihoods[i] = factors[0][i] * factors[1][i];
-		}
-//		printf("%s : %d, %d\n", pcnode->super.name, pcnode->super.branchlength, i );
-	}
-
-	memory_free(tree_factors[0]);
-	memory_free(tree_factors[1]);
-}
-
-void __cafe_tree_node_backtrack_viterbi(pTree ptree, pTreeNode ptnode, va_list ap1 )
-{
-	pCafeTree pcafe = (pCafeTree)ptree;
-	pCafeNode pcnode = (pCafeNode)ptnode;
-	if ( tree_is_leaf(ptnode) && (pcnode->familysize >= 0)) return;
-
-	if ( ptree->root == ptnode )
-	{
-		pcnode->familysize = pcafe->rootfamilysizes[0] + __maxidx( pcnode->likelihoods, pcafe->rfsize );
-		/* check family size for all nodes first */
-		if(pcnode->familysize>10000) {
-			fprintf(stderr,"ERROR: FamilySize larger than bd array size Something wrong\n"); 
-			exit(-1);
-		}
-		/* end check family size for all nodes first */
-
-	}
-	else
-	{
-		pCafeNode pcparent = (pCafeNode)ptnode->parent;
-		int base = tree_is_root(ptree,(pTreeNode)pcparent) ? pcafe->rootfamilysizes[0] : pcafe->familysizes[0];
-		pcnode->familysize = pcnode->viterbi[pcparent->familysize - base] + pcafe->familysizes[0];
-		/* check family size for all nodes first */
-		if(pcnode->familysize>10000) {
-			fprintf(stderr,"ERROR: FamilySize larger than bd array size Something wrong\n"); 
-			exit(-1);
-		}
-		/* end check family size for all nodes first */
-	}
-}
-
 /**
 * \brief Initialize matrix values according to the error model or to defaults
 * if familysize < 0, sets the first (range) values of each row to 1, ignoring the others
@@ -424,7 +279,7 @@ void initialize_leaf_likelihoods(pTree ptree, pTreeNode ptnode)
 	else {
 		// number of likelihoods should be set from the tree's size_of_factor, 
 		// therefore the familysize must be less than this
-		assert(pcnode->familysize < pcafe->size_of_factor);
+		assert(pcnode->familysize >= 0 && pcnode->familysize < pcafe->size_of_factor);
 		memset((void*)pcnode->likelihoods, 0, pcafe->size_of_factor*sizeof(double));
 		pcnode->likelihoods[pcnode->familysize] = 1;
 	}
@@ -449,154 +304,6 @@ void compute_viterbis(pCafeNode node, int k, double *factors, int rootfamilysize
 
 		}
 	}
-}
-
-void __cafe_tree_node_compute_clustered_viterbi(pTree ptree, pTreeNode ptnode, va_list ap1 )
-{
-	va_list ap;
-	va_copy(ap, ap1);
-	int num_likelihoods = va_arg(ap, int);
-	va_end(ap);
-
-	pCafeTree pcafe = (pCafeTree)ptree;
-	double *tree_factors[2];
-	tree_factors[0] = memory_new(pcafe->size_of_factor, sizeof(double));
-	tree_factors[1] = memory_new(pcafe->size_of_factor, sizeof(double));
-
-	pCafeNode pcnode = (pCafeNode)ptnode;
-	
-	int size;
-	int i,k; 
-	int* rootfamilysizes;
-	int* familysizes;
-	
-	int maxFamilySize =  MAX( pcafe->rootfamilysizes[1], pcafe->familysizes[1]);
-	if ( !chooseln_is_init() ) 
-	{
-		chooseln_cache_init(maxFamilySize);
-	}
-	else if ( get_chooseln_cache_size() < maxFamilySize ) 
-	{
-		chooseln_cache_resize(maxFamilySize);
-	}
-	
-	
-	if ( tree_is_leaf(ptnode) )
-	{
-		if ( tree_is_root(ptree, ptnode->parent) )
-		{
-			rootfamilysizes = pcafe->rootfamilysizes;
-		}
-		else
-		{
-			rootfamilysizes = pcafe->familysizes;
-		}
-
-		int range = rootfamilysizes[1] - rootfamilysizes[0] + 1;
-		initialize_leaf_likelihoods_for_viterbi(pcnode->k_likelihoods, num_likelihoods, range, pcnode->familysize, pcafe->size_of_factor, pcnode->errormodel);
-	}
-	else
-	{
-		if ( tree_is_root(ptree,ptnode) )
-		{
-			rootfamilysizes = pcafe->rootfamilysizes;
-			familysizes = pcafe->familysizes;
-		}
-		else
-		{
-			rootfamilysizes = familysizes = pcafe->familysizes;
-		}
-		int idx;
-		double *factors[2] = { NULL, NULL }; 
-		pCafeNode child[2] = { (pCafeNode)((pTreeNode)pcnode)->children->head->data, 
-			(pCafeNode)((pTreeNode)pcnode)->children->tail->data };
-		for (k = 0; k < pcafe->k; k++) 
-		{ 
-			// for each child
-			for ( idx = 0 ; idx < 2 ; idx++ )
-			{
-				if (k == 0) {
-					factors[idx] = tree_factors[idx];
-					memset( factors[idx], 0, pcafe->size_of_factor*sizeof(double));
-				}
-				compute_viterbis(child[idx], k, factors[idx], rootfamilysizes[0], rootfamilysizes[1], familysizes[0], familysizes[1]);
-			}
-			size = rootfamilysizes[1] - rootfamilysizes[0] + 1;
-			for ( i = 0 ; i < size ; i++ )
-			{
-				pcnode->k_likelihoods[k][i] = factors[0][i] * factors[1][i];
-			}
-		}
-	}
-}
-
-
-
-
-void cafe_tree_viterbi(pCafeTree pcafe)
-{
-	if ( pcafe->super.postfix )
-	{
-		pArrayList postfix = pcafe->super.postfix;
-		pArrayList prefix = pcafe->super.prefix;
-		int i = 0;
-		for ( i = 0 ; i < postfix->size; i++ )
-		{
-			__cafe_tree_node_compute_viterbi((pTree)pcafe, (pTreeNode)postfix->array[i], NULL );
-		}
-		for ( i = 0 ; i < prefix->size; i++ )
-		{
-			__cafe_tree_node_backtrack_viterbi((pTree)pcafe, (pTreeNode)prefix->array[i], NULL );
-		}
-	}
-	else
-	{
-		tree_traveral_postfix((pTree)pcafe, __cafe_tree_node_compute_viterbi);
-		tree_traveral_prefix((pTree)pcafe, __cafe_tree_node_backtrack_viterbi);
-	}
-
-}
-
-
-void cafe_tree_clustered_viterbi(pCafeTree pcafe, int num_likelihoods)
-{
-	tree_traveral_postfix((pTree)pcafe, __cafe_tree_node_compute_clustered_viterbi, num_likelihoods);
-	tree_traveral_prefix((pTree)pcafe, __cafe_tree_node_backtrack_viterbi);
-}
-
-
-void cafe_tree_viterbi_posterior(pCafeTree pcafe, pCafeParam param)
-{
-	if ( pcafe->super.postfix )
-	{
-		pArrayList postfix = pcafe->super.postfix;
-		pArrayList prefix = pcafe->super.prefix;
-		int i = 0;
-		for ( i = 0 ; i < postfix->size; i++ )
-		{
-			__cafe_tree_node_compute_viterbi((pTree)pcafe, (pTreeNode)postfix->array[i], NULL );
-		}
-		if (param->posterior) {
-			pCafeNode root = (pCafeNode)postfix->array[postfix->size-1];
-			if (tree_is_root((pTree)pcafe, (pTreeNode)root)) {
-				for(i = 0; i < param->pcafe->rfsize; i++)	// j: root family size
-				{
-					// likelihood and posterior both starts from 1 instead of 0 
-					root->likelihoods[i] = exp(log(root->likelihoods[i])+log(param->prior_rfsize[i]));	//prior_rfsize also starts from 1
-				}				
-			}
-		}
-		for ( i = 0 ; i < prefix->size; i++ )
-		{
-			__cafe_tree_node_backtrack_viterbi((pTree)pcafe, (pTreeNode)prefix->array[i], NULL );
-		}
-	}
-	else
-	{
-		tree_traveral_postfix((pTree)pcafe, __cafe_tree_node_compute_viterbi);
-		tree_traveral_prefix((pTree)pcafe, __cafe_tree_node_backtrack_viterbi);
-	}
-	
 }
 
 void compute_internal_node_likelihood(pTree ptree, pTreeNode ptnode)
@@ -627,37 +334,29 @@ void compute_internal_node_likelihood(pTree ptree, pTreeNode ptnode)
 	tree_factors[0] = memory_new(pcafe->size_of_factor, sizeof(double));
 	tree_factors[1] = memory_new(pcafe->size_of_factor, sizeof(double));
 
-	int idx;
+  int idx;
 	int i = 0;
 	double *factors[2] = { NULL, NULL };
 	pCafeNode child[2] = { (pCafeNode)((pTreeNode)pcnode)->children->head->data,
 		(pCafeNode)((pTreeNode)pcnode)->children->tail->data };
 	for (idx = 0; idx < 2; idx++)
 	{
-		{
 			factors[idx] = tree_factors[idx];
-			memset(factors[idx], 0, pcafe->size_of_factor*sizeof(double));
-			for (int s = root_start, i = 0; s <= root_end; s++, i++)
-			{
-				for (int c = family_start, j = 0; c <= family_end; c++, j++)
-				{
-					if (!child[idx]->birthdeath_matrix)
-						node_set_birthdeath_matrix(child[idx], probability_cache, pcafe->k);
+      if (!child[idx]->birthdeath_matrix)
+        node_set_birthdeath_matrix(child[idx], probability_cache, pcafe->k);
 
-					factors[idx][i] += square_matrix_get(child[idx]->birthdeath_matrix, s, c) * child[idx]->likelihoods[j];		
-					// p(node=c,child|s) = p(node=c|s)p(child|node=c) integrated over all c
-					// remember child likelihood[c]'s never sum up to become 1 because they are likelihoods conditioned on c's.
-					// incoming nodes to don't sum to 1. outgoing nodes sum to 1
-				}
-			}
-		}
+      assert(child[idx]->birthdeath_matrix != NULL);
+      square_matrix_multiply(child[idx]->birthdeath_matrix, child[idx]->likelihoods, root_start, root_end, family_start, family_end, factors[idx]);
+      // p(node=c,child|s) = p(node=c|s)p(child|node=c) integrated over all c
+      // remember child likelihood[c]'s never sum up to become 1 because they are likelihoods conditioned on c's.
+      // incoming nodes to don't sum to 1. outgoing nodes sum to 1
 	}
 	int size = root_end - root_start + 1;
-	for (i = 0; i < size; i++)
+  for (i = 0; i < size; i++)
 	{
 		pcnode->likelihoods[i] = factors[0][i] * factors[1][i];
-	}
-	memory_free(tree_factors[0]);
+  }
+  memory_free(tree_factors[0]);
 	memory_free(tree_factors[1]);
 }
 
@@ -1018,17 +717,22 @@ void node_set_birthdeath_matrix(pCafeNode pcnode, pBirthDeathCacheArray cache, i
 
 void do_node_set_birthdeath(pTree ptree, pTreeNode ptnode, va_list ap1)
 {
+	va_list ap;
+	va_copy(ap, ap1);
+	pBirthDeathCacheArray cache = va_arg(ap, pBirthDeathCacheArray);
+	va_end(ap);
+
 	pCafeTree pcafe = (pCafeTree)ptree;
-	node_set_birthdeath_matrix((pCafeNode)ptnode, probability_cache, pcafe->k);
+	node_set_birthdeath_matrix((pCafeNode)ptnode, cache, pcafe->k);
 }
 
 
 /**
 *	Set each node's birthdeath matrix based on its values of branchlength, lambdas, and mus
 **/
-void cafe_tree_set_birthdeath(pCafeTree pcafe)
+void cafe_tree_set_birthdeath(pCafeTree pcafe, pBirthDeathCacheArray cache)
 {
-	tree_traveral_prefix((pTree)pcafe, do_node_set_birthdeath);
+	tree_traveral_prefix((pTree)pcafe, do_node_set_birthdeath, cache);
 }
 
 void cafe_tree_node_copy(pTreeNode psrc, pTreeNode pdest)
@@ -1070,8 +774,8 @@ pCafeTree cafe_tree_split(pCafeTree pcafe, int idx )
 	{
 		__cafe_tree_copy_new_fill(pcafe,psub);
 	}
-	cafe_tree_set_birthdeath(pcafe);
-	cafe_tree_set_birthdeath(psub);
+	cafe_tree_set_birthdeath(pcafe, probability_cache);
+	cafe_tree_set_birthdeath(psub, probability_cache);
 	return psub;
 }
 
@@ -1084,6 +788,7 @@ void __cafe_tree_node_random_familysize(pTree ptree, pTreeNode pnode, va_list ap
 	va_list ap;
 	va_copy(ap, ap1);
 	int *max = va_arg(ap, int*);
+	int max_family_size = va_arg(ap, int);
 	va_end(ap);
 
 	if ( tree_is_root(ptree,pnode) ) return;
@@ -1091,12 +796,11 @@ void __cafe_tree_node_random_familysize(pTree ptree, pTreeNode pnode, va_list ap
 	double rnd = unifrnd();					
 	double cumul = 0;
 	pCafeNode pcnode = (pCafeNode)pnode;
-	int maxFamilysize = probability_cache->maxFamilysize;
-	int s = ((pCafeNode)pnode->parent)->familysize;
+	int parent_family_size = ((pCafeNode)pnode->parent)->familysize;
 	int c = 0;
-	for (; c < maxFamilysize ; c++ )
+	for (; c < max_family_size-1; c++ )
 	{
-		cumul += square_matrix_get(pcnode->birthdeath_matrix, s, c);
+		cumul += square_matrix_get(pcnode->birthdeath_matrix, parent_family_size, c);
 		if ( cumul >= rnd ) break;
 	}
 	pcnode->familysize = c;
@@ -1109,22 +813,11 @@ void __cafe_tree_node_random_familysize(pTree ptree, pTreeNode pnode, va_list ap
 /**
 *	Sets the family size of each node to random value between 0 and the tree's pbdc_array maxFamilySize.
 **/
-int cafe_tree_random_familysize(pCafeTree pcafe, int rootFamilysize )
+int cafe_tree_random_familysize(pCafeTree pcafe, int rootFamilysize, pBirthDeathCacheArray birthdeath )
 {
 	int max = 0;
 	((pCafeNode)pcafe->super.root)->familysize = rootFamilysize;
-	tree_traveral_prefix( (pTree)pcafe, __cafe_tree_node_random_familysize, &max);
+	tree_traveral_prefix( (pTree)pcafe, __cafe_tree_node_random_familysize, &max, birthdeath->maxFamilysize);
 	return max;
-}
-
-void cafe_tree_p_values(pCafeTree pcafe,double* pvalues, pArrayList pconddist, int cdlen)
-{
-	compute_tree_likelihoods(pcafe);
-	double* lh = get_likelihoods(pcafe);
-	int s;
-	for( s = 0 ; s < pcafe->rfsize; s++ )
-	{
-		pvalues[s] = pvalue( lh[s] , (double*)pconddist->array[s], cdlen);
-	}
 }
 

@@ -166,6 +166,30 @@ void square_matrix_resize(struct square_matrix* matrix, int new_size)
 	matrix->size = new_size;
 }
 
+void square_matrix_print(struct square_matrix* matrix)
+{
+  for (int s = 0; s < matrix->size; s++)
+  {
+    for (int c = 0; c < matrix->size; c++)
+    {
+      printf("%e ", square_matrix_get(matrix, s, c));
+    }
+    printf("\n");
+  }
+}
+
+void square_matrix_multiply(struct square_matrix* matrix, double *vector, int row_start, int row_end, int col_start, int col_end, double *result)
+{
+  for (int s = row_start, i = 0; s <= row_end; s++, i++)
+  {
+    result[i] = 0;
+    for (int c = col_start, j = 0; c <= col_end; c++, j++)
+    {
+      result[i] += square_matrix_get(matrix, s, c) * vector[j];
+    }
+  }
+}
+
 void init_zero_matrix(struct square_matrix *matrix)
 {
 	for (int s = 1; s < matrix->size; s++)
@@ -246,7 +270,7 @@ struct square_matrix* compute_birthdeath_rates(double branchlength, double lambd
 		coeff = 1 - alpha - beta;
 	}
 
-	init_matrix(matrix, coeff);
+  init_matrix(matrix, coeff);
 
 	if (coeff > 0 && coeff != 1)
 	{
@@ -348,7 +372,11 @@ struct square_matrix* birthdeath_cache_get_matrix(pBirthDeathCacheArray pbdc_arr
 	struct square_matrix* matrix = hash_table_lookup(pbdc_array->table, &key, sizeof(struct BirthDeathCacheKey));
 	if (matrix == NULL)
 	{
-		matrix = compute_birthdeath_rates(key.branchlength, key.lambda, key.mu, pbdc_array->maxFamilysize);
+#ifdef VERBOSE
+    if (lambda < 0.000000000001)
+      printf("WARNING: building matrix for 0 lambda\n");
+#endif
+    matrix = compute_birthdeath_rates(key.branchlength, key.lambda, key.mu, pbdc_array->maxFamilysize);
 		hash_table_add(pbdc_array->table, &key, sizeof(struct BirthDeathCacheKey), matrix, sizeof(struct square_matrix*));
 	}
 	return matrix;

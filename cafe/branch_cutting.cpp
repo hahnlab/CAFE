@@ -5,6 +5,8 @@
 #include "branch_cutting.h"
 #include "conditional_distribution.h"
 #include "viterbi.h"
+#include "Globals.h"
+#include "pvalue.h"
 
 extern "C" {
 #include <family.h>
@@ -46,8 +48,11 @@ double** p_values_of_two_trees(pCafeTree pcafe1, pCafeTree pcafe2,
 **************************************************************************/
 typedef struct
 {
-	pCafeParam cafeparam;
+	pCafeTree pcafe;
+	pCafeFamily pfamily;
+	int num_random_samples;
 	viterbi_parameters *viterbi;
+	double pvalue;
 	CutBranch *cb;
 	int range[2];
 }BranchCuttingParam;
@@ -148,24 +153,23 @@ void compute_cutpvalues(pCafeTree pparamcafe, pCafeFamily family, int num_random
 void* __cafe_branch_cutting_thread_func(void* ptr)
 {
 	pBranchCuttingParam pbc = (pBranchCuttingParam)ptr;
-	pCafeParam param = pbc->cafeparam;
-
+	
 #ifdef VERBOSE
 	printf("Branch cutting : %d ~ %d\n", pbc->range[0], pbc->range[1] - 1);
 #endif
 
-	pTree ptree = (pTree)param->pcafe;
+	pTree ptree = (pTree)pbc->pcafe;
 	int nnodes = ptree->nlist->size;
-	double* p1 = (double*)memory_new(param->pcafe->rfsize, sizeof(double));
-	double** p2 = (double**)memory_new_2dim(param->pcafe->rfsize, param->pcafe->rfsize, sizeof(double));
+	double* p1 = (double*)memory_new(pbc->pcafe->rfsize, sizeof(double));
+	double** p2 = (double**)memory_new_2dim(pbc->pcafe->rfsize, pbc->pcafe->rfsize, sizeof(double));
 
 	for (int b = 0; b < nnodes; b++)
 	{
-		compute_cutpvalues(param->pcafe, param->pfamily, param->num_random_samples, b, pbc->range[0], pbc->range[1], *pbc->viterbi, param->pvalue, p1, p2, *pbc->cb);
+		compute_cutpvalues(pbc->pcafe, pbc->pfamily, pbc->num_random_samples, b, pbc->range[0], pbc->range[1], *pbc->viterbi, pbc->pvalue, p1, p2, *pbc->cb);
 	}
 	memory_free(p1);
 	p1 = NULL;
-	memory_free_2dim((void**)p2, param->pcafe->rfsize, param->pcafe->rfsize, NULL);
+	memory_free_2dim((void**)p2, pbc->pcafe->rfsize, pbc->pcafe->rfsize, NULL);
 	return (NULL);
 }
 
@@ -214,8 +218,9 @@ void cut_branch(CutBranch& cb, pTree ptree, pCafeTree paramCafe, family_size_ran
 	cafe_tree_free(psub);
 }
 
-void cafe_branch_cutting(pCafeParam param, viterbi_parameters& viterbi)
+void cafe_branch_cutting(Globals& globals, viterbi_parameters& viterbi)
 {
+	pCafeParam param = &globals.param;
 	cafe_log(param, "Running Branch Cutting....\n");
 
 	pTree ptree = (pTree)param->pcafe;
@@ -226,7 +231,7 @@ void cafe_branch_cutting(pCafeParam param, viterbi_parameters& viterbi)
 	for (b = 0; b < nnodes; b++)
 	{
 		std::ostringstream ost;
-		cut_branch(cb, ptree, param->pcafe, param->family_size, param->num_threads, param->num_random_samples, b, ost);
+		cut_branch(cb, ptree, param->pcafe, param->family_size, param->num_threads, globals.num_random_samples, b, ost);
 		cafe_log(param, ost.str().c_str());
 	}
 
@@ -244,7 +249,7 @@ void cafe_branch_cutting(pCafeParam param, viterbi_parameters& viterbi)
 	int r = 0;
 	for (i = 0; i < param->num_threads; i++, r += threadstep)
 	{
-		ptparam[i].cafeparam = param;
+		ptparam[i].pcafe = param->pcafe;
 		ptparam[i].cb = &cb;
 		ptparam[i].range[0] = r;
 		ptparam[i].range[1] = r + threadstep;

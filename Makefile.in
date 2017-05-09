@@ -1,3 +1,9 @@
+CXX=@CXX@
+LD=@CXX@
+CXXFLAGS=@CXXFLAGS@
+
+prefix=/usr/local
+
 #
 # Compiler flags
 #
@@ -5,18 +11,21 @@ CC     = gcc
 VPATH = cafe:libcommon:libtree:tests
 INCLUDE:=-I cafe -I libtree -I libcommon
 CFLAGS = -Wall -std=c11 $(INCLUDE)
-CXXFLAGS = -Wall $(INCLUDE)
+CXXFLAGS = -Wall -std=c++11 $(INCLUDE)
 LINKFLAGS = -lpthread -lm
 TESTLIBS=-lCppUTest -lCppUTestExt 
 
 #
 # Project files
 #
-CSRCS=cafe_family.c cafe_main.c cafe_report.c cafe_tree.c cafe_shell.c birthdeath.c chooseln_cache.c phylogeny.c tree.c fminsearch.c grpcmp.c histogram.c  matrix_exponential.c regexpress.c utils_string.c gmatrix.c hashtable.c mathfunc.c memalloc.c utils.c
+CSRCS=cafe_family.c cafe_main.c cafe_report.c cafe_tree.c cafe_shell.c birthdeath.c \
+        chooseln_cache.c phylogeny.c tree.c fminsearch.c grpcmp.c histogram.c \
+        input_values.c matrix_exponential.c regexpress.c utils_string.c gmatrix.c \
+        hashtable.c mathfunc.c memalloc.c utils.c
 CXXSRCS=branch_cutting.cpp cafe_commands.cpp conditional_distribution.cpp \
-        error_model.cpp Globals.cpp lambda.cpp log_buffer.cpp reports.cpp \
+        error_model.cpp gene_family.cpp Globals.cpp lambda.cpp lambdamu.cpp log_buffer.cpp reports.cpp \
         likelihood_ratio.cpp pvalue.cpp simerror.cpp viterbi.cpp
-TESTSRCS=command_tests.cpp error_model_tests.cpp family_tests.cpp lambda_tests.cpp test.cpp
+TESTSRCS=command_tests.cpp error_model_tests.cpp family_tests.cpp lambda_tests.cpp report_tests.cpp test.cpp
 COBJS=$(CSRCS:.c=.o)
 CXXOBJS=$(CXXSRCS:.cpp=.o)
 SRCS=$(CSRCS) $(CXXSRCS)
@@ -118,4 +127,7 @@ remake: clean all
 
 clean:
 	rm -f $(RELEXE) $(RELOBJS) $(DBGEXE) $(DBGOBJS) $(TESTEXE) $(TESTOBJS) $(DBGDIR)/main.o $(RELDIR)/main.o
+
+install: $(RELEXE)
+	install -m 0755 $(RELEXE) $(prefix)/bin
 
