@@ -9,6 +9,7 @@
 #include "cafe_commands.h"
 #include "lambda.h"
 #include "log_buffer.h"
+#include "gene_family.h"
 
 using namespace std;
 
@@ -259,7 +260,7 @@ int cafe_cmd_lambdamu(Globals& globals, std::vector<std::string> tokens)
 
 	if (params.search && (param->parameterized_k_value > 0)) {
 		// print the cluster memberships
-		cafe_family_print_cluster_membership(param);
+    log_cluster_membership(param->pfamily, param->parameterized_k_value, param->p_z_membership, log);
 	}
 	return 0;
 }

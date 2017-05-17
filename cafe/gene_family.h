@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <iosfwd>
 
 extern "C" {
 #include "cafe.h"
@@ -20,6 +21,8 @@ void cafe_family_free(pCafeFamily pcf);
 
 void cafe_family_add_item(pCafeFamily pcf, const std::vector<std::string>& data);
 void cafe_family_item_free(pCafeFamilyItem pitem);
+
+int log_cluster_membership(pCafeFamily pcf, int k_value, double **p_z_membership, std::ostream& log);
 
 double cross_validate_by_family(const char* queryfile, const char* truthfile, const char* errortype);
 

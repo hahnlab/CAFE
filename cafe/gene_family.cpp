@@ -337,4 +337,22 @@ void cafe_family_filter(pCafeParam param)
   }
 }
 
+int log_cluster_membership(pCafeFamily pcf, int k_value, double **p_z_membership, std::ostream& log)
+{
+  if (p_z_membership == NULL) {
+    fprintf(stderr, "family membership not found.\n");
+    fprintf(stderr, "run lambdakmean or lambdamukmean to find cluster membership for each family.\n");
+  }
+  log << "The Number of families : " << pcf->flist->size << "\n";
+  for (int i = 0; i < pcf->flist->size; i++)
+  {
+    pCafeFamilyItem pitem = (pCafeFamilyItem)pcf->flist->array[i];
+    log << "family " << pitem->id << ": ";
+    for (int k = 0; k < k_value; k++) {
+      log << " " << p_z_membership[i][k];
+    }
+    log << endl;
+  }
+  return 0;
+}
 

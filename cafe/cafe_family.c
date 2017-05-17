@@ -628,26 +628,6 @@ void init_family_size(family_size_range* fs, int max)
 }
 
 
-int cafe_family_print_cluster_membership(pCafeParam param)
-{
-	int i, k;
-	pCafeFamily pcf = param->pfamily;
-	if (param->p_z_membership == NULL) {
-		fprintf( stderr, "family membership not found.\n" );
-		fprintf( stderr, "run lambdakmean or lambdamukmean to find cluster membership for each family.\n" );
-	}
-	cafe_log( param, "The Number of families : %d \n", pcf->flist->size );
-	for ( i = 0 ; i < pcf->flist->size ; i++ )
-	{
-		pCafeFamilyItem pitem = (pCafeFamilyItem)pcf->flist->array[i];
-		cafe_log( param, "family %s:", pitem->id);
-		for (k = 0; k<param->parameterized_k_value; k++) {
-			cafe_log( param, " %f", param->p_z_membership[i][k]);
-		}
-		cafe_log( param, "\n");
-	}
-	return 0;
-}
 
 
 

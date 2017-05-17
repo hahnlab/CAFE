@@ -1767,12 +1767,15 @@ double cafe_shell_score(Globals& globals)
 */
 int cafe_cmd_score(Globals& globals, std::vector<std::string> tokens)
 {
-	pCafeParam param = &globals.param;
+  log_buffer buf(&globals.param);
+  ostream ost(&buf);
+  
+  pCafeParam param = &globals.param;
 
 	double score = cafe_shell_score(globals);
-	cafe_log(param, "%lf\n", score);
+	ost << score << endl;
 	if (param->parameterized_k_value > 0) {
-		cafe_family_print_cluster_membership(param);
+		log_cluster_membership(param->pfamily, param->parameterized_k_value, param->p_z_membership, ost);
 	}
 	cafe_tree_set_parameters(param->pcafe, &param->family_size, 0);
 	return 0;

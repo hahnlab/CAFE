@@ -88,7 +88,6 @@ extern int cafe_family_get_index(pCafeFamily pcf, const char* szid);
 extern pCafeFamilyItem cafe_family_get_family_item(pCafeFamily pcf, const char* szid );
 extern void cafe_family_set_size_with_family_forced(pCafeFamily pcf, int idx, pCafeTree pcafe);
 extern void cafe_family_filter( pCafeParam param );
-extern int cafe_family_print_cluster_membership(pCafeParam param);
 extern void cafe_family_reset_maxlh(pCafeFamily pcf);
 extern void cafe_family_read_validate_species(pCafeParam param, const char* file);
 extern int cafe_family_split_cvfiles_byfamily(pCafeParam param, int cv_fold);
@@ -116,7 +115,5 @@ void initialize_leaf_likelihoods_for_viterbi(double **matrix, int num_rows, int 
 void reset_k_likelihoods(pCafeNode pcnode, int k, int num_factors);
 
 double cafe_get_clustered_posterior(pCafeParam param);
-
-#define CAFE_VERSION "4.0.1"
 
 #endif

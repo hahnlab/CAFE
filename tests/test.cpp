@@ -953,7 +953,8 @@ TEST(FirstTestGroup, write_version)
 {
 	std::ostringstream ost;
 	write_version(ost);
-	STRCMP_CONTAINS("Version: 3.2, built at", ost.str().c_str());
+  std::string expected = std::string("Version: ") + CAFE_VERSION + ", built at";
+	STRCMP_CONTAINS(expected.c_str(), ost.str().c_str());
 }
 
 TEST(FirstTestGroup, compute_viterbis)

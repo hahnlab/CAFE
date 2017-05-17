@@ -17,6 +17,7 @@ extern "C" {
 #include "cafe_commands.h"
 #include "Globals.h"
 #include "log_buffer.h"
+#include "gene_family.h"
 
 extern "C" {
 	extern pCafeParam cafe_param;
@@ -326,7 +327,11 @@ int cafe_cmd_lambda(Globals& globals, vector<string> tokens)
 	{
 		set_all_lambdas(param, params.vlambda);
 	}
-	if (!params.range.empty())
+
+  log_buffer buf(&globals.param);
+  ostream ost(&buf);
+  
+  if (!params.range.empty())
 	{
 		FILE* fp = NULL;
 		if(!params.outfile.empty() && (fp = fopen(params.outfile.c_str(),"w") ) == NULL )
@@ -342,8 +347,6 @@ int cafe_cmd_lambda(Globals& globals, vector<string> tokens)
         
 		initialize_params_and_k_weights(param, INIT_PARAMS);
 
-		log_buffer buf(&globals.param);
-		ostream ost(&buf);
 		for (size_t j = 0; j < params.range.size(); j++)
 		{
 			ost << j + 1 << "st Distribution: " << params.range[j].start << " : " << params.range[j].step << " : " << params.range[j].end << "\n";
@@ -445,7 +448,7 @@ int cafe_cmd_lambda(Globals& globals, vector<string> tokens)
 	
 	if (params.search && (param->parameterized_k_value > 0)) {
 		// print the cluster memberships
-		cafe_family_print_cluster_membership(param);
+		log_cluster_membership(param->pfamily, param->parameterized_k_value, param->p_z_membership, ost);
 	}
 
 	return 0;

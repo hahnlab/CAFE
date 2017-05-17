@@ -3,6 +3,7 @@ LD=@CXX@
 CXXFLAGS=@CXXFLAGS@
 
 prefix=/usr/local
+version=\"@PACKAGE_VERSION@\"
 
 #
 # Compiler flags
@@ -10,8 +11,8 @@ prefix=/usr/local
 CC     = gcc
 VPATH = cafe:libcommon:libtree:tests
 INCLUDE:=-I cafe -I libtree -I libcommon
-CFLAGS = -Wall -std=c11 $(INCLUDE)
-CXXFLAGS = -Wall -std=c++11 $(INCLUDE)
+CFLAGS = -Wall -std=c11 -DCAFE_VERSION=$(version) $(INCLUDE)
+CXXFLAGS = -Wall -std=c++11 -DCAFE_VERSION=$(version) $(INCLUDE)
 LINKFLAGS = -lpthread -lm
 TESTLIBS=-lCppUTest -lCppUTestExt 
 

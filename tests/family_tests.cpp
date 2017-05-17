@@ -236,3 +236,17 @@ TEST(FamilyTests, write_family)
 
 }
 
+TEST(FamilyTests, log_cluster_membership)
+{
+  std::ostringstream ost;
+  pCafeFamily pcf = cafe_family_init({ "chimp", "human", "mouse", "rat", "dog" });
+  cafe_family_add_item(pcf, { "my_description", "my_id", "3", "5", "7", "11", "13" });
+  double **z = (double **)memory_new_2dim(2, 2, sizeof(double));
+  z[0][0] = 7.7;
+  z[0][1] = 11.13;
+  log_cluster_membership(pcf, 2, z, ost);
+  STRCMP_CONTAINS("The Number of families : 1\n", ost.str().c_str());
+  STRCMP_CONTAINS("family my_id:  7.7 11.13", ost.str().c_str());
+
+  cafe_family_free(pcf);
+}
