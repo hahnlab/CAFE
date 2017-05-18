@@ -105,14 +105,17 @@ li.announce {
 }
 
 li {
-    list-style-type: none;
     color: rgb(209,210,212);
-    font-size: 80%
+    font-size: 80%;
     margin: 0px auto;
     margin-bottom: 20px;
     margin-left: 20px;
     text-align: left;
     }
+
+ol.install {
+    list-style-type: decimal;
+}
 
 li.downl {
     list-style-type: decimal;
