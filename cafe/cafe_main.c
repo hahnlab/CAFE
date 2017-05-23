@@ -144,13 +144,13 @@ void show_sizes(FILE* f, pCafeTree pcafe, family_size_range* range, pCafeFamilyI
 
 void compute_posterior(pCafeFamily pfamily, int family_index, pCafeTree pcafe, double *ML, double *MAP, double *prior_rfsize)
 {
-  cafe_family_set_size(pfamily, family_index, pcafe);	// this part is just setting the leave counts.
+  pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[family_index];
+  cafe_family_set_size(pfamily, pitem, pcafe);	// this part is just setting the leave counts.
   compute_tree_likelihoods(pcafe);
 
   double *likelihood = get_likelihoods(pcafe);		// likelihood of the whole tree = multiplication of likelihood of all nodes
 
   ML[family_index] = __max(likelihood, pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
-  pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[family_index];
   if (pitem->maxlh < 0)
   {
     pitem->maxlh = __maxidx(likelihood, pcafe->rfsize);
@@ -260,7 +260,7 @@ double cafe_get_clustered_posterior(pCafeParam param)
 		pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
 		if ( pitem->ref < 0 || pitem->ref == i ) 
 		{
-			cafe_family_set_size(param->pfamily, i, param->pcafe);
+			cafe_family_set_size(param->pfamily, pitem, param->pcafe);
 			k_likelihoods = cafe_tree_clustered_likelihood(param->pcafe);		// likelihood of the whole tree = multiplication of likelihood of all nodes
 			
 			// find the p_z_membership conditioned on the current parameter.
@@ -840,7 +840,7 @@ void* __cafe_likelihood_ratio_test_thread_func(void* ptr)
 			for( b = 0 ; b < nnodes ; b++ ) param->likelihoodRatios[b][i] = -1;
 			continue;
 		}
-		cafe_family_set_size(param->pfamily,i, pcafe);
+		cafe_family_set_size(param->pfamily, pitem, pcafe);
 		compute_tree_likelihoods(pcafe);
 		double maxlh = __max(get_likelihoods(pcafe), param->pcafe->rfsize );
 		for( b = 0 ; b < nnodes ; b++ )

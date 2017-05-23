@@ -433,6 +433,23 @@ int cafe_family_get_species_index(pCafeFamily pcf, char* speciesname)
     return returnidx;
 }
 
+void sync_sanity_check(pCafeFamily pcf, pCafeTree pcafe)
+{
+  for (int i = 0; i < pcf->num_species; i++)
+  {
+    if (pcf->index[i] < 0)
+    {
+      fprintf(stderr, "Warning: Tree and family indices not synchronized\n");
+      continue;
+    }
+    if (pcf->index[i] >= pcafe->super.size)
+    {
+      fprintf(stderr, "Inconsistency in tree size");
+      exit(-1);
+    }
+  }
+}
+
 /*! \brief Copy sizes of an individual gene family into the tree
 *
 * Takes the given gene family and copies the size of the family in the species
@@ -441,27 +458,16 @@ int cafe_family_get_species_index(pCafeFamily pcf, char* speciesname)
 * Side effect is to set the familysize member for each node in the tree, but
 * since that is a convenience variable it shouldn't make any difference
 */
-void cafe_family_set_size(pCafeFamily pcf, int idx, pCafeTree pcafe)
+void cafe_family_set_size(pCafeFamily pcf, pCafeFamilyItem pitem, pCafeTree pcafe)
 {
-	assert(idx < pcf->flist->size);
-
 	pTree ptree = (pTree)pcafe;
 	for (int i = 0; i< ptree->nlist->size; i++) {
 		((pCafeNode)ptree->nlist->array[i])->familysize = -1;
 	}
-	pCafeFamilyItem pitem = (pCafeFamilyItem)pcf->flist->array[idx];
+
+  sync_sanity_check(pcf, pcafe);
 	for (int i = 0 ; i < pcf->num_species ; i++ )
 	{
-		if (pcf->index[i] < 0)
-		{
-			fprintf(stderr, "Warning: Tree and family indices not synchronized\n");
-			continue;
-		}
-		if (pcf->index[i] >= ptree->size)
-		{
-			fprintf(stderr, "Inconsistency in tree size");
-			exit(-1);
-		}
 		pCafeNode pcnode = (pCafeNode)ptree->nlist->array[pcf->index[i]];
 		pcnode->familysize = pitem->count[i];
 	}
@@ -469,8 +475,8 @@ void cafe_family_set_size(pCafeFamily pcf, int idx, pCafeTree pcafe)
 
 void cafe_family_set_size_with_family_forced(pCafeFamily pcf, int idx, pCafeTree pcafe)
 {
-	cafe_family_set_size(pcf, idx, pcafe);
-	pCafeFamilyItem pitem = (pCafeFamilyItem)pcf->flist->array[idx];
+  pCafeFamilyItem pitem = (pCafeFamilyItem)pcf->flist->array[idx];
+  cafe_family_set_size(pcf, pitem, pcafe);
 	int i;
 	int max = 0;
 	for ( i = 0 ; i < pcf->num_species ; i++ )
@@ -489,8 +495,8 @@ void cafe_family_set_size_with_family_forced(pCafeFamily pcf, int idx, pCafeTree
 
 void cafe_family_set_size_with_family(pCafeFamily pcf, int idx, pCafeTree pcafe )
 {
-	cafe_family_set_size(pcf, idx, pcafe);			// set the size of leaves according to data
-	pCafeFamilyItem pitem = (pCafeFamilyItem)pcf->flist->array[idx];
+  pCafeFamilyItem pitem = (pCafeFamilyItem)pcf->flist->array[idx];
+  cafe_family_set_size(pcf, pitem, pcafe);			// set the size of leaves according to data
 	int i;
 	int max = 0;
 	for ( i = 0 ; i < pcf->num_species ; i++ )

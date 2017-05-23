@@ -217,7 +217,8 @@ double cross_validate_by_family(const char* queryfile, const char* truthfile, co
   for (i = 0; i< cafe_param->cv_test_count_list->size; i++)
   {
     int* testcnt = (int*)cafe_param->cv_test_count_list->array[i];
-    cafe_family_set_size(truthfamily, i, truthtree);
+    pCafeFamilyItem pitem = (pCafeFamilyItem)truthfamily->flist->array[i];
+    cafe_family_set_size(truthfamily, pitem, truthtree);
     cafe_family_set_size_by_species((char *)cafe_param->cv_test_species_list->array[i], *testcnt, pcafe);
     if (cafe_param->posterior) {
       cafe_tree_viterbi_posterior(pcafe, cafe_param);
@@ -264,7 +265,8 @@ void cafe_family_filter(pCafeParam param)
   int max = 0;
   for (i = 0; i < pcf->flist->size; i++)
   {
-    cafe_family_set_size(pcf, i, pcafe);
+    pCafeFamilyItem pitem = (pCafeFamilyItem)pcf->flist->array[i];
+    cafe_family_set_size(pcf, pitem, pcafe);
     pArrayList nlist = pcafe->super.nlist;
     for (n = 0; n < nlist->size; n += 2)
     {
@@ -294,7 +296,6 @@ void cafe_family_filter(pCafeParam param)
       root->reg = 0;
     }
 
-    pCafeFamilyItem pitem = (pCafeFamilyItem)pcf->flist->array[i];
     if (root->reg == 1)
     {
       arraylist_add(fflist, pitem);

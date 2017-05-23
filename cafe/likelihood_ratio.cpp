@@ -40,7 +40,7 @@ void likelihood_ratio_report(pCafeFamily pfamily,
 	for (i = 0; i < fsize; i++)
 	{
 		pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[i];
-		cafe_family_set_size(pfamily, i, pcafe);
+		cafe_family_set_size(pfamily, pitem, pcafe);
 		pString pstr = cafe_tree_string(pcafe);
 		fprintf(fout, "%s\t%s\t", pitem->id, pstr->buf);
 		double* l = lambda_cache[plambda[i]];
@@ -92,7 +92,8 @@ double __cafe_lhr_get_likelihood_for_diff_lambdas(pCafeParam param, int idx, int
 		cafe_tree_set_birthdeath(param->pcafe, probability_cache);
 	}
 	int i;
-	cafe_family_set_size(param->pfamily, idx, param->pcafe);
+  pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[idx];
+  cafe_family_set_size(param->pfamily, pitem, param->pcafe);
 	compute_tree_likelihoods(param->pcafe);
 	double mlh = __max(get_likelihoods(param->pcafe), param->pcafe->rfsize);
 	pTree ptree = (pTree)param->pcafe;
@@ -129,7 +130,7 @@ void* __cafe_lhr_for_diff_lambdas_i(pCafeParam param,
 	{
 		pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
 		if (pitem->ref >= 0 && pitem->ref != i) continue;
-		cafe_family_set_size(param->pfamily, i, pcafe);
+		cafe_family_set_size(param->pfamily, pitem, pcafe);
 		compute_tree_likelihoods(pcafe);
 		double maxlh1 = __max(get_likelihoods(pcafe), pcafe->rfsize);
 		double prev = -1;

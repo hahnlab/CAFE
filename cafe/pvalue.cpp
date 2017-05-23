@@ -105,7 +105,8 @@ void pvalues_for_family(pCafeTree pTree, pCafeFamily family, family_size_range *
 	}
 	cafe_tree_set_parameters(pTree, range, 0);
 
-	cafe_family_set_size(family, index, pTree);
+  pCafeFamilyItem pitem = (pCafeFamilyItem)family->flist->array[index];
+  cafe_family_set_size(family, pitem, pTree);
 
 	compute_tree_likelihoods(pTree);
 	double* lh = get_likelihoods(pTree);

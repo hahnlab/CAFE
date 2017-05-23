@@ -403,7 +403,7 @@ int cafe_cmd_lambda(Globals& globals, vector<string> tokens)
 		for (int i = 0 ; i < param->pfamily->flist->size ; i++ )
 		{
 			pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
-			cafe_family_set_size(param->pfamily, i, pcafe);
+			cafe_family_set_size(param->pfamily, pitem, pcafe);
 			param->param_set_func(param,pitem->lambda);
 			pString pstr = cafe_tree_string_with_familysize_lambda(pcafe);
 			for (int j = 0 ; j < param->num_lambdas; j++ )

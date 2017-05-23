@@ -78,7 +78,7 @@ void compute_posterior(pCafeFamily pfamily, int family_index, pCafeTree pcafe, d
 /****************************************************************************
  * Cafe Family
 ****************************************************************************/
-extern void cafe_family_set_size(pCafeFamily pcf, int idx, pCafeTree pcafe);
+void cafe_family_set_size(pCafeFamily pcf, pCafeFamilyItem pitem, pCafeTree pcafe);
 extern int cafe_family_set_species_index(pCafeFamily pcf, pCafeTree pcafe );
 extern int cafe_family_get_species_index(pCafeFamily pcf, char* speciesname); 
 extern void cafe_family_set_size_with_family(pCafeFamily pcf, int idx, pCafeTree pcafe );

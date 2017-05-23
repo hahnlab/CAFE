@@ -188,11 +188,11 @@ void cafe_viterbi_print(pCafeParam param, viterbi_parameters& viterbi)
 	pTree ptree = (pTree)pcafe;
 	for (i = 0; i < size; i++)
 	{
-		cafe_family_set_size(param->pfamily, i, pcafe);
+    pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
+    cafe_family_set_size(param->pfamily, pitem, pcafe);
 		for (j = 1; j < ptree->nlist->size; j += 2)
 		{
 			pCafeNode pcnode = (pCafeNode)ptree->nlist->array[j];
-      pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
 			pcnode->familysize = viterbi.viterbiNodeFamilysizes[viterbi_parameters::NodeFamilyKey(pcnode, pitem)];
 		}
 		cafe_tree_string_print(pcafe);

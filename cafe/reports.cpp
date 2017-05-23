@@ -104,8 +104,8 @@ void lambda_tree_string(pString pstr, pPhylogenyNode pnode)
 
 void cafe_report_set_viterbi(pCafeFamily family, pCafeTree pcafe, viterbi_parameters& viterbi, int i)
 {
-	cafe_family_set_size(family, i, pcafe);
   pCafeFamilyItem pitem = (pCafeFamilyItem)family->flist->array[i];
+  cafe_family_set_size(family, pitem, pcafe);
   viterbi.set_node_familysize(pcafe, pitem);
 }
 

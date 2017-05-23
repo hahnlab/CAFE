@@ -467,7 +467,8 @@ double _cafe_cross_validate_by_species(const char* validatefile, const char* err
 	pArrayList estimate_size = arraylist_new(cafe_param->cv_test_count_list->size);
 	for(i=0; i< cafe_param->pfamily->flist->size; i++) 
 	{
-		cafe_family_set_size(cafe_param->pfamily,i, pcafe);
+    pCafeFamilyItem pitem = (pCafeFamilyItem)cafe_param->pfamily->flist->array[i];
+    cafe_family_set_size(cafe_param->pfamily, pitem, pcafe);
 		if (cafe_param->posterior) {
 			cafe_tree_viterbi_posterior(pcafe, cafe_param);
 		}

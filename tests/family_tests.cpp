@@ -123,7 +123,8 @@ TEST(FamilyTests, cafe_family_set_size)
 
 	pCafeTree ptree = create_tree();
 	cafe_family_set_species_index(pcf, ptree);
-	cafe_family_set_size(pcf, 0, ptree);
+  pCafeFamilyItem pitem = (pCafeFamilyItem)pcf->flist->array[0];
+  cafe_family_set_size(pcf, pitem, ptree);
 
 	// leaf nodes are at 0,2,4,6,8. They should match the sizes given above
 	LONGS_EQUAL(3, ((pCafeNode)ptree->super.nlist->array[0])->familysize);
@@ -222,8 +223,8 @@ TEST(FamilyTests, write_family_gainloss)
 	cafe_family_set_species_index(pcf, tree1);
 	pCafeTree tree2 = cafe_tree_copy(tree1);
   viterbi_parameters v;
-	cafe_family_set_size(pcf, 0, tree1);
   pCafeFamilyItem pitem = (pCafeFamilyItem)pcf->flist->array[0];
+  cafe_family_set_size(pcf, pitem, tree1);
 
 	v.set_node_familysize(tree1, pitem);
 	int actual = write_family_gainloss(ost, "family_id", tree1, tree2);

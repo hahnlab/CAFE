@@ -430,7 +430,8 @@ TEST(FirstTestGroup, compute_likelihoods)
   }
   reset_birthdeath_cache(pcafe, 0, &range);
   cafe_family_set_species_index(pfamily, pcafe);
-  cafe_family_set_size(pfamily, 0, pcafe);	// this part is just setting the leave counts.
+  pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[0];
+  cafe_family_set_size(pfamily, pitem, pcafe);	// this part is just setting the leave counts.
 
   compute_tree_likelihoods(pcafe);
 

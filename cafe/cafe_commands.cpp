@@ -468,7 +468,8 @@ int* get_root_dist(pCafeTree pcafe, pCafeFamily pfamily, int k_value, family_siz
 		{
 			printf("%d ...\n", i);
 		}
-		cafe_family_set_size(pfamily, i, pcafe);
+    pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[i];
+		cafe_family_set_size(pfamily, pitem, pcafe);
 		if (k_value > 0) {
 			cafe_tree_clustered_viterbi(pcafe, k_value);
 		}
@@ -1047,7 +1048,8 @@ void run_viterbi_sim(pCafeTree pcafe, pCafeFamily pfamily, roots& roots)
 	pCafeNode croot = (pCafeNode)pcafe->super.root;
 	for (int i = 0; i < familysize; i++)
 	{
-		cafe_family_set_size(pfamily, i, pcafe);
+    pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[i];
+    cafe_family_set_size(pfamily, pitem, pcafe);
 		cafe_tree_viterbi(pcafe);
 		roots.size[i] = croot->familysize;
 		roots.extinct[i] = __cafe_cmd_extinct_count_zero((pTree)pcafe);
@@ -1606,7 +1608,8 @@ int cafe_cmd_rootdist(Globals& globals, std::vector<std::string> tokens)
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
 		for (i = 0; i< param->pfamily->flist->size; i++)
 		{
-			cafe_family_set_size(param->pfamily, i, pcafe);
+      pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
+      cafe_family_set_size(param->pfamily, pitem, pcafe);
 			cafe_tree_viterbi(pcafe);
 			cafe_log(param, "%d\n", ((pCafeNode)pcafe->super.root)->familysize);
 		}
@@ -1945,8 +1948,9 @@ int cafe_cmd_accuracy(Globals& globals, std::vector<std::string> tokens)
 			// compare inferred vs. truth
 			for (i = 0; i< param->pfamily->flist->size; i++)
 			{
-				cafe_family_set_truesize_with_family(truthfamily, i, truthtree);
-				cafe_family_set_size(param->pfamily, i, pcafe);
+        pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
+        cafe_family_set_truesize_with_family(truthfamily, i, truthtree);
+				cafe_family_set_size(param->pfamily, pitem, pcafe);
 				if (param->posterior) {
 					cafe_tree_viterbi_posterior(pcafe, param);
 				}
@@ -2006,8 +2010,8 @@ int cafe_cmd_gainloss(Globals& globals, std::vector<std::string> tokens)
 
 	for (int i = 0; i < fsize; i++)
 	{
-		cafe_family_set_size(param->pfamily, i, pcafe);
     pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
+    cafe_family_set_size(param->pfamily, pitem, pcafe);
     globals.viterbi->set_node_familysize(pcafe, pitem);
 		totalsum += write_family_gainloss(ofst, pitem->id, pcafe, psum);
 	}
