@@ -2,6 +2,7 @@
 #include <fstream>
 #include <algorithm>
 #include <iostream>
+#include <stdexcept>
 
 #include "gene_family.h"
 #include <tree.h>
