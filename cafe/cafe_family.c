@@ -601,13 +601,6 @@ int cafe_family_get_index(pCafeFamily pcf, const char* szid)
 	return flist->size == i ? -1 : i;
 }
 
-pCafeFamilyItem cafe_family_get_family_item(pCafeFamily pcf, const char* szid )
-{
-	int i = cafe_family_get_index( pcf, szid );	
-	if ( i == -1 ) return NULL;
-	return (pCafeFamilyItem)pcf->flist->array[i];
-}
-
 /*
                  p      r
       0   0   => 0      0 

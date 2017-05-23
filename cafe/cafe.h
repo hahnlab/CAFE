@@ -85,7 +85,6 @@ extern void cafe_family_set_size_with_family(pCafeFamily pcf, int idx, pCafeTree
 extern void cafe_family_set_truesize_with_family(pCafeFamily pcf, int idx, pCafeTree pcafe );
 extern void cafe_family_set_size_by_species(char* speciesname, int size, pCafeTree pcafe);
 extern int cafe_family_get_index(pCafeFamily pcf, const char* szid);
-extern pCafeFamilyItem cafe_family_get_family_item(pCafeFamily pcf, const char* szid );
 extern void cafe_family_set_size_with_family_forced(pCafeFamily pcf, int idx, pCafeTree pcafe);
 extern void cafe_family_filter( pCafeParam param );
 extern void cafe_family_reset_maxlh(pCafeFamily pcf);

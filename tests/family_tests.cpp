@@ -25,6 +25,13 @@ static pCafeTree create_tree()
 	return cafe_tree_new(tree, &range, 0, 0);
 }
 
+pCafeFamilyItem get_family_item(pCafeFamily pcf, const char* szid)
+{
+  int i = cafe_family_get_index(pcf, szid);
+  if (i == -1) return NULL;
+  return (pCafeFamilyItem)pcf->flist->array[i];
+}
+
 
 TEST_GROUP(FamilyTests)
 {
@@ -45,7 +52,7 @@ TEST(FamilyTests, TestCafeFamily)
 	STRCMP_EQUAL("Dog", fam->species[0]);
 	STRCMP_EQUAL("Rat", fam->species[4]);
 
-	pCafeFamilyItem item = cafe_family_get_family_item(fam, "ENSF1");
+	pCafeFamilyItem item = get_family_item(fam, "ENSF1");
 	CHECK(item != NULL);
 	LONGS_EQUAL(3, item->count[0]);
 	LONGS_EQUAL(13, item->count[4]);
@@ -68,7 +75,7 @@ TEST(FamilyTests, load_gene_families_tab_separated)
 
   LONGS_EQUAL(1, fam->flist->size);
 
-  pCafeFamilyItem item = cafe_family_get_family_item(fam, "ENSF2");
+  pCafeFamilyItem item = get_family_item(fam, "ENSF2");
   CHECK(item != NULL);
   LONGS_EQUAL(2, item->count[0]);
   LONGS_EQUAL(10, item->count[1]);
@@ -86,7 +93,7 @@ TEST(FamilyTests, load_gene_families_comma_separated)
 
   LONGS_EQUAL(1, fam->flist->size);
 
-  pCafeFamilyItem item = cafe_family_get_family_item(fam, "ENSF2");
+  pCafeFamilyItem item = get_family_item(fam, "ENSF2");
   CHECK(item != NULL);
   LONGS_EQUAL(2, item->count[0]);
   LONGS_EQUAL(10, item->count[1]);
