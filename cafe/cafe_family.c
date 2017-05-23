@@ -577,30 +577,6 @@ void cafe_family_set_size_by_species(char* speciesname, int size, pCafeTree pcaf
 }
 
 
-
-void cafe_family_reset_maxlh(pCafeFamily pcf)
-{
-	int i;
-	pArrayList flist = pcf->flist;
-	for ( i = 0 ; i < flist->size ; i++ )
-	{
-		pCafeFamilyItem pitem = (pCafeFamilyItem)flist->array[i];			
-		pitem->maxlh = -1;
-	}
-}
-
-int cafe_family_get_index(pCafeFamily pcf, const char* szid)
-{
-	int i;
-	pArrayList flist = pcf->flist;
-	for ( i = 0 ; i < flist->size ; i++ )
-	{
-		pCafeFamilyItem pitem = (pCafeFamilyItem)flist->array[i];			
-		if ( pitem->id && strcmp( pitem->id, szid ) == 0 ) break;
-	}
-	return flist->size == i ? -1 : i;
-}
-
 /*
                  p      r
       0   0   => 0      0 

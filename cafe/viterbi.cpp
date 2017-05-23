@@ -16,39 +16,11 @@ void viterbi_parameters_init(viterbi_parameters *viterbi, int nnodes, int nrows)
 {
 	viterbi->num_nodes = nnodes;
 	viterbi->num_rows = nrows;
-	viterbi->viterbiPvalues = (double**)memory_new_2dim(nnodes, nrows, sizeof(double));
-	viterbi->viterbiNodeFamilysizes = (int**)memory_new_2dim(nnodes, nrows, sizeof(int));
 	viterbi->maximumPvalues = (double*)memory_new(nrows, sizeof(double));
 	viterbi->averageExpansion.clear();
 	viterbi->expandRemainDecrease.clear();
 	viterbi->averageExpansion.resize(nnodes);
 	viterbi->expandRemainDecrease.resize(nnodes);
-}
-
-void viterbi_parameters_clear(viterbi_parameters* viterbi, int nnodes)
-{
-	//	viterbi_parameters* viterbi = &param->viterbi;
-	if (viterbi->viterbiPvalues)
-	{
-		int num = (nnodes - 1) / 2;
-		memory_free_2dim((void**)viterbi->viterbiPvalues, num, 0, NULL);
-		memory_free_2dim((void**)viterbi->viterbiNodeFamilysizes, num, 0, NULL);
-		viterbi->averageExpansion.clear();
-		if (viterbi->maximumPvalues)
-		{
-			memory_free(viterbi->maximumPvalues);
-			viterbi->maximumPvalues = NULL;
-		}
-	}
-	if (viterbi->cutPvalues)
-	{
-		memory_free_2dim((void**)viterbi->cutPvalues, nnodes, 0, NULL);
-	}
-	viterbi->viterbiPvalues = NULL;
-	viterbi->viterbiNodeFamilysizes = NULL;
-	viterbi->cutPvalues = NULL;
-	viterbi->maximumPvalues = NULL;
-	viterbi->expandRemainDecrease.clear();
 }
 
 void viterbi_set_max_pvalue(viterbi_parameters* viterbi, int index, double val)
@@ -75,7 +47,7 @@ typedef ViterbiParam*  pViterbiParam;
 
 pthread_mutex_t mutex_cafe_viterbi = PTHREAD_MUTEX_INITIALIZER;
 
-void viterbi_set_values(viterbi_parameters *viterbi, pCafeNode pcnode, int i, int j, int max_family_size)
+void viterbi_set_values(viterbi_parameters *viterbi, pCafeNode pcnode, pCafeFamilyItem item, int max_family_size)
 {
   pCafeNode child[2] = { (pCafeNode)((pTreeNode)pcnode)->children->head->data,
     (pCafeNode)((pTreeNode)pcnode)->children->tail->data };
@@ -83,21 +55,37 @@ void viterbi_set_values(viterbi_parameters *viterbi, pCafeNode pcnode, int i, in
   {
     square_matrix *matrix = child[k]->birthdeath_matrix;
     double p = square_matrix_get(matrix, pcnode->familysize, child[k]->familysize);
-    int n = 2 * j + k;
     for (int m = 0; m <= max_family_size; m++)
     {
       double node_to_m_prob = square_matrix_get(matrix, pcnode->familysize, m);
       if (node_to_m_prob == p)
       {
-        viterbi->viterbiPvalues[n][i] += node_to_m_prob / 2.0;
+        //viterbi->viterbiPvalues[n][i] += node_to_m_prob / 2.0;
+        viterbi->viterbiPvalues[viterbi_parameters::NodeFamilyKey(child[k], item)] += node_to_m_prob / 2.0;
       }
       else if (node_to_m_prob < p)
       {
-        viterbi->viterbiPvalues[n][i] += node_to_m_prob;
+        //viterbi->viterbiPvalues[n][i] += node_to_m_prob;
+        viterbi->viterbiPvalues[viterbi_parameters::NodeFamilyKey(child[k], item)] += node_to_m_prob;
       }
     }
   }
 
+}
+
+void familysize_sanity_check(pTree ptree)
+{
+  int nnodes = (ptree->nlist->size - 1) / 2;
+  /* check family size for all nodes first */
+  for (int j = 0; j < nnodes; j++)
+  {
+    pCafeNode pcnode = (pCafeNode)ptree->nlist->array[j];
+    if (pcnode->familysize>10000) {
+      fprintf(stderr, "ERROR: Unreasonably large family size (%d). Cannot continue\n", pcnode->familysize);
+      exit(-1);
+    }
+  }
+  /* end check family size for all nodes first */
 }
 
 void viterbi_section(pCafeFamily pcf, double pvalue, int num_random_samples, viterbi_parameters *viterbi, int i, pCafeTree pcafe, double *cP, pArrayList pCD)
@@ -110,41 +98,17 @@ void viterbi_section(pCafeFamily pcf, double pvalue, int num_random_samples, vit
 	cafe_tree_p_values(pcafe, cP, pCD, num_random_samples);
 	viterbi_set_max_pvalue(viterbi, i, __max(cP, pcafe->rfsize));
 	cafe_tree_viterbi(pcafe);
-	/* check family size for all nodes first */
-	for (int j = 0; j < nnodes; j++)
-	{
-		pCafeNode pcnode = (pCafeNode)ptree->nlist->array[j];
-		if (pcnode->familysize>10000) {
-			fprintf(stderr, "ERROR: FamilySize larger than bd array size Something wrong\n");
-			exit(-1);
-		}
-	}
-	/* end check family size for all nodes first */
+  familysize_sanity_check(ptree);
 
-	for (int j = 0; j < nnodes; j++)
-	{
-		pCafeNode pcnode = (pCafeNode)ptree->nlist->array[2 * j + 1];
-		viterbi->viterbiNodeFamilysizes[j][i] = pcnode->familysize;
-		pCafeNode child[2] = { (pCafeNode)((pTreeNode)pcnode)->children->head->data,
-			(pCafeNode)((pTreeNode)pcnode)->children->tail->data };
-		for (int k = 0; k < 2; k++)
-		{
-			int m = j * 2 + k;
-			if (child[k]->familysize > pcnode->familysize) viterbi->expandRemainDecrease[m].expand++;
-			else if (child[k]->familysize == pcnode->familysize) viterbi->expandRemainDecrease[m].remain++;
-			else viterbi->expandRemainDecrease[m].decrease++;
+  pCafeFamilyItem pitem = (pCafeFamilyItem)pcf->flist->array[i];
 
-			pthread_mutex_lock(&mutex_cafe_viterbi);
-			viterbi->averageExpansion[m] += child[k]->familysize - pcnode->familysize;
-			pthread_mutex_unlock(&mutex_cafe_viterbi);
-		}
-	}
-
+  viterbi->compute_size_deltas(ptree, pitem);
 	if (viterbi->maximumPvalues[i] > pvalue)
 	{
 		for (int j = 0; j < ptree->nlist->size - 1; j++)
 		{
-			viterbi->viterbiPvalues[j][i] = -1;
+      pCafeNode pnode = (pCafeNode)ptree->nlist->array[i];
+			viterbi->viterbiPvalues[viterbi_parameters::NodeFamilyKey(pnode, pitem)] = -1;
 		}
 		return;
 	}
@@ -152,7 +116,7 @@ void viterbi_section(pCafeFamily pcf, double pvalue, int num_random_samples, vit
 	for (int j = 0; j < nnodes; j++)
 	{
 		pCafeNode pcnode = (pCafeNode)ptree->nlist->array[2 * j + 1];
-    viterbi_set_values(viterbi, pcnode, i, j, pcafe->familysizes[1]);
+    viterbi_set_values(viterbi, pcnode, pitem, pcafe->familysizes[1]);
 	}
 }
 
@@ -228,7 +192,8 @@ void cafe_viterbi_print(pCafeParam param, viterbi_parameters& viterbi)
 		for (j = 1; j < ptree->nlist->size; j += 2)
 		{
 			pCafeNode pcnode = (pCafeNode)ptree->nlist->array[j];
-			pcnode->familysize = viterbi.viterbiNodeFamilysizes[j / 2][i];
+      pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
+			pcnode->familysize = viterbi.viterbiNodeFamilysizes[viterbi_parameters::NodeFamilyKey(pcnode, pitem)];
 		}
 		cafe_tree_string_print(pcafe);
 	}
@@ -524,3 +489,62 @@ void cafe_tree_viterbi_posterior(pCafeTree pcafe, pCafeParam param)
   }
 
 }
+
+void viterbi_parameters::set_node_familysize(pCafeTree tree, pCafeFamilyItem pItem)
+{
+  int nnodes = (tree->super.nlist->size - 1) / 2;
+  for (int j = 0; j < nnodes; j++)
+  {
+    pCafeNode pnode = (pCafeNode)tree->super.nlist->array[2 * j + 1];
+    pnode->familysize = viterbiNodeFamilysizes[NodeFamilyKey(pnode, pItem)];
+  }
+}
+
+void viterbi_parameters::compute_size_deltas(pTree ptree, pCafeFamilyItem pitem)
+{
+  int nnodes = (ptree->nlist->size - 1) / 2;
+
+  for (int j = 0; j < nnodes; j++)
+  {
+    pCafeNode pcnode = (pCafeNode)ptree->nlist->array[2 * j + 1];
+    viterbiNodeFamilysizes[NodeFamilyKey(pcnode, pitem)] = pcnode->familysize;
+    pCafeNode child[2] = { (pCafeNode)((pTreeNode)pcnode)->children->head->data,
+      (pCafeNode)((pTreeNode)pcnode)->children->tail->data };
+    for (int k = 0; k < 2; k++)
+    {
+      int m = j * 2 + k;
+      if (child[k]->familysize > pcnode->familysize) 
+        expandRemainDecrease[m].expand++;
+      else if (child[k]->familysize == pcnode->familysize) 
+        expandRemainDecrease[m].remain++;
+      else 
+        expandRemainDecrease[m].decrease++;
+
+      pthread_mutex_lock(&mutex_cafe_viterbi);
+      averageExpansion[m] += child[k]->familysize - pcnode->familysize;
+      pthread_mutex_unlock(&mutex_cafe_viterbi);
+    }
+  }
+}
+
+void viterbi_parameters::clear(int nnodes)
+{
+  if (!viterbiPvalues.empty())
+  {
+    averageExpansion.clear();
+    if (maximumPvalues)
+    {
+      memory_free(maximumPvalues);
+      maximumPvalues = NULL;
+    }
+  }
+  if (cutPvalues)
+  {
+    memory_free_2dim((void**)cutPvalues, nnodes, 0, NULL);
+  }
+  viterbiPvalues.clear();
+  cutPvalues = NULL;
+  maximumPvalues = NULL;
+  expandRemainDecrease.clear();
+}
+

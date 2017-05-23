@@ -210,10 +210,10 @@ TEST(ReportTests, write_families_line)
 
   viterbi_parameters* v = globals.viterbi;
   v->num_nodes = 6;
-  //double expansion[] = { 1.3, 2.3, 3.3, 4.3, 5.3, 6.3 };
-  v->viterbiPvalues = (double**)memory_new_2dim(6, 1, sizeof(double));
-  v->viterbiPvalues[0][0] = .025;
-  v->viterbiNodeFamilysizes = (int**)memory_new_2dim(6, 1, sizeof(int));
+
+  pCafeNode pnode = (pCafeNode)tree->super.nlist->array[0];
+  pCafeFamilyItem pitem = (pCafeFamilyItem)globals.param.pfamily->flist->array[0];
+  v->viterbiPvalues[viterbi_parameters::NodeFamilyKey(pnode, pitem)] = .025;
   v->cutPvalues = NULL;
 
   double maxP = .1;

@@ -123,7 +123,6 @@ TEST(CommandTests, cafe_cmd_exit)
 	param->MAP = NULL;
 	param->ML = (double *)memory_new(10, sizeof(double));;
 	param->str_fdata = NULL;
-	globals.viterbi->viterbiPvalues = NULL;
 	globals.viterbi->cutPvalues = NULL;
 
 	cafe_cmd_exit(globals, tokens);

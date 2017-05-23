@@ -27,7 +27,6 @@ extern "C" {
 	double* cafe_report_load_data_double_list(char* data, int delimiter, int* num);
 	double* cafe_report_load_data_double_pairs(char* data, int delimiter);
 	int* cafe_report_load_data_int_pairs(char* data, int delimiter);
-	void cafe_report_load_viterbi_pvalue(char* data, double** pvalues, int i, int nnodes);
 }
 
 /// Writes a pair of arbitrary objects to a stream, surrounded by brackets in JSON mode 
@@ -105,14 +104,9 @@ void lambda_tree_string(pString pstr, pPhylogenyNode pnode)
 
 void cafe_report_set_viterbi(pCafeFamily family, pCafeTree pcafe, viterbi_parameters& viterbi, int i)
 {
-	int j;
 	cafe_family_set_size(family, i, pcafe);
-	pArrayList nlist = pcafe->super.nlist;
-	for (j = 1; j < nlist->size; j += 2)
-	{
-		pCafeNode pcnode = (pCafeNode)nlist->array[j];
-		pcnode->familysize = viterbi.viterbiNodeFamilysizes[j / 2][i];
-	}
+  pCafeFamilyItem pitem = (pCafeFamilyItem)family->flist->array[i];
+  viterbi.set_node_familysize(pcafe, pitem);
 }
 
 void cafe_tree_string_id(pString pstr, pPhylogenyNode pnode)
@@ -241,7 +235,12 @@ family_line_item::family_line_item(pCafeFamily family, pCafeTree pcafe, double**
 	max_p_value = viterbi.maximumPvalues[i];
 	for (int b = 0; b < viterbi.num_nodes / 2; b++)
 	{
-		pvalues.push_back(std::pair<double, double>(viterbi.viterbiPvalues[2 * b][i], viterbi.viterbiPvalues[2 * b + 1][i]));
+    pCafeNode node1 = (pCafeNode)pcafe->super.nlist->array[2 * b];
+    pCafeNode node2 = (pCafeNode)pcafe->super.nlist->array[2 * b +1];
+    pCafeFamilyItem item = (pCafeFamilyItem)family->flist->array[i];
+    double v1 = viterbi.viterbiPvalues[viterbi_parameters::NodeFamilyKey(node1, item)];
+    double v2 = viterbi.viterbiPvalues[viterbi_parameters::NodeFamilyKey(node2, item)];
+    pvalues.push_back(std::pair<double, double>(v1, v2));
 	}
 
 	if (viterbi.cutPvalues)
@@ -610,7 +609,7 @@ void cafe_do_report(Globals& globals, viterbi_parameters& viterbi, report_parame
 	{
 		cafe_tree_set_parameters(param->pcafe, &param->family_size, 0);
 		int nnodes = ((pTree)param->pcafe)->nlist->size;
-		viterbi_parameters_clear(&viterbi, nnodes);
+    viterbi.clear(nnodes);
 	}
 
   string filename = params->name + extension(params->format);
@@ -666,6 +665,36 @@ void cafe_do_report(Globals& globals, viterbi_parameters& viterbi, report_parame
 	cafe_log(param, "Report Done\n");
 
 }
+
+void cafe_report_load_viterbi_pvalue(char* data, viterbi_parameters& v, pCafeFamilyItem item, pCafeTree ptree)
+{
+  int nnodes = ptree->super.nlist->size;
+
+  char* next = &data[1];
+  while ((next = strchr(next, ')')) != NULL)
+  {
+    next++;
+    if (next[0] == ',')
+    {
+      next[0] = '\t';
+    }
+    else if (next[0] == ')')
+    {
+      next[0] = '\0';
+      break;
+    }
+  }
+  double* array = cafe_report_load_data_double_pairs(&data[1], '\t');
+  int j;
+  for (j = 0; j < nnodes; j++)
+  {
+    pCafeNode pnode = (pCafeNode)ptree->super.nlist->array[j];
+    v.viterbiPvalues[viterbi_parameters::NodeFamilyKey(pnode, item)] = array[j];
+  }
+  memory_free(array);
+  array = NULL;
+}
+
 
 int cafe_report_retrieve_data(const char* file, pCafeParam param, viterbi_parameters& viterbi)
 {
@@ -856,10 +885,10 @@ int cafe_report_retrieve_data(const char* file, pCafeParam param, viterbi_parame
 		for (j = 1; j < nlist->size; j += 2)
 		{
 			pCafeNode pcnode = (pCafeNode)nlist->array[j];
-			viterbi.viterbiNodeFamilysizes[j / 2][i] = pcnode->familysize;
+			viterbi.viterbiNodeFamilysizes[viterbi_parameters::NodeFamilyKey(pcnode, pitem)] = pcnode->familysize;
 		}
 
-		cafe_report_load_viterbi_pvalue((char*)data->array[3], viterbi.viterbiPvalues, i, nnodes);
+		cafe_report_load_viterbi_pvalue((char*)data->array[3], viterbi, pitem, ptree);
 		if (bexist[0])
 		{
 			cafe_report_load_bc_or_lhr_list((char*)data->array[4],

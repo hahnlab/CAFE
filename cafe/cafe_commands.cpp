@@ -303,16 +303,6 @@ void clear_tree_viterbis(pCafeTree ptree)
 	tree_traveral_infix((pTree)ptree, clear_node_viterbis);
 }
 
-void set_node_familysize(pCafeTree tree, int** node_family_sizes, int i)
-{
-	int nnodes = (tree->super.nlist->size - 1) / 2;
-	for (int j = 0; j < nnodes; j++)
-	{
-		pCafeNode pnode = (pCafeNode)tree->super.nlist->array[2 * j + 1];
-		pnode->familysize = node_family_sizes[j][i];
-	}
-}
-
 int write_family_gainloss(ostream& ofst, std::string family_id, pCafeTree tree1, pCafeTree tree2)
 {
 	int sum = 0;
@@ -1989,7 +1979,7 @@ int cafe_cmd_gainloss(Globals& globals, std::vector<std::string> tokens)
 	pCafeParam param = &globals.param;
 	prereqs(param, REQUIRES_FAMILY | REQUIRES_TREE | REQUIRES_LAMBDA);
 
-	if (globals.viterbi->viterbiNodeFamilysizes == NULL)
+	if (globals.viterbi->viterbiNodeFamilysizes.empty())
 	{
 		if (ConditionalDistribution::matrix.empty())
 		{
@@ -2012,14 +2002,13 @@ int cafe_cmd_gainloss(Globals& globals, std::vector<std::string> tokens)
 	clear_tree_viterbis(psum);
 
 	int totalsum = 0;
-	int** nodefs = globals.viterbi->viterbiNodeFamilysizes;
 	int fsize = param->pfamily->flist->size;
 
 	for (int i = 0; i < fsize; i++)
 	{
 		cafe_family_set_size(param->pfamily, i, pcafe);
-		set_node_familysize(pcafe, nodefs, i);
-		pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
+    pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
+    globals.viterbi->set_node_familysize(pcafe, pitem);
 		totalsum += write_family_gainloss(ofst, pitem->id, pcafe, psum);
 	}
 	ofst << "SUM\t" << totalsum << "\t";

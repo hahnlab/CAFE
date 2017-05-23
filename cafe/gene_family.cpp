@@ -356,3 +356,25 @@ int log_cluster_membership(pCafeFamily pcf, int k_value, double **p_z_membership
   return 0;
 }
 
+void cafe_family_reset_maxlh(pCafeFamily pcf)
+{
+  int i;
+  pArrayList flist = pcf->flist;
+  for (i = 0; i < flist->size; i++)
+  {
+    pCafeFamilyItem pitem = (pCafeFamilyItem)flist->array[i];
+    pitem->maxlh = -1;
+  }
+}
+
+int cafe_family_get_index(pCafeFamily pcf, const char* szid)
+{
+  int i;
+  pArrayList flist = pcf->flist;
+  for (i = 0; i < flist->size; i++)
+  {
+    pCafeFamilyItem pitem = (pCafeFamilyItem)flist->array[i];
+    if (pitem->id && strcmp(pitem->id, szid) == 0) break;
+  }
+  return flist->size == i ? -1 : i;
+}

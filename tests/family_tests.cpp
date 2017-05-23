@@ -3,7 +3,7 @@
 
 #include "CppUTest/TestHarness.h"
 #include "gene_family.h"
-
+#include "viterbi.h"
 #include "cafe_commands.h"
 
 extern "C" {
@@ -221,9 +221,11 @@ TEST(FamilyTests, write_family_gainloss)
 	pCafeTree tree1 = create_tree();
 	cafe_family_set_species_index(pcf, tree1);
 	pCafeTree tree2 = cafe_tree_copy(tree1);
-	int **viterbiNodeFamilysizes = (int**)memory_new_2dim(tree1->super.nlist->size, pcf->num_species, sizeof(int));
+  viterbi_parameters v;
 	cafe_family_set_size(pcf, 0, tree1);
-	set_node_familysize(tree1, viterbiNodeFamilysizes, 0);
+  pCafeFamilyItem pitem = (pCafeFamilyItem)pcf->flist->array[0];
+
+	v.set_node_familysize(tree1, pitem);
 	int actual = write_family_gainloss(ost, "family_id", tree1, tree2);
 	LONGS_EQUAL(39, actual);
 	STRCMP_EQUAL("family_id\t39\t(((chimp_3<3>:6,human_5<5>:6)_0<0>:81,(mouse_7<7>:17,rat_11<11>:17)_0<0>:70)_0<0>:6,dog_13<13>:9)_0\n", ost.str().c_str())

@@ -26,4 +26,6 @@ int log_cluster_membership(pCafeFamily pcf, int k_value, double **p_z_membership
 
 double cross_validate_by_family(const char* queryfile, const char* truthfile, const char* errortype);
 
+void cafe_family_reset_maxlh(pCafeFamily pcf);
+int cafe_family_get_index(pCafeFamily pcf, const char* szid);
 #endif

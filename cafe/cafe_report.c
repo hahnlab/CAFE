@@ -52,32 +52,6 @@ int* cafe_report_load_data_int_pairs(char* data, int delimiter)
 	return array;
 }
 
-void cafe_report_load_viterbi_pvalue(char* data, double** pvalues, int i, int nnodes)
-{	
-	char* next = &data[1];
-	while( (next = strchr(next, ')' )) != NULL )
-	{
-		next++;
-		if( next[0] == ',' )	
-		{
-			next[0] = '\t';
-		}
-		else if ( next[0] == ')' ) 
-		{
-			next[0] = '\0';
-			break;
-		}
-	}
-	double* array = cafe_report_load_data_double_pairs(&data[1],'\t');
-	int j;
-	for ( j = 0 ; j < nnodes - 1 ; j++ )
-	{
-		pvalues[j][i] = array[j];
-	}
-	memory_free(array);
-	array = NULL;
-}
-
 void cafe_report_load_bc_or_lhr_list(char* data, double** pvalues, int i, int nnodes)
 {
 	size_t len = strlen(data);

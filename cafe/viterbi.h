@@ -2,10 +2,12 @@
 #define VITERBI_H_A08989A1_B4B4_461C_B863_A1AE2FE9BD98
 
 #include <vector>
+#include <map>
 
 extern "C"
 {
 #include <family.h>
+#include <cafe.h>
 void compute_viterbis(pCafeNode node, int k, double *factors, int rootfamilysize_start, int rootfamilysize_end, int familysize_start, int familysize_end);
 }
 
@@ -35,24 +37,30 @@ public:
 	/** Number of gene families for which to keep data */
 	int num_rows;
 
-	/** Matrix of calculated P values for each node in the tree and each gene family  */
-	double** viterbiPvalues;
-
 	/** array of three integers expand, remain, and decrease for each node in the tree relative to its parent */
 	std::vector<change> expandRemainDecrease;
 
-	int** viterbiNodeFamilysizes;
+  using NodeFamilyKey = std::pair<pCafeNode, pCafeFamilyItem>;
+
+  std::map<NodeFamilyKey, int> viterbiNodeFamilysizes;
+
+  /** Matrix of calculated P values for each node in the tree and each gene family  */
+  std::map<NodeFamilyKey, double> viterbiPvalues;
+
 	double* maximumPvalues;
 	std::vector<double> averageExpansion;
 	double** cutPvalues;
+
+  void set_node_familysize(pCafeTree tree, pCafeFamilyItem pItem);
+  void compute_size_deltas(pTree ptree, pCafeFamilyItem pitem);
+  void clear(int nnodes);
 } ;
 
 void viterbi_parameters_init(viterbi_parameters *viterbi, int nnodes, int nrows);
 
 void viterbi_set_max_pvalue(viterbi_parameters* viterbi, int index, double val);
-void viterbi_parameters_clear(viterbi_parameters* viterbi, int nnodes);
 pArrayList cafe_viterbi(Globals& globals, viterbi_parameters& viterbi, pArrayList pCD);
-void viterbi_set_values(viterbi_parameters *viterbi, pCafeNode pcnode, int i, int j, int max_family_size);
+void viterbi_set_values(viterbi_parameters *viterbi, pCafeNode pcnode, pCafeFamilyItem item, int max_family_size);
 
 
 #endif

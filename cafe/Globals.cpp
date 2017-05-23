@@ -60,8 +60,6 @@ Globals::Globals() : viterbi(new viterbi_parameters()), num_random_samples(1000)
 	param.str_log = NULL;
 	param.sum_branch_length = 0;
 
-
-	viterbi->viterbiPvalues = NULL;
 	viterbi->cutPvalues = NULL;
 	mu_tree = NULL;
 
@@ -99,7 +97,7 @@ void Globals::Clear(int btree_skip)
 	}
 
 	int nnodes = param.pcafe ? ((pTree)param.pcafe)->nlist->size : 0;
-	viterbi_parameters_clear(viterbi, nnodes);
+  viterbi->clear(nnodes);
 	if (!btree_skip && param.pcafe)
 	{
 		if (probability_cache)
