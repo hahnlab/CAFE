@@ -953,7 +953,7 @@ TEST(FirstTestGroup, write_version)
 {
 	std::ostringstream ost;
 	write_version(ost);
-  std::string expected = std::string("Version: ") + CAFE_VERSION + ", built at";
+  std::string expected = std::string("Version: ") + PACKAGE_VERSION + ", built at";
 	STRCMP_CONTAINS(expected.c_str(), ost.str().c_str());
 }
 

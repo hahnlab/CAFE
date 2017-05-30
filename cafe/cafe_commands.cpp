@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <sys/stat.h>
 #include <time.h>
 #include <map>
 #include <string>
@@ -11,8 +10,6 @@
 #include <algorithm>
 #include <stdexcept>
 #include <stack>
-
-#include<dirent.h>
 
 #include "lambda.h"
 #include "lambdamu.h"
@@ -26,6 +23,14 @@
 #include "Globals.h"
 #include "viterbi.h"
 #include "gene_family.h"
+
+#if HAVE_DIRENT_H == 1
+#include<dirent.h>
+#endif
+
+#if HAVE_SYS_STAT_H == 1
+#include <sys/stat.h>
+#endif
 
 /**
 	\defgroup Commands Commands that are available in CAFE
@@ -223,7 +228,7 @@ int cafe_cmd_log(Globals& globals, std::vector<std::string> tokens)
 
 void write_version(ostream &ost)
 {
-	ost << "Version: " << CAFE_VERSION << ", built at " << __DATE__ << "\n";
+	ost << "Version: " << PACKAGE_VERSION << ", built at " << __DATE__ << "\n";
 }
 
 /**
@@ -444,6 +449,7 @@ void verify_directory(string dirname)
 
 	string directory = dirname.substr(0, chr);
 
+#if HAVE_SYS_STAT_H == 1
 	struct stat st;
 	if (stat(directory.c_str(), &st) != 0) {
 		perror(directory.c_str());
@@ -451,6 +457,8 @@ void verify_directory(string dirname)
 		ost << "Directory " << directory << " does not exist. It must be created before running genfamily.\n";
 		throw std::runtime_error(ost.str().c_str());
 	}
+#endif
+
 }
 
 int* get_root_dist(pCafeTree pcafe, pCafeFamily pfamily, int k_value, family_size_range* range)
@@ -1232,12 +1240,13 @@ lhtest_args get_lhtest_arguments(vector<Argument> pargs)
 
 std::vector<std::string> enumerate_directory(std::string dir, std::string ext)
 {
-	DIR* d = opendir(dir.c_str());
+  std::vector<std::string> pal;
+#if HAVE_DIRENT_H == 1
+  DIR* d = opendir(dir.c_str());
 	struct dirent* dp;
 	if (d == NULL) 
 		throw std::runtime_error("Failed to read directory");
 
-	std::vector<std::string> pal;
 	while ((dp = readdir(d)) != NULL)
 	{
 		if (!ext.empty())
@@ -1250,6 +1259,10 @@ std::vector<std::string> enumerate_directory(std::string dir, std::string ext)
 		pal.push_back(dp->d_name);
 	}
 	closedir(d);
+#else
+  throw std::runtime_error("Unable to read directory on this system");
+#endif
+
 	return pal;
 }
 
