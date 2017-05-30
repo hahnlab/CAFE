@@ -23,6 +23,7 @@
 #include "Globals.h"
 #include "viterbi.h"
 #include "gene_family.h"
+#include "cross_validator.h"
 
 #if HAVE_DIRENT_H == 1
 #include<dirent.h>
@@ -2122,7 +2123,7 @@ int cafe_cmd_cvfamily(Globals& globals, std::vector<std::string> tokens)
 		}
 
 		//cross-validate
-		double MSE = cross_validate_by_family(queryfile, validatefile, "MSE");
+		double MSE = globals.validator->validate_by_family(&globals.param, queryfile, validatefile, "MSE");
 		MSE_allfolds += MSE;
 		cafe_log(param, "MSE fold %d %f\n", i + 1, MSE);
 
@@ -2149,7 +2150,7 @@ int cafe_cmd_cvfamily(Globals& globals, std::vector<std::string> tokens)
 	}
 
 	// remove training-validation set
-	cafe_family_clean_cvfiles_byfamily(param, cv_fold);
+  globals.validator->clean_by_family(param->str_fdata->buf, cv_fold);
 	return 0;
 }
 
@@ -2209,9 +2210,9 @@ int cafe_cmd_cvspecies(Globals& globals, std::vector<std::string> tokens)
 			}
 
 			//cross-validate
-			double MSE = _cafe_cross_validate_by_species(validatefile, "MSE");
+			double MSE = globals.validator->validate_by_species(param, validatefile, "MSE");
 			MSE_allspecies += MSE;
-			cafe_log(param, "MSE %s %f\n", param->cv_species_name, MSE);
+			cafe_log(param, "MSE %s %f\n", globals.validator->get_species_name().c_str(), MSE);
 
 			cafe_family_free(tmpfamily);
 		}
@@ -2236,12 +2237,12 @@ int cafe_cmd_cvspecies(Globals& globals, std::vector<std::string> tokens)
 		}
 
 		// remove training-validation set
-		cafe_family_clean_cvfiles_byspecies(param);
+    globals.validator->clean_by_species(param->str_fdata->buf);
 	}
 	else
 	{
 		string validate_file = get_input_file(tokens);
-		_cafe_cross_validate_by_species(validate_file.c_str(), "MSE");
+    globals.validator->validate_by_species(param, validate_file.c_str(), "MSE");
 	}
 	return 0;
 }

@@ -3,6 +3,7 @@
 #include "Globals.h"
 #include "viterbi.h"
 #include "gene_family.h"
+#include "cross_validator.h"
 
 extern "C" {
 #include "family.h"
@@ -17,12 +18,9 @@ extern "C" {
 * \brief Initializes the global \ref cafe_param that holds the data acted upon by cafe. Called at program startup.
 *
 */
-Globals::Globals() : viterbi(new viterbi_parameters()), num_random_samples(1000)
+Globals::Globals() : viterbi(new viterbi_parameters()), validator(new cross_validator()), num_random_samples(1000)
 {
 	param.checkconv = 0;
-	param.cv_species_name = NULL;
-	param.cv_test_count_list = NULL;
-	param.cv_test_species_list = NULL;
 	param.eqbg = 0;
 	param.family_size.root_min = 1;
 	param.family_size.root_max = 1;
@@ -69,6 +67,7 @@ Globals::Globals() : viterbi(new viterbi_parameters()), num_random_samples(1000)
 Globals::~Globals()
 {
 	delete viterbi;
+  delete validator;
 }
 
 void Globals::Clear(int btree_skip)

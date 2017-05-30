@@ -88,12 +88,8 @@ extern int cafe_family_get_index(pCafeFamily pcf, const char* szid);
 extern void cafe_family_set_size_with_family_forced(pCafeFamily pcf, int idx, pCafeTree pcafe);
 extern void cafe_family_filter( pCafeParam param );
 extern void cafe_family_reset_maxlh(pCafeFamily pcf);
-extern void cafe_family_read_validate_species(pCafeParam param, const char* file);
 extern int cafe_family_split_cvfiles_byfamily(pCafeParam param, int cv_fold);
-extern void cafe_family_clean_cvfiles_byfamily(pCafeParam param, int cv_fold);
 extern void cafe_family_split_cvfiles_byspecies(pCafeParam param);
-extern void cafe_family_clean_cvfiles_byspecies(pCafeParam param); 
-extern void cafe_family_read_query_family(pCafeParam param, const char* file);
 
 /****************************************************************************
  * Cafe Main

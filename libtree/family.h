@@ -158,9 +158,6 @@ struct tagCafeParam
 	family_size_range family_size;
 	
 	int* root_dist;
-	char* cv_species_name;
-	pArrayList cv_test_species_list;
-	pArrayList cv_test_count_list;
 
 	double pvalue;
 	

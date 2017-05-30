@@ -6,6 +6,7 @@ extern "C" {
 }
 
 class viterbi_parameters;
+class cross_validator;
 
 class Globals
 {
@@ -18,6 +19,7 @@ public:
 	pTree mu_tree;
 
 	viterbi_parameters* viterbi;
+  cross_validator* validator;
 
 	void Clear(int btree_skip);
 	void Prepare();
