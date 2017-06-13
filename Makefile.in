@@ -1,3 +1,4 @@
+CC=@CC@
 CXX=@CXX@
 LD=@CXX@
 CXXFLAGS=@CXXFLAGS@
@@ -7,7 +8,6 @@ prefix=/usr/local
 #
 # Compiler flags
 #
-CC     = gcc
 VPATH = cafe:libcommon:libtree:tests
 INCLUDE:=-I cafe -I libtree -I libcommon
 CFLAGS = -Wall -std=c11 @DEFS@ $(INCLUDE)

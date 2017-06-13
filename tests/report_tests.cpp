@@ -2,12 +2,12 @@
 #include <sstream>
 #include <iostream>
 
-#include "CppUTest/TestHarness.h"
-#include "CppUTest/CommandLineTestRunner.h"
-
 #include <reports.h>
 #include <Globals.h>
 #include <gene_family.h>
+
+#include "CppUTest/TestHarness.h"
+#include "CppUTest/CommandLineTestRunner.h"
 
 extern "C" {
 //#include <utils_string.h>

@@ -3,8 +3,6 @@
 #include <string>
 #include <sstream>
 #include <iostream>
-#include "CppUTest/TestHarness.h"
-#include "CppUTest/CommandLineTestRunner.h"
 #include <math.h>
 #include "gene_family.h"
 
@@ -27,6 +25,9 @@ extern "C" {
 #include <error_model.h>
 #include <Globals.h>
 #include <viterbi.h>
+
+#include "CppUTest/TestHarness.h"
+#include "CppUTest/CommandLineTestRunner.h"
 
 extern "C" {
 	extern pCafeParam cafe_param;
