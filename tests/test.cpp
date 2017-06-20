@@ -742,7 +742,24 @@ TEST(FirstTestGroup, square_matrix_multiply)
   DOUBLES_EQUAL(58, result[0], .001);
   DOUBLES_EQUAL(139, result[1], .001);
   DOUBLES_EQUAL(220, result[2], .001);
-}
+
+  square_matrix m3;
+  square_matrix_init(&m3, 8);
+  square_matrix_set(&m3, 3, 3, 1);
+  square_matrix_set(&m3, 3, 4, 2);
+  square_matrix_set(&m3, 3, 5, 3);
+  square_matrix_set(&m3, 4, 3, 4);
+  square_matrix_set(&m3, 4, 4, 5);
+  square_matrix_set(&m3, 4, 5, 6);
+  square_matrix_set(&m3, 5, 3, 7);
+  square_matrix_set(&m3, 5, 4, 8);
+  square_matrix_set(&m3, 5, 5, 9);
+
+  square_matrix_multiply(&m3, m2, 3, 5, 3, 5, result);
+
+  DOUBLES_EQUAL(58, result[0], .001);
+  DOUBLES_EQUAL(139, result[1], .001);
+  DOUBLES_EQUAL(220, result[2], .001);}
 
 TEST(FirstTestGroup, compute_birthdeath_rates)
 {

@@ -9,6 +9,10 @@
 #include<mathfunc.h>
 #include "chooseln_cache.h"
 
+#ifdef HAVE_BLAS
+#include "mkl.h"
+#endif
+
 /*
 P(X(t) = c | X(0) = s)  = \sum_{j=0}^{\min(s,c)} \binom{s}{j}\binom{s+c-j-1}{s-1}
                                                  \alpha^{s+c-2j}(1-2\alpha)^j
@@ -180,6 +184,14 @@ void square_matrix_print(struct square_matrix* matrix)
 
 void square_matrix_multiply(struct square_matrix* matrix, double *vector, int row_start, int row_end, int col_start, int col_end, double *result)
 {
+#ifdef HAVE_BLAS
+  double alpha = 1.0, beta = 0.;
+  int m = row_end - row_start + 1;
+  int k = col_end - col_start + 1;
+  int n = 1;
+  double *sub = matrix->values + row_start*matrix->size + col_start; 
+  cblas_dgemm(CblasRowMajor,CblasNoTrans,CblasNoTrans,m,n,k,alpha,sub,matrix->size,vector,n,beta,result,n);
+#else
   for (int s = row_start, i = 0; s <= row_end; s++, i++)
   {
     result[i] = 0;
@@ -188,6 +200,7 @@ void square_matrix_multiply(struct square_matrix* matrix, double *vector, int ro
       result[i] += square_matrix_get(matrix, s, c) * vector[j];
     }
   }
+#endif
 }
 
 void init_zero_matrix(struct square_matrix *matrix)
