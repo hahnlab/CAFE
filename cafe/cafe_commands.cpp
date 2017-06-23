@@ -1397,7 +1397,7 @@ int cafe_cmd_errormodel(Globals& globals, std::vector<std::string> tokens)
 		}
 		fprintf(stderr, "errormodel: %s set.\n", args.model_file.c_str());
 		fprintf(stderr, "errormodel: Remember that the rows in the errormodel file have to add up to 1 (rows in the errormodel file correspond to columns in the errormatrix).\n");
-		fprintf(stderr, "errormodel: The program does not check, only ren`ormalizes.\n");
+		fprintf(stderr, "errormodel: The program does not check, only renormalizes.\n");
 	}
 
 	if (!param->pfamily->error_ptr || !param->pfamily->errors) {

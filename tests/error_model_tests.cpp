@@ -78,10 +78,27 @@ TEST(ErrorModel, error_model_read)
 	//	4 #nan #nan #nan #nan #nan
 	std::istringstream ist("maxcnt:4\ncntdiff 1 2 3 4 5\n 0 0 0 0 0 #nan\n");
 	ErrorStruct err;
+  err.maxfamilysize = 0;
 	ist >> err;
 	LONGS_EQUAL(4, err.maxfamilysize);
 	LONGS_EQUAL(1, err.fromdiff);
 	LONGS_EQUAL(5, err.todiff);
+}
+
+TEST(ErrorModel, ErrorStruct_read_maxfamilysize_should_not_shrink)
+{
+  //	 0 0 0 0 0 #nan
+  //	1 0 0 0 #nan #nan
+  //	2 0 0 #nan #nan #nan
+  //	3 0 #nan #nan #nan #nan
+  //	4 #nan #nan #nan #nan #nan
+  std::istringstream ist("maxcnt:4\ncntdiff 1 2 3 4 5\n 0 0 0 0 0 #nan\n");
+  ErrorStruct err;
+  err.maxfamilysize = 10;
+  ist >> err;
+  LONGS_EQUAL(10, err.maxfamilysize);
+  LONGS_EQUAL(1, err.fromdiff);
+  LONGS_EQUAL(5, err.todiff);
 }
 
 TEST(ErrorModel, add_and_remove_error_model)

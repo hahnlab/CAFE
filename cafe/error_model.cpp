@@ -97,7 +97,8 @@ std::istream& operator>>(std::istream& ifst, ErrorStruct& errormodel)
 	}
 	std::vector<std::string> data = split(line, ' ');
 	std::vector<std::string> max = split(data.at(0), ':');
-	errormodel.maxfamilysize = atoi(max[1].c_str());
+  int file_row_count = atoi(max[1].c_str());
+	errormodel.maxfamilysize = std::max(errormodel.maxfamilysize, file_row_count);
 
 	if (std::getline(ifst, line)) {
 		std::vector<std::string> data = split(line, ' ');
@@ -183,15 +184,13 @@ int set_error_matrix_from_file(pCafeFamily family, pCafeTree pTree, family_size_
 		// allocate new errormodel
 		errormodel = (pErrorStruct)calloc(1, sizeof(ErrorStruct));
 		errormodel->errorfilename = strdup(filename.c_str());
+    errormodel->maxfamilysize = range.max;
 		std::ifstream ifst(filename.c_str());
 		if (!ifst)
 			throw io_error("errormodel", filename, false);
 
 		ifst >> *errormodel;
 
-		if (errormodel->maxfamilysize < range.max) {
-			errormodel->maxfamilysize = range.max;
-		}
 		// now make sure that columns of the error matrix sums to one.
 		__check_error_model_columnsums(errormodel);
 

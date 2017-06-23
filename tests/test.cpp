@@ -759,7 +759,8 @@ TEST(FirstTestGroup, square_matrix_multiply)
 
   DOUBLES_EQUAL(58, result[0], .001);
   DOUBLES_EQUAL(139, result[1], .001);
-  DOUBLES_EQUAL(220, result[2], .001);}
+  DOUBLES_EQUAL(220, result[2], .001);
+}
 
 TEST(FirstTestGroup, compute_birthdeath_rates)
 {
