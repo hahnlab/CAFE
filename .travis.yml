@@ -2,8 +2,7 @@ language: c
 sudo: required
 dist: trusty
 before_install:
-- sudo apt-get update
-- sudo apt-get install CppUTest doxygen graphviz
+- sudo apt-get install cpputest doxygen graphviz
 script:
 - cd $TRAVIS_BUILD_DIR
 - autoconf
