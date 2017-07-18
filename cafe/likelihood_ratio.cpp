@@ -106,7 +106,6 @@ double __cafe_lhr_get_likelihood_for_diff_lambdas(pCafeParam param, int idx, int
 	return mlh;
 }
 
-
 void* __cafe_lhr_for_diff_lambdas_i(pCafeParam param,
 	std::vector<int>& lambda,
 	std::vector<double> & pvalues,
@@ -120,7 +119,11 @@ void* __cafe_lhr_for_diff_lambdas_i(pCafeParam param,
 	int i, j;
 	pCafeTree pcafe = cafe_tree_copy(param->pcafe);
 
-	pCafeParam cpy_param = cafe_copy_parameters(param);
+	pCafeParam cpy_param = (pCafeParam)memory_new(1, sizeof(CafeParam));
+	memcpy(cpy_param, param, sizeof(CafeParam));
+	cpy_param->lambda = NULL;
+	cpy_param->num_lambdas = 0;
+	cpy_param->pcafe = cafe_tree_copy(param->pcafe);
 	cpy_param->num_lambdas = num_lambdas;
 	cpy_param->lambda_tree = lambda_tree;
 	cpy_param->param_set_func = lfunc;
@@ -143,7 +146,10 @@ void* __cafe_lhr_for_diff_lambdas_i(pCafeParam param,
 		pvalues[i] = (prev == maxlh1) ? 1 : 2 * (log(prev) - log(maxlh1));
 		lambda[i] = j - 2;
 	}
-	cafe_free_copy_parameters(cpy_param);
+	cafe_tree_free(cpy_param->pcafe);
+	memory_free(cpy_param);
+	cpy_param = NULL;
+
 	cafe_tree_free(pcafe);
 	return (NULL);
 }

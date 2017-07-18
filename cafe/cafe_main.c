@@ -909,34 +909,3 @@ void cafe_likelihood_ratio_test(pCafeParam param, double *maximumPvalues)
 	ptparam = NULL;				
 	cafe_log( param , "Done : Likelihood Ratio test\n" );
 }
-
-/*******************************************************************************
- *	Cafe Parameter
- *******************************************************************************/
-
-pCafeParam cafe_copy_parameters(pCafeParam psrc)
-{
-	pCafeParam param = (pCafeParam)memory_new(1, sizeof(CafeParam));
-	memcpy( param, psrc, sizeof(CafeParam));
-	param->lambda = NULL;
-	param->num_lambdas = 0;
-	param->pcafe = cafe_tree_copy(psrc->pcafe);
-
-//	param->viterbi.viterbiPvalues = NULL;
-//	param->viterbi.expandRemainDecrease = NULL;
-//	param->viterbi.viterbiNodeFamilysizes = NULL;
-//	param->viterbi.maximumPvalues = NULL;
-//	param->viterbi.averageExpansion = NULL;
-//	param->viterbi.cutPvalues = NULL;
-
-	return param;
-}
-
-void cafe_free_copy_parameters(pCafeParam param)
-{
-	//memory_free(param->branchlengths_sorted);	
-	//param->branchlengths_sorted = NULL;
-	cafe_tree_free(param->pcafe);
-	memory_free(param);
-	param = NULL;
-}
