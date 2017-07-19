@@ -215,7 +215,7 @@ TEST(TreeTests, TestCafeTree)
 
 TEST(FirstTestGroup, TestShellDispatcher)
 {
-	char c[10];
+	char c[20];
 
 	Globals globals;
 
@@ -951,6 +951,24 @@ TEST(FirstTestGroup, initialize_leaf_likelihoods)
 	for (int i = 0; i < rows; ++i)
 		for (int j = 0; j < cols; ++j)
 			DOUBLES_EQUAL(expected[i][j], matrix[i][j], .001);
+}
+
+TEST(FirstTestGroup, initialize_leaf_likelihoods_clustered)
+{
+	const int rows = 2;
+	const int cols = 7;
+	range.max = 3;
+	range.root_max = 3;
+	pCafeTree tree = create_tree(range);
+	tree->k = rows;
+	pCafeNode node = ((pCafeNode)tree->super.nlist->array[0]);
+	node->familysize = 5;
+	reset_k_likelihoods(node, rows, 6);
+	initialize_leaf_likelihood_clustered((pTree)tree, (pTreeNode)node);
+	double expected[rows][cols] = {{ 0, 0, 0, 0, 0, 1, 0 }, { 0, 0, 0, 0, 0, 1, 0 }};
+	for (int i = 0; i < rows; ++i)
+		for (int j = 0; j < cols; ++j)
+			DOUBLES_EQUAL(expected[i][j], node->k_likelihoods[i][j], .001);
 }
 
 TEST(FirstTestGroup, get_clusters)

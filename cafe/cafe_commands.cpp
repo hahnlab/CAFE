@@ -1013,38 +1013,6 @@ int cafe_shell_parse_familysize(pTree pcafe, std::vector<std::string> tokens)
 	return *max_element(sizes.begin(), sizes.end());
 }
 
-void viterbi_print(pCafeTree pcafe, int max)
-{
-	check_cache_and_compute_likelihoods(pcafe, max);
-	double* lh = get_likelihoods(pcafe);
-	double mlh = __max(lh, pcafe->rfsize);
-	cafe_tree_viterbi(pcafe);
-	pString pstr = cafe_tree_string(pcafe);
-	printf("%g\t%s\n", mlh, pstr->buf);
-	string_free(pstr);
-}
-
-void viterbi_write(ostream& ost, pCafeTree pcafe, pCafeFamily pfamily)
-{
-	pCafeFamilyItem pitem;
-	double score = 0;
-	for (int i = 0; i < pfamily->flist->size; i++)
-	{
-		pitem = (pCafeFamilyItem)pfamily->flist->array[i];
-		pitem->maxlh = -1;
-		cafe_family_set_size_with_family(pfamily, i, pcafe);
-		compute_tree_likelihoods(pcafe);
-		int ridx = __maxidx(((pCafeNode)pcafe->super.root)->likelihoods, pcafe->rfsize) + pcafe->rootfamilysizes[0];
-		double mlh = __max(((pCafeNode)pcafe->super.root)->likelihoods, pcafe->rfsize);
-		score += log(mlh);
-		cafe_tree_viterbi(pcafe);
-		pString pstr = cafe_tree_string(pcafe);
-		ost << pitem->id << "\t" << mlh << "\t" << pstr->buf << "\t" << ridx << "\n";
-		string_free(pstr);
-	}
-	ost << "Score: " << score << "\n";
-}
-
 void run_viterbi_sim(pCafeTree pcafe, pCafeFamily pfamily, roots& roots)
 {
 	int familysize = pfamily->flist->size;
@@ -1701,6 +1669,18 @@ void log_param_values(std::ostream& ost, Globals& globals)
 
 
 #ifdef DEBUG
+
+void viterbi_print(pCafeTree pcafe, int max)
+{
+	check_cache_and_compute_likelihoods(pcafe, max);
+	double* lh = get_likelihoods(pcafe);
+	double mlh = __max(lh, pcafe->rfsize);
+	cafe_tree_viterbi(pcafe);
+	pString pstr = cafe_tree_string(pcafe);
+	printf("%g\t%s\n", mlh, pstr->buf);
+	string_free(pstr);
+}
+
 double cafe_shell_score(Globals& globals)
 {
 	int i = 0;
@@ -2540,6 +2520,28 @@ int cafe_cmd_save(Globals& globals, std::vector<std::string> tokens)
 
 	return 0;
 }
+
+void viterbi_write(ostream& ost, pCafeTree pcafe, pCafeFamily pfamily)
+{
+	pCafeFamilyItem pitem;
+	double score = 0;
+	for (int i = 0; i < pfamily->flist->size; i++)
+	{
+		pitem = (pCafeFamilyItem)pfamily->flist->array[i];
+		pitem->maxlh = -1;
+		cafe_family_set_size_with_family(pfamily, i, pcafe);
+		compute_tree_likelihoods(pcafe);
+		int ridx = __maxidx(((pCafeNode)pcafe->super.root)->likelihoods, pcafe->rfsize) + pcafe->rootfamilysizes[0];
+		double mlh = __max(((pCafeNode)pcafe->super.root)->likelihoods, pcafe->rfsize);
+		score += log(mlh);
+		cafe_tree_viterbi(pcafe);
+		pString pstr = cafe_tree_string(pcafe);
+		ost << pitem->id << "\t" << mlh << "\t" << pstr->buf << "\t" << ridx << "\n";
+		string_free(pstr);
+	}
+	ost << "Score: " << score << "\n";
+}
+
 
 /**
 \ingroup Commands
