@@ -40,7 +40,8 @@ public:
 	/** array of three integers expand, remain, and decrease for each node in the tree relative to its parent */
 	std::vector<change> expandRemainDecrease;
 
-  using NodeFamilyKey = std::pair<pCafeNode, pCafeFamilyItem>;
+	// first value is node ID
+  using NodeFamilyKey = std::pair<int, pCafeFamilyItem>;
 
   std::map<NodeFamilyKey, int> viterbiNodeFamilysizes;
 
@@ -60,7 +61,21 @@ void viterbi_parameters_init(viterbi_parameters *viterbi, int nnodes, int nrows)
 
 void viterbi_set_max_pvalue(viterbi_parameters* viterbi, int index, double val);
 pArrayList cafe_viterbi(Globals& globals, viterbi_parameters& viterbi, pArrayList pCD);
-void viterbi_set_values(viterbi_parameters *viterbi, pCafeNode pcnode, pCafeFamilyItem item, int max_family_size);
+void viterbi_sum_probabilities(viterbi_parameters *viterbi, pCafeNode pcnode, pCafeFamilyItem item, int max_family_size);
+void* __cafe_viterbi_thread_func(void* ptr);
+
+struct ViterbiParam
+{
+	pCafeFamily pfamily;
+	pCafeTree pcafe;
+	int num_threads;
+	viterbi_parameters *viterbi;
+	int num_random_samples;
+	double pvalue;
+
+	pArrayList pCD;
+	int from;
+};
 
 
 #endif

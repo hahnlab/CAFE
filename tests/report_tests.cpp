@@ -213,7 +213,7 @@ TEST(ReportTests, write_families_line)
 
   pCafeNode pnode = (pCafeNode)tree->super.nlist->array[0];
   pCafeFamilyItem pitem = (pCafeFamilyItem)globals.param.pfamily->flist->array[0];
-  v->viterbiPvalues[viterbi_parameters::NodeFamilyKey(pnode, pitem)] = .025;
+  v->viterbiPvalues[viterbi_parameters::NodeFamilyKey(pnode->super.super.id, pitem)] = .025;
   v->cutPvalues = NULL;
 
   double maxP = .1;
@@ -240,3 +240,35 @@ TEST(ReportTests, write_families_line)
   cafe_family_free(globals.param.pfamily);
 }
 
+TEST(ReportTests, family_line_item_sets_pvalues)
+{
+	Globals globals;
+	globals.param.pfamily = cafe_family_init({ "chimp", "human", "mouse", "rat", "dog" });
+	family_size_range range;
+	range.min = range.root_min = 0;
+	range.max = range.root_max = 10;
+	pCafeTree tree = create_tree(range);
+	globals.param.pcafe = tree;
+	cafe_family_set_species_index(globals.param.pfamily, tree);
+	cafe_family_add_item(globals.param.pfamily, { "description", "id", "3", "5", "7", "11", "13" });
+
+	viterbi_parameters* v = globals.viterbi;
+	v->num_nodes = 6;
+
+	pCafeNode pnode = (pCafeNode)tree->super.nlist->array[0];
+	pCafeFamilyItem pitem = (pCafeFamilyItem)globals.param.pfamily->flist->array[0];
+	v->viterbiPvalues[viterbi_parameters::NodeFamilyKey(pnode->super.super.id, pitem)] = .025;
+	v->cutPvalues = NULL;
+
+	double maxP = .1;
+	v->maximumPvalues = &maxP;
+
+	family_line_item item(globals.param.pfamily, globals.param.pcafe, globals.param.likelihoodRatios, *globals.viterbi, 0, "NodeZero");
+
+	LONGS_EQUAL(3, item.pvalues.size());
+	DOUBLES_EQUAL(0.025, item.pvalues[0].first, 0.0001);
+	DOUBLES_EQUAL(0.0, item.pvalues[0].second, 0.0001);
+	DOUBLES_EQUAL(0.0, item.pvalues[1].first, 0.0001);
+	DOUBLES_EQUAL(0.0, item.pvalues[1].second, 0.0001);
+	cafe_family_free(globals.param.pfamily);
+}

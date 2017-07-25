@@ -908,7 +908,7 @@ TEST(FirstTestGroup, get_num_trials)
 	LONGS_EQUAL(17, get_num_trials(tokens));
 }
 
-TEST(FirstTestGroup, viterbi_set_values)
+TEST(FirstTestGroup, viterbi_sum_probabilities)
 {
   viterbi_parameters v;
   pCafeTree tree = create_tree(range);
@@ -927,10 +927,10 @@ TEST(FirstTestGroup, viterbi_set_values)
   square_matrix_set(child[1]->birthdeath_matrix, 5, 3, 9);
 
   CafeFamilyItem item;
-  viterbi_set_values(&v, pcnode, &item, 1);
+  viterbi_sum_probabilities(&v, pcnode, &item, 1);
 
-  DOUBLES_EQUAL(2.5, v.viterbiPvalues[viterbi_parameters::NodeFamilyKey(child[0], &item)], .001);
-  DOUBLES_EQUAL(5, v.viterbiPvalues[viterbi_parameters::NodeFamilyKey(child[1], &item)], .001);
+  DOUBLES_EQUAL(2.5, v.viterbiPvalues[viterbi_parameters::NodeFamilyKey(child[0]->super.super.id, &item)], .001);
+  DOUBLES_EQUAL(5, v.viterbiPvalues[viterbi_parameters::NodeFamilyKey(child[1]->super.super.id, &item)], .001);
 }
 
 TEST(FirstTestGroup, initialize_leaf_likelihoods)
