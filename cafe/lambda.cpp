@@ -454,5 +454,123 @@ int cafe_cmd_lambda(Globals& globals, vector<string> tokens)
 	return 0;
 }
 
+double* cafe_best_lambda_by_fminsearch(pCafeParam param, int lambda_len, int k)
+{
+	int i, j;
+	int max_runs = 10;
+	double* scores = (double *)memory_new(max_runs, sizeof(double));
+	int converged = 0;
+	int runs = 0;
+
+	do
+	{
+
+		if (param->num_params > 0)
+		{
+			int kfix = k - param->fixcluster0;
+			double max_branch_length = param->max_branch_length;
+			double *k_weights = param->k_weights;
+			input_values_randomize(&param->input, param->num_lambdas, param->num_mus, param->parameterized_k_value,
+				kfix, max_branch_length, k_weights);
+		}
+
+		copy_range_to_tree(param->pcafe, &param->family_size);
+
+		pFMinSearch pfm;
+		if (k > 0) {
+			pfm = fminsearch_new_with_eq(__cafe_cluster_lambda_search, param->num_params, param);
+			pfm->tolx = 1e-5;
+			pfm->tolf = 1e-5;
+		}
+		else {
+			pfm = fminsearch_new_with_eq(__cafe_best_lambda_search, lambda_len, param);
+			pfm->tolx = 1e-6;
+			pfm->tolf = 1e-6;
+		}
+		fminsearch_min(pfm, param->input.parameters);
+		double *re = fminsearch_get_minX(pfm);
+		for (i = 0; i < param->num_params; i++) param->input.parameters[i] = re[i];
+
+		double current_p = param->input.parameters[(lambda_len)*(k - param->fixcluster0)];
+		double prev_p;
+		if (k>0)
+		{
+			do {
+				double* sumofweights = (double*)memory_new(param->parameterized_k_value, sizeof(double));
+				for (i = 0; i < param->pfamily->flist->size; i++) {
+					for (j = 0; j<k; j++) {
+						sumofweights[j] += param->p_z_membership[i][j];
+					}
+				}
+				for (j = 0; j<k - 1; j++) {
+					param->input.parameters[(lambda_len)*(k - param->fixcluster0) + j] = sumofweights[j] / param->pfamily->flist->size;
+				}
+				memory_free(sumofweights);
+
+				fminsearch_min(pfm, param->input.parameters);
+
+				double *re = fminsearch_get_minX(pfm);
+				for (i = 0; i < param->num_params; i++) param->input.parameters[i] = re[i];
+
+				prev_p = current_p;
+				current_p = param->input.parameters[(lambda_len)*(k - param->fixcluster0)];
+			} while (current_p - prev_p > pfm->tolx);
+		}
+
+		cafe_log(param, "\n");
+		cafe_log(param, "Lambda Search Result: %d\n", pfm->iters);
+		if (k > 0) {
+			char buf[STRING_STEP_SIZE];
+			buf[0] = '\0';
+			if (param->fixcluster0) {
+				strncat(buf, "0,", 2);
+				string_pchar_join_double(buf, ",", param->num_lambdas*(param->parameterized_k_value - param->fixcluster0), param->input.parameters);
+			}
+			else {
+				string_pchar_join_double(buf, ",", param->num_lambdas*param->parameterized_k_value, param->input.parameters);
+			}
+			cafe_log(param, "Lambda : %s\n", buf);
+			buf[0] = '\0';
+			if (param->parameterized_k_value > 0) {
+				string_pchar_join_double(buf, ",", param->parameterized_k_value, param->k_weights);
+				cafe_log(param, "p : %s\n", buf);
+				cafe_log(param, "p0 : %f\n", param->input.parameters[param->num_lambdas*(param->parameterized_k_value - param->fixcluster0) + 0]);
+			}
+			cafe_log(param, "Score: %f\n", *pfm->fv);
+		}
+		else {
+			char buf[STRING_STEP_SIZE];
+			buf[0] = '\0';
+			string_pchar_join_double(buf, ",", param->num_lambdas, param->input.parameters);
+			cafe_log(param, "Lambda : %s & Score: %f\n", buf, *pfm->fv);
+		}
+		if (runs > 0) {
+			double minscore = __min(scores, runs);
+			if (abs(minscore - (*pfm->fv)) < 10 * pfm->tolf) {
+				converged = 1;
+			}
+		}
+		scores[runs] = *pfm->fv;
+		fminsearch_free(pfm);
+
+		copy_range_to_tree(param->pcafe, &param->family_size);
+
+		runs++;
+
+	} while (param->checkconv && !converged && runs<max_runs);
+
+	//	string_free(pstr);
+	if (param->checkconv) {
+		if (converged) {
+			cafe_log(param, "score converged in %d runs.\n", runs);
+		}
+		else {
+			cafe_log(param, "score failed to converge in %d runs.\n", max_runs);
+		}
+	}
+	memory_free(scores);
+	return param->input.parameters;
+}
+
 
 

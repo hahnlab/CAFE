@@ -1,5 +1,8 @@
+
+extern "C" {
 #include<mathfunc.h>
 #include<memalloc.h>
+}
 
 pFMinSearch fminsearch_new()
 {
@@ -66,35 +69,36 @@ void fminsearch_set_equation(pFMinSearch pfm, math_func eq, int Xsize, void* arg
 	pfm->args = args;
 }
 
-
-void __qsort_double_with_index(double* list, int* idx, int left, int right)
-{
-	double pivot = list[left];
-	int pivot_idx = idx[left];
-	int from = left;
-	int to = right;
-
-	while( from < to )
+extern "C" {
+	void __qsort_double_with_index(double* list, int* idx, int left, int right)
 	{
-		while( pivot <= list[to] && from < to ) to--;
-		if ( from != to )
+		double pivot = list[left];
+		int pivot_idx = idx[left];
+		int from = left;
+		int to = right;
+
+		while (from < to)
 		{
-			list[from] = list[to];
-			idx[from] = idx[to];
-			from++;
+			while (pivot <= list[to] && from < to) to--;
+			if (from != to)
+			{
+				list[from] = list[to];
+				idx[from] = idx[to];
+				from++;
+			}
+			while (pivot >= list[from] && from < to) from++;
+			if (from != to)
+			{
+				list[to] = list[from];
+				idx[to] = idx[from];
+				to--;
+			}
 		}
-		while( pivot >= list[from] && from < to ) from++;
-		if ( from != to )
-		{
-			list[to] = list[from];
-			idx[to] = idx[from];
-			to--;
-		}
+		list[from] = pivot;
+		idx[from] = pivot_idx;
+		if (left < from) __qsort_double_with_index(list, idx, left, from - 1);
+		if (right > from) __qsort_double_with_index(list, idx, from + 1, right);
 	}
-	list[from] = pivot;
-	idx[from] = pivot_idx;
-	if ( left < from ) __qsort_double_with_index(list,idx,left, from-1);
-	if ( right > from ) __qsort_double_with_index(list,idx,from+1,right);
 }
 
 void __fminsearch_sort(pFMinSearch pfm)
