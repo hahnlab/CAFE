@@ -142,15 +142,13 @@ void show_sizes(FILE* f, pCafeTree pcafe, family_size_range* range, pCafeFamilyI
 	fprintf(f, "Family size: %d ~ %d\n", range->min, range->max);
 }
 
-void compute_posterior(pCafeFamily pfamily, int family_index, pCafeTree pcafe, double *ML, double *MAP, double *prior_rfsize)
+void compute_posterior(pCafeFamilyItem pitem, pCafeTree pcafe, double *max_likelihood, double *max_posterior, double *prior_rfsize)
 {
-  pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[family_index];
-  cafe_family_set_size(pfamily, pitem, pcafe);	// this part is just setting the leave counts.
   compute_tree_likelihoods(pcafe);
 
   double *likelihood = get_likelihoods(pcafe);		// likelihood of the whole tree = multiplication of likelihood of all nodes
 
-  ML[family_index] = __max(likelihood, pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
+  *max_likelihood = __max(likelihood, pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
   if (pitem->maxlh < 0)
   {
     pitem->maxlh = __maxidx(likelihood, pcafe->rfsize);
@@ -163,7 +161,7 @@ void compute_posterior(pCafeFamily pfamily, int family_index, pCafeTree pcafe, d
     posterior[j] = exp(log(likelihood[j]) + log(prior_rfsize[j]));	//prior_rfsize also starts from 1
   }
 
-  MAP[family_index] = __max(posterior, pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
+  *max_posterior = __max(posterior, pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
   memory_free(posterior);
   posterior = NULL;
 }

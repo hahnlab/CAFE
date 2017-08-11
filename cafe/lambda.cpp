@@ -585,7 +585,8 @@ double get_posterior(pCafeFamily pfamily, pCafeTree pcafe, family_size_range*ran
 		pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[i];
 		if (pitem->ref < 0 || pitem->ref == i)
 		{
-			compute_posterior(pfamily, i, pcafe, ML, MAP, prior_rfsize);
+			cafe_family_set_size(pfamily, pitem, pcafe);	// this part is just setting the leave counts.
+			compute_posterior(pitem, pcafe, ML+i, MAP+i, prior_rfsize);
 		}
 		else
 		{

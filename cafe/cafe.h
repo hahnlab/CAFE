@@ -69,7 +69,7 @@ extern int cafe_tree_random_familysize(pCafeTree pcafe, int rootFamilysize, pBir
 void node_set_birthdeath_matrix(pCafeNode pcnode, pBirthDeathCacheArray cache, int num_lambdas);
 double cafe_set_prior_rfsize_poisson_lambda(pCafeParam param, double* lambda);
 double *find_poisson_lambda(pCafeParam param, pCafeFamily pfamily, int *p_num_params);
-void compute_posterior(pCafeFamily pfamily, int family_index, pCafeTree pcafe, double *ML, double *MAP, double *prior_rfsize);
+void compute_posterior(pCafeFamilyItem pitem, pCafeTree pcafe, double *max_likelihood, double *max_posterior, double *prior_rfsize);
 
 
 /****************************************************************************

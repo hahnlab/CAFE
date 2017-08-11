@@ -403,6 +403,17 @@ TEST(FirstTestGroup, compute_likelihoods)
 
   cafe_family_free(pfamily);
 }
+
+static void set_matrix(pTree ptree, pTreeNode ptnode, va_list ap1)
+{
+	va_list ap;
+	va_copy(ap, ap1);
+	square_matrix* m = va_arg(ap, square_matrix*);
+	pCafeNode pcnode = (pCafeNode)ptnode;
+	pcnode->birthdeath_matrix = m;
+	va_end(ap);
+}
+
 TEST(FirstTestGroup, compute_posterior)
 {
   pCafeFamily pfamily = cafe_family_init({ "A", "B", "C", "D" });
@@ -454,14 +465,20 @@ TEST(FirstTestGroup, compute_posterior)
 };
 
   cafe_family_set_species_index(pfamily, pcafe);
-  reset_birthdeath_cache(pcafe, 0, &range);
 
-  std::vector<double> ML(1), MAP(1);
-  compute_posterior(pfamily, 0, pcafe, &ML[0], &MAP[0], &prior_rfsize[0]);
+  square_matrix m;
+  square_matrix_init(&m, 64);
+  for (int i = 0; i < 64*64; i++)
+	  m.values[i] = .25;
+  tree_traveral_postfix((pTree)pcafe, set_matrix, &m);
 
-  // TODO this succeeds or fails depending on whether you run all tests or just this one
-  // Need to find the offending cache
-  //DOUBLES_EQUAL(1.260322e-15, MAP[0], .001e-16);
+  double max_likelihood, max_posterior;
+
+  pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[0];
+  cafe_family_set_size(pfamily, pitem, pcafe);	// this part is just setting the leave counts.
+  compute_posterior(pitem, pcafe, &max_likelihood, &max_posterior, &prior_rfsize[0]);
+
+  DOUBLES_EQUAL(0.151448, max_posterior, .00001);
 
   cafe_family_free(pfamily);
 }

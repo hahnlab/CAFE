@@ -607,7 +607,7 @@ TEST(LambdaTests, get_posterior_throws_if_prior_not_given)
 	CHECK_THROWS(std::runtime_error, get_posterior(NULL, NULL, NULL, NULL, NULL, NULL, false));
 }
 
-void set_matrix(pTree ptree, pTreeNode ptnode, va_list ap1)
+static void set_matrix(pTree ptree, pTreeNode ptnode, va_list ap1)
 {
 	va_list ap;
 	va_copy(ap, ap1);
