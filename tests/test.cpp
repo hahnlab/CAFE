@@ -268,44 +268,6 @@ TEST(FirstTestGroup, TestPhylogenyLoadFromString)
 
 };
 
-TEST(FirstTestGroup, Test_cafe_get_posterior)
-{
-  probability_cache = NULL;
-
-	CafeParam param;
-	param.flog = stdout;
-	param.quiet = 1;
-	param.prior_rfsize = NULL;
-	param.pcafe = create_tree(range);
-	param.pfamily = cafe_family_init({"chimp", "human", "mouse", "rat", "dog" });
-	cafe_family_set_species_index(param.pfamily, param.pcafe);
-	cafe_family_add_item(param.pfamily, { "description", "id", "3", "5", "7", "11", "13" });
-
-	param.ML = (double*)memory_new(15, sizeof(double));
-	param.MAP = (double*)memory_new(15, sizeof(double));
-
-	LONGS_EQUAL(16,	param.pcafe->size_of_factor);	// as a side effect of create_tree
-
-	pArrayList node_list = param.pcafe->super.nlist;
-	pTreeNode node = (pTreeNode)node_list->array[1];
-	CHECK(node->children->head != NULL);
-
-	family_size_range range;
-	range.min = 0;
-	range.max = 15;
-	range.root_min = 0;
-	range.root_max = 15;
-
-	reset_birthdeath_cache(param.pcafe, 0, &range);
-
-	DOUBLES_EQUAL(-1.0, cafe_get_posterior(param.pfamily, param.pcafe, &param.family_size, param.ML, param.MAP, param.prior_rfsize, param.quiet), 0.01);	// -1 represents an error - empirical posterior not defined. Is this safe?
-
-	cafe_set_prior_rfsize_empirical(&param);
-	CHECK_FALSE(isfinite(cafe_get_posterior(param.pfamily, param.pcafe, &param.family_size, param.ML, param.MAP, param.prior_rfsize, param.quiet)));
-
-  cafe_family_free(param.pfamily);
-};
-
 void build_matrix(square_matrix& m)
 {
   square_matrix_init(&m, 3);

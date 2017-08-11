@@ -12,6 +12,7 @@ extern "C" {
 #include <sstream>
 #include <iterator>
 #include <algorithm>
+#include <iostream>
 
 #include "lambda.h"
 #include "cafe_commands.h"
@@ -572,5 +573,73 @@ double* cafe_best_lambda_by_fminsearch(pCafeParam param, int lambda_len, int k)
 	return param->input.parameters;
 }
 
+double get_posterior(pCafeFamily pfamily, pCafeTree pcafe, family_size_range*range, double *ML, double *MAP, double *prior_rfsize, int quiet)
+{
+	if (!prior_rfsize)
+		throw std::runtime_error("ERROR: empirical posterior not defined.\n");
 
+	int i;
+	double score = 0;
+	for (i = 0; i < pfamily->flist->size; i++)	// i: family index
+	{
+		pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[i];
+		if (pitem->ref < 0 || pitem->ref == i)
+		{
+			compute_posterior(pfamily, i, pcafe, ML, MAP, prior_rfsize);
+		}
+		else
+		{
+			ML[i] = ML[pitem->ref];
+			MAP[i] = MAP[pitem->ref];
+		}
+		if (ML[i] == 0)
+		{
+			ostringstream ost;
+			ost << "WARNING: Calculated posterior probability for family " << pitem->id << " = 0" << endl;
+			throw std::runtime_error(ost.str());
+		}
+		score += log(MAP[i]);			// add log-posterior across all families
+	}
+	return score;
+}
+
+double __cafe_best_lambda_search(double* plambda, void* args)
+{
+	int i;
+	pCafeParam param = (pCafeParam)args;
+	pCafeTree pcafe = (pCafeTree)param->pcafe;
+	double score = 0;
+	int skip = 0;
+	for (i = 0; i < param->num_lambdas; i++)
+	{
+		if (plambda[i] < 0)
+		{
+			skip = 1;
+			score = log(0);
+			break;
+		}
+	}
+	if (!skip)
+	{
+		param->param_set_func(param, plambda);
+
+		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
+		try
+		{
+			score = get_posterior(param->pfamily, param->pcafe, &param->family_size, param->ML, param->MAP, param->prior_rfsize, param->quiet);
+		}
+		catch (std::runtime_error& e)
+		{
+			std::cerr << e.what();
+			score = log(0);
+		}
+		cafe_free_birthdeath_cache(pcafe);
+	}
+	char buf[STRING_STEP_SIZE];
+	buf[0] = '\0';
+	string_pchar_join_double(buf, ",", param->num_lambdas, plambda);
+	cafe_log(param, "Lambda : %s & Score: %f\n", buf, score);
+	cafe_log(param, ".");
+	return -score;
+}
 

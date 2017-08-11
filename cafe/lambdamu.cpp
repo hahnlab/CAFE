@@ -3,6 +3,7 @@
 #include <iterator>
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 
 #include "lambdamu.h"
 #include "Globals.h"
@@ -324,7 +325,7 @@ double cafe_best_lambda_mu_search(double* parameters, void* args)
 	pCafeTree pcafe = (pCafeTree)param->pcafe;
 	double score = 0;
 	int skip = 0;
-	for (i = 0; i < param->num_params; i++)
+	for (i = 0; i < param->num_params; i++	)
 	{
 		if (parameters[i] < 0)
 		{
@@ -338,7 +339,16 @@ double cafe_best_lambda_mu_search(double* parameters, void* args)
 		param->param_set_func(param, parameters);
 
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
-		score = cafe_get_posterior(param->pfamily, param->pcafe, &param->family_size, param->ML, param->MAP, param->prior_rfsize, param->quiet);
+		try
+		{
+			score = get_posterior(param->pfamily, param->pcafe, &param->family_size, param->ML, param->MAP, param->prior_rfsize, param->quiet);
+		}
+		catch (std::runtime_error& e)
+		{
+			std::cerr << e.what() << endl;
+			score = log(0);
+		}
+
 		cafe_free_birthdeath_cache(pcafe);
 	}
 	char buf[STRING_STEP_SIZE];

@@ -1261,10 +1261,29 @@ int cafe_cmd_lhtest(Globals& globals, std::vector<std::string> tokens)
 			args.directory.c_str(), fname.c_str(), param->str_log ? param->str_log->buf : "stdout");
 		cafe_shell_dispatch_commandf(globals, "tree %s", pstr_cafe->buf);
 		cafe_shell_dispatch_commandf(globals, "lambda -s -l %lf", args.lambda);
-		fprintf(fout, "\t%lf\t%lf", cafe_get_posterior(param->pfamily, param->pcafe, &param->family_size, param->ML, param->MAP, param->prior_rfsize, param->quiet), param->lambda[0]);
+		try
+		{
+			double p = get_posterior(param->pfamily, param->pcafe, &param->family_size, param->ML, param->MAP, param->prior_rfsize, param->quiet);
+			fprintf(fout, "\t%lf\t%lf", p, param->lambda[0]);
+		}
+		catch (std::runtime_error& e)
+		{
+			cerr << e.what() << endl;
+			fprintf(fout, "\t%lf\t%lf", log(0), param->lambda[0]);
+		}
 		cafe_family_reset_maxlh(param->pfamily);
 		cafe_shell_dispatch_commandf(globals, "lambda -s -v %lf -t %s", args.lambda, args.tree.c_str());
-		fprintf(fout, "\t%lf", cafe_get_posterior(param->pfamily, param->pcafe, &param->family_size, param->ML, param->MAP, param->prior_rfsize, param->quiet));
+		try
+		{
+			double p = get_posterior(param->pfamily, param->pcafe, &param->family_size, param->ML, param->MAP, param->prior_rfsize, param->quiet);
+			fprintf(fout, "\t%lf", p);
+		}
+		catch (std::runtime_error& e)
+		{
+			cerr << e.what() << endl;
+			fprintf(fout, "\t%lf", log(0));
+		}
+
 		for (j = 0; j < param->num_lambdas; j++)
 		{
 			fprintf(fout, "\t%lf", param->lambda[j]);

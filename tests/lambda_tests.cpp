@@ -14,6 +14,7 @@ extern "C" {
 #include <cafe_shell.h>
 	void cafe_shell_set_lambda(pCafeParam param, double* parameters);
 	int __cafe_cmd_lambda_tree(pArgument parg);
+	extern pBirthDeathCacheArray probability_cache;
 };
 
 static void init_cafe_tree(Globals& globals)
@@ -555,6 +556,43 @@ TEST(LambdaTests, lambdamu_set_with_k_weights_and_tree)
 	DOUBLES_EQUAL(.5, globals.param.input.parameters[8], .001);
 }
 
+TEST(LambdaTests, best_lambda_by_fminsearch)
+{
+	std::ostringstream ost;
+	Globals globals;
+	
+	family_size_range range;
+	range.min = 0;
+	range.max = 5;
+	range.root_min = 0;
+	range.root_max = 5;
+	const char *newick_tree = "((A:1,B:1):1,(C:1,D:1):1);";
+	char tree[100];
+	strcpy(tree, newick_tree);
+
+	globals.param.pcafe = cafe_tree_new(tree, &range, 0, 0);
+	globals.param.pfamily = cafe_family_init({ "A", "B", "C", "D" });
+
+	cafe_family_add_item(globals.param.pfamily, { "1", "ENS01", "5", "10", "2", "6" });
+	cafe_family_add_item(globals.param.pfamily, { "2", "ENS02", "5", "10", "2", "6" });
+	cafe_family_add_item(globals.param.pfamily, { "3", "ENS03", "5", "10", "2", "6" });
+	cafe_family_add_item(globals.param.pfamily, { "4", "ENS04", "5", "10", "2", "6" });
+
+	init_family_size(&globals.param.family_size, globals.param.pfamily->max_size);
+	cafe_tree_set_parameters(globals.param.pcafe, &globals.param.family_size, 0);
+	cafe_family_set_species_index(globals.param.pfamily, globals.param.pcafe);
+
+	cafe_set_prior_rfsize_empirical(&globals.param);
+
+	globals.param.ML = (double*)calloc(globals.param.pfamily->flist->size, sizeof(double));
+	globals.param.MAP = (double*)calloc(globals.param.pfamily->flist->size, sizeof(double));
+
+	double x[] = { 0.05, 0.01 };
+	globals.param.input.parameters = x;
+	cafe_best_lambda_by_fminsearch(&globals.param, 1, 0);
+	cafe_family_free(globals.param.pfamily);
+}
+
 TEST(LambdaTests, best_lambda_mu_by_fminsearch)
 {
 	std::ostringstream ost;
@@ -563,3 +601,63 @@ TEST(LambdaTests, best_lambda_mu_by_fminsearch)
 	best_lambda_mu_by_fminsearch(&globals.param, 1, 1, 1, ost);
 #endif
 }
+
+TEST(LambdaTests, get_posterior_throws_if_prior_not_given)
+{
+	CHECK_THROWS(std::runtime_error, get_posterior(NULL, NULL, NULL, NULL, NULL, NULL, false));
+}
+
+void set_matrix(pTree ptree, pTreeNode ptnode, va_list ap1)
+{
+	va_list ap;
+	va_copy(ap, ap1);
+	square_matrix* m = va_arg(ap, square_matrix*);
+	pCafeNode pcnode = (pCafeNode)ptnode;
+	pcnode->birthdeath_matrix = m;
+	va_end(ap);
+}
+
+TEST(LambdaTests, get_posterior)
+{
+	probability_cache = NULL;
+
+	family_size_range range;
+	range.min = range.root_min = 0;
+	range.max = range.root_max = 15;
+
+	CafeParam param;
+	param.flog = stdout;
+	param.quiet = 1;
+	param.prior_rfsize = NULL;
+
+	const char *newick_tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)";
+	char tree[100];
+	strcpy(tree, newick_tree);
+	param.pcafe = cafe_tree_new(tree, &range, 0.01, 0);
+	LONGS_EQUAL(16, param.pcafe->size_of_factor);	// as a side effect of create_tree
+
+	param.pfamily = cafe_family_init({ "chimp", "human", "mouse", "rat", "dog" });
+	cafe_family_set_species_index(param.pfamily, param.pcafe);
+	cafe_family_add_item(param.pfamily, { "description", "id", "3", "5", "7", "11", "13" });
+
+	param.ML = (double*)memory_new(15, sizeof(double));
+	param.MAP = (double*)memory_new(15, sizeof(double));
+
+	square_matrix m;
+	square_matrix_init(&m, 16);
+	for (int i = 0; i < 256; i++)
+		m.values[i] = .25;
+
+	tree_traveral_postfix((pTree)param.pcafe, set_matrix, &m);
+
+	cafe_set_prior_rfsize_empirical(&param);
+	DOUBLES_EQUAL(-4.6503, get_posterior(param.pfamily, param.pcafe, &param.family_size, param.ML, param.MAP, param.prior_rfsize, param.quiet), .0001);
+
+	for (int i = 0; i < 256; i++)
+		m.values[i] = 0;
+
+	CHECK_THROWS(std::runtime_error, get_posterior(param.pfamily, param.pcafe, &param.family_size, param.ML, param.MAP, param.prior_rfsize, param.quiet));
+
+	cafe_family_free(param.pfamily);
+};
+
