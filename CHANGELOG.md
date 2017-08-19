@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [4.0.2] - 2017-08-21
+### Added
+- load: max_size parameter added that filters out any families with family sizes larger than the value
+- lambda: warning added when calculated posterior probability for a family is 0
+- Use Intel compiler and MKL library for calculations if they are available
+
+### Changed
+- Fixes to allow compilation with gcc 4.9
+- Errormodel command no longer fails if model has fewer lines than the expected maximum family size
+
+
 ## [4.0.1] - 2017-05-09
 ### Added
 - Configure command to allow more precise tuning for a user's system
