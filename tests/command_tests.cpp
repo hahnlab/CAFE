@@ -189,10 +189,19 @@ TEST(CommandTests, get_load_arguments)
 	struct load_args args = get_load_arguments(build_argument_list(command));
 	LONGS_EQUAL(1, args.num_threads);
 	LONGS_EQUAL(2, args.num_random_samples);
+	LONGS_EQUAL(-1, args.max_size);
 	DOUBLES_EQUAL(.05, args.pvalue, .000001);
 	STRCMP_EQUAL("log.txt", args.log_file_name.c_str());
 	STRCMP_EQUAL("fam.txt", args.family_file_name.c_str());
 	CHECK(!args.filter);
+}
+
+TEST(CommandTests, get_load_arguments_filter_and_max_size)
+{
+	vector<string> command = tokenize("load -filter -max_size 100", REGULAR_WHITESPACE);
+	struct load_args args = get_load_arguments(build_argument_list(command));
+	LONGS_EQUAL(100, args.max_size);
+	CHECK(args.filter);
 }
 
 TEST(CommandTests, cafe_cmd_load)
@@ -261,7 +270,7 @@ TEST(CommandTests, cafe_cmd_tree_syncs_family_if_loaded)
 
 	std::vector<std::string> species = { "chimp", "human", "mouse", "rat", "dog" };
 	globals.param.pfamily = cafe_family_init(species);
-	cafe_family_add_item(globals.param.pfamily, { "description", "id", "3", "5", "7", "11", "13" });
+	cafe_family_add_item(globals.param.pfamily, "id", "description", {3, 5, 7, 11, 13 });
 
 	LONGS_EQUAL(-1, globals.param.pfamily->index[0]);
 	cafe_cmd_tree(globals, tokens);
@@ -297,7 +306,7 @@ void prepare_viterbi(CafeParam& param)
 	param.lambda = lambdas;
 
 	param.pfamily = cafe_family_init({ "chimp", "human", "mouse", "rat", "dog" });
-	cafe_family_add_item(param.pfamily, { "description", "id", "3", "5", "7", "11", "13" });
+	cafe_family_add_item(param.pfamily, "id", "description", { 3, 5, 7, 11, 13 });
 
 	cafe_family_set_species_index(param.pfamily, param.pcafe);
 

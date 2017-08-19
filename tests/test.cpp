@@ -357,10 +357,10 @@ TEST(FirstTestGroup, find_poisson_lambda)
   param.flog = stdout;
   param.prior_rfsize = NULL;
   param.pfamily = cafe_family_init({ "A", "B", "C", "D" });
-  cafe_family_add_item(param.pfamily, { "description", "ENS01", "6", "11", "3", "7" });
-  cafe_family_add_item(param.pfamily, { "description", "ENS02", "6", "11", "3", "7" });
-  cafe_family_add_item(param.pfamily, { "description", "ENS03", "6", "11", "3", "7" });
-  cafe_family_add_item(param.pfamily, { "description", "ENS04", "6", "11", "3", "7" });
+  cafe_family_add_item(param.pfamily, "ENS01", "description", { 6, 11, 3, 7 });
+  cafe_family_add_item(param.pfamily, "ENS02", "description", { 6, 11, 3, 7 });
+  cafe_family_add_item(param.pfamily, "ENS03", "description", { 6, 11, 3, 7 });
+  cafe_family_add_item(param.pfamily, "ENS04", "description", { 6, 11, 3, 7 });
 
   param.pcafe = create_small_tree(range);
 
@@ -384,7 +384,7 @@ TEST(FirstTestGroup, compute_likelihoods)
   double lambda = 0.01;
   pCafeTree pcafe = cafe_tree_new(tree, &range, lambda, 0);
   pCafeFamily pfamily = cafe_family_init({ "A", "B", "C", "D" });
-  cafe_family_add_item(pfamily, { "description", "ENS01", "5", "10", "2", "6" });
+  cafe_family_add_item(pfamily, "ENS01", "description", { 5, 10, 2, 6 });
   for (int i = 0; i < pcafe->super.nlist->size; ++i)
   {
     pCafeNode node = (pCafeNode)pcafe->super.nlist->array[i];
@@ -417,7 +417,7 @@ static void set_matrix(pTree ptree, pTreeNode ptnode, va_list ap1)
 TEST(FirstTestGroup, compute_posterior)
 {
   pCafeFamily pfamily = cafe_family_init({ "A", "B", "C", "D" });
-  cafe_family_add_item(pfamily, { "description", "ENS01", "5", "10", "2", "6" });
+  cafe_family_add_item(pfamily, "ENS01", "description", { 5, 10, 2, 6 });
 
   const char *newick_tree = "((A:1,B:1):1,(C:1,D:1):1);";
   char tree[100];
@@ -518,10 +518,10 @@ TEST(FirstTestGroup, cafe_set_prior_rfsize_empirical)
   param.flog = stdout;
   param.prior_rfsize = NULL;
   param.pfamily = cafe_family_init({ "A", "B", "C", "D" });
-  cafe_family_add_item(param.pfamily, { "description", "ENS01", "6", "11", "3", "7" });
-  cafe_family_add_item(param.pfamily, { "description", "ENS02", "6", "11", "3", "7" });
-  cafe_family_add_item(param.pfamily, { "description", "ENS03", "6", "11", "3", "7" });
-  cafe_family_add_item(param.pfamily, { "description", "ENS04", "6", "11", "3", "7" });
+  cafe_family_add_item(param.pfamily, "ENS01", "description", { 6, 11, 3, 7 });
+  cafe_family_add_item(param.pfamily, "ENS02", "description", { 6, 11, 3, 7 });
+  cafe_family_add_item(param.pfamily, "ENS03", "description", { 6, 11, 3, 7 });
+  cafe_family_add_item(param.pfamily, "ENS04", "description", { 6, 11, 3, 7 });
 
   param.pcafe = create_small_tree(range);
 
@@ -1033,7 +1033,7 @@ TEST(FirstTestGroup, run_viterbi_sim)
 	pCafeTree tree = create_tree(range);
 	pCafeFamily pfamily = cafe_family_init({"chimp", "human", "mouse", "rat", "dog" });
 	cafe_family_set_species_index(pfamily, tree);
-	cafe_family_add_item(pfamily, { "description", "id", "3", "5", "7", "11", "13" });
+	cafe_family_add_item(pfamily, "ENS01", "description", { 3, 5, 7, 11, 13 });
 	pBirthDeathCacheArray cache = birthdeath_cache_init(tree->size_of_factor);
 	cafe_tree_set_birthdeath(tree, cache);
 
@@ -1044,7 +1044,7 @@ TEST(FirstTestGroup, run_viterbi_sim)
 	LONGS_EQUAL(0, roots.total_extinct);
 	LONGS_EQUAL(1, roots.num[0]);
 
-  cafe_family_free(pfamily);
+	cafe_family_free(pfamily);
 
 }
 
@@ -1150,7 +1150,7 @@ TEST(FirstTestGroup, set_size_for_split)
 
 	pCafeFamily pfamily = cafe_family_init({ "chimp", "human", "mouse", "rat", "dog" });
 	cafe_family_set_species_index(pfamily, tree);
-	cafe_family_add_item(pfamily, { "description", "id", "3", "5", "7", "11", "13" });
+	cafe_family_add_item(pfamily, "ENS01", "description", { 3, 5, 7, 11, 13 });
 
 	set_size_for_split(pfamily, 0, tree);
 
@@ -1172,7 +1172,7 @@ TEST(FirstTestGroup, compute_cutpvalues)
 
 	pCafeFamily pfamily = cafe_family_init({ "chimp", "human", "mouse", "rat", "dog" });
 	cafe_family_set_species_index(pfamily, tree);
-	cafe_family_add_item(pfamily, { "description", "id", "3", "5", "7", "11", "13" });
+	cafe_family_add_item(pfamily, "ENS01", "description", { 3, 5, 7, 11, 13 });
 
 	int nnodes = ((pTree)tree)->nlist->size;
 	viterbi_parameters viterbi;
@@ -1203,7 +1203,7 @@ TEST(FirstTestGroup, compute_cutpvalues)
 TEST(FirstTestGroup, simulate_misclassification)
 {
   pCafeFamily pfamily = cafe_family_init({ "chimp" });
-	cafe_family_add_item(pfamily, { "description", "id", "3" });
+  cafe_family_add_item(pfamily, "id", "description", { 3 });
 
 	ErrorStruct e;
 	e.maxfamilysize = 4;
@@ -1507,7 +1507,7 @@ TEST(PValueTests, pvalues_for_family)
 	pCafeTree pcafe = create_tree(range);
 	pCafeFamily pfamily = cafe_family_init({ "chimp", "human", "mouse", "rat", "dog" });
 	cafe_family_set_species_index(pfamily, pcafe);
-	cafe_family_add_item(pfamily, { "description", "id", "3", "5", "7", "11", "13" });
+	cafe_family_add_item(pfamily, "ENS01", "description", { 3, 5, 7, 11, 13 });
 
 	ConditionalDistribution::matrix.push_back(std::vector<double>(10));
 
@@ -1562,7 +1562,7 @@ TEST(LikelihoodRatio, likelihood_ratio_report)
 	range.max = range.root_max = 15;
 	pCafeTree tree = create_tree(range);
 	pCafeFamily pfamily = cafe_family_init({ "chimp", "human", "mouse", "rat", "dog" });
-	cafe_family_add_item(pfamily, { "description", "family1", "3", "5", "7", "11", "13" });
+	cafe_family_add_item(pfamily, "ENS01", "description", { 3, 5, 7, 11, 13 });
 	cafe_family_set_species_index(pfamily, tree);
 
 	std::vector<double> pvalues(2);
@@ -1583,7 +1583,7 @@ TEST(LikelihoodRatio, likelihood_ratio_report)
 	likelihood_ratio_report(pfamily, tree, pvalues, lambdas, lambda_cache, out);
 
 	fclose(out);
-	STRCMP_EQUAL("family1\t(((chimp_3:6,human_5:6):81,(mouse_7:17,rat_11:17):70):6,dog_13:9)\t(0, 3.000000,0.000000)\t5\t0.025347\n", outbuf);
+	STRCMP_EQUAL("ENS01\t(((chimp_3:6,human_5:6):81,(mouse_7:17,rat_11:17):70):6,dog_13:9)\t(0, 3.000000,0.000000)\t5\t0.025347\n", outbuf);
 
   cafe_family_free(pfamily);
 }

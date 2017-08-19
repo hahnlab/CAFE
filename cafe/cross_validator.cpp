@@ -259,7 +259,7 @@ double cross_validator::validate_by_family(pCafeParam param, const char* queryfi
 
   // read in validation data
   std::ifstream ifst(truthfile);
-  pCafeFamily truthfamily = load_gene_families(ifst, 1, '\t');
+  pCafeFamily truthfamily = load_gene_families(ifst, '\t', -1);
   if (truthfamily == NULL) {
     fprintf(stderr, "failed to read in true values %s\n", truthfile);
     return -1;

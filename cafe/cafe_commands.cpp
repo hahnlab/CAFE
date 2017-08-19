@@ -667,6 +667,7 @@ struct load_args get_load_arguments(vector<Argument> pargs)
 	args.num_threads = 0;
 	args.num_random_samples = 0;
 	args.pvalue = -1;
+	args.max_size = -1;
 
 	for (size_t i = 0; i < pargs.size(); i++)
 	{
@@ -677,6 +678,9 @@ struct load_args get_load_arguments(vector<Argument> pargs)
 
 		if (!strcmp(parg->opt, "-r"))
 			sscanf(parg->argv[0], "%d", &args.num_random_samples);
+
+		if (!strcmp(parg->opt, "-max_size"))
+			sscanf(parg->argv[0], "%d", &args.max_size);
 
 		if (!strcmp(parg->opt, "-p"))
 			sscanf(parg->argv[0], "%lf", &args.pvalue);
@@ -733,6 +737,8 @@ bool endsWith(std::string const &fullString, std::string const &ending) {
 \brief Loads families from a family file with a defined format
 *
 * Takes six arguments: -t, -r, -p, -l, -i, and -filter
+*
+* -filter ensures that there is at least one copy at the root (using parsimony) for each family. 
 */
 int cafe_cmd_load(Globals& globals, std::vector<std::string> tokens)
 {
@@ -764,7 +770,7 @@ int cafe_cmd_load(Globals& globals, std::vector<std::string> tokens)
 
 	param->str_fdata = string_new_with_string(args.family_file_name.c_str());
   ifstream ifst(args.family_file_name);
-	param->pfamily = load_gene_families(ifst, 1, separator);
+	param->pfamily = load_gene_families(ifst, separator, args.max_size);
 	if (param->pfamily == NULL) 
 		throw runtime_error("Failed to load file\n");
 
@@ -1948,7 +1954,7 @@ int cafe_cmd_accuracy(Globals& globals, std::vector<std::string> tokens)
 	{
 		// read in truth data
     ifstream ifst(truthfile);
-		pCafeFamily truthfamily = load_gene_families(ifst, 1, '\t');
+		pCafeFamily truthfamily = load_gene_families(ifst, '\t', -1);
 		if (truthfamily == NULL) {
 			fprintf(stderr, "failed to read in true values %s\n", truthfile.c_str());
 			return -1;
@@ -2100,7 +2106,7 @@ int cafe_cmd_cvfamily(Globals& globals, std::vector<std::string> tokens)
 
 		// read in training data
     ifstream ifst(trainfile);
-		pCafeFamily tmpfamily = load_gene_families(ifst, 1, '\t');
+		pCafeFamily tmpfamily = load_gene_families(ifst, '\t', -1);
 		if (tmpfamily == NULL) {
 			fprintf(stderr, "failed to read in training data %s\n", trainfile);
 			return -1;
@@ -2185,7 +2191,7 @@ int cafe_cmd_cvspecies(Globals& globals, std::vector<std::string> tokens)
 
 			// read in training data
       std::ifstream ifst(trainfile);
-			pCafeFamily tmpfamily = load_gene_families(ifst, 1, '\t');
+			pCafeFamily tmpfamily = load_gene_families(ifst, '\t', -1);
 			if (tmpfamily == NULL) {
 				fprintf(stderr, "failed to read in training data %s\n", trainfile);
 				fprintf(stderr, "did you load the family data with the cross-validation option (load -i <familyfile> -cv)?\n");

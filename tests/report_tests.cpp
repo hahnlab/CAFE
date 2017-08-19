@@ -206,7 +206,7 @@ TEST(ReportTests, write_families_line)
   globals.param.pcafe = tree;
   globals.param.pfamily = cafe_family_init({ "chimp", "human", "mouse", "rat", "dog" });
   cafe_family_set_species_index(globals.param.pfamily, tree);
-  cafe_family_add_item(globals.param.pfamily, { "description", "id", "3", "5", "7", "11", "13" });
+  cafe_family_add_item(globals.param.pfamily, "id", "description", { 3, 5, 7, 11, 13 });
 
   viterbi_parameters* v = globals.viterbi;
   v->num_nodes = 6;
@@ -250,7 +250,7 @@ TEST(ReportTests, family_line_item_sets_pvalues)
 	pCafeTree tree = create_tree(range);
 	globals.param.pcafe = tree;
 	cafe_family_set_species_index(globals.param.pfamily, tree);
-	cafe_family_add_item(globals.param.pfamily, { "description", "id", "3", "5", "7", "11", "13" });
+	cafe_family_add_item(globals.param.pfamily, "id", "description", { 3, 5, 7, 11, 13 });
 
 	viterbi_parameters* v = globals.viterbi;
 	v->num_nodes = 6;

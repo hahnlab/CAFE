@@ -40,11 +40,11 @@ TEST_GROUP(FamilyTests)
 TEST(FamilyTests, TestCafeFamily)
 {
 	std::ifstream ifst("Nonexistent.tab");
-	POINTERS_EQUAL(NULL, load_gene_families(ifst, 1, '\t'));
+	POINTERS_EQUAL(NULL, load_gene_families(ifst, '\t', -1));
 
   pCafeFamily fam = cafe_family_init({ "Dog", "Chimp", "Human", "Mouse", "Rat" });
 
-  cafe_family_add_item(fam, { "OTOPETRIN", "ENSF1", "3", "5", "7", "11", "13" });
+  cafe_family_add_item(fam, "ENSF1", "OTOPETRIN", { 3, 5, 7, 11, 13 });
 
 	LONGS_EQUAL(5, fam->num_species);
 	LONGS_EQUAL(1, fam->flist->size);
@@ -65,10 +65,10 @@ TEST(FamilyTests, TestCafeFamily)
 TEST(FamilyTests, load_gene_families_tab_separated)
 {
   std::ifstream ifst("Nonexistent.tab");
-  POINTERS_EQUAL(NULL, load_gene_families(ifst, 1, '\t'));
+  POINTERS_EQUAL(NULL, load_gene_families(ifst, '\t', -1));
 
   std::istringstream ist("FAMILYDESC\tFAMILY\tA\tB\nOTOPETRIN\tENSF2\t2\t10\n");
-  pCafeFamily fam = load_gene_families(ist, 0, '\t');
+  pCafeFamily fam = load_gene_families(ist, '\t', -1);
   LONGS_EQUAL(2, fam->num_species);
   STRCMP_EQUAL("A", fam->species[0]);
   STRCMP_EQUAL("B", fam->species[1]);
@@ -83,10 +83,25 @@ TEST(FamilyTests, load_gene_families_tab_separated)
   cafe_family_free(fam);
 }
 
+TEST(FamilyTests, filter_families_greater_than_max_size)
+{
+	std::istringstream ist("FAMILYDESC\tFAMILY\tA\tB\ndesc\tid1\t2\t50\ndesc\tid2\t20\t10\n");
+	pCafeFamily fam = load_gene_families(ist, '\t', 25);
+	LONGS_EQUAL(2, fam->num_species);
+	STRCMP_EQUAL("A", fam->species[0]);
+	STRCMP_EQUAL("B", fam->species[1]);
+
+	LONGS_EQUAL(1, fam->flist->size);
+
+	CHECK(get_family_item(fam, "id1") == NULL);
+	CHECK(get_family_item(fam, "id2") != NULL);
+	cafe_family_free(fam);
+}
+
 TEST(FamilyTests, load_gene_families_comma_separated)
 {
   std::istringstream ist("FAMILY DESC,FAMILY,A,B\nOXYSTEROL BINDING RELATED,ENSF2,2,10\n");
-  pCafeFamily fam = load_gene_families(ist, 0, ',');
+  pCafeFamily fam = load_gene_families(ist, ',', -1);
   LONGS_EQUAL(2, fam->num_species);
   STRCMP_EQUAL("A", fam->species[0]);
   STRCMP_EQUAL("B", fam->species[1]);
@@ -106,7 +121,7 @@ TEST(FamilyTests, load_gene_families_is_not_whitespace_separated)
   std::istringstream ist("FAMILYDESC FAMILY A B C\n");
   try
   {
-    pCafeFamily fam = load_gene_families(ist, 0, '\t');
+    pCafeFamily fam = load_gene_families(ist, '\t', -1);
     FAIL("Exception should have been thrown");
     cafe_family_free(fam);
   }
@@ -119,7 +134,7 @@ TEST(FamilyTests, load_gene_families_is_not_whitespace_separated)
 TEST(FamilyTests, cafe_family_set_size)
 {
 	pCafeFamily pcf = cafe_family_init({"chimp", "human", "mouse", "rat", "dog" });
-	cafe_family_add_item(pcf, { "description", "id", "3", "5", "7", "11", "13" });
+	cafe_family_add_item(pcf, "id", "description", { 3, 5, 7, 11, 13 });
 
 	pCafeTree ptree = create_tree();
 	cafe_family_set_species_index(pcf, ptree);
@@ -155,7 +170,7 @@ TEST(FamilyTests, cafe_family_add_item)
 {
 	pCafeFamily pcf = cafe_family_init({"chimp", "human", "mouse", "rat", "dog" });
 
-	cafe_family_add_item(pcf, { "description", "id", "3", "5", "7", "11", "13" });
+	cafe_family_add_item(pcf, "id", "description", { 3, 5, 7, 11, 13 });
 	LONGS_EQUAL(1, pcf->flist->size);
 	pCafeFamilyItem pitem = (pCafeFamilyItem)arraylist_get(pcf->flist, 0);
 	STRCMP_EQUAL("description", pitem->desc);
@@ -203,7 +218,7 @@ TEST(FamilyTests, cafe_family_set_size_with_family_forced)
 	pCafeFamily pcf = cafe_family_init({"chimp", "human", "mouse", "rat", "dog" });
 	pCafeTree cafe_tree = create_tree();
 	cafe_family_set_species_index(pcf, cafe_tree);
-	cafe_family_add_item(pcf, { "description", "id", "3", "5", "7", "11", "13" });
+	cafe_family_add_item(pcf, "id", "description", { 3, 5, 7, 11, 13 });
 
 	// SUT
 	cafe_family_set_size_with_family_forced(pcf, 0, cafe_tree);
@@ -218,7 +233,7 @@ TEST(FamilyTests, write_family_gainloss)
 {
 	std::ostringstream ost;
 	pCafeFamily pcf = cafe_family_init({"chimp", "human", "mouse", "rat", "dog" });
-	cafe_family_add_item(pcf, { "description", "id", "3", "5", "7", "11", "13" });
+	cafe_family_add_item(pcf, "id", "description", { 3, 5, 7, 11, 13 });
 	pCafeTree tree1 = create_tree();
 	cafe_family_set_species_index(pcf, tree1);
 	pCafeTree tree2 = cafe_tree_copy(tree1);
@@ -237,11 +252,11 @@ TEST(FamilyTests, write_family)
 {
 	std::ostringstream ost;
 	pCafeFamily pcf = cafe_family_init({"chimp", "human", "mouse", "rat", "dog" });
-	cafe_family_add_item(pcf, { "my_description", "my_id", "3", "5", "7", "11", "13" });
+	cafe_family_add_item(pcf, "id", "description", { 3, 5, 7, 11, 13 });
 
 	write_family(ost, pcf);
 	STRCMP_CONTAINS("Desc\tFamily ID\tchimp\thuman\tmouse\trat\tdog\n", ost.str().c_str())
-	STRCMP_CONTAINS("my_description\tmy_id\t3\t5\t7\t11\t13\n", ost.str().c_str())
+	STRCMP_CONTAINS("description\tid\t3\t5\t7\t11\t13\n", ost.str().c_str())
   cafe_family_free(pcf);
 
 }
@@ -250,13 +265,13 @@ TEST(FamilyTests, log_cluster_membership)
 {
   std::ostringstream ost;
   pCafeFamily pcf = cafe_family_init({ "chimp", "human", "mouse", "rat", "dog" });
-  cafe_family_add_item(pcf, { "my_description", "my_id", "3", "5", "7", "11", "13" });
+  cafe_family_add_item(pcf, "id", "description", { 3, 5, 7, 11, 13 });
   double **z = (double **)memory_new_2dim(2, 2, sizeof(double));
   z[0][0] = 7.7;
   z[0][1] = 11.13;
   log_cluster_membership(pcf, 2, z, ost);
   STRCMP_CONTAINS("The Number of families : 1\n", ost.str().c_str());
-  STRCMP_CONTAINS("family my_id:  7.7 11.13", ost.str().c_str());
+  STRCMP_CONTAINS("family id:  7.7 11.13", ost.str().c_str());
 
   cafe_family_free(pcf);
 }

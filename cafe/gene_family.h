@@ -16,10 +16,10 @@ const int COMMA_AS_WHITESPACE = 1;
 std::vector<std::string> tokenize(std::string s, int flags);
 
 pCafeFamily cafe_family_init(const std::vector<std::string>& species_list);
-pCafeFamily load_gene_families(std::istream& ist, int bpatcheck, char separator);
+pCafeFamily load_gene_families(std::istream& ist, char separator, int max_size);
 void cafe_family_free(pCafeFamily pcf);
 
-void cafe_family_add_item(pCafeFamily pcf, const std::vector<std::string>& data);
+void cafe_family_add_item(pCafeFamily pcf, std::string id, std::string desc, std::vector<int> sizes);
 void cafe_family_item_free(pCafeFamilyItem pitem);
 
 int log_cluster_membership(pCafeFamily pcf, int k_value, double **p_z_membership, std::ostream& log);

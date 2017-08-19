@@ -72,6 +72,7 @@ void tree_set_branch_lengths(pCafeTree pcafe, std::vector<int> lengths);
 struct load_args {
 	int num_threads;
 	int num_random_samples;
+	int max_size;
 	double pvalue;
 	bool filter;
 	std::string log_file_name;

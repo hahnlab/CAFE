@@ -99,7 +99,12 @@ void cafe_family_free(pCafeFamily pcf)
   pcf = NULL;
 }
 
-pCafeFamily load_gene_families(std::istream& ist, int bpatcheck, char separator)
+int to_int(string s)
+{
+	return stoi(s);
+}
+
+pCafeFamily load_gene_families(std::istream& ist, char separator, int max_size)
 {
   char buf[STRING_BUF_SIZE];
   if (!ist)
@@ -122,18 +127,21 @@ pCafeFamily load_gene_families(std::istream& ist, int bpatcheck, char separator)
     if (!ist)
       break;
 
-    cafe_family_add_item(pcf, string_split(buf, separator));
+	vector<string> values = string_split(buf, separator);
+	vector<int> sizes(values.size() - 2);
+	transform(values.begin() + 2, values.end(), sizes.begin(), to_int);
+	if (max_size < 0 || *max_element(sizes.begin(), sizes.end()) <= max_size)
+		cafe_family_add_item(pcf, values[1], values[0], sizes);
   }
-  if (bpatcheck)
-  {
+
     __cafe_famliy_check_the_pattern(pcf);
-  }
+
   return pcf;
 }
 
 /// Data array is assumes to contain a description, an identifier, and a set of integers
 /// giving the family size in species order
-void cafe_family_add_item(pCafeFamily pcf, const vector<string>& data)
+void cafe_family_add_item(pCafeFamily pcf, std::string id, std::string desc, std::vector<int> sizes)
 {
   pCafeFamilyItem pitem = (pCafeFamilyItem)memory_new(1, sizeof(CafeFamilyItem));
   pitem->count = (int*)calloc(pcf->num_species, sizeof(int));
@@ -143,27 +151,18 @@ void cafe_family_add_item(pCafeFamily pcf, const vector<string>& data)
   pitem->mu = NULL;
   pitem->holder = 1;
 
-  if (data.size() != size_t(pcf->num_species + 2))
+  if (sizes.size() != size_t(pcf->num_species))
   {
-    std::cerr << "Inconsistency in column count: expected " << pcf->num_species + 2 << ", but found " << data.size();
+    std::cerr << "Inconsistency in column count: expected " << pcf->num_species + 2 << ", but found " << sizes.size() + 2;
   }
 
-  pitem->desc = new char[data[0].size()+1];
-  strcpy(pitem->desc, data[0].c_str());
-  pitem->id = new char[data[1].size() + 1];
-  strcpy(pitem->id, data[1].c_str());
+  pitem->desc = new char[desc.size()+1];
+  strcpy(pitem->desc, desc.c_str());
+  pitem->id = new char[id.size() + 1];
+  strcpy(pitem->id, id.c_str());
 
-  for (int j = 0; j < pcf->num_species; j++)
-  {
-    if (data[j + 2].empty())
-    {
-      pitem->count[j] = 0;
-    }
-    else
-    {
-      pitem->count[j] = atoi(data[j + 2].c_str());
-    }
-  }
+  copy(sizes.begin(), sizes.end(), pitem->count);
+
   pcf->max_size = max(pcf->max_size, *std::max_element(pitem->count, pitem->count + pcf->num_species));
   arraylist_add(pcf->flist, pitem);
 }
