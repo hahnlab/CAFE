@@ -6,6 +6,7 @@
 
 extern "C" {
 #include "cafe.h"
+#include "cafe_shell.h"
 }
 
 pErrorStruct get_error_model(pCafeFamily family, std::string filename);
@@ -16,5 +17,9 @@ void init_error_ptr(pCafeFamily family, pCafeTree pTree, pErrorStruct errormodel
 
 std::ostream& operator<<(std::ostream& ost, ErrorStruct& errormodel);
 std::istream& operator>>(std::istream& ifst, ErrorStruct& errormodel);
+
+pErrorMeasure estimate_error_double_measure(std::ostream& log, const char* error1, const char* error2, int b_symmetric, int max_diff, int b_peakzero, int maxFamilySize);
+pErrorMeasure estimate_error_true_measure(std::ostream& log, const char* errorfile, const char* truefile, int b_symmetric, int max_diff, int b_peakzero, int max_family_size);
+
 
 #endif

@@ -55,12 +55,9 @@ extern "C" {
 	int __cafe_cmd_extinct_count_zero(pTree pcafe);
 	void __hg_print_sim_extinct(pHistogram** phist_sim_n, pHistogram* phist_sim,
 		int r, pHistogram phist_tmp, double* cnt, int num_trials);
-	pErrorMeasure cafe_shell_estimate_error_double_measure(const char* error1, const char* error2, int b_symmetric, int max_diff, int b_peakzero);
-	pErrorMeasure cafe_shell_estimate_error_true_measure(const char* errorfile, const char* truefile, int b_symmetric, int max_diff, int b_peakzero);
 	pErrorStruct cafe_shell_create_error_matrix_from_estimate(pErrorMeasure errormeasure);
 	int cafe_shell_set_branchlength();
 	void set_range_from_family(family_size_range* range, pCafeFamily family);
-	double _cafe_cross_validate_by_species(const char* validatefile, const char* errortype);
 	int __cafe_cmd_lambda_tree(pArgument parg);
 	void cafe_shell_set_lambda(pCafeParam param, double* parameters);
 	void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters);
@@ -1473,12 +1470,14 @@ int cafe_cmd_esterror(Globals& globals, std::vector<std::string> tokens)
 
 	pErrorMeasure errormeasure = NULL;
 
+	log_buffer buf(&globals.param);
+	ostream ost(&buf);
 	// estimate error matrix                
 	if (args.data_error_files.size() == 2) {
-		errormeasure = cafe_shell_estimate_error_double_measure(args.data_error_files[0].c_str(), args.data_error_files[1].c_str(), args.symmetric, args.max_diff, args.peakzero);
+		errormeasure = estimate_error_double_measure(ost, args.data_error_files[0].c_str(), args.data_error_files[1].c_str(), args.symmetric, args.max_diff, args.peakzero, globals.param.family_size.max);
 	}
 	else if (args.data_error_files.size() == 1) {
-		errormeasure = cafe_shell_estimate_error_true_measure(args.data_error_files[0].c_str(), args.truth_file.c_str(), args.symmetric, args.max_diff, args.peakzero);
+		errormeasure = estimate_error_true_measure(ost, args.data_error_files[0].c_str(), args.truth_file.c_str(), args.symmetric, args.max_diff, args.peakzero, globals.param.family_size.max);
 	}
 
 	// create errormodel based on errormeasure
