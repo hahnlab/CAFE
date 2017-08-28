@@ -1,10 +1,13 @@
 #include <sstream>
 #include <vector>
+#include <fstream>
+
 
 #include "CppUTest/TestHarness.h"
 
 #include <error_model.h>
 #include <gene_family.h>
+#include "cafe_commands.h"
 
 extern "C" {
 //#include <cafe_shell.h>
@@ -121,5 +124,64 @@ TEST(ErrorModel, add_and_remove_error_model)
 	POINTERS_EQUAL(NULL, pfamily->error_ptr[1]);
 
   cafe_family_free(pfamily);
+}
+
+TEST(ErrorModel, read_freq_from_measures_errors)
+{
+	std::vector<int> sizeFreq(100);
+	std::ifstream nil("nonexistent.tab");
+	std::istringstream empty;
+	const char *tab1 = "desc\tid\ta\tb\tc\nx\ty\t1\t2\t3\nz\tq\t4\t5\t6";
+	const char *tab2 = "desc\tid\ta\tb\tc\nx\ty\t1\t2\t3\nz\tq\t4\t5\t3";
+	std::istringstream t1(tab1);
+	std::istringstream t2(tab2);
+	CHECK_THROWS(io_error, read_freq_from_measures(&nil, &t2, &sizeFreq[0], 0));
+	CHECK_THROWS(io_error, read_freq_from_measures(&t1, &nil, &sizeFreq[0], 0));
+
+	std::istringstream t3(tab2);
+	CHECK_THROWS(io_error, read_freq_from_measures(&empty, &t3, &sizeFreq[0], 0));
+	std::istringstream t4(tab1);
+	std::istringstream empty2;
+	CHECK_THROWS(io_error, read_freq_from_measures(&t4, &empty2, &sizeFreq[0], 0));
+}
+	
+TEST(ErrorModel, read_freq_from_measures)
+{
+	std::istringstream t1("desc\tid\ta\tb\tc\nx\ty\t1\t2\t3\nz\tq\t4\t5\t6");
+	std::istringstream t2("desc\tid\ta\tb\tc\nx\ty\t1\t2\t3\nz\tq\t4\t5\t3");
+
+	std::vector<int> sizeFreq(100);
+	int max = read_freq_from_measures(&t1, &t2, &sizeFreq[0], 0);
+	LONGS_EQUAL(2, sizeFreq[1]);
+	LONGS_EQUAL(2, sizeFreq[2]);
+	LONGS_EQUAL(3, sizeFreq[3]);
+	LONGS_EQUAL(2, sizeFreq[4]);
+	LONGS_EQUAL(2, sizeFreq[5]);
+	LONGS_EQUAL(1, sizeFreq[6]);
+	LONGS_EQUAL(6, max);
+}
+
+TEST(ErrorModel, read_freq_from_measures_arg_is_max)
+{
+	std::istringstream t1("desc\tid\ta\tb\tc\nx\ty\t1\t2\t3\nz\tq\t4\t5\t6");
+	std::istringstream t2("desc\tid\ta\tb\tc\nx\ty\t1\t2\t3\nz\tq\t4\t5\t3");
+
+	std::vector<int> sizeFreq(100);
+	int max = read_freq_from_measures(&t1, &t2, &sizeFreq[0], 10);
+	LONGS_EQUAL(10, max);
+}
+
+TEST(ErrorModel, read_freq_from_measures_second_file_optional)
+{
+	std::istringstream t2("desc\tid\ta\tb\tc\nx\ty\t1\t2\t3\nz\tq\t4\t5\t3");
+	std::vector<int> sizeFreq(100);
+	int max = read_freq_from_measures(&t2, NULL, &sizeFreq[0], 0);
+	LONGS_EQUAL(1, sizeFreq[1]);
+	LONGS_EQUAL(1, sizeFreq[2]);
+	LONGS_EQUAL(2, sizeFreq[3]);
+	LONGS_EQUAL(1, sizeFreq[4]);
+	LONGS_EQUAL(1, sizeFreq[5]);
+	LONGS_EQUAL(0, sizeFreq[6]);
+	LONGS_EQUAL(5, max);
 }
 

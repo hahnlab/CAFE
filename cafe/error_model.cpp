@@ -242,51 +242,41 @@ void free_error_model(pCafeFamily family, pCafeTree pcafe)
 	}
 }
 
-int cafe_shell_read_freq_from_measures(const char* file1, const char* file2, int* sizeFreq, int maxFamilySize)
+int read_freq_from_measures(std::istream* ist1, std::istream* ist2, int* sizeFreq, int maxFamilySize)
 {
 	int i = 0;
+
 	char buf1[STRING_BUF_SIZE];
 	char buf2[STRING_BUF_SIZE];
 
-	FILE* fpfile1 = fopen(file1, "r");
-	if (fpfile1 == NULL)
+	if (!*ist1)
 	{
-		fprintf(stderr, "Cannot open file: %s\n", file1);
-		return -1;
+		throw io_error("errest", "measure 1", false);
 	}
-	if (fgets(buf1, STRING_BUF_SIZE, fpfile1) == NULL)
+	std::string str1, str2;
+	if (!std::getline(*ist1, str1))
 	{
-		fclose(fpfile1);
-		fprintf(stderr, "Empty file: %s\n", file1);
-		return -1;
+		throw io_error("errest", "measure 1", false);
 	}
-	FILE* fpfile2 = NULL;
-	if (file2) {
-		fpfile2 = fopen(file2, "r");
-		if (fpfile2 == NULL)
+	if (ist2 != NULL) {	// if there is a file 2
+		if (!*ist2)	// if file 2 is invalid
 		{
-			fprintf(stderr, "Cannot open file: %s\n", file2);
-			return -1;
+			throw io_error("errest", "measure 2", false);
 		}
-		if (fgets(buf2, STRING_BUF_SIZE, fpfile2) == NULL)
+		if (!std::getline(*ist2, str2))
 		{
-			fclose(fpfile2);
-			fprintf(stderr, "Empty file: %s\n", file2);
-			return -1;
+			throw io_error("errest", "measure 2", false);
 		}
 	}
-
-	string_pchar_chomp(buf1);
-	pArrayList data1 = string_pchar_split(buf1, '\t');
-	arraylist_free(data1, NULL);
 
 	// count frequency of family sizes
 	int line1 = 0;
 	// int maxFamilySize = cafe_param->family_size.max;
 	int data1colnum = 0;
-	while (fgets(buf1, STRING_BUF_SIZE, fpfile1))
+	while (std::getline(*ist1, str1))
 	{
-		string_pchar_chomp(buf1);
+		strcpy(buf1, str1.c_str());
+
 		pArrayList data1 = string_pchar_split(buf1, '\t');
 		for (i = 2; i<data1->size; i++) {
 			int size1 = atoi((char*)data1->array[i]);
@@ -299,9 +289,10 @@ int cafe_shell_read_freq_from_measures(const char* file1, const char* file2, int
 		arraylist_free(data1, NULL);
 		line1++;
 	}
-	if (fpfile2)
+	if (ist2 != NULL)
 	{
 		int line2 = 0;
+		strcpy(buf2, str2.c_str());
 		string_pchar_chomp(buf2);
 		pArrayList data2 = string_pchar_split(buf2, '\t');
 		if (data1colnum != data2->size) {
@@ -310,8 +301,9 @@ int cafe_shell_read_freq_from_measures(const char* file1, const char* file2, int
 		}
 		arraylist_free(data2, NULL);
 
-		while (fgets(buf2, STRING_BUF_SIZE, fpfile2))
+		while (std::getline(*ist2, str2))
 		{
+			strcpy(buf2, str2.c_str());
 			string_pchar_chomp(buf2);
 			pArrayList data2 = string_pchar_split(buf2, '\t');
 			for (i = 2; i<data2->size; i++) {
@@ -408,7 +400,8 @@ pErrorMeasure estimate_error_double_measure(std::ostream& log, const char* error
 {
 	int i;
 	int* sizeFreq = (int *)memory_new(10000, sizeof(int));
-	int maxFamilySize = cafe_shell_read_freq_from_measures(error1, error2, sizeFreq, max_FamilySize);
+	std::ifstream ist1(error1), ist2(error2);
+	int maxFamilySize = read_freq_from_measures(&ist1, error2 == NULL ? NULL : &ist2, sizeFreq, max_FamilySize);
 	if (maxFamilySize < 0) {
 		fprintf(stderr, "ERROR: failed to read freqeuncy from measurement files\n");
 	}
@@ -532,7 +525,8 @@ pErrorMeasure estimate_error_true_measure(std::ostream& log, const char* errorfi
 	int i;
 
 	int* sizeFreq = (int *)memory_new(10000, sizeof(int));
-	int maxFamilySize = cafe_shell_read_freq_from_measures(truefile, errorfile, sizeFreq, max_family_size);
+	std::ifstream err(errorfile), true_(truefile);
+	int maxFamilySize = read_freq_from_measures(&true_, errorfile == NULL ? NULL : &err, sizeFreq, max_family_size);
 	if (maxFamilySize < 0) {
 		fprintf(stderr, "ERROR: failed to read freqeuncy from measurement files\n");
 	}
