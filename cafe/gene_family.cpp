@@ -99,10 +99,23 @@ void cafe_family_free(pCafeFamily pcf)
   pcf = NULL;
 }
 
-int to_int(string s)
+int to_int(std::string s)
 {
 	return stoi(s);
 }
+
+std::istream& operator>>(std::istream& ist, gene_family& fam)
+{
+	std::string str;
+	std::getline(ist, str);
+	std::vector<std::string> values = string_split(str, '\t');
+	fam.desc = values[0];
+	fam.id = values[1];
+	fam.values.resize(values.size() - 2);
+	std::transform(values.begin() + 2, values.end(), fam.values.begin(), to_int);
+	return ist;
+}
+
 
 pCafeFamily load_gene_families(std::istream& ist, char separator, int max_size)
 {
@@ -122,16 +135,19 @@ pCafeFamily load_gene_families(std::istream& ist, char separator, int max_size)
   species_list.erase(species_list.begin(), species_list.begin()+2); // first two items are description and ID - delete them
   pCafeFamily pcf = cafe_family_init(species_list);
 
-  for (int i = 0; ist.getline(buf, STRING_BUF_SIZE); i++)
+  string s;
+  for (int i = 0; std::getline(ist, s); i++)
   {
     if (!ist)
       break;
 
-	vector<string> values = string_split(buf, separator);
-	vector<int> sizes(values.size() - 2);
-	transform(values.begin() + 2, values.end(), sizes.begin(), to_int);
-	if (max_size < 0 || *max_element(sizes.begin(), sizes.end()) <= max_size)
-		cafe_family_add_item(pcf, values[1], values[0], sizes);
+	std::replace(s.begin(), s.end(), separator, '\t');
+	istringstream isst(s);
+	gene_family gf;
+	isst >> gf;
+
+	if (max_size < 0 || *max_element(gf.values.begin(), gf.values.end()) <= max_size)
+		cafe_family_add_item(pcf, gf);
   }
 
     __cafe_famliy_check_the_pattern(pcf);
@@ -141,7 +157,7 @@ pCafeFamily load_gene_families(std::istream& ist, char separator, int max_size)
 
 /// Data array is assumes to contain a description, an identifier, and a set of integers
 /// giving the family size in species order
-void cafe_family_add_item(pCafeFamily pcf, std::string id, std::string desc, std::vector<int> sizes)
+void cafe_family_add_item(pCafeFamily pcf, const gene_family& gf)
 {
   pCafeFamilyItem pitem = (pCafeFamilyItem)memory_new(1, sizeof(CafeFamilyItem));
   pitem->count = (int*)calloc(pcf->num_species, sizeof(int));
@@ -151,17 +167,17 @@ void cafe_family_add_item(pCafeFamily pcf, std::string id, std::string desc, std
   pitem->mu = NULL;
   pitem->holder = 1;
 
-  if (sizes.size() != size_t(pcf->num_species))
+  if (gf.values.size() != size_t(pcf->num_species))
   {
-    std::cerr << "Inconsistency in column count: expected " << pcf->num_species + 2 << ", but found " << sizes.size() + 2;
+    std::cerr << "Inconsistency in column count: expected " << pcf->num_species + 2 << ", but found " << gf.values.size() + 2;
   }
 
-  pitem->desc = new char[desc.size()+1];
-  strcpy(pitem->desc, desc.c_str());
-  pitem->id = new char[id.size() + 1];
-  strcpy(pitem->id, id.c_str());
+  pitem->desc = new char[gf.desc.size()+1];
+  strcpy(pitem->desc, gf.desc.c_str());
+  pitem->id = new char[gf.id.size() + 1];
+  strcpy(pitem->id, gf.id.c_str());
 
-  copy(sizes.begin(), sizes.end(), pitem->count);
+  copy(gf.values.begin(), gf.values.end(), pitem->count);
 
   pcf->max_size = max(pcf->max_size, *std::max_element(pitem->count, pitem->count + pcf->num_species));
   arraylist_add(pcf->flist, pitem);

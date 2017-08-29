@@ -103,7 +103,7 @@ TEST(LambdaTests, TestCmdLambda)
 
   globals.param.pfamily = cafe_family_init({"Dog", "Chimp", "Human", "Mouse", "Rat" });
 
-  cafe_family_add_item(globals.param.pfamily, "ENSF00000002390", "OTOPETRIN", { 7, 7, 13, 18, 7 });
+  cafe_family_add_item(globals.param.pfamily, gene_family("ENSF00000002390", "OTOPETRIN", { 7, 7, 13, 18, 7 }));
 
 	init_family_size(&globals.param.family_size, globals.param.pfamily->max_size);
 	cafe_tree_set_parameters(globals.param.pcafe, &globals.param.family_size, 0);
@@ -573,10 +573,10 @@ TEST(LambdaTests, best_lambda_by_fminsearch)
 	globals.param.pcafe = cafe_tree_new(tree, &range, 0, 0);
 	globals.param.pfamily = cafe_family_init({ "A", "B", "C", "D" });
 
-	cafe_family_add_item(globals.param.pfamily, "ENS01", "1", { 5, 10, 2, 6 });
-	cafe_family_add_item(globals.param.pfamily, "ENS02", "2", { 5, 10, 2, 6 });
-	cafe_family_add_item(globals.param.pfamily, "ENS03", "3", { 5, 10, 2, 6 });
-	cafe_family_add_item(globals.param.pfamily, "ENS04", "4", { 5, 10, 2, 6 });
+	cafe_family_add_item(globals.param.pfamily, gene_family("ENS01", "1", { 5, 10, 2, 6 }));
+	cafe_family_add_item(globals.param.pfamily, gene_family("ENS02", "2", { 5, 10, 2, 6 }));
+	cafe_family_add_item(globals.param.pfamily, gene_family("ENS03", "3", { 5, 10, 2, 6 }));
+	cafe_family_add_item(globals.param.pfamily, gene_family("ENS04", "4", { 5, 10, 2, 6 }));
 
 	init_family_size(&globals.param.family_size, globals.param.pfamily->max_size);
 	cafe_tree_set_parameters(globals.param.pcafe, &globals.param.family_size, 0);
@@ -638,7 +638,7 @@ TEST(LambdaTests, get_posterior)
 
 	param.pfamily = cafe_family_init({ "chimp", "human", "mouse", "rat", "dog" });
 	cafe_family_set_species_index(param.pfamily, param.pcafe);
-	cafe_family_add_item(param.pfamily, "id", "description", { 3, 5, 7, 11, 13 });
+	cafe_family_add_item(param.pfamily, gene_family("id", "description", { 3, 5, 7, 11, 13 }));
 
 	param.ML = (double*)memory_new(15, sizeof(double));
 	param.MAP = (double*)memory_new(15, sizeof(double));

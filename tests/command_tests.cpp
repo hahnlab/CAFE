@@ -270,7 +270,11 @@ TEST(CommandTests, cafe_cmd_tree_syncs_family_if_loaded)
 
 	std::vector<std::string> species = { "chimp", "human", "mouse", "rat", "dog" };
 	globals.param.pfamily = cafe_family_init(species);
-	cafe_family_add_item(globals.param.pfamily, "id", "description", {3, 5, 7, 11, 13 });
+	gene_family gf;
+	gf.id = "id";
+	gf.desc = "description";
+	gf.values = { 3, 5, 7, 11, 13 };
+	cafe_family_add_item(globals.param.pfamily, gf);
 
 	LONGS_EQUAL(-1, globals.param.pfamily->index[0]);
 	cafe_cmd_tree(globals, tokens);
@@ -306,7 +310,11 @@ void prepare_viterbi(CafeParam& param)
 	param.lambda = lambdas;
 
 	param.pfamily = cafe_family_init({ "chimp", "human", "mouse", "rat", "dog" });
-	cafe_family_add_item(param.pfamily, "id", "description", { 3, 5, 7, 11, 13 });
+	gene_family gf;
+	gf.id = "id";
+	gf.desc = "description";
+	gf.values = { 3, 5, 7, 11, 13 };
+	cafe_family_add_item(param.pfamily, gf);
 
 	cafe_family_set_species_index(param.pfamily, param.pcafe);
 

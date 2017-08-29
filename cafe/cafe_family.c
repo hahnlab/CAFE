@@ -286,6 +286,7 @@ void cafe_family_set_size_with_family_forced(pCafeFamily pcf, int idx, pCafeTree
 	pcafe->rootfamilysizes[0] = 1;
 	pcafe->rootfamilysizes[1] = rint(max * 1.25);
 	pcafe->familysizes[1] = max + MAX(50,max/5);
+	// rootfamilysizes is min and max family size
 	pcafe->rfsize = pcafe->rootfamilysizes[1] - pcafe->rootfamilysizes[0] + 1;
 }
 
