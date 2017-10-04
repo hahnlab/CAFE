@@ -1474,7 +1474,8 @@ int cafe_cmd_esterror(Globals& globals, std::vector<std::string> tokens)
 	ostream ost(&buf);
 	// estimate error matrix                
 	if (args.data_error_files.size() == 2) {
-		errormeasure = estimate_error_double_measure(ost, args.data_error_files[0].c_str(), args.data_error_files[1].c_str(), args.symmetric, args.max_diff, args.peakzero, globals.param.family_size.max);
+        std::ifstream ist1(args.data_error_files[0]), ist2(args.data_error_files[1]);
+        errormeasure = estimate_error_double_measure(ost, &ist1, &ist2, args.symmetric, args.max_diff, args.peakzero, globals.param.family_size.max);
 	}
 	else if (args.data_error_files.size() == 1) {
 		errormeasure = estimate_error_true_measure(ost, args.data_error_files[0].c_str(), args.truth_file.c_str(), args.symmetric, args.max_diff, args.peakzero, globals.param.family_size.max);

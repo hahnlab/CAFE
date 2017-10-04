@@ -35,6 +35,8 @@ struct gene_family
 	}
 };
 
+std::istream& operator>>(std::istream& ist, gene_family& fam);
+
 void cafe_family_add_item(pCafeFamily pcf, const gene_family& gf);
 void cafe_family_item_free(pCafeFamilyItem pitem);
 

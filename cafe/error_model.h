@@ -18,9 +18,11 @@ void init_error_ptr(pCafeFamily family, pCafeTree pTree, pErrorStruct errormodel
 std::ostream& operator<<(std::ostream& ost, ErrorStruct& errormodel);
 std::istream& operator>>(std::istream& ifst, ErrorStruct& errormodel);
 
-pErrorMeasure estimate_error_double_measure(std::ostream& log, const char* error1, const char* error2, int b_symmetric, int max_diff, int b_peakzero, int maxFamilySize);
+pErrorMeasure estimate_error_double_measure(std::ostream& log, std::istream* ist1, std::istream* ist2, int b_symmetric, int max_diff, int b_peakzero, int maxFamilySize);
 pErrorMeasure estimate_error_true_measure(std::ostream& log, const char* errorfile, const char* truefile, int b_symmetric, int max_diff, int b_peakzero, int max_family_size);
-int read_freq_from_measures(std::istream* ist1, std::istream* ist2, int* sizeFreq, int maxFamilySize);
+void read_freq_from_measures(std::istream* ist1, std::istream* ist2, int* sizeFreq, int& maxFamilySize);
+void read_error_double_measure(std::istream& ist1, std::istream& ist2, int** observed_pairs, int maxFamilySize);
+void get_size_probability_distribution(int maxFamilySize, int *sizeFreq, double* sizeDist);
 
 
 #endif
