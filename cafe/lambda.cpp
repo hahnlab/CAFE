@@ -606,13 +606,8 @@ posterior compute_posterior(pCafeFamilyItem pitem, pCafeTree pcafe, const std::v
     return result;
 }
 
-double get_posterior(pCafeFamily pfamily, pCafeTree pcafe, family_size_range*range, double *ML, double *MAP, double *prior_rfsize, int quiet)
+double get_posterior(pCafeFamily pfamily, pCafeTree pcafe, family_size_range*range, std::vector<double>& ML, std::vector<double>& MAP, std::vector<double>& prior_rfsize, int quiet)
 {
-	if (!prior_rfsize)
-		throw std::runtime_error("ERROR: empirical posterior not defined.\n");
-
-    std::vector<double> prior(FAMILYSIZEMAX);
-    std::copy(prior_rfsize, prior_rfsize + FAMILYSIZEMAX, prior.begin());
 	int i;
 	double score = 0;
 	for (i = 0; i < pfamily->flist->size; i++)	// i: family index
@@ -622,7 +617,7 @@ double get_posterior(pCafeFamily pfamily, pCafeTree pcafe, family_size_range*ran
         if (pitem->ref < 0 || pitem->ref == i)
 		{
 			cafe_family_set_size(pfamily, pitem, pcafe);	// this part is just setting the leave counts.
-			posterior p = compute_posterior(pitem, pcafe, prior);
+			posterior p = compute_posterior(pitem, pcafe, prior_rfsize);
             ML[i] = p.max_likelihood;
             MAP[i] = p.max_posterior;
 
@@ -666,7 +661,12 @@ double __cafe_best_lambda_search(double* plambda, void* args)
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
 		try
 		{
-			score = get_posterior(param->pfamily, param->pcafe, &param->family_size, param->ML, param->MAP, param->prior_rfsize, param->quiet);
+            int num_families = param->pfamily->flist->size;
+            std::vector<double> ml(num_families), map(num_families), pr(FAMILYSIZEMAX);
+            copy(param->ML, param->ML + num_families, ml.begin());
+            copy(param->MAP, param->MAP + num_families, map.begin());
+            copy(param->prior_rfsize, param->prior_rfsize + FAMILYSIZEMAX, pr.begin());
+            score = get_posterior(param->pfamily, param->pcafe, &param->family_size, ml, map, pr, param->quiet);
 		}
 		catch (std::runtime_error& e)
 		{

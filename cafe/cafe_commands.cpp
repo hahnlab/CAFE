@@ -1256,6 +1256,12 @@ int cafe_cmd_lhtest(Globals& globals, std::vector<std::string> tokens)
 	std::vector<std::string> files = enumerate_directory(args.directory, "tab");
 	pString pstr_cafe = phylogeny_string((pTree)param->pcafe, NULL);
 	int j;
+    int num_families = param->pfamily->flist->size;
+    std::vector<double> ml(num_families), map(num_families), pr(FAMILYSIZEMAX);
+    copy(param->ML, param->ML + num_families, ml.begin());
+    copy(param->MAP, param->MAP + num_families, map.begin());
+    copy(param->prior_rfsize, param->prior_rfsize + FAMILYSIZEMAX, pr.begin());
+
 	for (size_t i = 0; i < files.size(); i++)
 	{
 		std::string fname = files[i];
@@ -1266,7 +1272,7 @@ int cafe_cmd_lhtest(Globals& globals, std::vector<std::string> tokens)
 		cafe_shell_dispatch_commandf(globals, "lambda -s -l %lf", args.lambda);
 		try
 		{
-			double p = get_posterior(param->pfamily, param->pcafe, &param->family_size, param->ML, param->MAP, param->prior_rfsize, param->quiet);
+			double p = get_posterior(param->pfamily, param->pcafe, &param->family_size, ml, map, pr, param->quiet);
 			fprintf(fout, "\t%lf\t%lf", p, param->lambda[0]);
 		}
 		catch (std::runtime_error& e)
@@ -1278,7 +1284,7 @@ int cafe_cmd_lhtest(Globals& globals, std::vector<std::string> tokens)
 		cafe_shell_dispatch_commandf(globals, "lambda -s -v %lf -t %s", args.lambda, args.tree.c_str());
 		try
 		{
-			double p = get_posterior(param->pfamily, param->pcafe, &param->family_size, param->ML, param->MAP, param->prior_rfsize, param->quiet);
+			double p = get_posterior(param->pfamily, param->pcafe, &param->family_size, ml, map, pr, param->quiet);
 			fprintf(fout, "\t%lf", p);
 		}
 		catch (std::runtime_error& e)

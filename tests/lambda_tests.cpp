@@ -1,5 +1,7 @@
 #include <stdexcept>
 #include <sstream>
+#include <fstream>
+
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
@@ -570,6 +572,7 @@ TEST(LambdaTests, best_lambda_by_fminsearch)
 	char tree[100];
 	strcpy(tree, newick_tree);
 
+    globals.param.quiet = 1;
 	globals.param.pcafe = cafe_tree_new(tree, &range, 0, 0);
 	globals.param.pfamily = cafe_family_init({ "A", "B", "C", "D" });
 
@@ -602,11 +605,6 @@ TEST(LambdaTests, best_lambda_mu_by_fminsearch)
 #if 0	// TODO
 	best_lambda_mu_by_fminsearch(&globals.param, 1, 1, 1, ost);
 #endif
-}
-
-TEST(LambdaTests, get_posterior_throws_if_prior_not_given)
-{
-	CHECK_THROWS(std::runtime_error, get_posterior(NULL, NULL, NULL, NULL, NULL, NULL, false));
 }
 
 static void set_matrix(pTree ptree, pTreeNode ptnode, va_list ap1)
@@ -642,8 +640,7 @@ TEST(LambdaTests, get_posterior)
 	cafe_family_set_species_index(param.pfamily, param.pcafe);
 	cafe_family_add_item(param.pfamily, gene_family("id", "description", { 3, 5, 7, 11, 13 }));
 
-	param.ML = (double*)memory_new(15, sizeof(double));
-	param.MAP = (double*)memory_new(15, sizeof(double));
+    std::vector<double> ml(15), map(15);
 
 	square_matrix m;
 	square_matrix_init(&m, 16);
@@ -654,12 +651,12 @@ TEST(LambdaTests, get_posterior)
 
     std::vector<double> prior_rfsize;
     cafe_set_prior_rfsize_empirical(&param, prior_rfsize);
-	DOUBLES_EQUAL(-4.6503, get_posterior(param.pfamily, param.pcafe, &param.family_size, param.ML, param.MAP, &prior_rfsize[0], param.quiet), .0001);
+	DOUBLES_EQUAL(-4.6503, get_posterior(param.pfamily, param.pcafe, &param.family_size, ml, map, prior_rfsize, param.quiet), .0001);
 
 	for (int i = 0; i < 256; i++)
 		m.values[i] = 0;
 
-	CHECK_THROWS(std::runtime_error, get_posterior(param.pfamily, param.pcafe, &param.family_size, param.ML, param.MAP, &prior_rfsize[0], param.quiet));
+	CHECK_THROWS(std::runtime_error, get_posterior(param.pfamily, param.pcafe, &param.family_size, ml, map, prior_rfsize, param.quiet));
 
 	cafe_family_free(param.pfamily);
 };
@@ -696,7 +693,7 @@ TEST(LambdaTests, find_poisson_lambda)
 }
 
 
-#if 0
+#if 1
 TEST(LambdaTests, get_posterior2)
 {
     probability_cache = birthdeath_cache_init(150);
@@ -717,7 +714,7 @@ TEST(LambdaTests, get_posterior2)
 
     std::vector<double> ml(pfamily->flist->size);
     std::vector<double> map(pfamily->flist->size);
-    std::vector<double> rf(pfamily->flist->size);
+    std::vector<double> rf(FAMILYSIZEMAX);
 
     for (int i = 0; i < pcafe->super.nlist->size; ++i)
     {
@@ -727,7 +724,7 @@ TEST(LambdaTests, get_posterior2)
     }
 
     //    cafe_set_prior_rfsize_empirical(&param);
-    DOUBLES_EQUAL(-4.6503, get_posterior(pfamily, pcafe, &range, &ml[0], &map[0], &rf[0], 1), .0001);
+    DOUBLES_EQUAL(-4.6503, get_posterior(pfamily, pcafe, &range, ml, map, rf, 1), .0001);
 
     cafe_family_free(pfamily);
 };

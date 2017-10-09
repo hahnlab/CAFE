@@ -492,7 +492,7 @@ TEST(FirstTestGroup, cafe_tree_p_values)
 TEST(FirstTestGroup, cafe_set_prior_rfsize_empirical)
 {
   CafeParam param;
-  param.quiet = 0;
+  param.quiet = 1;
   param.flog = stdout;
   param.prior_rfsize = NULL;
   param.pfamily = cafe_family_init({ "A", "B", "C", "D" });

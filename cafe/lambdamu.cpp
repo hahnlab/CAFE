@@ -344,7 +344,12 @@ double cafe_best_lambda_mu_search(double* parameters, void* args)
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
 		try
 		{
-			score = get_posterior(param->pfamily, param->pcafe, &param->family_size, param->ML, param->MAP, param->prior_rfsize, param->quiet);
+            int num_families = param->pfamily->flist->size;
+            std::vector<double> ml(num_families), map(num_families), pr(FAMILYSIZEMAX);
+            copy(param->ML, param->ML + num_families, ml.begin());
+            copy(param->MAP, param->MAP + num_families, map.begin());
+            copy(param->prior_rfsize, param->prior_rfsize + FAMILYSIZEMAX, pr.begin());
+            score = get_posterior(param->pfamily, param->pcafe, &param->family_size, ml, map, pr, param->quiet);
 		}
 		catch (std::runtime_error& e)
 		{
