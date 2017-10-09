@@ -5,6 +5,7 @@
 #include <string>
 
 extern "C" {
+#include "cafe.h"
 #include "family.h"
 #include "cafe_shell.h"
 #include "gmatrix.h"
@@ -68,6 +69,7 @@ int cafe_cmd_lambda(Globals& globals, std::vector<std::string> tokens);
 void set_all_lambdas(pCafeParam param, double value);
 pGMatrix cafe_lambda_distribution(pCafeParam param, const std::vector<lambda_range>& range);
 double get_posterior(pCafeFamily pfamily, pCafeTree pcafe, family_size_range*range, double *ML, double *MAP, double *prior_rfsize, int quiet);
+double compute_posterior(pCafeFamilyItem pitem, pCafeTree pcafe, double *max_likelihood, double *prior_rfsize);
 
 const int INIT_PARAMS = 1;
 const int INIT_KWEIGHTS = 2;

@@ -142,30 +142,6 @@ void show_sizes(FILE* f, pCafeTree pcafe, family_size_range* range, pCafeFamilyI
 	fprintf(f, "Family size: %d ~ %d\n", range->min, range->max);
 }
 
-void compute_posterior(pCafeFamilyItem pitem, pCafeTree pcafe, double *max_likelihood, double *max_posterior, double *prior_rfsize)
-{
-  compute_tree_likelihoods(pcafe);
-
-  double *likelihood = get_likelihoods(pcafe);		// likelihood of the whole tree = multiplication of likelihood of all nodes
-
-  *max_likelihood = __max(likelihood, pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
-  if (pitem->maxlh < 0)
-  {
-    pitem->maxlh = __maxidx(likelihood, pcafe->rfsize);
-  }
-  // get posterior by adding lnPrior to lnLikelihood
-  double* posterior = (double*)memory_new(pcafe->size_of_factor, sizeof(double));
-  for (int j = 0; j < pcafe->rfsize; j++)	// j: root family size
-  {
-    // likelihood and posterior both starts from 1 instead of 0 
-    posterior[j] = exp(log(likelihood[j]) + log(prior_rfsize[j]));	//prior_rfsize also starts from 1
-  }
-
-  *max_posterior = __max(posterior, pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
-  memory_free(posterior);
-  posterior = NULL;
-}
-
 void input_values_randomize(input_values *vals, int lambda_len, int mu_len, int k,
 	int kfix, double max_branch_length, double *k_weights)
 {

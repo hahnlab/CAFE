@@ -30,18 +30,30 @@
 *.i*86
 *.x86_64
 *.hex
+release/*
 
 # Debug files
 *.dSYM/
 *.su
 .idea
 .gdb_history
+debug/*
 
 # Generated Documentation
-docs/html
-docs/xml
-docs/latex
+src_docs/html
+src_docs/xml
+src_docs/latex
 
 # Testing
 example/resultfile.*
+test_files/*
+test/*
 
+# Automake
+Makefile
+Makefile.am
+aclocal.m4
+autom4te.cache/
+config.log
+config.status
+configure

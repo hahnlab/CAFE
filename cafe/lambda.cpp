@@ -573,6 +573,29 @@ double* cafe_best_lambda_by_fminsearch(pCafeParam param, int lambda_len, int k)
 	return param->input.parameters;
 }
 
+double compute_posterior(pCafeFamilyItem pitem, pCafeTree pcafe, double *max_likelihood, double *prior_rfsize)
+{
+    compute_tree_likelihoods(pcafe);
+
+    double *likelihood = get_likelihoods(pcafe);		// likelihood of the whole tree = multiplication of likelihood of all nodes
+
+    *max_likelihood = __max(likelihood, pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
+    if (pitem->maxlh < 0)
+    {
+        pitem->maxlh = __maxidx(likelihood, pcafe->rfsize);
+    }
+    // get posterior by adding lnPrior to lnLikelihood
+    std::vector<double> posterior(pcafe->rfsize);
+    for (int j = 0; j < pcafe->rfsize; j++)	// j: root family size
+    {
+        // likelihood and posterior both starts from 1 instead of 0 
+        posterior[j] = exp(log(likelihood[j]) + log(prior_rfsize[j]));	//prior_rfsize also starts from 1
+    }
+
+    // this part find root size condition with maxlikelihood for each family			
+    return *std::max_element(posterior.begin(), posterior.end());
+}
+
 double get_posterior(pCafeFamily pfamily, pCafeTree pcafe, family_size_range*range, double *ML, double *MAP, double *prior_rfsize, int quiet)
 {
 	if (!prior_rfsize)
@@ -583,10 +606,11 @@ double get_posterior(pCafeFamily pfamily, pCafeTree pcafe, family_size_range*ran
 	for (i = 0; i < pfamily->flist->size; i++)	// i: family index
 	{
 		pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[i];
-		if (pitem->ref < 0 || pitem->ref == i)
+
+        if (pitem->ref < 0 || pitem->ref == i)
 		{
 			cafe_family_set_size(pfamily, pitem, pcafe);	// this part is just setting the leave counts.
-			compute_posterior(pitem, pcafe, ML+i, MAP+i, prior_rfsize);
+			MAP[i] = compute_posterior(pitem, pcafe, ML+i, prior_rfsize);
 		}
 		else
 		{
