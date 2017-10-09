@@ -183,14 +183,12 @@ void input_values_randomize(input_values *vals, int lambda_len, int mu_len, int 
 	}
 }
 
-double cafe_get_clustered_posterior(pCafeParam param)
+double cafe_get_clustered_posterior(pCafeParam param, double *ML, double *MAP, double *prior_rfsize)
 {
 	int i,j,k;
 	double score = 0;
 	double** k_likelihoods = NULL;
 	double* sumofweights = (double*) memory_new(param->parameterized_k_value, sizeof(double));
-	
-	
 	for ( i = 0 ; i < param->pfamily->flist->size ; i++ )
 	{
 		pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
@@ -207,10 +205,10 @@ double cafe_get_clustered_posterior(pCafeParam param)
 				
 				// get posterior by adding lnPrior to lnLikelihood
 				double* posterior = (double*)memory_new(FAMILYSIZEMAX,sizeof(double));
-				if(param->prior_rfsize) {		// prior is a poisson distribution on the root size based on leaves' size
+				if(prior_rfsize) {		// prior is a poisson distribution on the root size based on leaves' size
 					for(j = 0; j < param->pcafe->rfsize; j++)	// j: root family size
 					{
-						posterior[j+param->pcafe->rootfamilysizes[0]] = exp(log(k_likelihoods[k][j])+log(param->prior_rfsize[j]));
+						posterior[j+param->pcafe->rootfamilysizes[0]] = exp(log(k_likelihoods[k][j])+log(prior_rfsize[j]));
 					}				
 				}
 				// Max_on_rootsize k_likelihoods(rootsize)
@@ -231,7 +229,7 @@ double cafe_get_clustered_posterior(pCafeParam param)
 			for (k = 0; k<param->parameterized_k_value; k++) {
 				expectedPosterior += param->p_z_membership[i][k]*(MAP_k[k]);
 			}
-			param->MAP[i] = expectedPosterior;
+			MAP[i] = expectedPosterior;
 			free(MAP_k);
 			
 
@@ -244,15 +242,15 @@ double cafe_get_clustered_posterior(pCafeParam param)
 		}
 		else
 		{
-			param->ML[i] = param->ML[pitem->ref];
-			param->MAP[i] = param->MAP[pitem->ref];
+			ML[i] = ML[pitem->ref];
+			MAP[i] = MAP[pitem->ref];
 			for (k = 0; k < param->parameterized_k_value; k++) {
 				param->p_z_membership[i][k] = param->p_z_membership[pitem->ref][k];
 				sumofweights[k] += param->p_z_membership[i][k];
 			}
 			
 		}
-		if ( param->MAP[i] == 0 )
+		if ( MAP[i] == 0 )
 		{ 
 			show_sizes(stdout, param->pcafe, &param->family_size, pitem, i);
 			pString pstr = cafe_tree_string_with_familysize_lambda(param->pcafe);
@@ -262,7 +260,7 @@ double cafe_get_clustered_posterior(pCafeParam param)
 			score = log(0);
 			break;
 		}
-		score += log(param->MAP[i]);			// add log-posterior across all families
+		score += log(MAP[i]);			// add log-posterior across all families
 	}
 	for (k = 0; k < param->parameterized_k_value; k++) {
 		param->k_weights[k] = sumofweights[k]/param->pfamily->flist->size;
@@ -313,7 +311,7 @@ double __cafe_cluster_lambda_search(double* parameters, void* args)
 		param->param_set_func(param,parameters);
 
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
-		score = cafe_get_clustered_posterior(param);
+		score = cafe_get_clustered_posterior(param, param->ML, param->MAP, param->prior_rfsize);
 		cafe_free_birthdeath_cache(pcafe);
 		cafe_tree_node_free_clustered_likelihoods(param);
 	}

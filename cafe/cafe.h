@@ -101,7 +101,7 @@ void input_values_randomize(input_values *vals, int lambda_len, int mu_len, int 
 void initialize_leaf_likelihoods_for_viterbi(double **matrix, int num_rows, int range, int familysize, int num_cols, pErrorStruct errormodel);
 void reset_k_likelihoods(pCafeNode pcnode, int k, int num_factors);
 
-double cafe_get_clustered_posterior(pCafeParam param);
+double cafe_get_clustered_posterior(pCafeParam param, double *ML, double *MAP, double *prior_rfsize);
 
 #define E_NOT_SYNCHRONIZED 1
 #define E_INCONSISTENT_SIZE 2

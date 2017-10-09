@@ -290,7 +290,7 @@ double cafe_cluster_lambda_mu_search(double* parameters, void* args)
 		param->param_set_func(param, parameters);
 
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
-		score = cafe_get_clustered_posterior(param);
+		score = cafe_get_clustered_posterior(param, param->ML, param->MAP, param->prior_rfsize);
 		cafe_free_birthdeath_cache(pcafe);
 		cafe_tree_node_free_clustered_likelihoods(param);
 	}
