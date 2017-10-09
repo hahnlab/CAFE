@@ -71,7 +71,6 @@ double cafe_set_prior_rfsize_poisson_lambda(pCafeParam param, double* lambda);
 double *find_poisson_lambda(pCafeParam param, pCafeFamily pfamily, int *p_num_params);
 void compute_posterior(pCafeFamilyItem pitem, pCafeTree pcafe, double *max_likelihood, double *max_posterior, double *prior_rfsize);
 
-
 /****************************************************************************
  * Cafe Family
 ****************************************************************************/
@@ -107,5 +106,9 @@ void initialize_leaf_likelihoods_for_viterbi(double **matrix, int num_rows, int 
 void reset_k_likelihoods(pCafeNode pcnode, int k, int num_factors);
 
 double cafe_get_clustered_posterior(pCafeParam param);
+
+#define E_NOT_SYNCHRONIZED 1
+#define E_INCONSISTENT_SIZE 2
+int sync_sanity_check(pCafeFamily pcf, pCafeTree pcafe);
 
 #endif

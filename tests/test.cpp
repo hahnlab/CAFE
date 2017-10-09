@@ -1635,6 +1635,36 @@ TEST(LikelihoodRatio, update_branchlength)
 	LONGS_EQUAL(6, old_branchlength[0]);		// branchlengths are copied here
 }
 
+TEST(FirstTestGroup, sync_sanity_check_passes)
+{
+    const char *large_tree = "((((((LFULV:35,EDANI:35):71,((BGERM:14,ZNEVA:14):26,"
+        "((((((((COPFL:10,TPRET:10):7,NVITR:11):66,(((DNOVA:45,LALBI:45):16,"
+        "(((((AMELL:8,AFLOR:8):20,((BIMPA:6,BTERR:6):17,MQUAD:23):4):5,EMEXI:34):10,HLABO:44):9,MROTU:53):8):32,"
+        "(((((((ACEPH:9,AECHI:9):23,SINVI:33):2,COBSC:35):4,PBARB:40):9,CFLOR:49):3,LHUMI:52):11,HSALT:63):29):87):8,OABIE:18):8,CCINC:198):28,AROSA:227):163,"
+        "((((((AGLAB:104,LDECE:104):32,DPOND:13):27,TCAST:16):51,OTAUR:21):26,APLAN:24):13,"
+        "(((((BMORI:80,MSEXT:80):26,(HMELP:73,DPLEX:73):33):28,PXYLO:135):145,LLUNA:281):80,"
+        "(((AAEGY:83,CQUIN:83):80,((AGAMB:39,AFUNE:39):48,AALBI:88):75):146,"
+        "((((((LCUP2:74,MDOME:74):29,GMORS:103):37,CCAPI:141):16,((DPSEU:49,DMELA:49):25,DGRIM:74):82):120,MDEST:27):19,LLONG:29):12):50):14):14):14,"
+        "(((((((HHALY:108,OFAS2:10):71,CLECT:179):47,GBUEN:227):77,HVITR:30):35,(APISU:30,PVENU:30):34):30,FOCCI:37):16,PHUMA:38):16):5):16):59,"
+        "CAQUI:486):35,((HAZTE:48,EAFFI:48):19,DPULE:50):15):45,SMARI:56):2,"
+        "((((((LHESP:86,PTEPI:86):52,SMIMO:13):11,LRECL:25):14,CSCUL:39):71,(MOCCI:39,ISCAP:39):77):27,TURTI:49):72)";
+
+    char tree[5000];
+    strcpy(tree, large_tree);
+    pCafeTree pcafe = cafe_tree_new(tree, &range, 0.01, 0);
+
+    pCafeFamily pfamily = cafe_family_init({ "AFUNE" });
+    cafe_family_add_item(pfamily, gene_family("ENS01", "description", { 3 }));
+
+    CHECK(E_NOT_SYNCHRONIZED & sync_sanity_check(pfamily, pcafe));
+    pfamily->index[0] = 1000;
+    CHECK(E_INCONSISTENT_SIZE & sync_sanity_check(pfamily, pcafe));
+    pfamily->index[0] = pcafe->super.nlist->size - 1;
+    LONGS_EQUAL(0, sync_sanity_check(pfamily, pcafe));
+
+    cafe_family_free(pfamily);
+}
+
 int main(int ac, char** av)
 {
 	return CommandLineTestRunner::RunAllTests(ac, av);

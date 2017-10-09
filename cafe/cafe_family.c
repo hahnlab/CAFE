@@ -229,21 +229,25 @@ int cafe_family_get_species_index(pCafeFamily pcf, char* speciesname)
     return returnidx;
 }
 
-void sync_sanity_check(pCafeFamily pcf, pCafeTree pcafe)
+#define E_NOT_SYNCHRONIZED 1
+#define E_INCONSISTENT_SIZE 2
+
+int sync_sanity_check(pCafeFamily pcf, pCafeTree pcafe)
 {
-  for (int i = 0; i < pcf->num_species; i++)
-  {
-    if (pcf->index[i] < 0)
+    int insane = 0;
+    for (int i = 0; i < pcf->num_species; i++)
     {
-      fprintf(stderr, "Warning: Tree and family indices not synchronized\n");
-      continue;
+        if (pcf->index[i] < 0)
+        {
+            insane |= E_NOT_SYNCHRONIZED;
+        }
+        else if (pcf->index[i] >= pcafe->super.nlist->size)
+        {
+            insane |= E_INCONSISTENT_SIZE;
+        }
     }
-    if (pcf->index[i] >= pcafe->super.size)
-    {
-      fprintf(stderr, "Inconsistency in tree size");
-      exit(-1);
-    }
-  }
+
+    return insane;
 }
 
 /*! \brief Copy sizes of an individual gene family into the tree
@@ -261,7 +265,17 @@ void cafe_family_set_size(pCafeFamily pcf, pCafeFamilyItem pitem, pCafeTree pcaf
 		((pCafeNode)ptree->nlist->array[i])->familysize = -1;
 	}
 
-  sync_sanity_check(pcf, pcafe);
+    int insane = sync_sanity_check(pcf, pcafe);
+    if (insane & E_NOT_SYNCHRONIZED)
+    {
+        fprintf(stderr, "Warning: Tree and family indices not synchronized\n");
+    }
+    if (insane & E_INCONSISTENT_SIZE)
+    {
+        fprintf(stderr, "Inconsistency in tree size");
+        exit(-1);
+    }
+
 	for (int i = 0 ; i < pcf->num_species ; i++ )
 	{
 		pCafeNode pcnode = (pCafeNode)ptree->nlist->array[pcf->index[i]];
