@@ -235,7 +235,10 @@ int cafe_cmd_lambdamu(Globals& globals, std::vector<std::string> tokens)
 	// copy parameters collected to param based on the combination of options.
 	param->posterior = 1;
 	// set rootsize prior based on leaf size
-	cafe_set_prior_rfsize_empirical(param);
+    std::vector<double> prior_rfsize;
+    cafe_set_prior_rfsize_empirical(param, prior_rfsize);
+    globals.param.prior_rfsize = (double *)memory_new(prior_rfsize.size(), sizeof(double));
+    std::copy(prior_rfsize.begin(), prior_rfsize.end(), globals.param.prior_rfsize);
 
 	// search or set
 	if (params.search) {

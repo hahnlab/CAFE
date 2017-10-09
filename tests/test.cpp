@@ -352,30 +352,6 @@ TEST(TreeTests, compute_tree_likelihood)
 
 }
 
-TEST(FirstTestGroup, find_poisson_lambda)
-{
-  CafeParam param;
-  param.quiet = 0;
-  param.flog = stdout;
-  param.prior_rfsize = NULL;
-  param.pfamily = cafe_family_init({ "A", "B", "C", "D" });
-  cafe_family_add_item(param.pfamily, gene_family("ENS01", "description", { 6, 11, 3, 7 }));
-  cafe_family_add_item(param.pfamily, gene_family("ENS02", "description", { 6, 11, 3, 7 }));
-  cafe_family_add_item(param.pfamily, gene_family("ENS03", "description", { 6, 11, 3, 7 }));
-  cafe_family_add_item(param.pfamily, gene_family("ENS04", "description", { 6, 11, 3, 7 }));
-
-  param.pcafe = create_small_tree(range);
-
-  cafe_family_set_species_index(param.pfamily, param.pcafe);
-
-  int num_params;
-  double *parameters = find_poisson_lambda(&param, param.pfamily, &num_params);
-  LONGS_EQUAL(1, num_params);
-  DOUBLES_EQUAL(5.75, parameters[0], .001);
-  free(parameters);
-  cafe_family_free(param.pfamily);
-}
-
 TEST(FirstTestGroup, compute_likelihoods)
 {
   const char *newick_tree = "((A:1,B:1):1,(C:1,D:1):1);";
@@ -529,30 +505,27 @@ TEST(FirstTestGroup, cafe_set_prior_rfsize_empirical)
 
   cafe_family_set_species_index(param.pfamily, param.pcafe);
 
-  cafe_set_prior_rfsize_empirical(&param);
-  DOUBLES_EQUAL(0.0, param.prior_rfsize[0], .001);
+  std::vector<double> prior_rfsize;
+  cafe_set_prior_rfsize_empirical(&param, prior_rfsize);
+  DOUBLES_EQUAL(0.0, prior_rfsize[0], .001);
   cafe_family_free(param.pfamily);
 
 }
 
 TEST(FirstTestGroup, cafe_set_prior_rfsize_poisson_lambda)
 {
-  CafeParam param;
-  param.pcafe = create_small_tree(range);
-  param.pcafe->rootfamilysizes[0] = 1;
-  param.prior_rfsize = NULL;
-
+  std::vector<double> prior_rfsize;
   double poisson_lambda = 5.75;
-  cafe_set_prior_rfsize_poisson_lambda(&param, &poisson_lambda);
+  cafe_set_prior_rfsize_poisson_lambda(prior_rfsize, 1, &poisson_lambda);
 
-  DOUBLES_EQUAL(0.00318278, param.prior_rfsize[0], 0.00001);
-  DOUBLES_EQUAL(0.018301, param.prior_rfsize[1], 0.00001);
-  DOUBLES_EQUAL(0.0526153, param.prior_rfsize[2], 0.00001);
-  DOUBLES_EQUAL(0.100846, param.prior_rfsize[3], 0.00001);
-  DOUBLES_EQUAL(0.144966, param.prior_rfsize[4], 0.00001);
-  DOUBLES_EQUAL(0.166711, param.prior_rfsize[5], 0.00001);
+  DOUBLES_EQUAL(0.00318278, prior_rfsize[0], 0.00001);
+  DOUBLES_EQUAL(0.018301, prior_rfsize[1], 0.00001);
+  DOUBLES_EQUAL(0.0526153, prior_rfsize[2], 0.00001);
+  DOUBLES_EQUAL(0.100846, prior_rfsize[3], 0.00001);
+  DOUBLES_EQUAL(0.144966, prior_rfsize[4], 0.00001);
+  DOUBLES_EQUAL(0.166711, prior_rfsize[5], 0.00001);
 
-  DOUBLES_EQUAL(0.000, param.prior_rfsize[999], .000000001);
+  DOUBLES_EQUAL(0.000, prior_rfsize[999], .000000001);
 }
 
 TEST(FirstTestGroup, list_commands)

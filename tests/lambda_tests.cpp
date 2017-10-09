@@ -582,8 +582,10 @@ TEST(LambdaTests, best_lambda_by_fminsearch)
 	cafe_tree_set_parameters(globals.param.pcafe, &globals.param.family_size, 0);
 	cafe_family_set_species_index(globals.param.pfamily, globals.param.pcafe);
 
-	cafe_set_prior_rfsize_empirical(&globals.param);
-
+    std::vector<double> prior_rfsize;
+	cafe_set_prior_rfsize_empirical(&globals.param, prior_rfsize);
+    globals.param.prior_rfsize = (double *)memory_new(prior_rfsize.size(), sizeof(double));
+    std::copy(prior_rfsize.begin(), prior_rfsize.end(), globals.param.prior_rfsize);
 	globals.param.ML = (double*)calloc(globals.param.pfamily->flist->size, sizeof(double));
 	globals.param.MAP = (double*)calloc(globals.param.pfamily->flist->size, sizeof(double));
 
@@ -650,14 +652,83 @@ TEST(LambdaTests, get_posterior)
 
 	tree_traveral_postfix((pTree)param.pcafe, set_matrix, &m);
 
-	cafe_set_prior_rfsize_empirical(&param);
-	DOUBLES_EQUAL(-4.6503, get_posterior(param.pfamily, param.pcafe, &param.family_size, param.ML, param.MAP, param.prior_rfsize, param.quiet), .0001);
+    std::vector<double> prior_rfsize;
+    cafe_set_prior_rfsize_empirical(&param, prior_rfsize);
+	DOUBLES_EQUAL(-4.6503, get_posterior(param.pfamily, param.pcafe, &param.family_size, param.ML, param.MAP, &prior_rfsize[0], param.quiet), .0001);
 
 	for (int i = 0; i < 256; i++)
 		m.values[i] = 0;
 
-	CHECK_THROWS(std::runtime_error, get_posterior(param.pfamily, param.pcafe, &param.family_size, param.ML, param.MAP, param.prior_rfsize, param.quiet));
+	CHECK_THROWS(std::runtime_error, get_posterior(param.pfamily, param.pcafe, &param.family_size, param.ML, param.MAP, &prior_rfsize[0], param.quiet));
 
 	cafe_family_free(param.pfamily);
 };
 
+TEST(LambdaTests, find_poisson_lambda)
+{
+    CafeParam param;
+    param.quiet = 0;
+    param.flog = stdout;
+    param.prior_rfsize = NULL;
+    param.pfamily = cafe_family_init({ "A", "B", "C", "D" });
+    cafe_family_add_item(param.pfamily, gene_family("ENS01", "description", { 6, 11, 3, 7 }));
+    cafe_family_add_item(param.pfamily, gene_family("ENS02", "description", { 6, 11, 3, 7 }));
+    cafe_family_add_item(param.pfamily, gene_family("ENS03", "description", { 6, 11, 3, 7 }));
+    cafe_family_add_item(param.pfamily, gene_family("ENS04", "description", { 6, 11, 3, 7 }));
+
+    const char *newick_tree = "((A:1,B:1):1,(C:1,D:1):1);";
+    char tree[100];
+    strcpy(tree, newick_tree);
+    family_size_range range;
+    range.min = 0;
+    range.max = 7;
+    range.root_min = 0;
+    range.root_max = 7;
+    param.pcafe = cafe_tree_new(tree, &range, 0, 0);
+
+    cafe_family_set_species_index(param.pfamily, param.pcafe);
+
+    poisson_lambda pl = find_poisson_lambda(param.pfamily);
+    LONGS_EQUAL(1, pl.num_params);
+    DOUBLES_EQUAL(5.75, pl.parameters[0], .001);
+    free(pl.parameters);
+    cafe_family_free(param.pfamily);
+}
+
+
+#if 0
+TEST(LambdaTests, get_posterior2)
+{
+    probability_cache = birthdeath_cache_init(150);
+
+    family_size_range range;
+    range.min = range.root_min = 1;
+    range.max = 149;
+    range.root_max = 124;
+
+    const char *newick_tree = "((((cat:68.710507,horse:68.710507):4.566782,cow:73.277289):20.722711,(((((chimp:4.444172,human:4.444172):6.682678,orang:11.126850):2.285855,gibbon:13.412706):7.211527,(macaque:4.567240,baboon:4.567240):16.056992):16.060702,marmoset:36.684935):57.315065):38.738021,(rat:36.302445,mouse:36.302445):96.435575)";
+    char tree[1000];
+    strcpy(tree, newick_tree);
+    pCafeTree pcafe = cafe_tree_new(tree, &range, 0.01, 0);
+
+    std::ifstream ifst("test_files/cut_sim.txt");
+    pCafeFamily pfamily = load_gene_families(ifst, '\t', -1);
+    cafe_family_set_species_index(pfamily, pcafe);
+
+    std::vector<double> ml(pfamily->flist->size);
+    std::vector<double> map(pfamily->flist->size);
+    std::vector<double> rf(pfamily->flist->size);
+
+    for (int i = 0; i < pcafe->super.nlist->size; ++i)
+    {
+        pCafeNode node = (pCafeNode)pcafe->super.nlist->array[i];
+        node->birth_death_probabilities.lambda = 0.01;
+        node->birth_death_probabilities.mu = -1;
+    }
+
+    //    cafe_set_prior_rfsize_empirical(&param);
+    DOUBLES_EQUAL(-4.6503, get_posterior(pfamily, pcafe, &range, &ml[0], &map[0], &rf[0], 1), .0001);
+
+    cafe_family_free(pfamily);
+};
+#endif

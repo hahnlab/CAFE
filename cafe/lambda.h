@@ -68,6 +68,8 @@ struct lambda_args : lambda_arg_base
 int cafe_cmd_lambda(Globals& globals, std::vector<std::string> tokens);
 void set_all_lambdas(pCafeParam param, double value);
 pGMatrix cafe_lambda_distribution(pCafeParam param, const std::vector<lambda_range>& range);
+void cafe_set_prior_rfsize_poisson_lambda(std::vector<double>& prior_rfsize, int shift, double* lambda);
+double cafe_set_prior_rfsize_empirical(pCafeParam param, std::vector<double>& prior_rfsize);
 double get_posterior(pCafeFamily pfamily, pCafeTree pcafe, family_size_range*range, double *ML, double *MAP, double *prior_rfsize, int quiet);
 struct posterior
 {
@@ -76,6 +78,16 @@ struct posterior
 };
 
 posterior compute_posterior(pCafeFamilyItem pitem, pCafeTree pcafe, const std::vector<double>& prior_rfsize);
+
+struct poisson_lambda
+{
+    double *parameters;
+    int num_params;
+    int num_iterations;
+    double score;
+};
+
+poisson_lambda find_poisson_lambda(pCafeFamily pfamily);
 
 const int INIT_PARAMS = 1;
 const int INIT_KWEIGHTS = 2;

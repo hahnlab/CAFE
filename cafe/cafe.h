@@ -38,7 +38,6 @@ typedef enum
  * Cafe Tree
 ****************************************************************************/
 
-extern double cafe_set_prior_rfsize_empirical(pCafeParam param);
 extern pCafeTree cafe_tree_new(const char* sztree, family_size_range* range, double lambda, double mu);
 extern pTreeNode cafe_tree_new_empty_node(pTree pcafe);
 extern void cafe_tree_set_parameters(pCafeTree pcafe, family_size_range* range, double lambda);
@@ -67,8 +66,6 @@ void initialize_leaf_likelihood_clustered(pTree ptree, pTreeNode ptnode);
 extern double cafe_tree_mp_remark(pString str, pTree ptree, pMetapostConfig pmc, va_list ap);
 extern int cafe_tree_random_familysize(pCafeTree pcafe, int rootFamilysize, pBirthDeathCacheArray cache);
 void node_set_birthdeath_matrix(pCafeNode pcnode, pBirthDeathCacheArray cache, int num_lambdas);
-double cafe_set_prior_rfsize_poisson_lambda(pCafeParam param, double* lambda);
-double *find_poisson_lambda(pCafeParam param, pCafeFamily pfamily, int *p_num_params);
 
 /****************************************************************************
  * Cafe Family

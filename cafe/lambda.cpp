@@ -342,7 +342,11 @@ int cafe_cmd_lambda(Globals& globals, vector<string> tokens)
 		}
 		param->posterior = 1;
 		// set rootsize prior based on leaf size
-		cafe_set_prior_rfsize_empirical(param);
+
+        std::vector<double> prior_rfsize;
+		cafe_set_prior_rfsize_empirical(param, prior_rfsize);
+        globals.param.prior_rfsize = (double *)memory_new(prior_rfsize.size(), sizeof(double));
+        std::copy(prior_rfsize.begin(), prior_rfsize.end(), globals.param.prior_rfsize);
 
 		param->num_params = param->num_lambdas;
         
@@ -365,7 +369,10 @@ int cafe_cmd_lambda(Globals& globals, vector<string> tokens)
 	// copy parameters collected to param based on the combination of options.
 	param->posterior = 1;
 	// set rootsize prior based on leaf size
-	cafe_set_prior_rfsize_empirical(param);
+    std::vector<double> prior_rfsize;
+    cafe_set_prior_rfsize_empirical(param, prior_rfsize);
+    globals.param.prior_rfsize = (double *)memory_new(prior_rfsize.size(), sizeof(double));
+    std::copy(prior_rfsize.begin(), prior_rfsize.end(), globals.param.prior_rfsize);
 
 	// search or set
 	if (params.search) {
@@ -674,5 +681,105 @@ double __cafe_best_lambda_search(double* plambda, void* args)
 	cafe_log(param, "Lambda : %s & Score: %f\n", buf, score);
 	cafe_log(param, ".");
 	return -score;
+}
+
+double __lnLPoisson(double* plambda, void* data)
+{
+    int i = 0;
+    double score = 0;
+    double lambda = plambda[0];
+    pArrayList pal = (pArrayList)data;
+    for (i = 0; i<pal->size; i++) {
+        int* p_x = (int*)pal->array[i];
+        int x = *p_x;
+        double ll = poisspdf((double)x, lambda);
+        if (std::isnan(ll)) {
+            ll = 0;
+        }
+        score += log(ll);
+    }
+    //printf("lambda: %f (Poisson) & Score: %f\n", lambda, score);	
+    return -score;
+}
+
+poisson_lambda find_poisson_lambda(pCafeFamily pfamily)
+{
+    poisson_lambda result;
+    int i = 0;
+    int idx = 0;
+
+    // estimate the distribution of family size based on observed leaf counts.
+    // first collect all leaves sizes into an ArrayList.
+    pArrayList pLeavesSize = arraylist_new(pfamily->flist->size*pfamily->num_species);
+    for (idx = 0; idx<pfamily->flist->size; idx++) {
+        pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[idx];
+        for (i = 0; i < pfamily->num_species; i++)
+        {
+            if (pfamily->index[i] < 0) continue;
+            int* leafcnt = (int *)memory_new(1, sizeof(int));
+            memcpy(leafcnt, &(pitem->count[i]), sizeof(int));
+            if (*leafcnt > 0) {		// ignore the zero counts ( we condition that rootsize is at least one )
+                *leafcnt = (*leafcnt) - 1;
+                arraylist_add(pLeavesSize, (void*)leafcnt);
+            }
+        }
+    }
+
+    // now estimate parameter based on data and distribution (poisson or gamma). 
+    pFMinSearch pfm;
+    int num_params = 1;
+    pfm = fminsearch_new_with_eq(__lnLPoisson, num_params, pLeavesSize);
+    //int num_params = 2;
+    //pfm = fminsearch_new_with_eq(__lnLGamma,num_params,pLeavesSize);
+    pfm->tolx = 1e-6;
+    pfm->tolf = 1e-6;
+    double* parameters = (double *)memory_new(num_params, sizeof(double));
+    for (i = 0; i < num_params; i++) parameters[i] = unifrnd();
+    fminsearch_min(pfm, parameters);
+    double *re = fminsearch_get_minX(pfm);
+    for (i = 0; i < num_params; i++) parameters[i] = re[i];
+
+    result.parameters = parameters;
+    result.num_params = num_params;
+    result.num_iterations = pfm->iters;
+    result.score = *pfm->fv;
+
+    // clean
+    fminsearch_free(pfm);
+    arraylist_free(pLeavesSize, NULL);
+
+    return result;
+}
+
+
+void cafe_set_prior_rfsize_poisson_lambda(std::vector<double>& prior_rfsize, int shift, double* lambda)
+{
+    // shift = param->pcafe->rootfamilysizes[0]
+    int i;
+    // calculate the prior probability for a range of root sizes.
+    prior_rfsize.resize(FAMILYSIZEMAX);
+    for (i = 0; i<FAMILYSIZEMAX; i++) {
+        //param->prior_rfsize[i] = poisspdf(param->pcafe->rootfamilysizes[0]+i, parameters[0]);					// poisson
+        prior_rfsize[i] = poisspdf(shift - 1 + i, lambda[0]);					// shifted poisson
+        //param->prior_rfsize[i] = gampdf(param->pcafe->rootfamilysizes[0]+i, parameters[0], parameters[1]);	// gamma
+    }
+}
+
+
+/// set empirical prior on rootsize based on the assumption that rootsize follows leaf size distribution
+double cafe_set_prior_rfsize_empirical(pCafeParam param, std::vector<double>& prior_rfsize)
+{
+    poisson_lambda result = find_poisson_lambda(param->pfamily);
+    cafe_log(param, "Empirical Prior Estimation Result: (%d iterations)\n", result.num_iterations);
+    cafe_log(param, "Poisson lambda: %f & Score: %f\n", result.parameters[0], result.score);
+
+    double *prior_poisson_lambda = (double *)memory_new_with_init(result.num_params, sizeof(double), (void*)result.parameters);
+    //cafe_log(param,"Gamma alpha: %f, beta: %f & Score: %f\n", parameters[0], parameters[1], *pfm->fv);	
+
+    // set rfsize based on estimated prior
+    cafe_set_prior_rfsize_poisson_lambda(prior_rfsize, param->pcafe->rootfamilysizes[0], prior_poisson_lambda);
+
+    memory_free(result.parameters);
+    return 0;
 }
 
