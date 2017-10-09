@@ -435,7 +435,7 @@ TEST(FirstTestGroup, compute_posterior)
     node->birth_death_probabilities.mu = -1;
   }
 
-  double prior_rfsize[] = { 0, 0.018301, .0526154, .100846,
+  std::vector<double> prior_rfsize = { 0, 0.018301, .0526154, .100846,
 .144966,.166711,
 .159765,.131235,
 .0943255,.0602635,
@@ -466,6 +466,7 @@ TEST(FirstTestGroup, compute_posterior)
 1.55729e-37,1.5177e-38
 };
 
+  prior_rfsize.resize(FAMILYSIZEMAX);
   cafe_family_set_species_index(pfamily, pcafe);
 
   square_matrix m;
@@ -474,13 +475,12 @@ TEST(FirstTestGroup, compute_posterior)
 	  m.values[i] = .25;
   tree_traveral_postfix((pTree)pcafe, set_matrix, &m);
 
-  double max_likelihood, max_posterior;
-
   pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[0];
   cafe_family_set_size(pfamily, pitem, pcafe);	// this part is just setting the leave counts.
-  compute_posterior(pitem, pcafe, &max_likelihood, &max_posterior, &prior_rfsize[0]);
+  posterior p = compute_posterior(pitem, pcafe, prior_rfsize);
 
-  DOUBLES_EQUAL(0.151448, max_posterior, .00001);
+  DOUBLES_EQUAL(0.151448, p.max_posterior, .00001);
+  DOUBLES_EQUAL(0.908447, p.max_likelihood, .00001);
 
   cafe_family_free(pfamily);
 }

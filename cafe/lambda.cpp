@@ -573,13 +573,14 @@ double* cafe_best_lambda_by_fminsearch(pCafeParam param, int lambda_len, int k)
 	return param->input.parameters;
 }
 
-double compute_posterior(pCafeFamilyItem pitem, pCafeTree pcafe, double *max_likelihood, double *prior_rfsize)
+posterior compute_posterior(pCafeFamilyItem pitem, pCafeTree pcafe, const std::vector<double>& prior_rfsize)
 {
+    posterior result;
     compute_tree_likelihoods(pcafe);
 
     double *likelihood = get_likelihoods(pcafe);		// likelihood of the whole tree = multiplication of likelihood of all nodes
 
-    *max_likelihood = __max(likelihood, pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
+    result.max_likelihood = __max(likelihood, pcafe->rfsize);			// this part find root size condition with maxlikelihood for each family			
     if (pitem->maxlh < 0)
     {
         pitem->maxlh = __maxidx(likelihood, pcafe->rfsize);
@@ -593,7 +594,9 @@ double compute_posterior(pCafeFamilyItem pitem, pCafeTree pcafe, double *max_lik
     }
 
     // this part find root size condition with maxlikelihood for each family			
-    return *std::max_element(posterior.begin(), posterior.end());
+    result.max_posterior = *std::max_element(posterior.begin(), posterior.end());
+
+    return result;
 }
 
 double get_posterior(pCafeFamily pfamily, pCafeTree pcafe, family_size_range*range, double *ML, double *MAP, double *prior_rfsize, int quiet)
@@ -601,6 +604,8 @@ double get_posterior(pCafeFamily pfamily, pCafeTree pcafe, family_size_range*ran
 	if (!prior_rfsize)
 		throw std::runtime_error("ERROR: empirical posterior not defined.\n");
 
+    std::vector<double> prior(FAMILYSIZEMAX);
+    std::copy(prior_rfsize, prior_rfsize + FAMILYSIZEMAX, prior.begin());
 	int i;
 	double score = 0;
 	for (i = 0; i < pfamily->flist->size; i++)	// i: family index
@@ -610,7 +615,10 @@ double get_posterior(pCafeFamily pfamily, pCafeTree pcafe, family_size_range*ran
         if (pitem->ref < 0 || pitem->ref == i)
 		{
 			cafe_family_set_size(pfamily, pitem, pcafe);	// this part is just setting the leave counts.
-			MAP[i] = compute_posterior(pitem, pcafe, ML+i, prior_rfsize);
+			posterior p = compute_posterior(pitem, pcafe, prior);
+            ML[i] = p.max_likelihood;
+            MAP[i] = p.max_posterior;
+
 		}
 		else
 		{
