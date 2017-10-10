@@ -1,7 +1,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <fstream>
-
+#include <iostream>
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
@@ -692,40 +692,46 @@ TEST(LambdaTests, find_poisson_lambda)
     cafe_family_free(param.pfamily);
 }
 
-
-#if 1
 TEST(LambdaTests, get_posterior2)
 {
+    srand(10);
+
     probability_cache = birthdeath_cache_init(150);
 
     family_size_range range;
-    range.min = range.root_min = 1;
+    range.min = 0;
+    range.root_min = 1;
     range.max = 149;
     range.root_max = 124;
 
-    const char *newick_tree = "((((cat:68.710507,horse:68.710507):4.566782,cow:73.277289):20.722711,(((((chimp:4.444172,human:4.444172):6.682678,orang:11.126850):2.285855,gibbon:13.412706):7.211527,(macaque:4.567240,baboon:4.567240):16.056992):16.060702,marmoset:36.684935):57.315065):38.738021,(rat:36.302445,mouse:36.302445):96.435575)";
+    const char *newick_tree = "(A:1,B:1)";
     char tree[1000];
     strcpy(tree, newick_tree);
-    pCafeTree pcafe = cafe_tree_new(tree, &range, 0.01, 0);
+    double lambda = 0.27290862102823;
+    double mu = -1;
+    pCafeTree pcafe = cafe_tree_new(tree, &range, lambda, mu);
 
-    std::ifstream ifst("test_files/cut_sim.txt");
-    pCafeFamily pfamily = load_gene_families(ifst, '\t', -1);
+    pCafeFamily pfamily = cafe_family_init({ "A", "B" });
+    cafe_family_add_item(pfamily, gene_family("ENS01", "description", { 1, 2 }));
+    cafe_family_add_item(pfamily, gene_family("ENS02", "description", { 2, 1 }));
+    cafe_family_add_item(pfamily, gene_family("ENS03", "description", { 3, 6 }));
+    cafe_family_add_item(pfamily, gene_family("ENS04", "description", { 6, 3 }));
     cafe_family_set_species_index(pfamily, pcafe);
 
     std::vector<double> ml(pfamily->flist->size);
     std::vector<double> map(pfamily->flist->size);
     std::vector<double> rf(FAMILYSIZEMAX);
+    double poisson_lambda = 2.0;
+    cafe_set_prior_rfsize_poisson_lambda(rf, 1, &poisson_lambda);
 
     for (int i = 0; i < pcafe->super.nlist->size; ++i)
     {
         pCafeNode node = (pCafeNode)pcafe->super.nlist->array[i];
-        node->birth_death_probabilities.lambda = 0.01;
-        node->birth_death_probabilities.mu = -1;
+        node->birth_death_probabilities.lambda = lambda;
+        node->birth_death_probabilities.mu =mu;
     }
 
-    //    cafe_set_prior_rfsize_empirical(&param);
-    DOUBLES_EQUAL(-4.6503, get_posterior(pfamily, pcafe, &range, ml, map, rf, 1), .0001);
+    DOUBLES_EQUAL(-18.0085, get_posterior(pfamily, pcafe, &range, ml, map, rf, 1), .1);
 
     cafe_family_free(pfamily);
 };
-#endif
