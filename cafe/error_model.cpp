@@ -385,6 +385,8 @@ double get_marginal_error_probability_epsilon(pErrorMeasure errormeasure, double
         }
         marginal_error_probability_epsilon = (1 - sum) / (double)((errormeasure->maxFamilySize + 1) - (errormeasure->model_parameter_diff * 2 + 1));
     }
+
+    return marginal_error_probability_epsilon;
 }
 
 double __loglikelihood_pairs_from_double_measure(double* parameters, void* args)

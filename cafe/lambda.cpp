@@ -602,20 +602,17 @@ posterior compute_posterior(pCafeFamilyItem pitem, pCafeTree pcafe, const std::v
     {
         pitem->maxlh = __maxidx(likelihood, pcafe->rfsize);
     }
-    cout << "Family " << pitem->id << endl;
     // get posterior by adding lnPrior to lnLikelihood
     std::vector<double> posterior(pcafe->rfsize);
     for (int j = 0; j < pcafe->rfsize; j++)	// j: root family size
     {
-        cout << "eq prob = " << prior_rfsize[j] << ", log-eq prob = " << log(prior_rfsize[j]) << ", partial log-lk = " << log(likelihood[j]) << endl;
         // likelihood and posterior both starts from 1 instead of 0 
         posterior[j] = exp(log(likelihood[j]) + log(prior_rfsize[j]));	//prior_rfsize also starts from 1
     }
 
     // this part find root size condition with maxlikelihood for each family			
     result.max_posterior = *std::max_element(posterior.begin(), posterior.end());
-    cout << "lnL of family: " << result.max_posterior << endl;
-    cout << "Sum of eq probs: " << std::accumulate(prior_rfsize.begin(), prior_rfsize.end(), 0.0);
+
     return result;
 }
 
