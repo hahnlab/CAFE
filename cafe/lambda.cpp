@@ -13,6 +13,7 @@ extern "C" {
 #include <iterator>
 #include <algorithm>
 #include <iostream>
+#include <numeric>
 
 #include "lambda.h"
 #include "cafe_commands.h"
@@ -23,7 +24,7 @@ extern "C" {
 extern "C" {
 	extern pCafeParam cafe_param;
 	void cafe_shell_set_lambda(pCafeParam param, double* parameters);
-	int __cafe_cmd_lambda_tree(pArgument parg);
+	int __cafe_cmd_lambda_tree(char *arg1, char *arg2);
 	double __cafe_best_lambda_search(double* plambda, void* args);
 	double __cafe_cluster_lambda_search(double* parameters, void* args);
 }
@@ -32,7 +33,7 @@ using namespace std;
 
 bool is_out(Argument arg)
 {
-	return !strcmp(arg.opt, "-o");
+	return !strcmp(arg.opt.c_str(), "-o");
 }
 
 void lambda_arg_base::load(vector<Argument> pargs)
@@ -42,17 +43,26 @@ void lambda_arg_base::load(vector<Argument> pargs)
 		pArgument parg = &pargs[i];
 
 		// Search for whole family 
-		if (!strcmp(parg->opt, "-s"))
+		if (!strcmp(parg->opt.c_str(), "-s"))
 		{
 			search = true;
 		}
-		else if (!strcmp(parg->opt, "-checkconv"))
+		else if (!strcmp(parg->opt.c_str(), "-checkconv"))
 		{
 			checkconv = true;
 		}
-		else if (!strcmp(parg->opt, "-t"))
+		else if (!strcmp(parg->opt.c_str(), "-t"))
 		{
-			bdone = __cafe_cmd_lambda_tree(parg);
+            char *arg1 = NULL, *arg2 = NULL;
+            if (parg->argc == 2)
+            {
+                arg1 = parg->argv[0];
+                arg2 = parg->argv[1];
+            }
+            else
+            {
+            }
+			bdone = __cafe_cmd_lambda_tree(parg->argv[0], parg->argc > 1 ? parg->argv[1] : NULL);
 			if (bdone < 0) {
 				throw std::exception();
 			}
@@ -63,25 +73,25 @@ void lambda_arg_base::load(vector<Argument> pargs)
 			lambdas.resize(cafe_param->num_lambdas);
 
 		}
-		else if (!strcmp(parg->opt, "-l"))
+		else if (!strcmp(parg->opt.c_str(), "-l"))
 		{
 			get_doubles_array(lambdas, parg);
 			num_params += lambdas.size();
 			lambda_type = MULTIPLE_LAMBDAS;
 
 		}
-		else if (!strcmp(parg->opt, "-p"))
+		else if (!strcmp(parg->opt.c_str(), "-p"))
 		{
 			get_doubles_array(k_weights, parg);
 			num_params += k_weights.size();
 		}
-		else if (!strcmp(parg->opt, "-k"))
+		else if (!strcmp(parg->opt.c_str(), "-k"))
 		{
 			int k = 0;
 			sscanf(parg->argv[0], "%d", &k);
 			k_weights.resize(k);
 		}
-		else if (!strcmp(parg->opt, "-f"))
+		else if (!strcmp(parg->opt.c_str(), "-f"))
 		{
 			fixcluster0 = 1;
 		}
@@ -94,12 +104,12 @@ void lambda_args::load(std::vector<Argument> pargs)
 	for (size_t i = 0; i < pargs.size(); i++)
 	{
 		pArgument parg = &pargs[i];
-		if (!strcmp(parg->opt, "-v"))
+		if (!strcmp(parg->opt.c_str(), "-v"))
 		{
 			sscanf(parg->argv[0], "%lf", &vlambda);
 			lambda_type = SINGLE_LAMBDA;
 		} 
-		else if (!strcmp(parg->opt, "-r"))
+		else if (!strcmp(parg->opt.c_str(), "-r"))
 		{
 			range.resize(parg->argc);
 			int j;
@@ -108,12 +118,12 @@ void lambda_args::load(std::vector<Argument> pargs)
 				sscanf(parg->argv[j], "%lf:%lf:%lf", &range[j].start, &range[j].step, &range[j].end);
 			}
 		}
-		else if (!strcmp(parg->opt, "-e"))
+		else if (!strcmp(parg->opt.c_str(), "-e"))
 		{
 			write_files = true;
 			each = true;
 		}
-		else if (!strcmp(parg->opt, "-o"))
+		else if (!strcmp(parg->opt.c_str(), "-o"))
 		{
 			outfile = parg->argv[0];
 		}
@@ -592,17 +602,20 @@ posterior compute_posterior(pCafeFamilyItem pitem, pCafeTree pcafe, const std::v
     {
         pitem->maxlh = __maxidx(likelihood, pcafe->rfsize);
     }
+    cout << "Family " << pitem->id << endl;
     // get posterior by adding lnPrior to lnLikelihood
     std::vector<double> posterior(pcafe->rfsize);
     for (int j = 0; j < pcafe->rfsize; j++)	// j: root family size
     {
+        cout << "eq prob = " << prior_rfsize[j] << ", log-eq prob = " << log(prior_rfsize[j]) << ", partial log-lk = " << log(likelihood[j]) << endl;
         // likelihood and posterior both starts from 1 instead of 0 
         posterior[j] = exp(log(likelihood[j]) + log(prior_rfsize[j]));	//prior_rfsize also starts from 1
     }
 
     // this part find root size condition with maxlikelihood for each family			
     result.max_posterior = *std::max_element(posterior.begin(), posterior.end());
-
+    cout << "lnL of family: " << result.max_posterior << endl;
+    cout << "Sum of eq probs: " << std::accumulate(prior_rfsize.begin(), prior_rfsize.end(), 0.0);
     return result;
 }
 
@@ -624,7 +637,7 @@ double get_posterior(pCafeFamily pfamily, pCafeTree pcafe, family_size_range*ran
 		}
 		else
 		{
-			ML[i] = ML[pitem->ref];
+            ML[i] = ML[pitem->ref];
 			MAP[i] = MAP[pitem->ref];
 		}
 		if (ML[i] == 0)

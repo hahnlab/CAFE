@@ -12,6 +12,7 @@ extern "C" {
 }
 
 class Globals;
+struct Argument;
 
 enum LAMBDA_TYPE { UNDEFINED_LAMBDA, SINGLE_LAMBDA, MULTIPLE_LAMBDAS };
 

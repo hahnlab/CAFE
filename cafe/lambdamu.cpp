@@ -18,7 +18,6 @@ extern "C"
 {
 	extern pCafeParam cafe_param;
 	void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters);
-	int __cafe_cmd_lambda_tree(pArgument parg);
 
 #include "cafe.h"
 }
@@ -31,17 +30,17 @@ void lambdamu_args::load(std::vector<Argument> args)
 	{
 		pArgument parg = &args[i];
 
-		if (!strcmp(parg->opt, "-t"))
+		if (!strcmp(parg->opt.c_str(), "-t"))
 		{
 			cafe_param->num_mus = cafe_param->num_lambdas;
 			mus.resize(cafe_param->num_mus);
 		}
-		else if (!strcmp(parg->opt, "-m"))
+		else if (!strcmp(parg->opt.c_str(), "-m"))
 		{
 			get_doubles_array(mus, parg);
 			num_params += mus.size();
 		}
-		else if (!strcmp(parg->opt, "-eqbg"))
+		else if (!strcmp(parg->opt.c_str(), "-eqbg"))
 		{
 			eqbg = 1;
 		}

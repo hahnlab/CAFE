@@ -365,22 +365,22 @@ void phylogeny_lambda_parse_func(pTree ptree, pTreeNode ptnode)
 	pnode->taxaid--;
 }
 
-int __cafe_cmd_lambda_tree(pArgument parg)
+int __cafe_cmd_lambda_tree(char *arg1, char *arg2)
 {
 	int idx = 1;
 	pTree ptree;
 	char* plambdastr = NULL;
 	cafe_param->pcafe->branch_params_cnt = 0;
-	if ( parg->argc == 2 )
+	if ( arg2 != NULL )
 	{
-		sscanf( parg->argv[0], "%d", &idx );
-		plambdastr = parg->argv[1];
-		ptree = phylogeny_load_from_string(parg->argv[1], tree_new, phylogeny_new_empty_node, phylogeny_lambda_parse_func, 0 );
+		sscanf( arg1, "%d", &idx );
+		plambdastr = arg2;
+		ptree = phylogeny_load_from_string(arg2, tree_new, phylogeny_new_empty_node, phylogeny_lambda_parse_func, 0 );
 	}
 	else
 	{
-		plambdastr = parg->argv[0];
-		ptree = phylogeny_load_from_string(parg->argv[0], tree_new, phylogeny_new_empty_node, phylogeny_lambda_parse_func, 0 );
+		plambdastr = arg1;
+		ptree = phylogeny_load_from_string(arg1, tree_new, phylogeny_new_empty_node, phylogeny_lambda_parse_func, 0 );
 	}
 	tree_build_node_list(ptree);
 	if ( ptree->nlist->size != cafe_param->pcafe->super.nlist->size )

@@ -5,6 +5,7 @@
 #include<memalloc.h>
 #include<utils.h>
 
+/// Sets ref on the family meaning an index to a lower numbered family with the same species count for each species
 void __cafe_famliy_check_the_pattern(pCafeFamily pcf)
 {
 	int i, j, k;

@@ -12,6 +12,16 @@ extern "C" {
 #include "cafe_shell.h"
 }
 
+struct Argument
+{
+    std::string opt;
+    int   argc;
+    char** argv;
+};
+
+typedef Argument* pArgument;
+
+
 class Globals;
 
 typedef int(*cafe_command2)(Globals& globals, std::vector<std::string>);

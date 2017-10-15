@@ -13,14 +13,6 @@ typedef enum
 
 typedef struct
 {
-	char* opt;
-	int   argc; 
-	char** argv;
-}Argument;
-typedef Argument* pArgument;
-
-typedef struct
-{
     double* sizeDist;
     int maxFamilySize;
     int** pairs;

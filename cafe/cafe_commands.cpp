@@ -364,7 +364,7 @@ vector<Argument> build_argument_list(vector<string> tokens)
 		{
 			Argument arg;
 			arg.argc = 0;
-			arg.opt = strdup(tokens[i].c_str());
+			arg.opt = tokens[i];
 			for (j = i + 1; j < tokens.size(); j++)
 			{
 				if (tokens[j][0] == '-' && !isdigit(tokens[j][1])) break;
@@ -670,19 +670,19 @@ struct load_args get_load_arguments(vector<Argument> pargs)
 	{
 		pArgument parg = &pargs[i];
 
-		if (!strcmp(parg->opt, "-t"))
+		if (!strcmp(parg->opt.c_str(), "-t"))
 			sscanf(parg->argv[0], "%d", &args.num_threads);
 
-		if (!strcmp(parg->opt, "-r"))
+		if (!strcmp(parg->opt.c_str(), "-r"))
 			sscanf(parg->argv[0], "%d", &args.num_random_samples);
 
-		if (!strcmp(parg->opt, "-max_size"))
+		if (!strcmp(parg->opt.c_str(), "-max_size"))
 			sscanf(parg->argv[0], "%d", &args.max_size);
 
-		if (!strcmp(parg->opt, "-p"))
+		if (!strcmp(parg->opt.c_str(), "-p"))
 			sscanf(parg->argv[0], "%lf", &args.pvalue);
 
-		if (!strcmp(parg->opt, "-l"))
+		if (!strcmp(parg->opt.c_str(), "-l"))
 		{
 			if (!strcmp(parg->argv[0], "stdout"))
 				args.log_file_name = "stdout";
@@ -692,12 +692,12 @@ struct load_args get_load_arguments(vector<Argument> pargs)
 				string_free(file_name);
 			}
 		}
-		if ((!strcmp(parg->opt, "-filter")))
+		if ((!strcmp(parg->opt.c_str(), "-filter")))
 		{
 			args.filter = true;
 		}
 
-		if ((!strcmp(parg->opt, "-i")))
+		if ((!strcmp(parg->opt.c_str(), "-i")))
 		{
 			pString file_name = string_join(" ", parg->argc, parg->argv);
 			args.family_file_name = file_name->buf;
@@ -813,19 +813,19 @@ struct family_args get_family_arguments(vector<Argument> pargs)
 	{
 		pArgument parg = &pargs[i];
 
-		if (!strcmp(parg->opt, "-idx"))
+		if (!strcmp(parg->opt.c_str(), "-idx"))
 		{
 			sscanf(parg->argv[0], "%d", &args.idx);
 		}
-		if (!strcmp(parg->opt, "-id"))
+		if (!strcmp(parg->opt.c_str(), "-id"))
 		{
 			args.item_id = parg->argv[0];
 		}
-		if (!strcmp(parg->opt, "-filter"))
+		if (!strcmp(parg->opt.c_str(), "-filter"))
 		{
 			args.filter = true;
 		}
-		if (!strcmp(parg->opt, "-add"))
+		if (!strcmp(parg->opt.c_str(), "-add"))
 		{
 			args.add_id = parg->argv[0];
 			for (int j = 1; j <= parg->argc; j++)
@@ -967,13 +967,13 @@ struct viterbi_args get_viterbi_arguments(vector<Argument> pargs)
 	{
 		pArgument parg = &pargs[i];
 
-		if (!strcmp(parg->opt, "-all"))
+		if (!strcmp(parg->opt.c_str(), "-all"))
 		{
 			args.all = true;
 			if (parg->argc > 0)
 			args.file = parg->argv[0];
 		}
-		if (!strcmp(parg->opt, "-idx"))
+		if (!strcmp(parg->opt.c_str(), "-idx"))
 		{
 			sscanf(parg->argv[0], "%d", &args.idx);
 			if (args.idx == -1)
@@ -981,7 +981,7 @@ struct viterbi_args get_viterbi_arguments(vector<Argument> pargs)
 				throw std::runtime_error("ERROR(viterbi): idx parameter is not an integer\n");
 			}
 		}
-		if (!strcmp(parg->opt, "-id"))
+		if (!strcmp(parg->opt.c_str(), "-id"))
 		{
 			args.item_id = parg->argv[0];
 		}
@@ -1093,15 +1093,15 @@ struct pvalue_args get_pvalue_arguments(vector<Argument> pargs)
 	{
 		pArgument parg = &pargs[i];
 
-		if (!strcmp(parg->opt, "-o"))
+		if (!strcmp(parg->opt.c_str(), "-o"))
 		{
 			args.outfile = parg->argv[0];
 		}
-		if (!strcmp(parg->opt, "-i"))
+		if (!strcmp(parg->opt.c_str(), "-i"))
 		{
 			args.infile = parg->argv[0];
 		}
-		if (!strcmp(parg->opt, "-idx"))
+		if (!strcmp(parg->opt.c_str(), "-idx"))
 		{
 			sscanf(parg->argv[0], "%d", &args.index);
 			if (args.index == -1)
@@ -1188,19 +1188,19 @@ lhtest_args get_lhtest_arguments(vector<Argument> pargs)
 	{
 		pArgument parg = &pargs[i];
 
-		if (!strcmp(parg->opt, "-d"))
+		if (!strcmp(parg->opt.c_str(), "-d"))
 		{
 			args.directory = parg->argv[0];
 		}
-		if (!strcmp(parg->opt, "-l"))
+		if (!strcmp(parg->opt.c_str(), "-l"))
 		{
 			sscanf(parg->argv[0], "%lf", &args.lambda);
 		}
-		if (!strcmp(parg->opt, "-t"))
+		if (!strcmp(parg->opt.c_str(), "-t"))
 		{
 			args.tree = parg->argv[0];
 		}
-		if (!strcmp(parg->opt, "-o"))
+		if (!strcmp(parg->opt.c_str(), "-o"))
 		{
 			args.outfile = parg->argv[0];
 		}
@@ -1319,12 +1319,12 @@ int cafe_cmd_simerror(Globals& globals, std::vector<std::string> tokens)
 	for (size_t i = 0; i < args.size(); i++)
 	{
 		// Search for whole family 
-		if (!strcmp(args[i].opt, "-pre"))
+		if (!strcmp(args[i].opt.c_str(), "-pre"))
 		{
 			for (int j = 0; j < args[i].argc; ++j)
 				prefix += args[i].argv[j];
 		}
-		else if (!strcmp(args[i].opt, "-rep"))
+		else if (!strcmp(args[i].opt.c_str(), "-rep"))
 		{
 			repeat = atoi(args[i].argv[0]);
 		}
@@ -1350,18 +1350,18 @@ errormodel_args get_errormodel_arguments(vector<Argument> pargs)
 	{
 		pArgument parg = &pargs[i];
 
-		if (!strcmp(parg->opt, "-model"))
+		if (!strcmp(parg->opt.c_str(), "-model"))
 		{
 			args.model_file = parg->argv[0];
 		}
-		if (!strcmp(parg->opt, "-sp"))
+		if (!strcmp(parg->opt.c_str(), "-sp"))
 		{
 			for (int j = 0; j < parg->argc; j++)
 			{
 				args.species_list.push_back(parg->argv[j]);
 			}
 		}
-		if (!strcmp(parg->opt, "-all"))
+		if (!strcmp(parg->opt.c_str(), "-all"))
 		{
 			args.all = true;
 		}
@@ -1414,30 +1414,30 @@ esterror_args get_esterror_arguments(vector<Argument> pargs)
 	{
 		pArgument parg = &pargs[i];
 
-		if (!strcmp(parg->opt, "-o"))
+		if (!strcmp(parg->opt.c_str(), "-o"))
 		{
 			args.outfile = parg->argv[0];
 		}
-		if (!strcmp(parg->opt, "-datatrue"))
+		if (!strcmp(parg->opt.c_str(), "-datatrue"))
 		{
 			args.truth_file = parg->argv[0];
 		}
-		if (!strcmp(parg->opt, "-dataerror"))
+		if (!strcmp(parg->opt.c_str(), "-dataerror"))
 		{
 			for (int j = 0; j < parg->argc; j++)
 			{
 				args.data_error_files.push_back(parg->argv[j]);
 			}
 		}
-		if (!strcmp(parg->opt, "-symm"))
+		if (!strcmp(parg->opt.c_str(), "-symm"))
 		{
 			args.symmetric = true;
 		}
-		if (!strcmp(parg->opt, "-diff"))
+		if (!strcmp(parg->opt.c_str(), "-diff"))
 		{
 			args.max_diff = atoi(parg->argv[0]);
 		}
-		if (!strcmp(parg->opt, "-peakzero"))
+		if (!strcmp(parg->opt.c_str(), "-peakzero"))
 		{
 			args.peakzero = true;
 		}
@@ -1510,13 +1510,13 @@ int cafe_cmd_noerrormodel(Globals& globals, std::vector<std::string> tokens)
 	{
 		pArgument parg = &args[i];
 
-		if (!strcmp(parg->opt, "-sp"))
+		if (!strcmp(parg->opt.c_str(), "-sp"))
 		{
 			ostringstream ost;
 			copy(parg->argv, parg->argv+ parg->argc, std::ostream_iterator<string>(ost, " "));
 			species = ost.str();
 		}
-		if (!strcmp(parg->opt, "-all"))
+		if (!strcmp(parg->opt.c_str(), "-all"))
 		{
 			all = true;
 		}
@@ -1573,7 +1573,7 @@ std::string get_input_file(std::vector<std::string> tokens)
 	{
 		pArgument parg = &args[i];
 
-		if (!strcmp(parg->opt, "-i"))
+		if (!strcmp(parg->opt.c_str(), "-i"))
 		{
       return parg->argv[0];
 		}
@@ -1819,12 +1819,12 @@ int cafe_cmd_simextinct(Globals& globals, std::vector<std::string> tokens)
 	{
 		pArgument parg = &args[i];
 
-		if (!strcmp(parg->opt, "-t"))
+		if (!strcmp(parg->opt.c_str(), "-t"))
 		{
 			sscanf(parg->argv[0], "%d", &num_trials);
 		}
 
-		if (!strcmp(parg->opt, "-r"))
+		if (!strcmp(parg->opt.c_str(), "-r"))
 		{
 			if (std::string(parg->argv[0]).find(':') != std::string::npos)
 			{
@@ -1942,7 +1942,7 @@ int cafe_cmd_accuracy(Globals& globals, std::vector<std::string> tokens)
 	{
 		pArgument parg = &args[i];
 
-		if (!strcmp(parg->opt, "-i"))
+		if (!strcmp(parg->opt.c_str(), "-i"))
 		{
 			ostringstream ost;
 			copy(parg->argv, parg->argv + parg->argc, std::ostream_iterator<string>(ost, " "));
@@ -2081,7 +2081,7 @@ int cafe_cmd_cvfamily(Globals& globals, std::vector<std::string> tokens)
 	{
 		pArgument parg = &args[i];
 
-		if (!strcmp(parg->opt, "-fold"))
+		if (!strcmp(parg->opt.c_str(), "-fold"))
 		{
 			sscanf(parg->argv[0], "%d", &cv_fold);
 		}
@@ -2278,7 +2278,7 @@ int cafe_cmd_extinct(Globals& globals, std::vector<std::string> tokens)
 	cafe_log(param, ">> Data and Simulation for extinction:\n");
 
 	vector<Argument> args = build_argument_list(tokens);
-	if (args.size() > 0 && !strcmp(args[0].opt, "-t"))
+	if (args.size() > 0 && !strcmp(args[0].opt.c_str(), "-t"))
 	{
 		sscanf(args[0].argv[0], "%d", &num_trials);
 	}
