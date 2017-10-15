@@ -535,3 +535,15 @@ void viterbi_parameters::clear(int nnodes)
   expandRemainDecrease.clear();
 }
 
+void viterbi_family_print(pCafeTree pcafe, pCafeFamily pfamily, int idx)
+{
+    cafe_family_set_size_with_family_forced(pfamily, idx, pcafe);
+    compute_tree_likelihoods(pcafe);
+    int ridx = __maxidx(((pCafeNode)pcafe->super.root)->likelihoods, pcafe->rfsize) + pcafe->rootfamilysizes[0];
+    double mlh = __max(((pCafeNode)pcafe->super.root)->likelihoods, pcafe->rfsize);
+    cafe_tree_viterbi(pcafe);
+    pString pstr = cafe_tree_string(pcafe);
+    printf("%g(%d)\t%s\n", mlh, ridx, pstr->buf);
+    string_free(pstr);
+}
+

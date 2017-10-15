@@ -501,10 +501,9 @@ typedef LRTParam* pLRTParam;
 
 pthread_mutex_t mutex_cafe_likelihood = PTHREAD_MUTEX_INITIALIZER;
 
-void* __cafe_likelihood_ratio_test_thread_func(void* ptr)
+void* __cafe_likelihood_ratio_test_thread_func(pLRTParam plrt)
 {
 	int i,b;
-	pLRTParam plrt = (pLRTParam)ptr;
 	pCafeParam param  = plrt->cafeparam;
 	pTree ptree = (pTree)param->pcafe;
 	pCafeTree pcafe = cafe_tree_copy(param->pcafe);
@@ -576,8 +575,8 @@ void cafe_likelihood_ratio_test(pCafeParam param, double *maximumPvalues)
 		ptparam[i].cafeparam = param;
 		ptparam[i].from = i;
 		ptparam[i].maximumPvalues = maximumPvalues;
-	}
-	thread_run(param->num_threads, __cafe_likelihood_ratio_test_thread_func, ptparam, sizeof(LRTParam));
+        __cafe_likelihood_ratio_test_thread_func(ptparam);
+    }
 	for( i = 0 ; i < nrows ; i++ )
 	{
 		pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];

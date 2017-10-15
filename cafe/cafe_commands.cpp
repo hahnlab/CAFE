@@ -48,7 +48,6 @@ extern "C" {
 
 	void __cafe_tree_string_gainloss(pString pstr, pPhylogenyNode ptnode);
 	void __cafe_tree_string_sum_gainloss(pString pstr, pPhylogenyNode ptnode);
-	void __cafe_cmd_viterbi_family_print(int idx);
 
 	extern pBirthDeathCacheArray probability_cache;
 	int cafe_shell_set_familysize();
@@ -58,7 +57,6 @@ extern "C" {
 	pErrorStruct cafe_shell_create_error_matrix_from_estimate(pErrorMeasure errormeasure);
 	int cafe_shell_set_branchlength();
 	void set_range_from_family(family_size_range* range, pCafeFamily family);
-	int __cafe_cmd_lambda_tree(pArgument parg);
 	void cafe_shell_set_lambda(pCafeParam param, double* parameters);
 	void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters);
 	double __cafe_best_lambda_search(double* plambda, void* args);
@@ -2508,7 +2506,8 @@ int cafe_cmd_family(Globals& globals, std::vector<std::string> tokens)
 		{
 			printf("%s: %d\n", param->pfamily->species[i], pitem->count[i]);
 		}
-		if (param->pcafe && probability_cache) __cafe_cmd_viterbi_family_print(idx);
+		if (param->pcafe && probability_cache) 
+            viterbi_family_print(param->pcafe, param->pfamily, idx);
 	}
 
 	return pitem ? 0 : -1;
@@ -2613,7 +2612,7 @@ int cafe_cmd_viterbi(Globals& globals, std::vector<std::string> tokens)
 			ost << "ERROR(viterbi): " << args.item_id << " not found";
 			throw std::runtime_error(ost.str());
 		}
-		__cafe_cmd_viterbi_family_print(idx);
+		viterbi_family_print(param->pcafe, param->pfamily, idx);
 	}
 	else if (args.idx >= 0)
 	{
@@ -2623,7 +2622,7 @@ int cafe_cmd_viterbi(Globals& globals, std::vector<std::string> tokens)
 			ost << "ERROR(viterbi): Out of range[0~" << param->pfamily->flist->size << "]: " << args.idx;
 			throw std::runtime_error(ost.str());
 		}
-		__cafe_cmd_viterbi_family_print(args.idx);
+		viterbi_family_print(param->pcafe, param->pfamily, args.idx);
 	}
 	else if (tokens.size() == 1)
 	{

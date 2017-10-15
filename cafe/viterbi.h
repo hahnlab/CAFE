@@ -63,6 +63,7 @@ void viterbi_set_max_pvalue(viterbi_parameters* viterbi, int index, double val);
 pArrayList cafe_viterbi(Globals& globals, viterbi_parameters& viterbi, pArrayList pCD);
 void viterbi_sum_probabilities(viterbi_parameters *viterbi, pCafeNode pcnode, pCafeFamilyItem item, int max_family_size);
 void* __cafe_viterbi_thread_func(void* ptr);
+void viterbi_family_print(pCafeTree pcafe, pCafeFamily pfamily, int idx);
 
 struct ViterbiParam
 {

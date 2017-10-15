@@ -298,6 +298,12 @@ struct square_matrix* compute_birthdeath_rates(double branchlength, double lambd
 			}
 		}
 	}
+#ifdef VERBOSE
+    else
+    {
+        fprintf(stderr, "WARNING: Zero matrix set for branch %f, lambda %f, mu %f\n", branchlength, lambda, mu);
+    }
+#endif
 	return matrix;
 }
 
@@ -366,6 +372,7 @@ void birthdeath_cache_array_free(pBirthDeathCacheArray pbdc_array)
 		struct square_matrix* matrix = hash_table_lookup(pbdc_array->table, keys[i], sizeof(struct BirthDeathCacheKey));
 		square_matrix_delete(matrix);
     }
+    free(keys);
     hash_table_delete(pbdc_array->table);
 	memory_free(pbdc_array);
 }
@@ -378,6 +385,7 @@ void birthdeath_cache_array_free(pBirthDeathCacheArray pbdc_array)
 struct square_matrix* birthdeath_cache_get_matrix(pBirthDeathCacheArray pbdc_array, double branchlength, double lambda, double mu )
 {
 	struct BirthDeathCacheKey key;
+    memset(&key, 0, sizeof(struct BirthDeathCacheKey));
 	key.branchlength = branchlength;
 	key.lambda = lambda;
 	key.mu = mu;

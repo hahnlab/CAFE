@@ -426,27 +426,6 @@ int __cafe_cmd_lambda_tree(char *arg1, char *arg2)
 	return 0;
 }
 
-
-
-
-
-
-
-
-void __cafe_cmd_viterbi_family_print(int idx)
-{
-	pCafeTree pcafe = cafe_param->pcafe;
-	cafe_family_set_size_with_family_forced(cafe_param->pfamily,idx,pcafe);
-	compute_tree_likelihoods(pcafe);
-	int ridx =  __maxidx(((pCafeNode)pcafe->super.root)->likelihoods,pcafe->rfsize) + pcafe->rootfamilysizes[0];
-	double mlh =  __max( ((pCafeNode)pcafe->super.root)->likelihoods,pcafe->rfsize);
-	//compute_tree_likelihoods(pcafe);
-	cafe_tree_viterbi(pcafe);
-	pString pstr = cafe_tree_string(pcafe);
-	printf("%g(%d)\t%s\n", mlh , ridx,  pstr->buf );
-	string_free(pstr);
-}
-
 void set_range_from_family(family_size_range* range, pCafeFamily family)
 {
 	init_family_size(range, family->max_size);
