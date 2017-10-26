@@ -597,16 +597,17 @@ TEST(FirstTestGroup, tree_traversal_postfix)
 
 TEST(TreeTests, cafe_tree_random_probabilities)
 {
-	int num_families = 1;
+	int max_fam_size = 16;
 	pCafeTree tree = create_tree(range);
-	probability_cache = (pBirthDeathCacheArray)memory_new(num_families, sizeof(BirthDeathCacheArray));
-	probability_cache->maxFamilysize = num_families;
+	probability_cache = (pBirthDeathCacheArray)memory_new(max_fam_size, sizeof(BirthDeathCacheArray));
+	probability_cache->maxFamilysize = max_fam_size;
 	pArrayList node_list = tree->super.nlist;
 	square_matrix bd;
 	square_matrix_init(&bd, tree->familysizes[1] + 1);
-	for (int i = 0; i < num_families+1; ++i)
+	for (int i = 0; i < bd.size; ++i)
 	{
-		square_matrix_set(&bd, i, 0, i);
+        for (int j = 0; j < bd.size; ++j)
+            square_matrix_set(&bd, i, j, double(j)/100);
 	}
 	for (int i = 0; i < node_list->size; ++i)
 	{
@@ -615,11 +616,21 @@ TEST(TreeTests, cafe_tree_random_probabilities)
 	}
 
 	std::vector<double> trials = get_random_probabilities(tree, 1, 5);
-	DOUBLES_EQUAL(0.0, trials[0], .001);
-	DOUBLES_EQUAL(0.0, trials[1], .001);
-	DOUBLES_EQUAL(0.0, trials[2], .001);
-	DOUBLES_EQUAL(0.0, trials[3], .001);
-	DOUBLES_EQUAL(0.0, trials[4], .001);
+    // convert to logprob for easier testing
+    auto logprob = trials;
+    for (auto& t : logprob)
+        t = log(t);
+
+	DOUBLES_EQUAL(-13.4037, logprob[0], .001);
+    DOUBLES_EQUAL(-11.9977, logprob[1], .001);
+    DOUBLES_EQUAL(-11.9554, logprob[2], .001);
+    DOUBLES_EQUAL(-11.8255, logprob[3], .001);
+    DOUBLES_EQUAL(-10.6285, logprob[4], .001);
+
+    // probabilities should be in sorted order
+    auto sorted = trials;
+    std::sort(sorted.begin(), sorted.end());
+    CHECK(trials == sorted);
 }
 
 TEST(FirstTestGroup, cafe_tree_new_empty_node)
@@ -867,24 +878,29 @@ TEST(FirstTestGroup, viterbi_sum_probabilities)
   viterbi_parameters v;
   pCafeTree tree = create_tree(range);
   viterbi_parameters_init(&v, ((pTree)tree)->nlist->size, 1);
-  pBirthDeathCacheArray arr = birthdeath_cache_init(10);
+  pBirthDeathCacheArray arr = birthdeath_cache_init(range.root_max);
   cafe_tree_set_birthdeath(tree, arr);
-  pCafeNode pcnode = (pCafeNode)((pTree)tree)->nlist->array[1];
-  pcnode->familysize = 5;
-  pCafeNode child[2] = { (pCafeNode)((pTreeNode)pcnode)->children->head->data,
-    (pCafeNode)((pTreeNode)pcnode)->children->tail->data };
-  child[0]->familysize = 8;
-  child[1]->familysize = 3;
 
-  square_matrix_set(child[0]->birthdeath_matrix, 5, 8, 5);
-  square_matrix_set(child[0]->birthdeath_matrix, 5, 1, 5);
-  square_matrix_set(child[1]->birthdeath_matrix, 5, 3, 9);
+  pCafeNode parent = (pCafeNode)((pTree)tree)->nlist->array[1];
+  pCafeNode chimp = (pCafeNode)((pTree)tree)->nlist->array[0];
+  pCafeNode human = (pCafeNode)((pTree)tree)->nlist->array[2];
+
+  parent->familysize = 5;
+  chimp->familysize = 8;
+  human->familysize = 3;
+  ((pCafeNode)((pTree)tree)->nlist->array[3])->familysize = 7;
+
+  square_matrix_set(chimp->birthdeath_matrix, 5, 8, 5);
+  square_matrix_set(chimp->birthdeath_matrix, 5, 1, 5);
+  square_matrix_set(human->birthdeath_matrix, 5, 3, 11);
+  square_matrix_set(human->birthdeath_matrix, 5, 4, 2);
 
   CafeFamilyItem item;
-  viterbi_sum_probabilities(&v, pcnode, &item, 1);
+  viterbi_sum_probabilities(&v, tree, &item);
 
-  DOUBLES_EQUAL(2.5, v.viterbiPvalues[viterbi_parameters::NodeFamilyKey(child[0]->super.super.id, &item)], .001);
-  DOUBLES_EQUAL(5, v.viterbiPvalues[viterbi_parameters::NodeFamilyKey(child[1]->super.super.id, &item)], .001);
+  DOUBLES_EQUAL(8, v.viterbiPvalues[viterbi_parameters::NodeFamilyKey(chimp->super.super.id, &item)], .001);
+  DOUBLES_EQUAL(18.5, v.viterbiPvalues[viterbi_parameters::NodeFamilyKey(parent->super.super.id, &item)], .001);
+  DOUBLES_EQUAL(0, v.viterbiPvalues[viterbi_parameters::NodeFamilyKey(human->super.super.id, &item)], .001);
 }
 
 TEST(FirstTestGroup, initialize_leaf_likelihoods)

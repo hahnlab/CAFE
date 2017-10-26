@@ -52,7 +52,6 @@ std::vector<double> get_random_probabilities(pCafeTree pcafe, int rootFamilysize
 	pcafe->familysizes[1] = old_fsizes[1];
 
 	std::sort(probs.begin(), probs.end());
-	std::reverse(probs.begin(), probs.end());
 
 	return probs;
 }

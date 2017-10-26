@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "viterbi.h"
 #include "Globals.h"
 #include "pvalue.h"
@@ -32,31 +34,35 @@ void viterbi_set_max_pvalue(viterbi_parameters* viterbi, int index, double val)
 
 pthread_mutex_t mutex_cafe_viterbi = PTHREAD_MUTEX_INITIALIZER;
 
-void viterbi_sum_probabilities(viterbi_parameters *viterbi, pCafeNode pcnode, pCafeFamilyItem item, int max_family_size)
+void viterbi_sum_probabilities(viterbi_parameters *viterbi, pCafeTree pcafe, pCafeFamilyItem pitem)
 {
-  pCafeNode child[2] = { (pCafeNode)((pTreeNode)pcnode)->children->head->data,
-    (pCafeNode)((pTreeNode)pcnode)->children->tail->data };
-  for (int k = 0; k < 2; k++)
-  {
-    square_matrix *matrix = child[k]->birthdeath_matrix;
-    double p = square_matrix_get(matrix, pcnode->familysize, child[k]->familysize);
-    for (int m = 0; m <= max_family_size; m++)
+    pTree ptree = (pTree)pcafe;
+    int nnodes = (ptree->nlist->size - 1) / 2;
+    for (int j = 0; j < nnodes; j++)
     {
-      double node_to_m_prob = square_matrix_get(matrix, pcnode->familysize, m);
-      if (node_to_m_prob == p)
-      {
-        //viterbi->viterbiPvalues[n][i] += node_to_m_prob / 2.0;
-        viterbi->viterbiPvalues[viterbi_parameters::NodeFamilyKey(child[k]->super.super.id, item)] += node_to_m_prob / 2.0;
-      }
-      else if (node_to_m_prob < p)
-      {
-		  assert(child[k]);
-        //viterbi->viterbiPvalues[n][i] += node_to_m_prob;
-        viterbi->viterbiPvalues[viterbi_parameters::NodeFamilyKey(child[k]->super.super.id, item)] += node_to_m_prob;
-      }
+        pCafeNode pcnode = (pCafeNode)ptree->nlist->array[2 * j + 1];
+        pCafeNode child[2] = { (pCafeNode)((pTreeNode)pcnode)->children->head->data,
+            (pCafeNode)((pTreeNode)pcnode)->children->tail->data };
+        for (int k = 0; k < 2; k++)
+        {
+            double p = square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, child[k]->familysize);
+            int node_id = 2 * j + k;
+            for (int m = 0; m <= pcafe->familysizes[1]; m++)
+            {
+                auto key = viterbi_parameters::NodeFamilyKey(node_id, pitem);
+                if (square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, m) == p)
+                {
+                    viterbi->viterbiPvalues[key] += square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, m) / 2.0;
+                }
+                else if (square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, m) < p)
+                {
+                    viterbi->viterbiPvalues[key] += square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, m);
+                    std::cout << "Node " << key.first << " pulling from " << child[k]->super.super.id << " at ";
+                    std::cout << pcnode->familysize << ", " << m << " value " << square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, m) << std::endl;
+                }
+            }
+        }
     }
-  }
-
 }
 
 void familysize_sanity_check(pTree ptree)
@@ -76,35 +82,30 @@ void familysize_sanity_check(pTree ptree)
 
 void viterbi_section(pCafeFamily pcf, double pvalue, int num_random_samples, viterbi_parameters *viterbi, int i, pCafeTree pcafe, double *cP, pArrayList pCD)
 {
-	pTree ptree = (pTree)pcafe;
-	int nnodes = (ptree->nlist->size - 1) / 2;
+    pTree ptree = (pTree)pcafe;
 
-	cafe_family_set_size_with_family_forced(pcf, i, pcafe);
+    cafe_family_set_size_with_family_forced(pcf, i, pcafe);
 
-	cafe_tree_p_values(pcafe, cP, pCD, num_random_samples);
-	viterbi_set_max_pvalue(viterbi, i, __max(cP, pcafe->rfsize));
-	cafe_tree_viterbi(pcafe);
-  familysize_sanity_check(ptree);
+    cafe_tree_p_values(pcafe, cP, pCD, num_random_samples);
+    viterbi_set_max_pvalue(viterbi, i, __max(cP, pcafe->rfsize));
+    cafe_tree_viterbi(pcafe);
+    familysize_sanity_check(ptree);
 
-  pCafeFamilyItem pitem = (pCafeFamilyItem)pcf->flist->array[i];
+    pCafeFamilyItem pitem = (pCafeFamilyItem)pcf->flist->array[i];
 
-  viterbi->compute_size_deltas(ptree, pitem);
-	if (viterbi->maximumPvalues[i] > pvalue)
-	{
-		for (int j = 0; j < ptree->nlist->size - 1; j++)
-		{
-			pCafeNode pnode = (pCafeNode)ptree->nlist->array[j];
-			assert(pnode);
-			viterbi->viterbiPvalues[viterbi_parameters::NodeFamilyKey(pnode->super.super.id, pitem)] = -1;
-		}
-		return;
-	}
+    viterbi->compute_size_deltas(ptree, pitem);
+    if (viterbi->maximumPvalues[i] > pvalue)
+    {
+        for (int j = 0; j < ptree->nlist->size - 1; j++)
+        {
+            pCafeNode pnode = (pCafeNode)ptree->nlist->array[j];
+            assert(pnode);
+            viterbi->viterbiPvalues[viterbi_parameters::NodeFamilyKey(pnode->super.super.id, pitem)] = -1;
+        }
+        return;
+    }
 
-	for (int j = 0; j < nnodes; j++)
-	{
-		pCafeNode pcnode = (pCafeNode)ptree->nlist->array[2 * j + 1];
-		viterbi_sum_probabilities(viterbi, pcnode, pitem, pcafe->familysizes[1]);
-	}
+    viterbi_sum_probabilities(viterbi, pcafe, pitem);
 }
 
 
@@ -138,7 +139,7 @@ pArrayList cafe_viterbi(Globals& globals, viterbi_parameters& viterbi, pArrayLis
 	pTree ptree = (pTree)param->pcafe;
 
 	int nrows = param->pfamily->flist->size;
-	int nnodes = ptree->nlist->size - 1;
+	int nnodes = ptree->nlist->size;
 
 	viterbi_parameters_init(&viterbi, nnodes, nrows);
 
