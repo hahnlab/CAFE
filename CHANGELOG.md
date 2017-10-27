@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [4.1] - 2017-10-27
+### Added
+- seed: new command that sets the random seed so commands with randomness can be replicated
+
+### Changed
+- report: fixed bug where viterbi values were showing incorrect data
+- load: fixed bug in handling trees with more than about 100 species
+
 ## [4.0.2] - 2017-08-21
 ### Added
 - load: max_size parameter added that filters out any families with family sizes larger than the value

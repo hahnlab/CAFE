@@ -1,4 +1,4 @@
-AC_INIT(cafe, 4.0.2)
+AC_INIT(cafe, 4.1)
 dnl Switch to a C++ compiler, and check if it works.
 
 AC_LANG(C++)
