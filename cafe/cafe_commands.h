@@ -54,6 +54,7 @@ COMMAND(retrieve);
 COMMAND(rootdist);
 COMMAND(save);
 COMMAND(score);
+COMMAND(seed);
 COMMAND(simerror);
 COMMAND(simextinct);
 COMMAND(source);

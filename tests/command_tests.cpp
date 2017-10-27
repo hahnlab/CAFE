@@ -495,3 +495,30 @@ TEST(CommandTests, validate_esterror)
 	validate(args);	// or two error files  is okay too
 }
 
+TEST(CommandTests, cafe_cmd_seed)
+{
+    tokens.push_back("seed");
+    try
+    {
+        cafe_cmd_seed(globals, tokens);
+        FAIL("Expected exception not thrown");
+    }
+    catch (std::runtime_error& e)
+    {
+        STRCMP_EQUAL("No value provided for seed", e.what());
+    }
+    try
+    {
+        tokens.push_back("hazpah");
+        cafe_cmd_seed(globals, tokens);
+        FAIL("Expected exception not thrown");
+    }
+    catch (std::runtime_error& e)
+    {
+        STRCMP_EQUAL("Failed to set seed from value hazpah", e.what());
+    }
+
+    tokens[1] = "17";
+    cafe_cmd_seed(globals, tokens);
+    LONGS_EQUAL(65, rand() % 100);
+}

@@ -97,6 +97,7 @@ map<string, cafe_command2> get_dispatcher()
 	dispatcher["noerrormodel"] = cafe_cmd_noerrormodel;
 	dispatcher["rootdist"] = cafe_cmd_rootdist;
 	dispatcher["lambdamu"] = cafe_cmd_lambdamu;
+    dispatcher["seed"] = cafe_cmd_seed;
 #ifdef DEBUG
 	dispatcher["score"] = cafe_cmd_score;
 	dispatcher["simextinct"] = cafe_cmd_simextinct;
@@ -1696,6 +1697,27 @@ void log_param_values(std::ostream& ost, Globals& globals)
 	}
 }
 
+/**
+\ingroup Commands
+\brief Set the random seed for reproducible results
+*
+*/
+int cafe_cmd_seed(Globals& globals, std::vector<std::string> tokens)
+{
+    if (tokens.size() < 2)
+    {
+        throw std::runtime_error("No value provided for seed");
+    }
+    try
+    {
+        srand(std::stoi(tokens[1]));
+    }
+    catch (...)
+    {
+        throw std::runtime_error("Failed to set seed from value " + tokens[1]);
+    }
+    return 0;
+}
 
 #ifdef DEBUG
 
