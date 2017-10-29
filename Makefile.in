@@ -1,4 +1,4 @@
-CC=@CC@:q
+CC=@CC@
 CXX=@CXX@
 LD=@CXX@
 CXXFLAGS=@CXXFLAGS@
