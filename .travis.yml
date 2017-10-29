@@ -9,8 +9,7 @@ script:
 - ./configure
 - make
 - make test
-- cd test
-- ./runtests
+- test/runtests
 - make dist
 - cd $TRAVIS_BUILD_DIR/src_docs
 - doxygen doxygen.cfg
