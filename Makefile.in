@@ -1,4 +1,4 @@
-CC=@CC@
+CC=@CC@:q
 CXX=@CXX@
 LD=@CXX@
 CXXFLAGS=@CXXFLAGS@
@@ -14,6 +14,7 @@ CFLAGS = -Wall -std=c11 @DEFS@ $(INCLUDE)
 CXXFLAGS = -Wall -std=c++11 @DEFS@ $(INCLUDE)
 LINKFLAGS = -lpthread -lm @LIBS@ 
 TESTLIBS=-lCppUTest -lCppUTestExt 
+AUX = 	CHANGELOG.md configure INSTALL LICENSE Makefile.in mcl2rawcafe.py README.md
 
 #
 # Project files
@@ -130,4 +131,8 @@ clean:
 
 install: $(RELEXE)
 	install -m 0755 $(RELEXE) $(prefix)/bin
+
+.PHONY dist:
+dist: $(AUX)
+	 tar  --transform "s,^,CAFE/," -cf CAFE-@PACKAGE_VERSION@.tar.gz cafe docs example libcommon libtree tests main.cpp $(AUX)
 
