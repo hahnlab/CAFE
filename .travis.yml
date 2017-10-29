@@ -11,9 +11,9 @@ script:
 - make test
 - cd test
 - ./runtests
+- make dist
 - cd $TRAVIS_BUILD_DIR/src_docs
 - doxygen doxygen.cfg
-- make dist
 after_success:
 - curl --upload-file *.tar.gz -u "$FTP_USER:$FTP_PASSWORD" $FTP_TARGET 
 - cd $TRAVIS_BUILD_DIR/src_docs
