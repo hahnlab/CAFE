@@ -19,7 +19,7 @@ after_success:
 - ./publish.sh
 deploy:
   provider: pages
-  local_dir: distro
+  local_dir: $TRAVIS_BUILD_DIR/distro
   skip_cleanup: true
   github_token: $DEPLOY_TOKEN # Set in travis-ci.org dashboard
   on:
