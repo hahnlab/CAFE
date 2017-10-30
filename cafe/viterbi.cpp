@@ -57,8 +57,6 @@ void viterbi_sum_probabilities(viterbi_parameters *viterbi, pCafeTree pcafe, pCa
                 else if (square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, m) < p)
                 {
                     viterbi->viterbiPvalues[key] += square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, m);
-                    std::cout << "Node " << key.first << " pulling from " << child[k]->super.super.id << " at ";
-                    std::cout << pcnode->familysize << ", " << m << " value " << square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, m) << std::endl;
                 }
             }
         }
