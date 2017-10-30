@@ -134,5 +134,6 @@ install: $(RELEXE)
 
 .PHONY dist:
 dist: $(AUX)
-	 tar  --transform "s,^,CAFE/," -cf CAFE-@PACKAGE_VERSION@.tar.gz cafe docs example libcommon libtree tests main.cpp $(AUX)
+	mkdir distro
+	tar  --transform "s,^,CAFE/," -cf distro/CAFE-@PACKAGE_VERSION@.tar.gz cafe docs example libcommon libtree tests main.cpp $(AUX)
 
