@@ -95,5 +95,7 @@ const int INIT_KWEIGHTS = 2;
 void initialize_params_and_k_weights(pCafeParam param, int what);
 void set_parameters(pCafeParam param, lambda_args& params);
 void lambda_set(pCafeParam param, lambda_args& params);
+std::vector<int> collect_leaf_sizes(pCafeFamily pfamily);
+
 #endif
 

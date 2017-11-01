@@ -735,3 +735,27 @@ TEST(LambdaTests, get_posterior2)
 
     cafe_family_free(pfamily);
 };
+
+TEST(LambdaTests, collect_leaf_sizes)
+{
+    pCafeFamily pfamily = cafe_family_init({ "A", "B" });
+    cafe_family_add_item(pfamily, gene_family("ENS01", "description", { 1, 2 }));
+    cafe_family_add_item(pfamily, gene_family("ENS02", "description", { 2, 1 }));
+    cafe_family_add_item(pfamily, gene_family("ENS03", "description", { 3, 6 }));
+    cafe_family_add_item(pfamily, gene_family("ENS04", "description", { 6, 3 }));
+
+    std::fill(pfamily->index, pfamily->index + 4, 0);
+
+    auto pal = collect_leaf_sizes(pfamily);
+    LONGS_EQUAL(8, pal.size());
+    LONGS_EQUAL(0, pal[0]);
+    LONGS_EQUAL(1, pal[1]);
+
+    pfamily->index[1] = -1;
+    auto pal2 = collect_leaf_sizes(pfamily);
+    LONGS_EQUAL(4, pal2.size());
+    LONGS_EQUAL(2, pal2[2]);
+    LONGS_EQUAL(5, pal2[3]);
+
+    cafe_family_free(pfamily);
+}

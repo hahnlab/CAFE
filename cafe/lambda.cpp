@@ -695,50 +695,52 @@ double __cafe_best_lambda_search(double* plambda, void* args)
 
 double __lnLPoisson(double* plambda, void* data)
 {
-    int i = 0;
     double score = 0;
     double lambda = plambda[0];
-    pArrayList pal = (pArrayList)data;
-    for (i = 0; i<pal->size; i++) {
-        int* p_x = (int*)pal->array[i];
-        int x = *p_x;
+    std::vector<int>* leaf_sizes = (std::vector<int> *)data;
+
+    for (size_t i = 0; i<leaf_sizes->size(); i++) {
+        int x = leaf_sizes->at(i);
         double ll = poisspdf((double)x, lambda);
         if (std::isnan(ll)) {
             ll = 0;
         }
         score += log(ll);
     }
-    //printf("lambda: %f (Poisson) & Score: %f\n", lambda, score);	
+
     return -score;
+}
+
+std::vector<int> collect_leaf_sizes(pCafeFamily pfamily)
+{
+    // estimate the distribution of family size based on observed leaf counts.
+    // first collect all leaves sizes into an ArrayList.
+    std::vector<int> pLeavesSize;
+    for (int idx = 0; idx<pfamily->flist->size; idx++) {
+        pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[idx];
+        for (int i = 0; i < pfamily->num_species; i++)
+        {
+            if (pfamily->index[i] < 0) continue;
+            if (pitem->count[i] > 0) {		// ignore the zero counts ( we condition that rootsize is at least one )
+                pLeavesSize.push_back(pitem->count[i]-1);
+            }
+        }
+    }
+
+    return pLeavesSize;
 }
 
 poisson_lambda find_poisson_lambda(pCafeFamily pfamily)
 {
     poisson_lambda result;
     int i = 0;
-    int idx = 0;
 
-    // estimate the distribution of family size based on observed leaf counts.
-    // first collect all leaves sizes into an ArrayList.
-    pArrayList pLeavesSize = arraylist_new(pfamily->flist->size*pfamily->num_species);
-    for (idx = 0; idx<pfamily->flist->size; idx++) {
-        pCafeFamilyItem pitem = (pCafeFamilyItem)pfamily->flist->array[idx];
-        for (i = 0; i < pfamily->num_species; i++)
-        {
-            if (pfamily->index[i] < 0) continue;
-            int* leafcnt = (int *)memory_new(1, sizeof(int));
-            memcpy(leafcnt, &(pitem->count[i]), sizeof(int));
-            if (*leafcnt > 0) {		// ignore the zero counts ( we condition that rootsize is at least one )
-                *leafcnt = (*leafcnt) - 1;
-                arraylist_add(pLeavesSize, (void*)leafcnt);
-            }
-        }
-    }
+    auto leaf_sizes = collect_leaf_sizes(pfamily);
 
     // now estimate parameter based on data and distribution (poisson or gamma). 
     pFMinSearch pfm;
     int num_params = 1;
-    pfm = fminsearch_new_with_eq(__lnLPoisson, num_params, pLeavesSize);
+    pfm = fminsearch_new_with_eq(__lnLPoisson, num_params, &leaf_sizes);
     //int num_params = 2;
     //pfm = fminsearch_new_with_eq(__lnLGamma,num_params,pLeavesSize);
     pfm->tolx = 1e-6;
@@ -756,7 +758,6 @@ poisson_lambda find_poisson_lambda(pCafeFamily pfamily)
 
     // clean
     fminsearch_free(pfm);
-    arraylist_free(pLeavesSize, NULL);
 
     return result;
 }
