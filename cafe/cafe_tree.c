@@ -344,15 +344,21 @@ void compute_internal_node_likelihood(pTree ptree, pTreeNode ptnode)
     pCafeNode child1 = (pCafeNode)((pTreeNode)pcnode)->children->head->data;
     pCafeNode child2 = (pCafeNode)((pTreeNode)pcnode)->children->tail->data;
 
-    compute_child_factor(pcafe, child1, &range, left_factor);
-
-    compute_child_factor(pcafe, child2, &range, right_factor);
-
-    int size = range.root_max - range.root_min + 1;
-    assert(size <= pcafe->size_of_factor);
-    for (int i = 0; i < size; i++)
+#pragma omp parallel
+#pragma omp single nowait
     {
-        pcnode->likelihoods[i] = left_factor[i] * right_factor[i];
+#pragma omp task
+        compute_child_factor(pcafe, child1, &range, left_factor);
+#pragma omp task
+        compute_child_factor(pcafe, child2, &range, right_factor);
+#pragma omp taskwait
+
+        int size = range.root_max - range.root_min + 1;
+        assert(size <= pcafe->size_of_factor);
+        for (int i = 0; i < size; i++)
+        {
+            pcnode->likelihoods[i] = left_factor[i] * right_factor[i];
+        }
     }
     memory_free(left_factor);
     memory_free(right_factor);

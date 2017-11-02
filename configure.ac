@@ -4,6 +4,7 @@ dnl Switch to a C++ compiler, and check if it works.
 AC_LANG(C++)
 AC_PROG_CXX([icc g++])
 AC_PROG_CC([icc gcc])
+AC_OPENMP
 
 ax_blas_ok=no
 

@@ -11,6 +11,10 @@
 #include <stdexcept>
 #include <stack>
 
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
+
 #include "lambda.h"
 #include "lambdamu.h"
 #include "cafe_commands.h"
@@ -709,8 +713,13 @@ struct load_args get_load_arguments(vector<Argument> pargs)
 
 void copy_args_to_param(Globals& globals, struct load_args& args)
 {
-	if (args.num_threads > 0)
-		globals.param.num_threads = args.num_threads;
+    if (args.num_threads > 0)
+    {
+        globals.param.num_threads = args.num_threads;
+#if defined(_OPENMP)
+        omp_set_num_threads(args.num_threads);
+#endif
+    }
 	if (args.num_random_samples > 0)
 		globals.num_random_samples = args.num_random_samples;
 	if (args.pvalue > 0.0)
