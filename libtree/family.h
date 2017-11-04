@@ -175,5 +175,5 @@ struct tagCafeParam
 
 extern void thread_run_with_arraylist(int numthreads, void* (*run)(void*), pArrayList pal );
 // cafe tree
-extern void cafe_tree_set_birthdeath(pCafeTree pcafe, pBirthDeathCacheArray cache);
+extern void cafe_tree_set_birthdeath(pCafeTree pcafe, int max_family_size);
 #endif

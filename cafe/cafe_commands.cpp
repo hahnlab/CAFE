@@ -1563,7 +1563,7 @@ void tree_set_branch_lengths(pCafeTree pcafe, std::vector<int> lengths)
 			fprintf(stderr, "ERROR: the branch length of node %d is not changed\n", (int)i);
 		}
 	}
-	if (probability_cache) cafe_tree_set_birthdeath(pcafe, probability_cache);
+	if (probability_cache) cafe_tree_set_birthdeath(pcafe, probability_cache->maxFamilysize);
 
 }
 

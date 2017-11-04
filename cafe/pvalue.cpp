@@ -34,7 +34,7 @@ void check_cache_and_compute_likelihoods(pCafeTree pTree, int max)
 		{
 			int remaxFamilysize = MAX(range.max, range.root_max);
 			birthdeath_cache_resize(probability_cache, remaxFamilysize);
-			cafe_tree_set_birthdeath(pTree, probability_cache);
+			cafe_tree_set_birthdeath(pTree, probability_cache->maxFamilysize);
 		}
 		else
 		{

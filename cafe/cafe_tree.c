@@ -721,9 +721,18 @@ void do_node_set_birthdeath(pTree ptree, pTreeNode ptnode, va_list ap1)
 /**
 *	Set each node's birthdeath matrix based on its values of branchlength, lambdas, and mus
 **/
-void cafe_tree_set_birthdeath(pCafeTree pcafe, pBirthDeathCacheArray cache)
+void cafe_tree_set_birthdeath(pCafeTree pcafe, int max_family_size)
 {
+    pBirthDeathCacheArray cache = birthdeath_cache_init(max_family_size);
+
 	tree_traveral_prefix((pTree)pcafe, do_node_set_birthdeath, cache);
+
+    // free the cache without deleting the matrices
+    void** keys = NULL;
+    hash_table_get_keys(cache->table, &keys);
+    free(keys);
+    hash_table_delete(cache->table);
+    memory_free(cache);
 }
 
 void cafe_tree_node_copy(pTreeNode psrc, pTreeNode pdest)
@@ -765,8 +774,8 @@ pCafeTree cafe_tree_split(pCafeTree pcafe, int idx )
 	{
 		__cafe_tree_copy_new_fill(pcafe,psub);
 	}
-	cafe_tree_set_birthdeath(pcafe, probability_cache);
-	cafe_tree_set_birthdeath(psub, probability_cache);
+	cafe_tree_set_birthdeath(pcafe, probability_cache->maxFamilysize);
+	cafe_tree_set_birthdeath(psub, probability_cache->maxFamilysize);
 	return psub;
 }
 

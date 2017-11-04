@@ -350,7 +350,7 @@ int cafe_shell_set_branchlength()
 			}
 		}
 	}
-	if (probability_cache) cafe_tree_set_birthdeath(cafe_param->pcafe, probability_cache);
+	if (probability_cache) cafe_tree_set_birthdeath(cafe_param->pcafe, probability_cache->maxFamilysize);
 	return 0;
 }
 
