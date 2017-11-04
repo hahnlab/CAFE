@@ -813,11 +813,11 @@ void __cafe_tree_node_random_familysize(pTree ptree, pTreeNode pnode, va_list ap
 /**
 *	Sets the family size of each node to random value between 0 and the tree's pbdc_array maxFamilySize.
 **/
-int cafe_tree_random_familysize(pCafeTree pcafe, int rootFamilysize, pBirthDeathCacheArray birthdeath )
+int cafe_tree_random_familysize(pCafeTree pcafe, int rootFamilysize, int maxFamilySize)
 {
 	int max = 0;
 	((pCafeNode)pcafe->super.root)->familysize = rootFamilysize;
-	tree_traveral_prefix( (pTree)pcafe, __cafe_tree_node_random_familysize, &max, birthdeath->maxFamilysize);
+	tree_traveral_prefix( (pTree)pcafe, __cafe_tree_node_random_familysize, &max, maxFamilySize);
 	return max;
 }
 

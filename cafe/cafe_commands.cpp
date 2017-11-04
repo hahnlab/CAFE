@@ -644,7 +644,7 @@ int cafe_cmd_generate_random_family(Globals& globals, std::vector<std::string> t
 						}
 					}
 					// now randomly sample familysize
-					cafe_tree_random_familysize(param->pcafe, i, probability_cache);
+					cafe_tree_random_familysize(param->pcafe, i, probability_cache->maxFamilysize);
 
 					int *k_value = param->parameterized_k_value > 0 ? &k_arr[idx] : NULL;
 					write_leaves(ofst, pcafe, k_value, i, id, true);
@@ -1888,7 +1888,7 @@ int cafe_cmd_simextinct(Globals& globals, std::vector<std::string> tokens)
 		int cnt_zero = 0;
 		for (i = 0; i < num_trials; i++)
 		{
-			cafe_tree_random_familysize(param->pcafe, r, probability_cache);
+			cafe_tree_random_familysize(param->pcafe, r, probability_cache->maxFamilysize);
 			data[i] = __cafe_cmd_extinct_count_zero((pTree)param->pcafe);
 			cnt_zero += data[i];
 		}
@@ -2379,7 +2379,7 @@ int cafe_cmd_extinct(Globals& globals, std::vector<std::string> tokens)
 				int sum = 0;
 				for (j = 0; j < roots.num[i]; j++)
 				{
-					cafe_tree_random_familysize(pcafe, i, probability_cache);
+					cafe_tree_random_familysize(pcafe, i, probability_cache->maxFamilysize);
 					simdata[f] = __cafe_cmd_extinct_count_zero((pTree)pcafe);
 					data[k++] = simdata[f];
 					sum += simdata[f];

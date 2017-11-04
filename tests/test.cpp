@@ -806,8 +806,7 @@ int get_family_size(pTree ptree, int id)
 TEST(FirstTestGroup, cafe_tree_random_familysize)
 {
 	pCafeTree tree = create_tree(range);
-	pBirthDeathCacheArray cache = birthdeath_cache_init(10);
-	cafe_tree_set_birthdeath(tree, cache->maxFamilysize);
+	cafe_tree_set_birthdeath(tree, 10);
 
 //	reset_birthdeath_cache(param.pcafe, 0, &range);
 	pCafeNode node5 = (pCafeNode)tree->super.nlist->array[5];
@@ -815,7 +814,7 @@ TEST(FirstTestGroup, cafe_tree_random_familysize)
 		for (int j = 0; j <= 10; ++j)
 			square_matrix_set(node5->birthdeath_matrix, i, j, .1);
 
-	int max = cafe_tree_random_familysize(tree, 5, cache);
+    int max = cafe_tree_random_familysize(tree, 5, 10);
 	LONGS_EQUAL(8, max);
 	LONGS_EQUAL(5, get_family_size((pTree)tree, 3));
 	LONGS_EQUAL(5, get_family_size((pTree)tree, 7));
@@ -826,8 +825,7 @@ TEST(FirstTestGroup, cafe_tree_random_familysize__must_be_less_than_cache_size)
 {
 	const int CACHE_SIZE = 10;
 	pCafeTree tree = create_tree(range);
-	pBirthDeathCacheArray cache = birthdeath_cache_init(CACHE_SIZE);
-	cafe_tree_set_birthdeath(tree, cache->maxFamilysize);
+	cafe_tree_set_birthdeath(tree, CACHE_SIZE);
 
 	//	reset_birthdeath_cache(param.pcafe, 0, &range);
 	pCafeNode node5 = (pCafeNode)tree->super.nlist->array[5];
@@ -835,7 +833,7 @@ TEST(FirstTestGroup, cafe_tree_random_familysize__must_be_less_than_cache_size)
 		for (int j = 0; j <= 10; ++j)
 			square_matrix_set(node5->birthdeath_matrix, i, j, .001);
 
-	int max = cafe_tree_random_familysize(tree, 5, cache);
+	int max = cafe_tree_random_familysize(tree, 5, CACHE_SIZE);
 	CHECK(max < CACHE_SIZE);
 }
 
@@ -878,8 +876,7 @@ TEST(FirstTestGroup, viterbi_sum_probabilities)
   viterbi_parameters v;
   pCafeTree tree = create_tree(range);
   viterbi_parameters_init(&v, ((pTree)tree)->nlist->size, 1);
-  pBirthDeathCacheArray arr = birthdeath_cache_init(range.root_max);
-  cafe_tree_set_birthdeath(tree, arr->maxFamilysize);
+  cafe_tree_set_birthdeath(tree, range.root_max);
 
   pCafeNode parent = (pCafeNode)((pTree)tree)->nlist->array[1];
   pCafeNode chimp = (pCafeNode)((pTree)tree)->nlist->array[0];
@@ -1025,8 +1022,8 @@ TEST(FirstTestGroup, run_viterbi_sim)
 	pCafeFamily pfamily = cafe_family_init({"chimp", "human", "mouse", "rat", "dog" });
 	cafe_family_set_species_index(pfamily, tree);
 	cafe_family_add_item(pfamily, gene_family("ENS01", "description", { 3, 5, 7, 11, 13 }));
-	pBirthDeathCacheArray cache = birthdeath_cache_init(tree->size_of_factor);
-	cafe_tree_set_birthdeath(tree, cache->maxFamilysize);
+
+    cafe_tree_set_birthdeath(tree, tree->size_of_factor);
 
 	roots roots;
 	run_viterbi_sim(tree, pfamily, roots);
