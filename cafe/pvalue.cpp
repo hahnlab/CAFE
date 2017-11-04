@@ -10,16 +10,10 @@
 #include "pvalue.h"
 #include "conditional_distribution.h"
 
-extern "C" {
-#include "cafe.h"
-
-	extern pBirthDeathCacheArray probability_cache;
-}
-
 std::vector<std::vector<double> > ConditionalDistribution::matrix;
 //pArrayList ConditionalDistribution::cafe_pCD;
 
-void check_cache_and_compute_likelihoods(pCafeTree pTree, int max)
+void check_cache_and_compute_likelihoods(pCafeTree pTree, int max, pBirthDeathCacheArray cache)
 {
 	family_size_range range;
 	range.min = 0;
@@ -27,14 +21,14 @@ void check_cache_and_compute_likelihoods(pCafeTree pTree, int max)
 	range.root_max = max + MAX(50, max / 4);
 	range.max = max + MAX(50, max / 5);
 
-	if (probability_cache == NULL || probability_cache->maxFamilysize <  MAX(range.root_max, range.max))
+	if (cache == NULL || cache->maxFamilysize <  MAX(range.root_max, range.max))
 	{
 		cafe_tree_set_parameters(pTree, &range, 0);
-		if (probability_cache)
+		if (cache)
 		{
 			int remaxFamilysize = MAX(range.max, range.root_max);
-			birthdeath_cache_resize(probability_cache, remaxFamilysize);
-			cafe_tree_set_birthdeath(pTree, probability_cache->maxFamilysize);
+			birthdeath_cache_resize(cache, remaxFamilysize);
+			cafe_tree_set_birthdeath(pTree, cache->maxFamilysize);
 		}
 		else
 		{
@@ -49,9 +43,9 @@ void check_cache_and_compute_likelihoods(pCafeTree pTree, int max)
 }
 
 
-void print_pvalues(std::ostream& ost, pCafeTree pcafe, int max, int num_random_samples)
+void print_pvalues(std::ostream& ost, pCafeTree pcafe, int max, int num_random_samples, pBirthDeathCacheArray cache)
 {
-	check_cache_and_compute_likelihoods(pcafe, max);
+	check_cache_and_compute_likelihoods(pcafe, max, cache);
 	double* lh = get_likelihoods(pcafe);
 	int rfsize = __maxidx(lh, pcafe->rfsize);
 	double mlh = lh[rfsize];

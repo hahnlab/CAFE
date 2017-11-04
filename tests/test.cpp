@@ -1501,7 +1501,7 @@ TEST(PValueTests, pvalue)
     node->familysize = 0;
   }
 
-	print_pvalues(ost, pcafe, 10, 5);
+	print_pvalues(ost, pcafe, 10, 5, probability_cache);
 
 	STRCMP_CONTAINS("(((chimp_1:6,human_1:6)_1:81,(mouse_1:17,rat_1:17)_1:70)_1:6,dog_1:9)_1\n", ost.str().c_str());
 	STRCMP_CONTAINS("Root size: 1 with maximum likelihood : 0\n", ost.str().c_str());

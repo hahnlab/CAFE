@@ -59,7 +59,7 @@ extern "C" {
 	void __hg_print_sim_extinct(pHistogram** phist_sim_n, pHistogram* phist_sim,
 		int r, pHistogram phist_tmp, double* cnt, int num_trials);
 	pErrorStruct cafe_shell_create_error_matrix_from_estimate(pErrorMeasure errormeasure);
-	int cafe_shell_set_branchlength();
+	void cafe_shell_set_branchlength(pCafeParam param, int max_family_size);
 	void set_range_from_family(family_size_range* range, pCafeFamily family);
 	void cafe_shell_set_lambda(pCafeParam param, double* parameters);
 	void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters);
@@ -1177,12 +1177,12 @@ int cafe_cmd_pvalue(Globals& globals, std::vector<std::string> tokens)
 	else if (tokens.size() > 1)
 	{
 		prereqs(param, REQUIRES_TREE);
-		print_pvalues(cout, param->pcafe, cafe_shell_parse_familysize((pTree)param->pcafe, tokens), globals.num_random_samples);
+		print_pvalues(cout, param->pcafe, cafe_shell_parse_familysize((pTree)param->pcafe, tokens), globals.num_random_samples, probability_cache);
 	}
 	else
 	{
 		prereqs(param, REQUIRES_TREE);
-		print_pvalues(cout, param->pcafe, cafe_shell_set_familysize(), globals.num_random_samples);
+		print_pvalues(cout, param->pcafe, cafe_shell_set_familysize(), globals.num_random_samples, probability_cache);
 	}
 	return 0;
 }
@@ -1732,7 +1732,7 @@ int cafe_cmd_seed(Globals& globals, std::vector<std::string> tokens)
 
 void viterbi_print(pCafeTree pcafe, int max)
 {
-	check_cache_and_compute_likelihoods(pcafe, max);
+	check_cache_and_compute_likelihoods(pcafe, max, probability_cache);
 	double* lh = get_likelihoods(pcafe);
 	double mlh = __max(lh, pcafe->rfsize);
 	cafe_tree_viterbi(pcafe);
@@ -1933,7 +1933,7 @@ int cafe_cmd_branchlength(Globals& globals, std::vector<std::string> tokens)
 
 	if (tokens.size() == 1)
 	{
-		err = cafe_shell_set_branchlength();
+		cafe_shell_set_branchlength(param, probability_cache->maxFamilysize);
 	}
 	else if (tokens.size() > 2)
 	{

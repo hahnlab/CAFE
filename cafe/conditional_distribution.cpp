@@ -3,13 +3,6 @@
 
 #include "conditional_distribution.h"
 
-extern "C" {
-#include "cafe.h"
-#include <family.h>
-
-	extern pBirthDeathCacheArray probability_cache;
-}
-
 /**************************************************************************
 * Conditional Distribution
 **************************************************************************/
@@ -24,19 +17,13 @@ std::vector<double> get_random_probabilities(pCafeTree pcafe, int rootFamilysize
 	pcafe->rootfamilysizes[0] = rootFamilysize;
 	pcafe->rootfamilysizes[1] = rootFamilysize;
 
-	if (probability_cache == NULL) {
-		printf("error: pbdc_array NULL");
-	}
-
-	struct chooseln_cache cache;
 	int maxFamilySize = MAX(pcafe->rootfamilysizes[1], pcafe->familysizes[1]);
-	chooseln_cache_init2(&cache, maxFamilySize);
 
 	std::vector<double> probs(trials);
 
 	for (int i = 0; i < trials; i++)
 	{
-		int max = cafe_tree_random_familysize(pcafe, rootFamilysize, probability_cache->maxFamilysize);
+		int max = cafe_tree_random_familysize(pcafe, rootFamilysize, maxFamilySize);
 		if (pcafe->super.nlist)
 		{
 			pcafe->familysizes[1] = MIN(max + MAX(50, max / 5), pcafe->familysizes[1]);

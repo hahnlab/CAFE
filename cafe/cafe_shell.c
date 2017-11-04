@@ -13,8 +13,6 @@
 #include "cafe.h"
 #include "cafe_shell.h"
 
-extern pBirthDeathCacheArray probability_cache;
-
 /**
 * \brief Holds the global program state that user commands act on.
 *
@@ -320,16 +318,16 @@ int cafe_shell_set_familysize()
 	return max;
 }
 
-int cafe_shell_set_branchlength()
+void cafe_shell_set_branchlength(pCafeParam param, int max_family_size)
 {
 	int i;
 	char buf[STRING_STEP_SIZE];
 
-	pArrayList nlist = cafe_param->pcafe->super.nlist;
+	pArrayList nlist = param->pcafe->super.nlist;
 	for ( i = 0; i < nlist->size ; i++ )
 	{
 		pPhylogenyNode pnode = (pPhylogenyNode)nlist->array[i];
-		if ( tree_is_root( (pTree)cafe_param->pcafe, (pTreeNode)pnode) ) continue;
+		if ( tree_is_root( (pTree)param->pcafe, (pTreeNode)pnode) ) continue;
 		printf("%d[%d]: ", i, (int)pnode->branchlength );
 		if (fgets(buf,STRING_STEP_SIZE,stdin) == NULL)
 			fprintf(stderr, "Failed to read input\n");
@@ -350,8 +348,10 @@ int cafe_shell_set_branchlength()
 			}
 		}
 	}
-	if (probability_cache) cafe_tree_set_birthdeath(cafe_param->pcafe, probability_cache->maxFamilysize);
-	return 0;
+	
+    cafe_tree_set_birthdeath(param->pcafe, max_family_size);
+	
+    return 0;
 }
 
 

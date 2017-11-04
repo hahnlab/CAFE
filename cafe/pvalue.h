@@ -8,8 +8,8 @@ extern "C" {
 #include <family.h>
 }
 
-void check_cache_and_compute_likelihoods(pCafeTree pTree, int max);
-void print_pvalues(std::ostream& ost, pCafeTree pcafe, int max, int num_random_samples);
+void check_cache_and_compute_likelihoods(pCafeTree pTree, int max, pBirthDeathCacheArray cache);
+void print_pvalues(std::ostream& ost, pCafeTree pcafe, int max, int num_random_samples, pBirthDeathCacheArray cache);
 void read_pvalues(std::istream& ist, int count);
 void write_pvalues(std::ostream& ost, pArrayList values, int count);
 void pvalues_for_family(pCafeTree pTree, pCafeFamily family, family_size_range *range, int numthreads, int num_random_samples, int index);
