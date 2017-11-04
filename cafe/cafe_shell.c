@@ -350,8 +350,6 @@ void cafe_shell_set_branchlength(pCafeParam param, int max_family_size)
 	}
 	
     cafe_tree_set_birthdeath(param->pcafe, max_family_size);
-	
-    return 0;
 }
 
 

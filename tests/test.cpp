@@ -352,6 +352,26 @@ TEST(TreeTests, compute_tree_likelihood)
 
 }
 
+TEST(TreeTests, add_key)
+{
+    pArrayList arr = arraylist_new(10);
+    add_key(arr, 1, 2, 3);
+    LONGS_EQUAL(1, arr->size);
+    struct BirthDeathCacheKey* key = (struct BirthDeathCacheKey*)arraylist_get(arr, 0);
+    DOUBLES_EQUAL(1, key->branchlength, 0.00001);
+    DOUBLES_EQUAL(2, key->lambda, 0.00001);
+    DOUBLES_EQUAL(3, key->mu, 0.00001);
+}
+
+TEST(TreeTests, add_key_skips_matching_keys)
+{
+    pArrayList arr = arraylist_new(10);
+    add_key(arr, 1, 2, 3);
+    add_key(arr, 2, 3, 4);
+    add_key(arr, 1, 2, 3);
+    LONGS_EQUAL(2, arr->size);
+}
+
 TEST(FirstTestGroup, compute_likelihoods)
 {
   const char *newick_tree = "((A:1,B:1):1,(C:1,D:1):1);";

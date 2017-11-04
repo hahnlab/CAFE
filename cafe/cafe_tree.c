@@ -706,6 +706,57 @@ void node_set_birthdeath_matrix(pCafeNode pcnode, pBirthDeathCacheArray cache, i
 
 }
 
+void add_key(pArrayList arr, double branchlength, double lambda, double mu)
+{
+    for (int i = 0; i < arr->size; ++i)
+    {
+        struct BirthDeathCacheKey *key = (struct BirthDeathCacheKey *)arraylist_get(arr, i);
+        if (key->branchlength == branchlength &&
+            key->lambda == lambda &&
+            key->mu == mu)
+            return;
+    }
+    struct BirthDeathCacheKey *key = malloc(sizeof(struct BirthDeathCacheKey));
+    memset(key, 0, sizeof(struct BirthDeathCacheKey));
+    key->branchlength = branchlength;
+    key->lambda = lambda;
+    key->mu = mu;
+    arraylist_add(arr, key);
+}
+
+void get_keys_from_node(pCafeNode pcnode, pArrayList arr, int num_lambdas)
+{
+    if (pcnode->super.branchlength <= 0)
+        return;
+
+    if (pcnode->birth_death_probabilities.param_lambdas) {
+        if (pcnode->birth_death_probabilities.param_mus) {
+            if (num_lambdas > 0) {
+                for (int k = 0; k<num_lambdas; k++) {
+                    add_key(arr, pcnode->super.branchlength, pcnode->birth_death_probabilities.param_lambdas[k], pcnode->birth_death_probabilities.param_mus[k]);
+                }
+            }
+            else {
+                add_key(arr, pcnode->super.branchlength, pcnode->birth_death_probabilities.param_lambdas[0], pcnode->birth_death_probabilities.param_mus[0]);
+            }
+        }
+        else {
+            if (num_lambdas > 0) {
+                for (int k = 0; k<num_lambdas; k++) {
+                    add_key(arr, pcnode->super.branchlength, pcnode->birth_death_probabilities.param_lambdas[k], pcnode->birth_death_probabilities.mu);
+                }
+            }
+            else {
+                add_key(arr, pcnode->super.branchlength, pcnode->birth_death_probabilities.param_lambdas[0], pcnode->birth_death_probabilities.mu);
+            }
+        }
+    }
+    else {
+        add_key(arr, pcnode->super.branchlength, pcnode->birth_death_probabilities.lambda, pcnode->birth_death_probabilities.mu);
+    }
+
+}
+
 void do_node_set_birthdeath(pTree ptree, pTreeNode ptnode, va_list ap1)
 {
 	va_list ap;
@@ -717,13 +768,36 @@ void do_node_set_birthdeath(pTree ptree, pTreeNode ptnode, va_list ap1)
 	node_set_birthdeath_matrix((pCafeNode)ptnode, cache, pcafe->k);
 }
 
+void gather_keys(pTree ptree, pTreeNode ptnode, va_list ap1)
+{
+    va_list ap;
+    va_copy(ap, ap1);
+    pArrayList arr = va_arg(ap, pArrayList);
+    va_end(ap);
+
+    pCafeTree pcafe = (pCafeTree)ptree;
+    get_keys_from_node((pCafeNode)ptnode, arr, pcafe->k);
+}
 
 /**
 *	Set each node's birthdeath matrix based on its values of branchlength, lambdas, and mus
 **/
 void cafe_tree_set_birthdeath(pCafeTree pcafe, int max_family_size)
 {
+    pArrayList arr = arraylist_new(40);
+    tree_traveral_prefix((pTree)pcafe, gather_keys, arr);
+
     pBirthDeathCacheArray cache = birthdeath_cache_init(max_family_size);
+
+#pragma omp parallel
+#pragma omp for
+    for (int i = 0; i < arr->size; ++i)
+    {
+        struct BirthDeathCacheKey* key = (struct BirthDeathCacheKey*)arraylist_get(arr, i);
+        struct square_matrix *matrix = compute_birthdeath_rates(key->branchlength, key->lambda, key->mu, max_family_size);
+#pragma omp critical
+        hash_table_add(cache->table, key, sizeof(struct BirthDeathCacheKey), matrix, sizeof(struct square_matrix*));
+    }
 
 	tree_traveral_prefix((pTree)pcafe, do_node_set_birthdeath, cache);
 
