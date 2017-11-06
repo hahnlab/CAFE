@@ -2046,7 +2046,7 @@ int cafe_cmd_gainloss(Globals& globals, std::vector<std::string> tokens)
 			ConditionalDistribution::reset(param->pcafe, &param->family_size, param->num_threads, globals.num_random_samples);
 		}
 		pArrayList cd = ConditionalDistribution::to_arraylist();
-		cafe_viterbi(globals, *globals.viterbi, cd);
+		cafe_viterbi(globals, *globals.viterbi, &ConditionalDistribution::matrix);
 		arraylist_free(cd, NULL);
 	}
 

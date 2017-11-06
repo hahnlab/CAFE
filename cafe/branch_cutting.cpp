@@ -1,6 +1,7 @@
 #include <sstream>
 #include <utility>
 #include <algorithm>
+#include <iostream>
 
 #include "branch_cutting.h"
 #include "conditional_distribution.h"
@@ -97,7 +98,7 @@ pArrayList to_arraylist(matrix& v)
 	return result;
 }
 
-void compute_cutpvalues(pCafeTree pparamcafe, pCafeFamily family, int num_random_samples, int b, int range_start, int range_stop, viterbi_parameters& viterbi, double pvalue, double *p1, double** p2, CutBranch& cb)
+void compute_cutpvalues(pCafeTree pparamcafe, pCafeFamily family, int num_random_samples, int b, int range_start, int range_stop, viterbi_parameters& viterbi, double pvalue, std::vector<double>& p1, double** p2, CutBranch& cb)
 {
 	pTree ptree = (pTree)pparamcafe;
 	if (tree_is_root(ptree, (pTreeNode)ptree->nlist->array[b]))
@@ -121,11 +122,10 @@ void compute_cutpvalues(pCafeTree pparamcafe, pCafeFamily family, int num_random
 		{
 			pCafeTree pct = tree_is_leaf(psub->super.root) ? pcafe : psub;
 			set_size_for_split(family, i, pct);
-			pArrayList arr = to_arraylist(cb.pCDSs[b].first);
 			assert(cb.pCDSs[b].first.size() == (size_t)pct->rfsize);
-			cafe_tree_p_values(pct, p1, arr, num_random_samples);
-			arraylist_free(arr, free);
-			viterbi.cutPvalues[b][i] = *std::max_element(p1, p1+pcafe->rfsize);
+            
+            cafe_tree_p_values(pct, p1, cb.pCDSs[b].first, num_random_samples);
+			viterbi.cutPvalues[b][i] = *std::max_element(p1.begin(), p1.begin()+(size_t)pcafe->rfsize);
 		}
 		else
 		{
@@ -160,16 +160,15 @@ void* __cafe_branch_cutting_thread_func(void* ptr)
 
 	pTree ptree = (pTree)pbc->pcafe;
 	int nnodes = ptree->nlist->size;
-	double* p1 = (double*)memory_new(pbc->pcafe->rfsize, sizeof(double));
+    std::vector<double> p1(pbc->pcafe->rfsize);
 	double** p2 = (double**)memory_new_2dim(pbc->pcafe->rfsize, pbc->pcafe->rfsize, sizeof(double));
 
 	for (int b = 0; b < nnodes; b++)
 	{
 		compute_cutpvalues(pbc->pcafe, pbc->pfamily, pbc->num_random_samples, b, pbc->range[0], pbc->range[1], *pbc->viterbi, pbc->pvalue, p1, p2, *pbc->cb);
 	}
-	memory_free(p1);
-	p1 = NULL;
-	memory_free_2dim((void**)p2, pbc->pcafe->rfsize, pbc->pcafe->rfsize, NULL);
+
+    memory_free_2dim((void**)p2, pbc->pcafe->rfsize, pbc->pcafe->rfsize, NULL);
 	return (NULL);
 }
 

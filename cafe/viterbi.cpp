@@ -78,14 +78,15 @@ void familysize_sanity_check(pTree ptree)
   /* end check family size for all nodes first */
 }
 
-void viterbi_section(pCafeFamily pcf, double pvalue, int num_random_samples, viterbi_parameters *viterbi, int i, pCafeTree pcafe, double *cP, pArrayList pCD)
+void viterbi_section(pCafeFamily pcf, double pvalue, int num_random_samples, viterbi_parameters *viterbi, int i, pCafeTree pcafe, double *cP, std::vector<std::vector<double> >* pCD)
 {
     pTree ptree = (pTree)pcafe;
 
     cafe_family_set_size_with_family_forced(pcf, i, pcafe);
 
-    cafe_tree_p_values(pcafe, cP, pCD, num_random_samples);
-    viterbi_set_max_pvalue(viterbi, i, __max(cP, pcafe->rfsize));
+    std::vector<double> p1(pcafe->rfsize);
+    cafe_tree_p_values(pcafe, p1, *pCD, num_random_samples);
+    viterbi_set_max_pvalue(viterbi, i, __max(&p1[0], pcafe->rfsize));
     cafe_tree_viterbi(pcafe);
     familysize_sanity_check(ptree);
 
@@ -111,7 +112,7 @@ void* __cafe_viterbi_thread_func(void* ptr)
 {
 	ViterbiParam* pv = (ViterbiParam *)ptr;
 
-	pArrayList pCD = pv->pCD;
+    std::vector<std::vector<double> >* pCD = pv->pCD;
 	pCafeTree pcafe = cafe_tree_copy(pv->pcafe);
 	int fsize = pv->pfamily->flist->size;
 	double* cP = (double*)memory_new(pcafe->rfsize, sizeof(double));
@@ -128,7 +129,7 @@ void* __cafe_viterbi_thread_func(void* ptr)
 	return (NULL);
 }
 
-pArrayList cafe_viterbi(Globals& globals, viterbi_parameters& viterbi, pArrayList pCD)
+void cafe_viterbi(Globals& globals, viterbi_parameters& viterbi, std::vector<std::vector<double> >* pCD)
 {
 	pCafeParam param = &globals.param;
 	cafe_log(param, "Running Viterbi algorithm....\n");
@@ -163,7 +164,6 @@ pArrayList cafe_viterbi(Globals& globals, viterbi_parameters& viterbi, pArrayLis
 
 	memory_free(ptparam);
 	ptparam = NULL;
-	return pCD;
 }
 
 void cafe_viterbi_print(pCafeParam param, viterbi_parameters& viterbi)

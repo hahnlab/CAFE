@@ -631,9 +631,7 @@ void cafe_do_report(Globals& globals, viterbi_parameters& viterbi, report_parame
 
 	if (params->branchcutting || params->likelihood)
 	{
-		pArrayList cd = ConditionalDistribution::to_arraylist();
-		cafe_viterbi(globals, viterbi, cd);
-		arraylist_free(cd, NULL);
+		cafe_viterbi(globals, viterbi, &ConditionalDistribution::matrix);
 		
 		if (params->branchcutting) 
 			cafe_branch_cutting(globals, viterbi);
@@ -653,9 +651,7 @@ void cafe_do_report(Globals& globals, viterbi_parameters& viterbi, report_parame
 	{
 		if (!params->just_save)
 		{
-			pArrayList cd = ConditionalDistribution::to_arraylist();
-			cafe_viterbi(globals, viterbi, cd);
-			arraylist_free(cd, NULL);
+			cafe_viterbi(globals, viterbi, &ConditionalDistribution::matrix);
 		}
 		Report r(param, viterbi);
 		report << r;

@@ -13,7 +13,7 @@ void print_pvalues(std::ostream& ost, pCafeTree pcafe, int max, int num_random_s
 void read_pvalues(std::istream& ist, int count);
 void write_pvalues(std::ostream& ost, pArrayList values, int count);
 void pvalues_for_family(pCafeTree pTree, pCafeFamily family, family_size_range *range, int numthreads, int num_random_samples, int index);
-void cafe_tree_p_values(pCafeTree pcafe, double* p, pArrayList pconddist, int cdlen);
+void cafe_tree_p_values(pCafeTree pcafe, std::vector<double>& pvalues, std::vector<std::vector<double> >& pconddist, int cdlen);
 
 class ConditionalDistribution
 {

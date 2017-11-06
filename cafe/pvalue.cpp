@@ -132,7 +132,7 @@ pArrayList ConditionalDistribution::to_arraylist()
 	return result;
 }
 
-void cafe_tree_p_values(pCafeTree pcafe, double* pvalues, pArrayList pconddist, int cdlen)
+void cafe_tree_p_values(pCafeTree pcafe, std::vector<double>& pvalues, std::vector<std::vector<double> >& pconddist, int cdlen)
 {
   compute_tree_likelihoods(pcafe);
   double* observed_likelihood = get_likelihoods(pcafe);
@@ -140,7 +140,8 @@ void cafe_tree_p_values(pCafeTree pcafe, double* pvalues, pArrayList pconddist, 
   int s;
   for (s = 0; s < pcafe->rfsize; s++)
   {
-    pvalues[s] = pvalue(observed_likelihood[s], (double*)pconddist->array[s], cdlen);
+      assert((size_t)cdlen <= pconddist[s].size());
+      pvalues[s] = pvalue(observed_likelihood[s], &pconddist[s][0], cdlen);
   }
 }
 

@@ -501,7 +501,7 @@ TEST(FirstTestGroup, cafe_tree_p_values)
     node->familysize = 0;
   }
 
-  cafe_tree_p_values(pTree, &result[0], cd, 1);
+  cafe_tree_p_values(pTree, result, m, 1);
   
   // TODO: generate non-zero pvalues
   DOUBLES_EQUAL(1, result[0], 0.001);
@@ -1173,7 +1173,9 @@ TEST(FirstTestGroup, set_size_for_split)
 
 TEST(FirstTestGroup, compute_cutpvalues)
 {
-	pCafeTree tree = create_tree(range);
+    ConditionalDistribution::matrix.clear();
+    
+    pCafeTree tree = create_tree(range);
 
 	probability_cache = NULL;
 	reset_birthdeath_cache(tree, 0, &range);
@@ -1187,7 +1189,7 @@ TEST(FirstTestGroup, compute_cutpvalues)
 	viterbi_parameters_init(&viterbi, nnodes, 1);
 	LONGS_EQUAL(nnodes, viterbi.averageExpansion.size());
 	LONGS_EQUAL(nnodes, viterbi.expandRemainDecrease.size());
-	double* p1 = (double*)memory_new(5, sizeof(double));
+	std::vector<double> p1(tree->rfsize);
 	double** p2 = (double**)memory_new_2dim(5, 5, sizeof(double));
 
 	viterbi.cutPvalues = (double**)memory_new_2dim(6, 1, sizeof(double));
@@ -1197,12 +1199,13 @@ TEST(FirstTestGroup, compute_cutpvalues)
 	{
 		for (int j = 0; j < tree->rfsize; ++j)
 		{
-			cb.pCDSs[i].first.push_back(std::vector<double>(1, .5));
-			cb.pCDSs[i].second.push_back(std::vector<double>(1, .5));
+            cb.pCDSs[i].first.push_back(std::vector<double>{ .1, .2, .3, .4, .5});
+			cb.pCDSs[i].second.push_back(std::vector<double>{ .1, .2, .3, .4, .5});
 		}
 	}
 	compute_cutpvalues(tree, pfamily, 5, 0, 0, 1, viterbi, 0.05, p1, p2, cb);
-	DOUBLES_EQUAL(0.6, viterbi.cutPvalues[0][0], .001);
+    // TODO: come up with some probabilities that create values
+	DOUBLES_EQUAL(0.0, viterbi.cutPvalues[0][0], .001);
 
   cafe_family_free(pfamily);
 
