@@ -54,7 +54,6 @@ extern "C" {
 	void __cafe_tree_string_sum_gainloss(pString pstr, pPhylogenyNode ptnode);
 
 	extern pBirthDeathCacheArray probability_cache;
-	int cafe_shell_set_familysize();
 	int __cafe_cmd_extinct_count_zero(pTree pcafe);
 	void __hg_print_sim_extinct(pHistogram** phist_sim_n, pHistogram* phist_sim,
 		int r, pHistogram phist_tmp, double* cnt, int num_trials);
@@ -438,6 +437,44 @@ int get_num_trials(vector<string> args)
 	return atoi((++it)->c_str());
 }
 
+void cafe_shell_prompt(const char* prompt, const char* format, ...)
+{
+    va_list ap;
+    va_start(ap, format);
+    printf("%s ", prompt);
+    if (vscanf(format, ap) == EOF)
+        fprintf(stderr, "Read failure\n");
+    va_end(ap);
+}
+
+int set_family_size_interactive(pCafeTree pcafe)
+{
+    int i;
+    int max = 0;
+    char buf[STRING_STEP_SIZE];
+
+    pArrayList nlist = pcafe->super.nlist;
+    for (i = 0; i < nlist->size; i += 2)
+    {
+        pCafeNode pnode = (pCafeNode)nlist->array[i];
+        sprintf(buf, "%s: ", pnode->super.name);
+        int size = -1;
+        cafe_shell_prompt(buf, "%d", &size);
+        if (size < 0)
+        {
+            fprintf(stderr, "ERROR: You put wrong data, you must enter an integer greater than or equal to 0\n");
+            cafe_shell_prompt("Retry? [Y|N] ", "%s", buf);
+            if (buf[0] != 'Y' && buf[0] != 'y') return -1;
+            i -= 2;
+        }
+        else
+        {
+            pnode->familysize = size;
+            if (size > max) max = size;
+        }
+    }
+    return max;
+}
 
 void verify_directory(string dirname)
 {
@@ -1182,7 +1219,7 @@ int cafe_cmd_pvalue(Globals& globals, std::vector<std::string> tokens)
 	else
 	{
 		prereqs(param, REQUIRES_TREE);
-		print_pvalues(cout, param->pcafe, cafe_shell_set_familysize(), globals.num_random_samples, probability_cache);
+		print_pvalues(cout, param->pcafe, set_family_size_interactive(param->pcafe), globals.num_random_samples, probability_cache);
 	}
 	return 0;
 }
@@ -2657,7 +2694,7 @@ int cafe_cmd_viterbi(Globals& globals, std::vector<std::string> tokens)
 	}
 	else if (tokens.size() == 1)
 	{
-		viterbi_print(param->pcafe, cafe_shell_set_familysize());
+		viterbi_print(param->pcafe, set_family_size_interactive(param->pcafe));
 	}
 	else
 	{

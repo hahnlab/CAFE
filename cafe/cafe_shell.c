@@ -28,16 +28,6 @@ pTree tmp_lambda_tree;
 void cafe_shell_set_lambda(pCafeParam param, double* lambda);
 void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters);
 
-void cafe_shell_prompt(char* prompt, char* format, ... )
-{
-	va_list ap;
-	va_start(ap, format);
-	printf("%s ", prompt);
-	if (vscanf( format, ap ) == EOF)
-		fprintf(stderr, "Read failure\n");
-	va_end(ap);
-}
-
 void reset_k_likelihoods(pCafeNode pcnode, int k, int num_factors)
 {
 	if (pcnode->k_likelihoods) { memory_free(pcnode->k_likelihoods); pcnode->k_likelihoods = NULL; }
@@ -285,37 +275,6 @@ void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters)
 	
 	param->pcafe->k = param->parameterized_k_value;
 	initialize_k_bd2(param, parameters);
-}
-
-int cafe_shell_set_familysize()
-{
-	int i;
-	int max = 0;
-	char buf[STRING_STEP_SIZE];
-
-	STDERR_IF( cafe_param->pcafe == NULL, "You did not specify tree: command 'tree'\n" );
-
-	pArrayList nlist = cafe_param->pcafe->super.nlist;
-	for ( i = 0; i < nlist->size ; i+=2 )
-	{
-		pCafeNode pnode = (pCafeNode)nlist->array[i];
-		sprintf(buf, "%s: ", pnode->super.name );
-		int size = -1;
-		cafe_shell_prompt( buf , "%d", &size  );
-		if ( size < 0 )
-		{ 
-			fprintf( stderr, "ERROR: You put wrong data, you must enter an integer greater than or equal to 0\n");
-			cafe_shell_prompt( "Retry? [Y|N] ", "%s", buf);
-			if ( buf[0] != 'Y' && buf[0] != 'y' ) return -1; 
-			i -= 2;
-		}
-		else
-		{
-			pnode->familysize = size;
-			if ( size > max ) max = size;
-		}
-	}
-	return max;
 }
 
 void cafe_shell_set_branchlength(pCafeParam param, int max_family_size)

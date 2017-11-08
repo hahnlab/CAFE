@@ -25,9 +25,6 @@ typedef struct
 } ErrorMeasure;
 typedef ErrorMeasure* pErrorMeasure;
  
-void cafe_shell_prompt(char* prompt, char* format, ... );
-double cafe_shell_score();
-
 int set_log_file(pCafeParam param, const char *file_name);
 
 void initialize_k_bd(pCafeParam param, double *parameters);
