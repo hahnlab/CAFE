@@ -155,9 +155,14 @@ void cafe_viterbi(Globals& globals, viterbi_parameters& viterbi, std::vector<std
 		ptparam[i].from = i;
 		ptparam[i].pCD = pCD;
 	}
-	thread_run(param->num_threads, __cafe_viterbi_thread_func, ptparam, sizeof(ViterbiParam));
 
-	for (i = 0; i < ptree->nlist->size - 1; i++)
+    // Remove threading until process can be more carefully analyzed
+    for (i = 0; i < param->num_threads; ++i)
+    {
+        __cafe_viterbi_thread_func(ptparam + i);
+    }
+
+    for (i = 0; i < ptree->nlist->size - 1; i++)
 	{
 		viterbi.averageExpansion[i] /= param->pfamily->flist->size;
 	}
