@@ -322,12 +322,12 @@ void phylogeny_lambda_parse_func(pTree ptree, pTreeNode ptnode)
 	pnode->taxaid--;
 }
 
-int __cafe_cmd_lambda_tree(char *arg1, char *arg2)
+int __cafe_cmd_lambda_tree(pCafeParam param, char *arg1, char *arg2)
 {
 	int idx = 1;
 	pTree ptree;
 	char* plambdastr = NULL;
-	cafe_param->pcafe->branch_params_cnt = 0;
+	param->pcafe->branch_params_cnt = 0;
 	if ( arg2 != NULL )
 	{
 		sscanf( arg1, "%d", &idx );
@@ -340,16 +340,16 @@ int __cafe_cmd_lambda_tree(char *arg1, char *arg2)
 		ptree = phylogeny_load_from_string(arg1, tree_new, phylogeny_new_empty_node, phylogeny_lambda_parse_func, 0 );
 	}
 	tree_build_node_list(ptree);
-	if ( ptree->nlist->size != cafe_param->pcafe->super.nlist->size )
+	if ( ptree->nlist->size != param->pcafe->super.nlist->size )
 	{
 		fprintf(stderr, "Lambda has a different topology from the tree\n");
 		return -1;
 	}
-	if (cafe_param->pcafe->branch_params_cnt != cafe_param->pcafe->super.nlist->size-1) {
+	if (param->pcafe->branch_params_cnt != param->pcafe->super.nlist->size-1) {
 		fprintf(stderr,"ERROR(lambda -t): Branch lambda classes not totally specified.\n");
 		fprintf(stderr,"%s\n", plambdastr);
 		fprintf(stderr,"You have to specify lambda classes for all branches including the internal branches of the tree.\n");
-		fprintf(stderr,"There are total %d branches in the tree.\n", cafe_param->pcafe->super.nlist->size-1);	// branch_cnt = node_cnt - 1 
+		fprintf(stderr,"There are total %d branches in the tree.\n", param->pcafe->super.nlist->size-1);	// branch_cnt = node_cnt - 1 
 		return -1;
 	}
 
@@ -361,23 +361,23 @@ int __cafe_cmd_lambda_tree(char *arg1, char *arg2)
 	}
 	else 
 	{
-		if ( cafe_param->lambda_tree ) phylogeny_free(cafe_param->lambda_tree);
-		cafe_param->lambda_tree = ptree;
+		if ( param->lambda_tree ) phylogeny_free(param->lambda_tree);
+		param->lambda_tree = ptree;
 		int l, m, n;
-		pArrayList nlist = (pArrayList)cafe_param->lambda_tree->nlist;
-		memset( cafe_param->old_branchlength, 0, sizeof(int) * cafe_param->num_branches );	// temporarily use space for old_branchlength 
+		pArrayList nlist = (pArrayList)param->lambda_tree->nlist;
+		memset( param->old_branchlength, 0, sizeof(int) * param->num_branches );	// temporarily use space for old_branchlength 
 		for ( l = m = 0 ; l < nlist->size ; l++ )
 		{
 			int lambda_idx= ((pPhylogenyNode)nlist->array[l])->taxaid;		// lambda tree parameter specification is saved in taxaid
 			if ( lambda_idx < 0 ) continue;
 			for ( n = 0 ; n < m ; n++ )
 			{
-				if ( cafe_param->old_branchlength[n] == lambda_idx ) break;	// find existing lambda idx
+				if ( param->old_branchlength[n] == lambda_idx ) break;	// find existing lambda idx
 			}
-			if ( n == m ) cafe_param->old_branchlength[m++] = lambda_idx;	// save new lambda idx
+			if ( n == m ) param->old_branchlength[m++] = lambda_idx;	// save new lambda idx
 		}
-		cafe_param->num_lambdas = m;										// number of branch-specific lambdas = m
-		if (!cafe_param->quiet)
+		param->num_lambdas = m;										// number of branch-specific lambdas = m
+		if (!param->quiet)
 			printf("The number of lambdas is %d\n", m );
 	}
 	return 0;

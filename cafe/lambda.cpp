@@ -24,7 +24,7 @@ extern "C" {
 extern "C" {
 	extern pCafeParam cafe_param;
 	void cafe_shell_set_lambda(pCafeParam param, double* parameters);
-	int __cafe_cmd_lambda_tree(char *arg1, char *arg2);
+	int __cafe_cmd_lambda_tree(pCafeParam param, char *arg1, char *arg2);
 	double __cafe_best_lambda_search(double* plambda, void* args);
 	double __cafe_cluster_lambda_search(double* parameters, void* args);
 }
@@ -62,7 +62,7 @@ void lambda_arg_base::load(vector<Argument> pargs)
             else
             {
             }
-			bdone = __cafe_cmd_lambda_tree(parg->argv[0], parg->argc > 1 ? parg->argv[1] : NULL);
+			bdone = __cafe_cmd_lambda_tree(cafe_param, parg->argv[0], parg->argc > 1 ? parg->argv[1] : NULL);
 			if (bdone < 0) {
 				throw std::exception();
 			}

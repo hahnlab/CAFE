@@ -15,8 +15,8 @@ extern "C" {
 #include "cafe.h"
 #include <cafe_shell.h>
 	void cafe_shell_set_lambda(pCafeParam param, double* parameters);
-	int __cafe_cmd_lambda_tree(pArgument parg);
 	extern pBirthDeathCacheArray probability_cache;
+    int __cafe_cmd_lambda_tree(pCafeParam param, char *arg1, char *arg2);
 };
 
 static void init_cafe_tree(Globals& globals)
@@ -129,7 +129,7 @@ TEST(LambdaTests, TestLambdaTree)
 	arg.argc = 1;
 	char* argv[] = { strs[0], strs[1] };
 	arg.argv = argv;
-	__cafe_cmd_lambda_tree(&arg);
+	__cafe_cmd_lambda_tree(&globals.param, argv[0], argv[1]);
 };
 
 TEST(LambdaTests, Test_arguments)
