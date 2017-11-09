@@ -135,6 +135,7 @@ TEST(LambdaTests, TestLambdaTree)
 TEST(LambdaTests, Test_arguments)
 {
 	Globals globals;
+    globals.param.quiet = 1;
 	init_cafe_tree(globals);
 	std::vector<std::string> strs;
 	strs.push_back("lambda");

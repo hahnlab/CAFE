@@ -680,7 +680,10 @@ double __cafe_best_lambda_search(double* plambda, void* args)
 		}
 		catch (std::runtime_error& e)
 		{
-			std::cerr << e.what();
+            if (!param->quiet)
+            {
+                std::cerr << e.what();
+            }
 			score = log(0);
 		}
 		cafe_free_birthdeath_cache(pcafe);
