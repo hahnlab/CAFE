@@ -1,5 +1,5 @@
 AC_INIT(cafe, 4.1)
-dnl Switch to a C++ compiler, and check if it works.
+AC_CONFIG_HEADER([config.h])
 
 AC_LANG(C++)
 AC_PROG_CXX([icc g++])
@@ -14,7 +14,7 @@ AC_SEARCH_LIBS(sgemm, mkl_intel_lp64,
 
 if test $ax_blas_ok = yes; then
   save_LIBS="$LIBS"; LIBS="$BLAS_LIBS $LIBS"
-  AC_DEFINE(HAVE_BLAS,1)
+  AC_DEFINE([HAVE_BLAS],[1], [If a matrix multiplication library exists])
 fi
 
 AC_CHECK_HEADERS_ONCE([dirent.h ndir.h])

@@ -1,3 +1,4 @@
+#include "../config.h"
 #include "tree.h"
 #include<string.h>
 #include<stdlib.h>
@@ -7,8 +8,11 @@
 
 #include "memalloc.h"
 
-#ifdef 	__linux__
+#ifdef 	HAVE_UNISTD_H
 #include<unistd.h>
+#endif
+
+#ifdef HAVE_STRINGS_H
 #include <strings.h>
 #endif
 
