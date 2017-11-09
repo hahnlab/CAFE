@@ -1,3 +1,5 @@
+#include "../config.h"
+
 #include <stdexcept>
 #include <vector>
 #include <string>
