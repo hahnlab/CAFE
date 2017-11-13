@@ -364,234 +364,6 @@ void compute_internal_node_likelihood(pTree ptree, pTreeNode ptnode)
     memory_free(right_factor);
 }
 
-void initialize_leaf_likelihood_clustered(pTree ptree, pTreeNode ptnode)
-{
-	int* rootfamilysizes;
-	pCafeTree pcafe = (pCafeTree)ptree;
-	pCafeNode pcnode = (pCafeNode)ptnode;
-
-	int s, i, j, k;
-
-	if (tree_is_root(ptree, ptnode->parent))
-	{
-		rootfamilysizes = pcafe->rootfamilysizes;
-	}
-	else
-	{
-		rootfamilysizes = pcafe->familysizes;
-	}
-	for (s = rootfamilysizes[0], i = 0; s <= rootfamilysizes[1]; s++, i++)
-	{
-		for (k = 0; k < pcafe->k; k++) {
-			if (pcnode->familysize < 0) {
-				//fprintf(stderr, "family size not set\n");
-				pcnode->k_likelihoods[k][i] = 1;
-			}
-			else {
-				if (pcnode->errormodel) {
-					memset((void*)pcnode->k_likelihoods[k], 0, pcafe->size_of_factor * sizeof(double));
-					for (j = 0; j<pcafe->size_of_factor; j++) {
-						// conditional probability of measuring i=familysize when true count is j
-						pcnode->k_likelihoods[k][j] = pcnode->errormodel->errormatrix[pcnode->familysize][j];
-					}
-				}
-				else {
-					memset((void*)pcnode->k_likelihoods[k], 0, pcafe->size_of_factor * sizeof(double));
-					pcnode->k_likelihoods[k][pcnode->familysize] = 1;
-				}
-			}
-		}
-	}
-}
-
-void compute_internal_node_likelihood_clustered(pTree ptree, pTreeNode ptnode)
-{
-	int* familysizes;
-	int* rootfamilysizes;
-	pCafeTree pcafe = (pCafeTree)ptree;
-	pCafeNode pcnode = (pCafeNode)ptnode;
-	double *tree_factors[2];
-	tree_factors[0] = memory_new(pcafe->size_of_factor, sizeof(double));
-	tree_factors[1] = memory_new(pcafe->size_of_factor, sizeof(double));
-
-	int s, i, k;
-
-	double lambda = -1;
-	double mu = -1;
-	if (tree_is_root(ptree, ptnode))
-	{
-		rootfamilysizes = pcafe->rootfamilysizes;
-		familysizes = pcafe->familysizes;
-	}
-	else
-	{
-		rootfamilysizes = familysizes = pcafe->familysizes;
-	}
-	int idx;
-	double *factors[2] = { NULL, NULL };
-	pCafeNode child[2] = { (pCafeNode)((pTreeNode)pcnode)->children->head->data,
-		(pCafeNode)((pTreeNode)pcnode)->children->tail->data };
-	for (k = 0; k < pcafe->k; k++)
-	{
-		lambda = pcnode->birth_death_probabilities.param_lambdas[k];
-		if (pcnode->birth_death_probabilities.param_mus) {
-			mu = pcnode->birth_death_probabilities.param_mus[k];
-		}
-
-		// for each child
-		for (idx = 0; idx < 2; idx++)
-		{
-			factors[idx] = tree_factors[idx];
-			memset(factors[idx], 0, pcafe->size_of_factor * sizeof(double));
-			for (s = rootfamilysizes[0], i = 0; s <= rootfamilysizes[1]; s++, i++)
-			{
-				for (int c = familysizes[0], j = 0; c <= familysizes[1]; c++, j++)
-				{
-					factors[idx][i] += birthdeath_likelihood_with_s_c(s, c, child[idx]->super.branchlength, lambda, mu, NULL) * child[idx]->k_likelihoods[k][j];
-				}
-			}
-		}
-		int size = rootfamilysizes[1] - rootfamilysizes[0] + 1;
-		for (i = 0; i < size; i++)
-		{
-			pcnode->k_likelihoods[k][i] = factors[0][i] * factors[1][i];
-		}
-	}
-	memory_free(tree_factors[0]);
-	memory_free(tree_factors[1]);
-}
-
-void compute_node_clustered_likelihood(pTree ptree, pTreeNode ptnode, va_list unused)
-{
-	pCafeTree pcafe = (pCafeTree)ptree;
-	int maxFamilySize =  MAX( pcafe->rootfamilysizes[1], pcafe->familysizes[1]);
-	if ( !chooseln_is_init() ) 
-	{
-		chooseln_cache_init(maxFamilySize);
-	}
-	else if ( get_chooseln_cache_size() < maxFamilySize ) 
-	{
-		chooseln_cache_resize(maxFamilySize);
-	}
-
-	
-	if ( tree_is_leaf(ptnode) )
-	{
-		initialize_leaf_likelihood_clustered(ptree, ptnode);
-	}
-	else
-	{
-		compute_internal_node_likelihood_clustered(ptree, ptnode);
-	}
-}
-
-
-void __cafe_tree_node_compute_clustered_likelihood_using_cache(pTree ptree, pTreeNode ptnode, va_list unused)
-{
-	pCafeTree pcafe = (pCafeTree)ptree;
-	pCafeNode pcnode = (pCafeNode)ptnode;
-	double *tree_factors[2];
-	tree_factors[0] = memory_new(pcafe->size_of_factor, sizeof(double));
-	tree_factors[1] = memory_new(pcafe->size_of_factor, sizeof(double));
-
-	int size;
-	int s,c,i,j,k; 
-	int* rootfamilysizes;
-	int* familysizes;
-	double** bd = NULL;
-	
-	int maxFamilySize =  MAX( pcafe->rootfamilysizes[1], pcafe->familysizes[1]);
-	if ( !chooseln_is_init() ) 
-	{
-		chooseln_cache_init(maxFamilySize);
-	}
-	else if ( get_chooseln_cache_size() < maxFamilySize ) 
-	{
-		chooseln_cache_resize(maxFamilySize);
-	}
-
-	
-	if ( tree_is_leaf(ptnode) )
-	{
-		if ( tree_is_root(ptree, ptnode->parent) )
-		{
-			rootfamilysizes = pcafe->rootfamilysizes;
-		}
-		else
-		{
-			rootfamilysizes = pcafe->familysizes;
-		}
-		for ( s = rootfamilysizes[0], i = 0; s <= rootfamilysizes[1] ; s++, i++ )
-		{
-//			pcnode->likelihoods[i] = pcnode->bd[s][pcnode->familysize];
-			for (k = 0; k < pcafe->k; k++) { 
-				if (pcnode->familysize < 0) { 
-					//fprintf(stderr, "family size not set\n");
-					pcnode->k_likelihoods[k][i] = 1;					
-				}
-				else {
-                    if (pcnode->errormodel) {
-                        memset((void*)pcnode->k_likelihoods[k], 0, pcafe->size_of_factor*sizeof(double));
-                        for( j=0; j<pcafe->size_of_factor; j++) {
-                            // conditional probability of measuring i=familysize when true count is j
-                            pcnode->k_likelihoods[k][j] = pcnode->errormodel->errormatrix[pcnode->familysize][j];
-                        }
-                    }
-                    else {
-					//bd = pcnode->k_bd->array[k];
-					//pcnode->k_likelihoods[k][i] = bd[s][pcnode->familysize];
-                    memset((void*)pcnode->k_likelihoods[k], 0, pcafe->size_of_factor*sizeof(double));
-                    pcnode->k_likelihoods[k][pcnode->familysize] = 1;	                    
-                    }
-				}
-			}
-		}
-	}
-	else
-	{
-		if ( tree_is_root(ptree,ptnode) )
-		{
-			rootfamilysizes = pcafe->rootfamilysizes;
-			familysizes = pcafe->familysizes;
-		}
-		else
-		{
-			rootfamilysizes = familysizes = pcafe->familysizes;
-		}
-		int idx;
-		double *factors[2] = { NULL, NULL }; 
-		pCafeNode child[2] = { (pCafeNode)((pTreeNode)pcnode)->children->head->data, 
-							   (pCafeNode)((pTreeNode)pcnode)->children->tail->data };
-		for (k = 0; k < pcafe->k; k++) 
-		{ 
-			// for each child
-			for ( idx = 0 ; idx < 2 ; idx++ )
-			{
-				{	
-					factors[idx] = tree_factors[idx];
-					memset( factors[idx], 0, pcafe->size_of_factor*sizeof(double));
-					bd = child[idx]->k_bd->array[k];
-					for( s = rootfamilysizes[0], i = 0 ; s <= rootfamilysizes[1] ; s++, i++ )
-					{
-						for( c = familysizes[0], j = 0 ; c <= familysizes[1] ; c++, j++ )
-						{
-							factors[idx][i] += bd[s][c] * child[idx]->k_likelihoods[k][j];
-						}
-					}
-				}
-			}
-			size = rootfamilysizes[1] - rootfamilysizes[0] + 1;
-			for ( i = 0 ; i < size ; i++ )
-			{
-				pcnode->k_likelihoods[k][i] = factors[0][i] * factors[1][i];
-			}
-		}
-	}
-
-	memory_free(tree_factors[0]);
-	memory_free(tree_factors[1]);
-}
-
 void free_probabilities(struct probabilities *probs)
 {
 	if (probs->param_lambdas) 
@@ -607,38 +379,6 @@ void free_probabilities(struct probabilities *probs)
 
 }
 
-
-void cafe_tree_node_free_clustered_likelihoods (pCafeParam param)
-{
-	int i;
-	pArrayList nlist = param->pcafe->super.nlist;
-	pTree tlambda = param->lambda_tree;
-	if ( tlambda == NULL )
-	{
-		for ( i = 0 ; i < nlist->size ; i++ )
-		{
-			pCafeNode pcnode = (pCafeNode)nlist->array[i];
-			free_probabilities(&pcnode->birth_death_probabilities);
-			if (pcnode->k_likelihoods) { memory_free(pcnode->k_likelihoods); pcnode->k_likelihoods = NULL;}
-			if (pcnode->k_bd) { arraylist_free(pcnode->k_bd, NULL); pcnode->k_bd = NULL; }
-		}
-	}
-}
-
-
-
-double** cafe_tree_clustered_likelihood(pCafeTree pcafe) 
-{
-	if (probability_cache)
-	{
-		tree_traveral_postfix((pTree)pcafe, __cafe_tree_node_compute_clustered_likelihood_using_cache, NULL);
-	}
-	else 	
-	{
-		tree_traveral_postfix((pTree)pcafe, compute_node_clustered_likelihood);
-	}
-	return ((pCafeNode)pcafe->super.root)->k_likelihoods;		
-}
 
 void compute_node_likelihoods(pTree ptree, pTreeNode ptnode, va_list ap1)
 {
@@ -895,3 +635,260 @@ int cafe_tree_random_familysize(pCafeTree pcafe, int rootFamilysize, int maxFami
 	return max;
 }
 
+void initialize_leaf_likelihood_clustered(pTree ptree, pTreeNode ptnode)
+{
+    int* rootfamilysizes;
+    pCafeTree pcafe = (pCafeTree)ptree;
+    pCafeNode pcnode = (pCafeNode)ptnode;
+
+    int s, i, j, k;
+
+    if (tree_is_root(ptree, ptnode->parent))
+    {
+        rootfamilysizes = pcafe->rootfamilysizes;
+    }
+    else
+    {
+        rootfamilysizes = pcafe->familysizes;
+    }
+    for (s = rootfamilysizes[0], i = 0; s <= rootfamilysizes[1]; s++, i++)
+    {
+        for (k = 0; k < pcafe->k; k++) {
+            if (pcnode->familysize < 0) {
+                //fprintf(stderr, "family size not set\n");
+                pcnode->k_likelihoods[k][i] = 1;
+            }
+            else {
+                if (pcnode->errormodel) {
+                    memset((void*)pcnode->k_likelihoods[k], 0, pcafe->size_of_factor * sizeof(double));
+                    for (j = 0; j<pcafe->size_of_factor; j++) {
+                        // conditional probability of measuring i=familysize when true count is j
+                        pcnode->k_likelihoods[k][j] = pcnode->errormodel->errormatrix[pcnode->familysize][j];
+                    }
+                }
+                else {
+                    memset((void*)pcnode->k_likelihoods[k], 0, pcafe->size_of_factor * sizeof(double));
+                    pcnode->k_likelihoods[k][pcnode->familysize] = 1;
+                }
+            }
+        }
+    }
+}
+
+void compute_internal_node_likelihood_clustered(pTree ptree, pTreeNode ptnode)
+{
+    int* familysizes;
+    int* rootfamilysizes;
+    pCafeTree pcafe = (pCafeTree)ptree;
+    pCafeNode pcnode = (pCafeNode)ptnode;
+    double *tree_factors[2];
+    tree_factors[0] = memory_new(pcafe->size_of_factor, sizeof(double));
+    tree_factors[1] = memory_new(pcafe->size_of_factor, sizeof(double));
+
+    int s, i, k;
+
+    double lambda = -1;
+    double mu = -1;
+    if (tree_is_root(ptree, ptnode))
+    {
+        rootfamilysizes = pcafe->rootfamilysizes;
+        familysizes = pcafe->familysizes;
+    }
+    else
+    {
+        rootfamilysizes = familysizes = pcafe->familysizes;
+    }
+    int idx;
+    double *factors[2] = { NULL, NULL };
+    pCafeNode child[2] = { (pCafeNode)((pTreeNode)pcnode)->children->head->data,
+        (pCafeNode)((pTreeNode)pcnode)->children->tail->data };
+    for (k = 0; k < pcafe->k; k++)
+    {
+        lambda = pcnode->birth_death_probabilities.param_lambdas[k];
+        if (pcnode->birth_death_probabilities.param_mus) {
+            mu = pcnode->birth_death_probabilities.param_mus[k];
+        }
+
+        // for each child
+        for (idx = 0; idx < 2; idx++)
+        {
+            factors[idx] = tree_factors[idx];
+            memset(factors[idx], 0, pcafe->size_of_factor * sizeof(double));
+            for (s = rootfamilysizes[0], i = 0; s <= rootfamilysizes[1]; s++, i++)
+            {
+                for (int c = familysizes[0], j = 0; c <= familysizes[1]; c++, j++)
+                {
+                    factors[idx][i] += birthdeath_likelihood_with_s_c(s, c, child[idx]->super.branchlength, lambda, mu, NULL) * child[idx]->k_likelihoods[k][j];
+                }
+            }
+        }
+        int size = rootfamilysizes[1] - rootfamilysizes[0] + 1;
+        for (i = 0; i < size; i++)
+        {
+            pcnode->k_likelihoods[k][i] = factors[0][i] * factors[1][i];
+        }
+    }
+    memory_free(tree_factors[0]);
+    memory_free(tree_factors[1]);
+}
+
+void compute_node_clustered_likelihood(pTree ptree, pTreeNode ptnode, va_list unused)
+{
+    pCafeTree pcafe = (pCafeTree)ptree;
+    int maxFamilySize = MAX(pcafe->rootfamilysizes[1], pcafe->familysizes[1]);
+    if (!chooseln_is_init())
+    {
+        chooseln_cache_init(maxFamilySize);
+    }
+    else if (get_chooseln_cache_size() < maxFamilySize)
+    {
+        chooseln_cache_resize(maxFamilySize);
+    }
+
+
+    if (tree_is_leaf(ptnode))
+    {
+        initialize_leaf_likelihood_clustered(ptree, ptnode);
+    }
+    else
+    {
+        compute_internal_node_likelihood_clustered(ptree, ptnode);
+    }
+}
+
+
+void __cafe_tree_node_compute_clustered_likelihood_using_cache(pTree ptree, pTreeNode ptnode, va_list unused)
+{
+    pCafeTree pcafe = (pCafeTree)ptree;
+    pCafeNode pcnode = (pCafeNode)ptnode;
+    double *tree_factors[2];
+    tree_factors[0] = memory_new(pcafe->size_of_factor, sizeof(double));
+    tree_factors[1] = memory_new(pcafe->size_of_factor, sizeof(double));
+
+    int size;
+    int s, c, i, j, k;
+    int* rootfamilysizes;
+    int* familysizes;
+    double** bd = NULL;
+
+    int maxFamilySize = MAX(pcafe->rootfamilysizes[1], pcafe->familysizes[1]);
+    if (!chooseln_is_init())
+    {
+        chooseln_cache_init(maxFamilySize);
+    }
+    else if (get_chooseln_cache_size() < maxFamilySize)
+    {
+        chooseln_cache_resize(maxFamilySize);
+    }
+
+
+    if (tree_is_leaf(ptnode))
+    {
+        if (tree_is_root(ptree, ptnode->parent))
+        {
+            rootfamilysizes = pcafe->rootfamilysizes;
+        }
+        else
+        {
+            rootfamilysizes = pcafe->familysizes;
+        }
+        for (s = rootfamilysizes[0], i = 0; s <= rootfamilysizes[1]; s++, i++)
+        {
+            //			pcnode->likelihoods[i] = pcnode->bd[s][pcnode->familysize];
+            for (k = 0; k < pcafe->k; k++) {
+                if (pcnode->familysize < 0) {
+                    //fprintf(stderr, "family size not set\n");
+                    pcnode->k_likelihoods[k][i] = 1;
+                }
+                else {
+                    if (pcnode->errormodel) {
+                        memset((void*)pcnode->k_likelihoods[k], 0, pcafe->size_of_factor * sizeof(double));
+                        for (j = 0; j<pcafe->size_of_factor; j++) {
+                            // conditional probability of measuring i=familysize when true count is j
+                            pcnode->k_likelihoods[k][j] = pcnode->errormodel->errormatrix[pcnode->familysize][j];
+                        }
+                    }
+                    else {
+                        //bd = pcnode->k_bd->array[k];
+                        //pcnode->k_likelihoods[k][i] = bd[s][pcnode->familysize];
+                        memset((void*)pcnode->k_likelihoods[k], 0, pcafe->size_of_factor * sizeof(double));
+                        pcnode->k_likelihoods[k][pcnode->familysize] = 1;
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        if (tree_is_root(ptree, ptnode))
+        {
+            rootfamilysizes = pcafe->rootfamilysizes;
+            familysizes = pcafe->familysizes;
+        }
+        else
+        {
+            rootfamilysizes = familysizes = pcafe->familysizes;
+        }
+        int idx;
+        double *factors[2] = { NULL, NULL };
+        pCafeNode child[2] = { (pCafeNode)((pTreeNode)pcnode)->children->head->data,
+            (pCafeNode)((pTreeNode)pcnode)->children->tail->data };
+        for (k = 0; k < pcafe->k; k++)
+        {
+            // for each child
+            for (idx = 0; idx < 2; idx++)
+            {
+                {
+                    factors[idx] = tree_factors[idx];
+                    memset(factors[idx], 0, pcafe->size_of_factor * sizeof(double));
+                    bd = child[idx]->k_bd->array[k];
+                    for (s = rootfamilysizes[0], i = 0; s <= rootfamilysizes[1]; s++, i++)
+                    {
+                        for (c = familysizes[0], j = 0; c <= familysizes[1]; c++, j++)
+                        {
+                            factors[idx][i] += bd[s][c] * child[idx]->k_likelihoods[k][j];
+                        }
+                    }
+                }
+            }
+            size = rootfamilysizes[1] - rootfamilysizes[0] + 1;
+            for (i = 0; i < size; i++)
+            {
+                pcnode->k_likelihoods[k][i] = factors[0][i] * factors[1][i];
+            }
+        }
+    }
+
+    memory_free(tree_factors[0]);
+    memory_free(tree_factors[1]);
+}
+
+void cafe_tree_node_free_clustered_likelihoods(pCafeParam param)
+{
+    int i;
+    pArrayList nlist = param->pcafe->super.nlist;
+    pTree tlambda = param->lambda_tree;
+    if (tlambda == NULL)
+    {
+        for (i = 0; i < nlist->size; i++)
+        {
+            pCafeNode pcnode = (pCafeNode)nlist->array[i];
+            free_probabilities(&pcnode->birth_death_probabilities);
+            if (pcnode->k_likelihoods) { memory_free(pcnode->k_likelihoods); pcnode->k_likelihoods = NULL; }
+            if (pcnode->k_bd) { arraylist_free(pcnode->k_bd, NULL); pcnode->k_bd = NULL; }
+        }
+    }
+}
+
+double** cafe_tree_clustered_likelihood(pCafeTree pcafe)
+{
+    if (probability_cache)
+    {
+        tree_traveral_postfix((pTree)pcafe, __cafe_tree_node_compute_clustered_likelihood_using_cache, NULL);
+    }
+    else
+    {
+        tree_traveral_postfix((pTree)pcafe, compute_node_clustered_likelihood);
+    }
+    return ((pCafeNode)pcafe->super.root)->k_likelihoods;
+}
