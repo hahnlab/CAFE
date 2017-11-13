@@ -595,7 +595,8 @@ TEST(LambdaTests, best_lambda_by_fminsearch)
 
 	double x[] = { 0.05, 0.01 };
 	globals.param.input.parameters = x;
-	cafe_best_lambda_by_fminsearch(&globals.param, 1, 0);
+    globals.param.num_params = 2;
+    cafe_best_lambda_by_fminsearch(&globals.param, 1, 0);
 	cafe_family_free(globals.param.pfamily);
 }
 

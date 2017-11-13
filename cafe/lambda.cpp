@@ -505,8 +505,15 @@ double* cafe_best_lambda_by_fminsearch(pCafeParam param, int lambda_len, int k)
 			pfm->tolx = 1e-6;
 			pfm->tolf = 1e-6;
 		}
-		fminsearch_min(pfm, param->input.parameters);
-		double *re = fminsearch_get_minX(pfm);
+
+        // pass a copy of input_parameters to fminsearch to guarantee that parameters won't be changed inside 
+        // the search function
+        std::vector<double> starting_values(param->num_params);
+        std::copy(param->input.parameters, param->input.parameters + param->num_params, starting_values.begin());
+
+        fminsearch_min(pfm, &starting_values[0]);
+
+        double *re = fminsearch_get_minX(pfm);
 		for (i = 0; i < param->num_params; i++) param->input.parameters[i] = re[i];
 
 		double current_p = param->input.parameters[(lambda_len)*(k - param->fixcluster0)];
