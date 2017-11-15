@@ -19,7 +19,7 @@ script:
 after_success:
 - curl --upload-file $TRAVIS_BUILD_DIR/*.tar.gz -u "$FTP_USER:$FTP_PASSWORD" $FTP_TARGET
 - cd $TRAVIS_BUILD_DIR/src_docs
-- ./publish.sh
+#- ./publish.sh   # publish documentation manually for now
 deploy:
   provider: pages
   local_dir: $TRAVIS_BUILD_DIR/distro

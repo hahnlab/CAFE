@@ -1,22 +1,11 @@
-/*! \mainpage Index Page
+/*! \page intro Program Structure
 *
 * \section intro_sec Introduction
 *
-* gene family evolution, applied in the software package, CAFE. 
-Application of this method to data from multiple whole genomes 
-of many groups is revealing remarkable patterns of gene gain 
-and loss. Other approaches to studying this question have 
-involved the analysis of gene movement among chromosomes 
-(especially sex chromosomes), the discovery of polymorphic 
-copy-number variants under local selection, and even new 
-methods for carrying out genome assembly to more accurately 
-estimate gene numbers.
-*
-* \section install_sec Installation
-*
-* \subsection step1 Download and make
-*
-* \subsection Program structure
+* CAFE is built as a command line interface application. When the user starts the program,
+* they are presented with a command line where various commands can be typed. Alternatively,
+* by passing a text file of commands as an argument to the application a series of commands
+* can be run at once.
 *
 * The list of available commands are stored in the #cafe_cmd
 variable in cafe_shell.c .
