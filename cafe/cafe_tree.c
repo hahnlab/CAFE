@@ -392,9 +392,28 @@ void compute_node_likelihoods(pTree ptree, pTreeNode ptnode, va_list ap1)
 	}
 }
 
+void compute_node_likelihoods_recursive(pTree ptree, pTreeNode ptnode)
+{
+    if (!tree_is_leaf(ptnode))
+    {
+#pragma omp task
+        {
+            pTreeNode child1 = (pTreeNode)(ptnode)->children->head->data;
+            compute_node_likelihoods_recursive(ptree, child1);
+        }
+#pragma omp task
+        {
+            pTreeNode child2 = (pTreeNode)(ptnode)->children->tail->data;
+            compute_node_likelihoods_recursive(ptree, child2);
+        }
+    }
+#pragma omp taskwait
+    compute_node_likelihoods(ptree, ptnode, NULL);
+}
+
 void compute_tree_likelihoods(pCafeTree pcafe)
 {
-	tree_traveral_postfix((pTree)pcafe, compute_node_likelihoods);
+    compute_node_likelihoods_recursive((pTree)pcafe, pcafe->super.root);
 }
 
 double* get_likelihoods(const pCafeTree pcafe)
