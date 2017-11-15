@@ -3,7 +3,7 @@ sudo: required
 dist: trusty
 compiler:
 - gcc
-- clang
+# - clang  # Don't compile in clang until openmp errors can be resolved
 before_install:
 - sudo apt-get install cpputest doxygen graphviz
 script:
