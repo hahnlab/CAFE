@@ -11,7 +11,11 @@
 #include "chooseln_cache.h"
 
 #ifdef HAVE_BLAS
+#ifdef HAVE_ATLAS
+#include "cblas.h"
+#else
 #include "mkl.h"
+#endif
 #endif
 
 /*

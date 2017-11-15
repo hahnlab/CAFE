@@ -1,5 +1,8 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Atlas for matrix multiplication */
+#undef HAVE_ATLAS
+
 /* If a matrix multiplication library exists */
 #undef HAVE_BLAS
 
@@ -47,9 +50,6 @@
 
 /* Define to the one symbol short name of this package. */
 #undef PACKAGE_TARNAME
-
-/* Define to the home page for this package. */
-#undef PACKAGE_URL
 
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
