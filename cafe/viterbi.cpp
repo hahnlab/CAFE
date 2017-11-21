@@ -8,6 +8,9 @@ extern "C" {
 #include <family.h>
 #include "cafe.h"
 #include <pthread.h>
+    extern struct chooseln_cache cache;
+
+
 }
 
 
@@ -355,13 +358,13 @@ void __cafe_tree_node_compute_clustered_viterbi(pTree ptree, pTreeNode ptnode, v
   int* familysizes;
 
   int maxFamilySize = MAX(pcafe->rootfamilysizes[1], pcafe->familysizes[1]);
-  if (!chooseln_is_init())
+  if (!chooseln_is_init2(&cache))
   {
-    chooseln_cache_init(maxFamilySize);
+    chooseln_cache_init2(&cache, maxFamilySize);
   }
-  else if (get_chooseln_cache_size() < maxFamilySize)
+  else if (get_chooseln_cache_size2(&cache) < maxFamilySize)
   {
-    chooseln_cache_resize(maxFamilySize);
+    chooseln_cache_resize2(&cache, maxFamilySize);
   }
 
 

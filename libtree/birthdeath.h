@@ -52,17 +52,4 @@ extern void thread_run(int numthreads, void* (*run)(void*), void* param, int siz
 double birthdeath_rate_with_log_alpha(int s, int c, double log_alpha, double coeff, struct chooseln_cache *cache);
 extern void birthdeath_cache_resize(pBirthDeathCacheArray pbdc_array, int remaxFamilysize);
 pBirthDeathCacheArray birthdeath_cache_init(int size);
-
-/**
-* \brief A cache of values of chooseln
-*
-* Chooseln evaluates the natural logarithm of Gamma(n+1)/(Gamma(k+1)*Gamma(n-k+1))
-* The cache holds values for integer values of n and k. It does not appear to be 
-* threadsafe.
-*/
-extern int chooseln_is_init();
-extern int get_chooseln_cache_size();
-extern void chooseln_cache_init(int size);
-extern void chooseln_cache_resize(int resize);
-extern void chooseln_cache_free();
 #endif

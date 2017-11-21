@@ -38,6 +38,7 @@ extern "C" {
 	void show_sizes(FILE*, pCafeTree pcafe, family_size_range*range, pCafeFamilyItem pitem, int i);
 	void phylogeny_lambda_parse_func(pTree ptree, pTreeNode ptnode);
 	extern pBirthDeathCacheArray probability_cache;
+    extern struct chooseln_cache cache;
 }
 
 
@@ -149,6 +150,12 @@ TEST(TreeTests, node_set_birthdeath_matrix)
 	node_set_birthdeath_matrix(node, cache, 5);
 	POINTERS_EQUAL(NULL, node->birthdeath_matrix);
 	LONGS_EQUAL(5, node->k_bd->size);
+}
+
+TEST(TreeTests, cafe_tree_clustered_likelihood)
+{
+    pCafeTree tree = create_tree(range);
+    cafe_tree_clustered_likelihood(tree, &cache);
 }
 
 TEST(FirstTestGroup, TestStringSplitter)
@@ -751,7 +758,7 @@ TEST(FirstTestGroup, square_matrix_multiply)
 
 TEST(FirstTestGroup, compute_birthdeath_rates)
 {
-	chooseln_cache_init(3);
+	chooseln_cache_init2(&cache, 3);
 	struct square_matrix* matrix = compute_birthdeath_rates(10, 0.02, 0.01, 3);
 	LONGS_EQUAL(4, matrix->size);
 
@@ -783,7 +790,7 @@ std::ostream& operator<<(std::ostream& ost, square_matrix& matrix)
 
 TEST(FirstTestGroup, compute_birthdeath_rates_without_mu)
 {
-  chooseln_cache_init(25);
+  chooseln_cache_init2(&cache, 25);
   struct square_matrix* matrix = compute_birthdeath_rates(1, 0.01, -1, 20);
 //  std::cout << "Child matrix" << std::endl << *matrix << std::endl << "Done" << std::endl;
 

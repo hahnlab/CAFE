@@ -18,45 +18,18 @@
 #endif
 #endif
 
-/*
-P(X(t) = c | X(0) = s)  = \sum_{j=0}^{\min(s,c)} \binom{s}{j}\binom{s+c-j-1}{s-1}
-                                                 \alpha^{s+c-2j}(1-2\alpha)^j
+ /**
+ * \brief A cache of values of chooseln
+ *
+ * Chooseln evaluates the natural logarithm of Gamma(n+1)/(Gamma(k+1)*Gamma(n-k+1))
+ * The cache holds values for integer values of n and k. It does not appear to be
+ * threadsafe.
+ *
+ * P(X(t) = c | X(0) = s)  = \sum_{j=0}^{\min(s,c)} \binom{s}{j}\binom{s+c-j-1}{s-1}
+ * \alpha^{s+c-2j}(1-2\alpha)^j
+ *
  */
-
 struct chooseln_cache cache = { 0,0 };
-
-int chooseln_is_init()
-{
-	return chooseln_is_init2(&cache);
-}
-
-int get_chooseln_cache_size() 
-{ 
-	return get_chooseln_cache_size2(&cache);
-}
-
-double chooseln_get(int n, int x)
-{
-	return chooseln_get2(&cache, n, x);
-}
-
-void chooseln_cache_resize(int resize)
-{
-	chooseln_cache_resize2(&cache, resize);
-}
-
-void chooseln_cache_init(int size)
-{
-	chooseln_cache_init2(&cache, size);
-}
-
-void chooseln_cache_free()
-{
-	chooseln_cache_free2(&cache);
-}
-
-
-
 
 double birthdeath_rate_with_log_alpha_beta(int s, int c, double log_alpha, double log_beta, double log_coeff, struct chooseln_cache *cache)
 {

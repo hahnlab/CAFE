@@ -751,17 +751,22 @@ void compute_internal_node_likelihood_clustered(pTree ptree, pTreeNode ptnode)
     memory_free(tree_factors[1]);
 }
 
-void compute_node_clustered_likelihood(pTree ptree, pTreeNode ptnode, va_list unused)
+void compute_node_clustered_likelihood(pTree ptree, pTreeNode ptnode, va_list ap1)
 {
+    va_list ap;
+    va_copy(ap, ap1);
+    struct chooseln_cache *ln_cache = va_arg(ap, struct chooseln_cache *);
+    va_end(ap);
+
     pCafeTree pcafe = (pCafeTree)ptree;
     int maxFamilySize = MAX(pcafe->rootfamilysizes[1], pcafe->familysizes[1]);
-    if (!chooseln_is_init())
+    if (!chooseln_is_init2(ln_cache))
     {
-        chooseln_cache_init(maxFamilySize);
+        chooseln_cache_init2(ln_cache, maxFamilySize);
     }
-    else if (get_chooseln_cache_size() < maxFamilySize)
+    else if (get_chooseln_cache_size2(ln_cache) < maxFamilySize)
     {
-        chooseln_cache_resize(maxFamilySize);
+        chooseln_cache_resize2(ln_cache, maxFamilySize);
     }
 
 
@@ -776,8 +781,13 @@ void compute_node_clustered_likelihood(pTree ptree, pTreeNode ptnode, va_list un
 }
 
 
-void __cafe_tree_node_compute_clustered_likelihood_using_cache(pTree ptree, pTreeNode ptnode, va_list unused)
+void __cafe_tree_node_compute_clustered_likelihood_using_cache(pTree ptree, pTreeNode ptnode, va_list ap1)
 {
+    va_list ap;
+    va_copy(ap, ap1);
+    struct chooseln_cache *ln_cache = va_arg(ap, struct chooseln_cache *);
+    va_end(ap);
+
     pCafeTree pcafe = (pCafeTree)ptree;
     pCafeNode pcnode = (pCafeNode)ptnode;
     double *tree_factors[2];
@@ -791,13 +801,13 @@ void __cafe_tree_node_compute_clustered_likelihood_using_cache(pTree ptree, pTre
     double** bd = NULL;
 
     int maxFamilySize = MAX(pcafe->rootfamilysizes[1], pcafe->familysizes[1]);
-    if (!chooseln_is_init())
+    if (!chooseln_is_init2(ln_cache))
     {
-        chooseln_cache_init(maxFamilySize);
+        chooseln_cache_init2(ln_cache, maxFamilySize);
     }
-    else if (get_chooseln_cache_size() < maxFamilySize)
+    else if (get_chooseln_cache_size2(ln_cache) < maxFamilySize)
     {
-        chooseln_cache_resize(maxFamilySize);
+        chooseln_cache_resize2(ln_cache, maxFamilySize);
     }
 
 
@@ -899,15 +909,15 @@ void cafe_tree_node_free_clustered_likelihoods(pCafeParam param)
     }
 }
 
-double** cafe_tree_clustered_likelihood(pCafeTree pcafe)
+double** cafe_tree_clustered_likelihood(pCafeTree pcafe, struct chooseln_cache *ln_cache)
 {
     if (probability_cache)
     {
-        tree_traveral_postfix((pTree)pcafe, __cafe_tree_node_compute_clustered_likelihood_using_cache, NULL);
+        tree_traveral_postfix((pTree)pcafe, __cafe_tree_node_compute_clustered_likelihood_using_cache, ln_cache);
     }
     else
     {
-        tree_traveral_postfix((pTree)pcafe, compute_node_clustered_likelihood);
+        tree_traveral_postfix((pTree)pcafe, compute_node_clustered_likelihood, ln_cache);
     }
     return ((pCafeNode)pcafe->super.root)->k_likelihoods;
 }

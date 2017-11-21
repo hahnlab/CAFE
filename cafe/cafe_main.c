@@ -25,6 +25,7 @@ variable in cafe_shell.c .
 #include<utils.h>
 
 pBirthDeathCacheArray probability_cache = NULL;
+extern struct chooseln_cache cache;
 
 /**
 \brief Logs the message and parameters in a standard way
@@ -184,7 +185,7 @@ double cafe_get_clustered_posterior(pCafeParam param, double *ML, double *MAP, d
 		if ( pitem->ref < 0 || pitem->ref == i ) 
 		{
 			cafe_family_set_size(param->pfamily, pitem, param->pcafe);
-			k_likelihoods = cafe_tree_clustered_likelihood(param->pcafe);		// likelihood of the whole tree = multiplication of likelihood of all nodes
+			k_likelihoods = cafe_tree_clustered_likelihood(param->pcafe, &cache);		// likelihood of the whole tree = multiplication of likelihood of all nodes
 			
 			// find the p_z_membership conditioned on the current parameter.
 			// it is just proportional to the likelihood of each datapoint in each cluster weighted by the k_weights.
