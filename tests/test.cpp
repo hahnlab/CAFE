@@ -1518,7 +1518,10 @@ TEST(PValueTests, pvalue2)
 TEST(PValueTests, pvalue)
 {
 	probability_cache = NULL;
-	std::ostringstream ost;
+    if (cache.size > 0)
+        chooseln_cache_free2(&cache);
+
+    std::ostringstream ost;
 
 	family_size_range range;
 	range.min = 0;
@@ -1535,6 +1538,7 @@ TEST(PValueTests, pvalue)
 
 	print_pvalues(ost, pcafe, 10, 5, probability_cache);
 
+    DOUBLES_EQUAL(-1, ((pPhylogenyNode)pcafe->super.root)->branchlength, 0.001);
 	STRCMP_CONTAINS("(((chimp_1:6,human_1:6)_1:81,(mouse_1:17,rat_1:17)_1:70)_1:6,dog_1:9)_1\n", ost.str().c_str());
 	STRCMP_CONTAINS("Root size: 1 with maximum likelihood : 0\n", ost.str().c_str());
 	STRCMP_CONTAINS("p-value: 0\n", ost.str().c_str());
