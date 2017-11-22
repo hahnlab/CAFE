@@ -13,6 +13,7 @@
 
 extern "C" {
 #include "cafe.h"
+    extern struct chooseln_cache cache;
 };
 
 using namespace std;
@@ -321,7 +322,7 @@ void prepare_viterbi(CafeParam& param)
 	param.family_size.min = param.family_size.root_min = 0;
 	param.family_size.max = param.family_size.root_max = 15;
 
-	probability_cache = birthdeath_cache_init(20);
+	probability_cache = birthdeath_cache_init(20, &cache);
 }
 
 TEST(CommandTests, cafe_cmd_viterbi_id_not_existing)

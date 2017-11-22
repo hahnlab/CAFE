@@ -328,16 +328,16 @@ void birthdeath_cache_resize(pBirthDeathCacheArray pbdc_array, int remaxFamilysi
 	pbdc_array->maxFamilysize = remaxFamilysize;
 }
 
-pBirthDeathCacheArray birthdeath_cache_init(int size)
+pBirthDeathCacheArray birthdeath_cache_init(int size, struct chooseln_cache *ln_cache)
 {
 	pBirthDeathCacheArray pbdc_array = (pBirthDeathCacheArray)memory_new(1, sizeof(BirthDeathCacheArray));
 	pbdc_array->table = hash_table_new(MODE_VALUEREF);
 	pbdc_array->maxFamilysize = size;
 
-	if (!chooseln_is_init2(&cache))
-		chooseln_cache_init2(&cache, pbdc_array->maxFamilysize);
-	else if (cache.size < pbdc_array->maxFamilysize)
-		chooseln_cache_resize2(&cache, pbdc_array->maxFamilysize);
+	if (!chooseln_is_init2(ln_cache))
+		chooseln_cache_init2(ln_cache, pbdc_array->maxFamilysize);
+	else if (ln_cache->size < pbdc_array->maxFamilysize)
+		chooseln_cache_resize2(ln_cache, pbdc_array->maxFamilysize);
 
 	return pbdc_array;
 }

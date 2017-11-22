@@ -103,7 +103,7 @@ TEST(LambdaTests, TestCmdLambda)
 	Globals globals;
 	globals.param.quiet = 1;
 	init_cafe_tree(globals);
-	birthdeath_cache_init(2);
+	birthdeath_cache_init(2, &cache);
 
   globals.param.pfamily = cafe_family_init({"Dog", "Chimp", "Human", "Mouse", "Rat" });
 
@@ -704,7 +704,7 @@ TEST(LambdaTests, get_posterior2)
         chooseln_cache_free2(&cache);
     chooseln_cache_init2(&cache, 150);
 
-    probability_cache = birthdeath_cache_init(150);
+    probability_cache = birthdeath_cache_init(150, &cache);
 
     family_size_range range;
     range.min = 0;

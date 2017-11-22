@@ -51,5 +51,5 @@ struct square_matrix* birthdeath_cache_get_matrix(pBirthDeathCacheArray pbdc_arr
 extern void thread_run(int numthreads, void* (*run)(void*), void* param, int size );
 double birthdeath_rate_with_log_alpha(int s, int c, double log_alpha, double coeff, struct chooseln_cache *cache);
 extern void birthdeath_cache_resize(pBirthDeathCacheArray pbdc_array, int remaxFamilysize);
-pBirthDeathCacheArray birthdeath_cache_init(int size);
+pBirthDeathCacheArray birthdeath_cache_init(int size, struct chooseln_cache *ln_cache);
 #endif

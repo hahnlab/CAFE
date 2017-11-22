@@ -8,6 +8,8 @@
 * threadsafe.
 */
 
+#include <assert.h>
+
 #include <mathfunc.h>
 #include <memalloc.h>
 
@@ -24,7 +26,9 @@ void chooseln_cache_free2(struct chooseln_cache *cache);
 
 static inline double chooseln_get2(struct chooseln_cache *cache, int n, int x)
 {
-	if (cache->values[n] && cache->values[n][x] >= 0) return cache->values[n][x];
+    assert(n < cache->size * 2);
+    assert(x <= cache->size);
+    if (cache->values[n] && cache->values[n][x] >= 0) return cache->values[n][x];
 	if (cache->values[n] == NULL)
 	{
 		int i;

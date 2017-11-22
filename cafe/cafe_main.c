@@ -333,7 +333,7 @@ void reset_birthdeath_cache(pCafeTree tree, int k_value, family_size_range* rang
 	{
 		birthdeath_cache_array_free(probability_cache);
 	}
-	probability_cache = birthdeath_cache_init(MAX(range->max, range->root_max));
+	probability_cache = birthdeath_cache_init(MAX(range->max, range->root_max), &cache);
 	cafe_tree_set_birthdeath(tree, probability_cache->maxFamilysize);
 }
 

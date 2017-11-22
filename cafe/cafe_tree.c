@@ -7,6 +7,7 @@
 
 extern void __phylogeny_free_node(pTree ptree, pTreeNode ptnode, va_list ap1);
 extern pBirthDeathCacheArray probability_cache;
+extern struct chooseln_cache cache;
 
 pTreeNode cafe_tree_new_empty_node(pTree ptree)
 {
@@ -546,7 +547,7 @@ void cafe_tree_set_birthdeath(pCafeTree pcafe, int max_family_size)
     pArrayList arr = arraylist_new(40);
     tree_traveral_prefix((pTree)pcafe, gather_keys, arr);
 
-    pBirthDeathCacheArray cache = birthdeath_cache_init(max_family_size);
+    pBirthDeathCacheArray bd_cache = birthdeath_cache_init(max_family_size, &cache);
 
 #pragma omp parallel
 #pragma omp for
@@ -555,17 +556,17 @@ void cafe_tree_set_birthdeath(pCafeTree pcafe, int max_family_size)
         struct BirthDeathCacheKey* key = (struct BirthDeathCacheKey*)arraylist_get(arr, i);
         struct square_matrix *matrix = compute_birthdeath_rates(key->branchlength, key->lambda, key->mu, max_family_size);
 #pragma omp critical
-        hash_table_add(cache->table, key, sizeof(struct BirthDeathCacheKey), matrix, sizeof(struct square_matrix*));
+        hash_table_add(bd_cache->table, key, sizeof(struct BirthDeathCacheKey), matrix, sizeof(struct square_matrix*));
     }
 
-	tree_traveral_prefix((pTree)pcafe, do_node_set_birthdeath, cache);
+	tree_traveral_prefix((pTree)pcafe, do_node_set_birthdeath, bd_cache);
 
     // free the cache without deleting the matrices
     void** keys = NULL;
-    hash_table_get_keys(cache->table, &keys);
+    hash_table_get_keys(bd_cache->table, &keys);
     free(keys);
-    hash_table_delete(cache->table);
-    memory_free(cache);
+    hash_table_delete(bd_cache->table);
+    memory_free(bd_cache);
 }
 
 void cafe_tree_node_copy(pTreeNode psrc, pTreeNode pdest)

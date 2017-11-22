@@ -117,7 +117,7 @@ TEST(TreeTests, node_set_birthdeath_matrix)
 {
 	std::string str;
 
-	pBirthDeathCacheArray cache = birthdeath_cache_init(10);
+	pBirthDeathCacheArray bd_cache = birthdeath_cache_init(10, &cache);
 	pTree tree = (pTree)create_tree(range);
 	pCafeNode node = (pCafeNode)tree_get_child(tree->root, 0);
 
@@ -125,29 +125,29 @@ TEST(TreeTests, node_set_birthdeath_matrix)
 
 	// if branch length is not set, no probabilities can be set
 	node->super.branchlength = -1;
-	node_set_birthdeath_matrix(node, cache, 0);
+	node_set_birthdeath_matrix(node, bd_cache, 0);
 	POINTERS_EQUAL(NULL, node->birthdeath_matrix);
 
 	// if param_lambdas not set, node's birthdeath matrix will be set
 	node->super.branchlength = 6;
-	node_set_birthdeath_matrix(node, cache, 0);
+	node_set_birthdeath_matrix(node, bd_cache, 0);
 	CHECK(node->birthdeath_matrix != NULL)
 
 		// if param_lambdas not set, node's birthdeath matrix will be set
 	node->super.branchlength = 6;
-	node_set_birthdeath_matrix(node, cache, 5);
+	node_set_birthdeath_matrix(node, bd_cache, 5);
 	CHECK(node->birthdeath_matrix != NULL);
 
 	// even if param_lambdas is set, node's birthdeath matrix will be set if num_lambdas is 0
 	node->birthdeath_matrix = NULL;
 	node->birth_death_probabilities.param_lambdas = (double*)memory_new(5, sizeof(double));
-	node_set_birthdeath_matrix(node, cache, 0);
+	node_set_birthdeath_matrix(node, bd_cache, 0);
 	CHECK(node->birthdeath_matrix != NULL);
 
 	// if param_lambdas is set and num_lambdas > 0, put the matrices into k_bd
 	node->birthdeath_matrix = NULL;
 	node->k_bd = arraylist_new(5);
-	node_set_birthdeath_matrix(node, cache, 5);
+	node_set_birthdeath_matrix(node, bd_cache, 5);
 	POINTERS_EQUAL(NULL, node->birthdeath_matrix);
 	LONGS_EQUAL(5, node->k_bd->size);
 }
@@ -1559,7 +1559,7 @@ TEST(PValueTests, pvalues_for_family)
 
 	ConditionalDistribution::matrix.push_back(std::vector<double>(10));
 
-	probability_cache = birthdeath_cache_init(pcafe->size_of_factor);
+	probability_cache = birthdeath_cache_init(pcafe->size_of_factor, &cache);
 
 	range.min = 0;
 	range.max = 5;
