@@ -2,6 +2,7 @@
 #include <sstream>
 #include <fstream>
 #include <iostream>
+#include <map>
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/CommandLineTestRunner.h"
@@ -17,6 +18,7 @@ extern "C" {
 	void cafe_shell_set_lambda(pCafeParam param, double* parameters);
 	extern pBirthDeathCacheArray probability_cache;
     int __cafe_cmd_lambda_tree(pCafeParam param, char *arg1, char *arg2);
+    extern struct chooseln_cache cache;
 };
 
 static void init_cafe_tree(Globals& globals)
@@ -596,7 +598,7 @@ TEST(LambdaTests, best_lambda_by_fminsearch)
 	double x[] = { 0.05, 0.01 };
 	globals.param.input.parameters = x;
     globals.param.num_params = 2;
-    cafe_best_lambda_by_fminsearch(&globals.param, 1, 0);
+    cafe_best_lambda_by_fminsearch(&globals.param, 2, 0);
 	cafe_family_free(globals.param.pfamily);
 }
 
@@ -698,6 +700,10 @@ TEST(LambdaTests, get_posterior2)
 {
     srand(10);
 
+    if (cache.size > 0)
+        chooseln_cache_free2(&cache);
+    chooseln_cache_init2(&cache, 150);
+
     probability_cache = birthdeath_cache_init(150);
 
     family_size_range range;
@@ -746,7 +752,7 @@ TEST(LambdaTests, collect_leaf_sizes)
     cafe_family_add_item(pfamily, gene_family("ENS03", "description", { 3, 6 }));
     cafe_family_add_item(pfamily, gene_family("ENS04", "description", { 6, 3 }));
 
-    std::fill(pfamily->index, pfamily->index + 4, 0);
+    std::fill(pfamily->index, pfamily->index + 2, 0);
 
     auto pal = collect_leaf_sizes(pfamily);
     LONGS_EQUAL(8, pal.size());
