@@ -62,8 +62,6 @@ extern "C" {
 	pErrorStruct cafe_shell_create_error_matrix_from_estimate(pErrorMeasure errormeasure);
 	void cafe_shell_set_branchlength(pCafeParam param, int max_family_size);
 	void set_range_from_family(family_size_range* range, pCafeFamily family);
-	void cafe_shell_set_lambda(pCafeParam param, double* parameters);
-	void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters);
 	double __cafe_best_lambda_search(double* plambda, void* args);
 	double __cafe_cluster_lambda_search(double* parameters, void* args);
 }

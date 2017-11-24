@@ -191,24 +191,24 @@ void initialize_z_membership(pCafeParam param)
 
 }
 
-void initialize_k_bd(pCafeParam param, double *parameters)
+void initialize_k_bd(pCafeTree pcafe, pTree lambda_tree, int num_values, int fixcluster, double *parameters)
 {
-	pArrayList nlist = param->pcafe->super.nlist;
+	pArrayList nlist = pcafe->super.nlist;
 	for (int i = 0; i < nlist->size; i++)
 	{
 		int taxa_id = 0;
-		if (param->lambda_tree != NULL)
-			taxa_id = ((pPhylogenyNode)param->lambda_tree->nlist->array[i])->taxaid;
+		if (lambda_tree != NULL)
+			taxa_id = ((pPhylogenyNode)lambda_tree->nlist->array[i])->taxaid;
 
 		pCafeNode pcnode = (pCafeNode)nlist->array[i];
 
-		if (param->parameterized_k_value > 0) {
-			reset_k_likelihoods(pcnode, param->parameterized_k_value, param->pcafe->size_of_factor);
+		if (num_values > 0) {
+			reset_k_likelihoods(pcnode, num_values, pcafe->size_of_factor);
 
 			if (pcnode->k_bd) { arraylist_free(pcnode->k_bd, NULL); }
-			pcnode->k_bd = arraylist_new(param->parameterized_k_value);
+			pcnode->k_bd = arraylist_new(num_values);
 		}
-		set_birth_death_probabilities4(&pcnode->birth_death_probabilities, param->parameterized_k_value, param->fixcluster0, taxa_id, parameters);
+		set_birth_death_probabilities4(&pcnode->birth_death_probabilities, num_values, fixcluster, taxa_id, parameters);
 	}
 }
 
@@ -258,7 +258,7 @@ void cafe_shell_set_lambda(pCafeParam param, double* parameters)
 	}
 	
 	param->pcafe->k = param->parameterized_k_value;
-	initialize_k_bd(param, parameters);
+	initialize_k_bd(param->pcafe, param->lambda_tree, param->parameterized_k_value, param->fixcluster0, parameters);
 }
 
 void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters)

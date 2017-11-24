@@ -1285,7 +1285,7 @@ TEST(FirstTestGroup, initialize_k_bd_no_lambda)
 	param.pcafe = tree;
 	param.lambda_tree = NULL;
 	param.parameterized_k_value = 0;
-	initialize_k_bd(&param, &values[0]);
+	initialize_k_bd(tree, NULL, 0, param.fixcluster0, &values[0]);
 
 	// The following assertions should be true for every node in the tree
 	pCafeNode node = (pCafeNode)tree->super.nlist->array[0];
@@ -1295,7 +1295,7 @@ TEST(FirstTestGroup, initialize_k_bd_no_lambda)
 	CHECK(node->k_bd == NULL);
 
 	param.parameterized_k_value = 2;
-	initialize_k_bd(&param, &values[0]);
+	initialize_k_bd(tree, NULL, 2, param.fixcluster0, &values[0]);
 	// The following assertions should be true for every node in the tree
 	DOUBLES_EQUAL(-1, node->birth_death_probabilities.lambda, .0001);
 	DOUBLES_EQUAL(-1, node->birth_death_probabilities.mu, .0001);
@@ -1322,7 +1322,7 @@ TEST(FirstTestGroup, initialize_k_bd_with_lambda)
 		node->taxaid = 0;
 	}
 
-	initialize_k_bd(&param, &values[0]);
+	initialize_k_bd(tree, (pTree)lambda, 0, param.fixcluster0, &values[0]);
 
 	// The following assertions should be true for every node in the tree
 	pCafeNode node = (pCafeNode)tree->super.nlist->array[0];
@@ -1332,7 +1332,7 @@ TEST(FirstTestGroup, initialize_k_bd_with_lambda)
 	CHECK(node->k_bd == NULL);
 
 	param.parameterized_k_value = 2;
-	initialize_k_bd(&param, &values[0]);
+	initialize_k_bd(tree, (pTree)lambda, 2, param.fixcluster0, &values[0]);
 
 	// The following assertions should be true for every node in the tree
 	DOUBLES_EQUAL(-1, node->birth_death_probabilities.lambda, .0001);
