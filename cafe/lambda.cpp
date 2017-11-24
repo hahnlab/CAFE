@@ -422,7 +422,7 @@ int cafe_cmd_lambda(Globals& globals, vector<string> tokens)
 		{
 			pCafeFamilyItem pitem = (pCafeFamilyItem)param->pfamily->flist->array[i];
 			cafe_family_set_size(param->pfamily, pitem, pcafe);
-			param->param_set_func(param,pitem->lambda);
+            cafe_shell_set_lambdas(param,pitem->lambda);
 			pString pstr = cafe_tree_string_with_familysize_lambda(pcafe);
 			for (int j = 0 ; j < param->num_lambdas; j++ )
 			{
@@ -673,7 +673,7 @@ double __cafe_best_lambda_search(double* plambda, void* args)
 	}
 	if (!skip)
 	{
-		param->param_set_func(param, plambda);
+        cafe_shell_set_lambdas(param, plambda);
 
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
 		try

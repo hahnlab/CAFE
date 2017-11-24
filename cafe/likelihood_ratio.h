@@ -6,7 +6,7 @@
 extern "C" {
 #include <family.h>
 }
-void cafe_lhr_for_diff_lambdas(pCafeParam param, pTree lambda_tree2, int num_lambdas, param_func lfunc);
+void cafe_lhr_for_diff_lambdas(pCafeParam param, pTree lambda_tree2, int num_lambdas, OPTIMIZER_INIT_TYPE lfunc);
 void update_branchlength(pCafeTree pcafe, pTree lambda_tree, double bl_augment, int *old_branchlength, int* t);
 
 void likelihood_ratio_report(pCafeFamily pfamily,

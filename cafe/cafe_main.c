@@ -298,7 +298,7 @@ double __cafe_cluster_lambda_search(double* parameters, void* args)
 	}
 	if ( !skip )
 	{
-		param->param_set_func(param,parameters);
+        cafe_shell_set_lambdas(param, parameters);
 
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
 		score = cafe_get_clustered_posterior(param, param->ML, param->MAP, param->prior_rfsize);
@@ -356,7 +356,7 @@ double __cafe_each_best_lambda_search(double* plambda, void* args)
 
 	if ( !skip )
 	{
-		param->param_set_func(param,plambda);
+		cafe_shell_set_lambdas(param,plambda);
 
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
 		compute_tree_likelihoods(pcafe);
@@ -404,7 +404,7 @@ double* cafe_each_best_lambda_by_fminsearch(pCafeParam param, int lambda_len )
 			pCafeFamilyItem pref = (pCafeFamilyItem)param->pfamily->flist->array[pitem->ref];
 			pitem->lambda = pref->lambda;
 			pitem->mu = pref->mu;
-			param->param_set_func(param,pitem->lambda);
+            cafe_shell_set_lambdas(param,pitem->lambda);
 
 			cafe_log(param,"%s: Lambda Search Result of %d/%d in %d iteration \n", pitem->id, i+1, fsize, pfm->iters );
 			pString pstr = cafe_tree_string_with_familysize_lambda(param->pcafe);
@@ -451,7 +451,7 @@ double* cafe_each_best_lambda_by_fminsearch(pCafeParam param, int lambda_len )
 				lambda_check = 1;	
 			}	
 		}
-		param->param_set_func(param,re);
+        cafe_shell_set_lambdas(param,re);
 
 		cafe_log(param,"Lambda Search Result of %d/%d in %d iteration \n", i+1, fsize, pfm->iters );
 		if ( lambda_check )

@@ -623,7 +623,7 @@ void cafe_do_report(Globals& globals, viterbi_parameters& viterbi, report_parame
 
 	if (ConditionalDistribution::matrix.empty())
 	{
-		param->param_set_func(param, param->input.parameters);
+        cafe_shell_set_lambdas(param, param->input.parameters);
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
 		ConditionalDistribution::reset(param->pcafe, &param->family_size, param->num_threads, globals.num_random_samples);
 	}
@@ -645,7 +645,7 @@ void cafe_do_report(Globals& globals, viterbi_parameters& viterbi, report_parame
 	}
 	else if (params->lh2)
 	{
-		cafe_lhr_for_diff_lambdas(param, tmp_lambda_tree, 2, cafe_shell_set_lambda);
+		cafe_lhr_for_diff_lambdas(param, tmp_lambda_tree, 2, LAMBDA_ONLY);
 	}
 	else
 	{
@@ -815,7 +815,7 @@ int cafe_report_retrieve_data(const char* file, pCafeParam param, viterbi_parame
 			arraylist_free(list, free);
 		}
 	}
-	param->param_set_func(param, param->lambda);
+    cafe_shell_set_lambdas(param, param->lambda);
 	pArrayList plines = arraylist_new(11000);
 	int num_families;
 	for (num_families = 0; file_read_line(pstr, fp); num_families++)

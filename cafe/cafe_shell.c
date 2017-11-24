@@ -28,6 +28,15 @@ pTree tmp_lambda_tree;
 void cafe_shell_set_lambda(pCafeParam param, double* lambda);
 void cafe_shell_set_lambda_mu(pCafeParam param, double* parameters);
 
+void cafe_shell_set_lambdas(pCafeParam param, double* lambda)
+{
+    if (param->optimizer_init_type == LAMBDA_ONLY)
+        cafe_shell_set_lambda(param, lambda);
+
+    if (param->optimizer_init_type == LAMBDA_MU)
+        cafe_shell_set_lambda_mu(param, lambda);
+}
+
 void reset_k_likelihoods(pCafeNode pcnode, int k, int num_factors)
 {
 	if (pcnode->k_likelihoods) { memory_free(pcnode->k_likelihoods); pcnode->k_likelihoods = NULL; }

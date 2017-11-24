@@ -87,7 +87,7 @@ double __cafe_lhr_get_likelihood_for_diff_lambdas(pCafeParam param, int idx, int
 	else
 	{
 		memcpy(param->lambda, lambda_cache[t], sizeof(double)*param->num_lambdas);
-		param->param_set_func(param, param->lambda);
+        cafe_shell_set_lambdas(param, param->lambda);
 		probability_cache = PBDC[t];
 		cafe_tree_set_birthdeath(param->pcafe, probability_cache->maxFamilysize);
 	}
@@ -109,7 +109,7 @@ double __cafe_lhr_get_likelihood_for_diff_lambdas(pCafeParam param, int idx, int
 void* __cafe_lhr_for_diff_lambdas_i(pCafeParam param,
 	std::vector<int>& lambda,
 	std::vector<double> & pvalues,
-	param_func lfunc,
+	enum OPTIMIZER_INIT_TYPE lfunc,
 	pTree lambda_tree,
 	int    num_lambdas,
 	std::vector<double*> &lambda_cache,
@@ -126,7 +126,7 @@ void* __cafe_lhr_for_diff_lambdas_i(pCafeParam param,
 	cpy_param->pcafe = cafe_tree_copy(param->pcafe);
 	cpy_param->num_lambdas = num_lambdas;
 	cpy_param->lambda_tree = lambda_tree;
-	cpy_param->param_set_func = lfunc;
+	cpy_param->optimizer_init_type = lfunc;
 
 	int fsize = param->pfamily->flist->size;
 	for (i = 0; i < fsize; i += 1)
@@ -155,7 +155,7 @@ void* __cafe_lhr_for_diff_lambdas_i(pCafeParam param,
 }
 
 
-void cafe_lhr_for_diff_lambdas(pCafeParam param, pTree lambda_tree2, int num_lambdas, param_func lfunc)
+void cafe_lhr_for_diff_lambdas(pCafeParam param, pTree lambda_tree2, int num_lambdas, enum OPTIMIZER_INIT_TYPE lfunc)
 {
 	std::vector<double *> lambda_cache(100);
 
@@ -173,10 +173,10 @@ void cafe_lhr_for_diff_lambdas(pCafeParam param, pTree lambda_tree2, int num_lam
 	std::vector<double> pvalues(nrows);
 	std::vector<int> plambda(nrows);
 
-	param_func old_func = param->param_set_func;
-	param->param_set_func = cafe_lambda_set_default;
+	enum OPTIMIZER_INIT_TYPE old_func = param->optimizer_init_type;
+	param->optimizer_init_type = LAMBDA_ONLY;
 	__cafe_lhr_for_diff_lambdas_i(param, plambda, pvalues, lfunc, lambda_tree2, num_lambdas, lambda_cache, PBDC);
-	param->param_set_func = old_func;
+	param->optimizer_init_type = old_func;
 
 	int fsize = param->pfamily->flist->size;
 	for (i = 0; i < fsize; i++)

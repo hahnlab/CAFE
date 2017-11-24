@@ -226,7 +226,7 @@ int cafe_cmd_lambdamu(Globals& globals, std::vector<std::string> tokens)
 	vector<Argument> args = build_argument_list(tokens);
 	globals.Prepare();
 
-	param->param_set_func = cafe_shell_set_lambda_mu;
+	param->optimizer_init_type = LAMBDA_MU;
 
 	lambdamu_args params;
 	params.load(args);
@@ -286,7 +286,7 @@ double cafe_cluster_lambda_mu_search(double* parameters, void* args)
 	}
 	if (!skip)
 	{
-		param->param_set_func(param, parameters);
+        cafe_shell_set_lambdas(param, parameters);
 
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
 		score = cafe_get_clustered_posterior(param, param->ML, param->MAP, param->prior_rfsize);
@@ -338,7 +338,7 @@ double cafe_best_lambda_mu_search(double* parameters, void* args)
 	}
 	if (!skip)
 	{
-		param->param_set_func(param, parameters);
+        cafe_shell_set_lambdas(param, parameters);
 
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
 		try

@@ -95,7 +95,7 @@ TEST(LambdaTests, PrepareCafeParam)
 	LONGS_EQUAL(-1, globals.param.num_lambdas);
 	LONGS_EQUAL(-1, globals.param.num_mus);
 	LONGS_EQUAL(0, globals.param.parameterized_k_value);
-	POINTERS_EQUAL(cafe_shell_set_lambda, globals.param.param_set_func);
+	LONGS_EQUAL(LAMBDA_ONLY, globals.param.optimizer_init_type);
 }
 
 TEST(LambdaTests, TestCmdLambda)
@@ -320,7 +320,7 @@ TEST(LambdaTests, lambda_set)
 	param.input.parameters = NULL;
 	param.k_weights = NULL;
 	param.num_lambdas = 1;
-	param.param_set_func = mock_set_params;
+	param.optimizer_init_type = DO_NOTHING;
 	args.num_params = 14;
 
 	lambda_set(&param, args);
@@ -477,7 +477,7 @@ TEST(LambdaTests, lambdamu_set)
 	param.input.parameters = NULL;
 	param.k_weights = NULL;
 	param.num_lambdas = 2;
-	param.param_set_func = mock_set_params;
+	param.optimizer_init_type = DO_NOTHING;
 	lambdamu_set(&param, args);
 	LONGS_EQUAL(4, param.num_params);
 	DOUBLES_EQUAL(.1, param.input.parameters[0], .001);
@@ -501,8 +501,8 @@ TEST(LambdaTests, lambdamu_set_without_lambda_tree)
 	param.input.parameters = NULL;
 	param.k_weights = NULL;
 	param.num_lambdas = 2;
-	param.param_set_func = mock_set_params;
-	lambdamu_set(&param, args);
+    param.optimizer_init_type = DO_NOTHING;
+    lambdamu_set(&param, args);
 	LONGS_EQUAL(2, param.num_params);
 	DOUBLES_EQUAL(.1, param.input.parameters[0], .001);
 	DOUBLES_EQUAL(.3, param.input.parameters[1], .001);
@@ -525,8 +525,8 @@ TEST(LambdaTests, lambdamu_set_with_k_weights)
 	param.input.parameters = NULL;
 	param.k_weights = NULL;
 	param.num_lambdas = 2;
-	param.param_set_func = mock_set_params;
-	lambdamu_set(&param, args);
+    param.optimizer_init_type = DO_NOTHING;
+    lambdamu_set(&param, args);
 	LONGS_EQUAL(5, param.num_params);
 	DOUBLES_EQUAL(.1, param.input.parameters[0], .001);
 	DOUBLES_EQUAL(.3, param.input.parameters[2], .001);

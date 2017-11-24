@@ -102,7 +102,8 @@ void copy_range_to_tree(pCafeTree tree, family_size_range* range);
 typedef struct tagCafeParam CafeParam;
 typedef CafeParam* pCafeParam;
 typedef void (*param_func)(pCafeParam param, double* parameters);
-//typedef void (*lambda_func)(pCafeParam param, double* lambda);
+enum OPTIMIZER_INIT_TYPE { UNKNOWN, DO_NOTHING, LAMBDA_ONLY, LAMBDA_MU };
+void cafe_shell_set_lambdas(pCafeParam param, double* lambda);
 
 /**
 * \brief Singleton structure that holds all of the global data that Cafe acts on.
@@ -133,9 +134,10 @@ struct tagCafeParam
 	double* prior_rfsize;
 
 	input_values input;
-	//double* parameters;
-	int num_params;
-	param_func param_set_func;
+
+    int num_params;
+
+    enum OPTIMIZER_INIT_TYPE optimizer_init_type;
 
 	double* lambda;
 	pTree lambda_tree;

@@ -44,7 +44,7 @@ Globals::Globals() : viterbi(new viterbi_parameters()), validator(new cross_vali
 	param.num_threads = 1;
 	param.old_branchlength = NULL;
 	param.p_z_membership = NULL;
-	param.param_set_func = cafe_shell_set_lambda;
+    param.optimizer_init_type = LAMBDA_ONLY;
 	input_values_init(&param.input);
 	param.parameterized_k_value = 0;
 	param.pcafe = NULL;
@@ -148,7 +148,7 @@ void Globals::Clear(int btree_skip)
 	param.family_size.root_max = 1;
 	param.family_size.min = 0;
 	param.family_size.max = 1;
-	param.param_set_func = cafe_shell_set_lambda;
+	param.optimizer_init_type = LAMBDA_ONLY;
 	param.num_threads = 1;
 	param.pvalue = 0.01;
 }
@@ -169,7 +169,7 @@ void Globals::Prepare()
 	param.num_lambdas = -1;
 	param.num_mus = -1;
 	param.parameterized_k_value = 0;
-	param.param_set_func = cafe_shell_set_lambda;
+    param.optimizer_init_type = LAMBDA_ONLY;
 
 }
 
