@@ -50,7 +50,7 @@ void viterbi_sum_probabilities(viterbi_parameters *viterbi, pCafeTree pcafe, pCa
         {
             double p = square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, child[k]->familysize);
             int node_id = 2 * j + k;
-            for (int m = 0; m <= pcafe->familysizes[1]; m++)
+            for (int m = 0; m <= pcafe->range.max; m++)
             {
                 auto key = viterbi_parameters::NodeFamilyKey(node_id, pitem);
                 if (square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, m) == p)
@@ -210,28 +210,29 @@ void __cafe_tree_node_compute_viterbi(pTree ptree, pTreeNode ptnode, va_list ap1
   tree_factors[1] = (double *)memory_new(pcafe->size_of_factor, sizeof(double));
   int size;
   int s, c, i, j;
-  int* rootfamilysizes;
-  int* familysizes;
+  family_size_range range;
 
   if (tree_is_leaf(ptnode))
   {
     if (tree_is_root(ptree, ptnode->parent))
     {
-      rootfamilysizes = pcafe->rootfamilysizes;
+        range.root_min = pcafe->range.root_min;
+        range.root_max = pcafe->range.root_max;
     }
     else
     {
-      rootfamilysizes = pcafe->familysizes;
+        range.root_min = pcafe->range.min;
+        range.root_max = pcafe->range.max;
     }
     double* factors = tree_factors[0];
     memset(factors, 0, pcafe->size_of_factor * sizeof(double));
-    for (s = rootfamilysizes[0], i = 0; s <= rootfamilysizes[1]; s++, i++)
+    for (s = range.root_min, i = 0; s <= range.root_max; s++, i++)
     {
       if (pcnode->familysize < 0) {
         //fprintf(stderr, "family size not set\n");
         pcnode->likelihoods[i] = 1;
         double tmp = 0;
-        for (c = pcafe->familysizes[0], j = 0; c <= pcafe->familysizes[1]; c++, j++)
+        for (c = pcafe->range.min, j = 0; c <= pcafe->range.max; c++, j++)
         {
           tmp = square_matrix_get(pcnode->birthdeath_matrix, s, c);
           if (tmp > factors[i])
@@ -264,12 +265,17 @@ void __cafe_tree_node_compute_viterbi(pTree ptree, pTreeNode ptnode, va_list ap1
   {
     if (tree_is_root(ptree, ptnode))
     {
-      rootfamilysizes = pcafe->rootfamilysizes;
-      familysizes = pcafe->familysizes;
+        range.root_min = pcafe->range.root_min;
+        range.root_max = pcafe->range.root_max;
+        range.min = pcafe->range.min;
+        range.max = pcafe->range.max;
     }
     else
     {
-      rootfamilysizes = familysizes = pcafe->familysizes;
+        range.root_min = pcafe->range.min;
+        range.root_max = pcafe->range.max;
+        range.min = pcafe->range.min;
+        range.max = pcafe->range.max;
     }
     int idx;
     double *factors[2] = { NULL, NULL };
@@ -280,10 +286,10 @@ void __cafe_tree_node_compute_viterbi(pTree ptree, pTreeNode ptnode, va_list ap1
       {
         factors[idx] = tree_factors[idx];
         memset(factors[idx], 0, pcafe->size_of_factor * sizeof(double));
-        for (s = rootfamilysizes[0], i = 0; s <= rootfamilysizes[1]; s++, i++)
+        for (s = range.root_min, i = 0; s <= range.root_max; s++, i++)
         {
           double tmp = 0;
-          for (c = familysizes[0], j = 0; c <= familysizes[1]; c++, j++)
+          for (c = range.min, j = 0; c <= range.max; c++, j++)
           {
             tmp = square_matrix_get(child[idx]->birthdeath_matrix, s, c) * child[idx]->likelihoods[j];
             if (tmp > factors[idx][i])
@@ -295,7 +301,7 @@ void __cafe_tree_node_compute_viterbi(pTree ptree, pTreeNode ptnode, va_list ap1
         }
       }
     }
-    size = rootfamilysizes[1] - rootfamilysizes[0] + 1;
+    size = range.root_max - range.root_min + 1;
     for (i = 0; i < size; i++)
     {
       pcnode->likelihoods[i] = factors[0][i] * factors[1][i];
@@ -315,7 +321,7 @@ void __cafe_tree_node_backtrack_viterbi(pTree ptree, pTreeNode ptnode, va_list a
 
   if (ptree->root == ptnode)
   {
-    pcnode->familysize = pcafe->rootfamilysizes[0] + __maxidx(pcnode->likelihoods, pcafe->rfsize);
+    pcnode->familysize = pcafe->range.root_min + __maxidx(pcnode->likelihoods, pcafe->rfsize);
     /* check family size for all nodes first */
     if (pcnode->familysize>10000) {
       fprintf(stderr, "ERROR: FamilySize larger than bd array size Something wrong\n");
@@ -327,8 +333,8 @@ void __cafe_tree_node_backtrack_viterbi(pTree ptree, pTreeNode ptnode, va_list a
   else
   {
     pCafeNode pcparent = (pCafeNode)ptnode->parent;
-    int base = tree_is_root(ptree, (pTreeNode)pcparent) ? pcafe->rootfamilysizes[0] : pcafe->familysizes[0];
-    pcnode->familysize = pcnode->viterbi[pcparent->familysize - base] + pcafe->familysizes[0];
+    int base = tree_is_root(ptree, (pTreeNode)pcparent) ? pcafe->range.root_min : pcafe->range.min;
+    pcnode->familysize = pcnode->viterbi[pcparent->familysize - base] + pcafe->range.min;
     /* check family size for all nodes first */
     if (pcnode->familysize>10000) {
       fprintf(stderr, "ERROR: FamilySize larger than bd array size Something wrong\n");
@@ -354,10 +360,9 @@ void __cafe_tree_node_compute_clustered_viterbi(pTree ptree, pTreeNode ptnode, v
 
   int size;
   int i, k;
-  int* rootfamilysizes;
-  int* familysizes;
+  family_size_range range;
 
-  int maxFamilySize = MAX(pcafe->rootfamilysizes[1], pcafe->familysizes[1]);
+  int maxFamilySize = MAX(pcafe->range.root_max, pcafe->range.max);
   if (!chooseln_is_init2(&cache))
   {
     chooseln_cache_init2(&cache, maxFamilySize);
@@ -372,26 +377,33 @@ void __cafe_tree_node_compute_clustered_viterbi(pTree ptree, pTreeNode ptnode, v
   {
     if (tree_is_root(ptree, ptnode->parent))
     {
-      rootfamilysizes = pcafe->rootfamilysizes;
+      range.root_min = pcafe->range.root_min;
+      range.root_max = pcafe->range.root_max;
     }
     else
     {
-      rootfamilysizes = pcafe->familysizes;
+        range.root_min = pcafe->range.min;
+        range.root_max = pcafe->range.max;
     }
 
-    int range = rootfamilysizes[1] - rootfamilysizes[0] + 1;
-    initialize_leaf_likelihoods_for_viterbi(pcnode->k_likelihoods, num_likelihoods, range, pcnode->familysize, pcafe->size_of_factor, pcnode->errormodel);
+    int range_extent = range.root_max - range.root_min + 1;
+    initialize_leaf_likelihoods_for_viterbi(pcnode->k_likelihoods, num_likelihoods, range_extent, pcnode->familysize, pcafe->size_of_factor, pcnode->errormodel);
   }
   else
   {
     if (tree_is_root(ptree, ptnode))
     {
-      rootfamilysizes = pcafe->rootfamilysizes;
-      familysizes = pcafe->familysizes;
+        range.root_min = pcafe->range.root_min;
+        range.root_max = pcafe->range.root_max;
+        range.min = pcafe->range.min;
+        range.max = pcafe->range.max;
     }
     else
     {
-      rootfamilysizes = familysizes = pcafe->familysizes;
+        range.root_min = pcafe->range.min;
+        range.root_max = pcafe->range.max;
+        range.min = pcafe->range.min;
+        range.max = pcafe->range.max;
     }
     int idx;
     double *factors[2] = { NULL, NULL };
@@ -406,9 +418,9 @@ void __cafe_tree_node_compute_clustered_viterbi(pTree ptree, pTreeNode ptnode, v
           factors[idx] = tree_factors[idx];
           memset(factors[idx], 0, pcafe->size_of_factor * sizeof(double));
         }
-        compute_viterbis(child[idx], k, factors[idx], rootfamilysizes[0], rootfamilysizes[1], familysizes[0], familysizes[1]);
+        compute_viterbis(child[idx], k, factors[idx], range.root_min, range.root_max, range.min, range.max);
       }
-      size = rootfamilysizes[1] - rootfamilysizes[0] + 1;
+      size = range.root_max - range.root_min + 1;
       for (i = 0; i < size; i++)
       {
         pcnode->k_likelihoods[k][i] = factors[0][i] * factors[1][i];
@@ -546,7 +558,7 @@ void viterbi_family_print(pCafeTree pcafe, pCafeFamily pfamily, int idx)
 {
     cafe_family_set_size_with_family_forced(pfamily, idx, pcafe);
     compute_tree_likelihoods(pcafe);
-    int ridx = __maxidx(((pCafeNode)pcafe->super.root)->likelihoods, pcafe->rfsize) + pcafe->rootfamilysizes[0];
+    int ridx = __maxidx(((pCafeNode)pcafe->super.root)->likelihoods, pcafe->rfsize) + pcafe->range.root_min;
     double mlh = __max(((pCafeNode)pcafe->super.root)->likelihoods, pcafe->rfsize);
     cafe_tree_viterbi(pcafe);
     pString pstr = cafe_tree_string(pcafe);

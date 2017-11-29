@@ -798,7 +798,7 @@ double cafe_set_prior_rfsize_empirical(pCafeParam param, std::vector<double>& pr
     //cafe_log(param,"Gamma alpha: %f, beta: %f & Score: %f\n", parameters[0], parameters[1], *pfm->fv);	
 
     // set rfsize based on estimated prior
-    cafe_set_prior_rfsize_poisson_lambda(prior_rfsize, param->pcafe->rootfamilysizes[0], prior_poisson_lambda);
+    cafe_set_prior_rfsize_poisson_lambda(prior_rfsize, param->pcafe->range.root_min, prior_poisson_lambda);
 
     memory_free(result.parameters);
     return 0;

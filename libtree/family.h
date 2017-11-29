@@ -6,10 +6,18 @@
 #include "input_values.h"
 
 #define FAMILYSIZEMAX	1000
+
+typedef struct {
+    int min;
+    int max;
+    int root_min;
+    int root_max;
+} family_size_range;
+
 typedef struct 
 {
 	Tree	super;
-	int		familysizes[2], rootfamilysizes[2];	
+	family_size_range range;	
 	double	lambda;
 	double mu;
 	int branch_params_cnt;
@@ -90,12 +98,6 @@ typedef struct
 }CafeFamily;
 typedef CafeFamily* pCafeFamily;
 
-typedef struct {
-	int min;
-	int max;
-	int root_min;
-	int root_max;
-} family_size_range;
 void init_family_size(family_size_range* fs, int max);
 void copy_range_to_tree(pCafeTree tree, family_size_range* range);
 

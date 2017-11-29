@@ -298,11 +298,11 @@ void cafe_family_set_size_with_family_forced(pCafeFamily pcf, int idx, pCafeTree
 			max = pitem->count[i];
 		}
 	}
-	pcafe->rootfamilysizes[0] = 1;
-	pcafe->rootfamilysizes[1] = rint(max * 1.25);
-	pcafe->familysizes[1] = max + MAX(50,max/5);
+	pcafe->range.root_min = 1;
+	pcafe->range.root_max = rint(max * 1.25);
+	pcafe->range.max = max + MAX(50,max/5);
 	// rootfamilysizes is min and max family size
-	pcafe->rfsize = pcafe->rootfamilysizes[1] - pcafe->rootfamilysizes[0] + 1;
+	pcafe->rfsize = pcafe->range.root_max - pcafe->range.root_min + 1;
 }
 
 void cafe_family_set_size_with_family(pCafeFamily pcf, int idx, pCafeTree pcafe )
@@ -323,11 +323,11 @@ void cafe_family_set_size_with_family(pCafeFamily pcf, int idx, pCafeTree pcafe 
 	if ( pitem->maxlh >= 0 )			// adjusting the family size based on the maxlh index
 	{
 		//pcafe->rootfamilysizes[0] = MAX(1,pitem->maxlh - 10);
-		pcafe->rootfamilysizes[0] = 1;
-		pcafe->rootfamilysizes[1] = pitem->maxlh + 20;
-		pcafe->familysizes[1] = MAX( MAX(pitem->maxlh + 50, rint(pitem->maxlh * 1.2)), 
+		pcafe->range.root_min = 1;
+		pcafe->range.root_max = pitem->maxlh + 20;
+		pcafe->range.max = MAX( MAX(pitem->maxlh + 50, rint(pitem->maxlh * 1.2)), 
 					                 MAX(max + 50, rint(max*1.2) ) );
-		pcafe->rfsize = pcafe->rootfamilysizes[1] - pcafe->rootfamilysizes[0] + 1;
+		pcafe->rfsize = pcafe->range.root_max - pcafe->range.root_min + 1;
 //		max = MAX( pcafe->rootfamilysizes[1], pcafe->familysizes[1] );
 	}
 	
@@ -367,11 +367,11 @@ void cafe_family_set_truesize_with_family(pCafeFamily pcf, int idx, pCafeTree pc
 	if ( pitem->maxlh >= 0 )			// adjusting the family size based on the maxlh index
 	{
 		//pcafe->rootfamilysizes[0] = MAX(1,pitem->maxlh - 10);
-		pcafe->rootfamilysizes[0] = 1;
-		pcafe->rootfamilysizes[1] = pitem->maxlh + 20;
-		pcafe->familysizes[1] = MAX( MAX(pitem->maxlh + 50, rint(pitem->maxlh * 1.2)), 
+		pcafe->range.root_min = 1;
+		pcafe->range.root_max = pitem->maxlh + 20;
+		pcafe->range.max = MAX( MAX(pitem->maxlh + 50, rint(pitem->maxlh * 1.2)), 
 									MAX(max + 50, rint(max*1.2) ) );
-		pcafe->rfsize = pcafe->rootfamilysizes[1] - pcafe->rootfamilysizes[0] + 1;
+		pcafe->rfsize = pcafe->range.root_max - pcafe->range.root_min + 1;
 		//		max = MAX( pcafe->rootfamilysizes[1], pcafe->familysizes[1] );
 	}
 	

@@ -222,9 +222,9 @@ TEST(FamilyTests, cafe_family_set_size_with_family_forced)
 
 	// SUT
 	cafe_family_set_size_with_family_forced(pcf, 0, cafe_tree);
-	LONGS_EQUAL(1, cafe_tree->rootfamilysizes[0]);
-	LONGS_EQUAL(16, cafe_tree->rootfamilysizes[1]);
-	LONGS_EQUAL(63, cafe_tree->familysizes[1]);
+	LONGS_EQUAL(1, cafe_tree->range.root_min);
+	LONGS_EQUAL(16, cafe_tree->range.root_max);
+	LONGS_EQUAL(63, cafe_tree->range.max);
 	LONGS_EQUAL(16, cafe_tree->rfsize);
   cafe_family_free(pcf);
 }

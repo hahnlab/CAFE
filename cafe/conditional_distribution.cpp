@@ -10,14 +10,14 @@
 std::vector<double> get_random_probabilities(pCafeTree pcafe, int rootFamilysize, int trials)
 {
 	int old_rfsize = pcafe->rfsize;
-	int old_rfsizes[2] = { pcafe->rootfamilysizes[0], pcafe->rootfamilysizes[1] };
-	int old_fsizes[2] = { pcafe->familysizes[0], pcafe->familysizes[1] };
+	int old_rfsizes[2] = { pcafe->range.root_min, pcafe->range.root_max };
+	int old_fsizes[2] = { pcafe->range.min, pcafe->range.max };
 
 	pcafe->rfsize = 1;
-	pcafe->rootfamilysizes[0] = rootFamilysize;
-	pcafe->rootfamilysizes[1] = rootFamilysize;
+	pcafe->range.root_min = rootFamilysize;
+	pcafe->range.root_max = rootFamilysize;
 
-	int maxFamilySize = MAX(pcafe->rootfamilysizes[1], pcafe->familysizes[1]);
+	int maxFamilySize = MAX(pcafe->range.root_max, pcafe->range.max);
 
 	std::vector<double> probs(trials);
 
@@ -26,17 +26,17 @@ std::vector<double> get_random_probabilities(pCafeTree pcafe, int rootFamilysize
 		int max = cafe_tree_random_familysize(pcafe, rootFamilysize, maxFamilySize);
 		if (pcafe->super.nlist)
 		{
-			pcafe->familysizes[1] = MIN(max + MAX(50, max / 5), pcafe->familysizes[1]);
+			pcafe->range.max = MIN(max + MAX(50, max / 5), pcafe->range.max);
 		}
 		compute_tree_likelihoods(pcafe);
 		probs[i] = ((pCafeNode)pcafe->super.root)->likelihoods[0];
 	}
 
 	pcafe->rfsize = old_rfsize;
-	pcafe->rootfamilysizes[0] = old_rfsizes[0];
-	pcafe->rootfamilysizes[1] = old_rfsizes[1];
-	pcafe->familysizes[0] = old_fsizes[0];
-	pcafe->familysizes[1] = old_fsizes[1];
+	pcafe->range.root_min = old_rfsizes[0];
+	pcafe->range.root_max = old_rfsizes[1];
+	pcafe->range.min = old_fsizes[0];
+	pcafe->range.max = old_fsizes[1];
 
 	std::sort(probs.begin(), probs.end());
 

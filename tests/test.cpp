@@ -251,10 +251,10 @@ TEST(FirstTestGroup, TestShowSizes)
 	CafeFamilyItem item;
 	item.ref = 14;
 	CafeTree tree;
-	tree.rootfamilysizes[0] = 11;
-	tree.rootfamilysizes[1] = 13;
-	tree.familysizes[0] = 23;
-	tree.familysizes[1] = 19;
+	tree.range.root_min = 11;
+	tree.range.root_max = 13;
+	tree.range.min = 23;
+	tree.range.max = 19;
 	tree.rfsize = 17;
 	param.pcafe = &tree;
 	FILE* in = fmemopen(outbuf, 999, "w");
@@ -307,8 +307,8 @@ TEST(TreeTests, compute_internal_node_likelihood)
   double likelihoods[] = { .5, .5, .5 };
   child[0]->likelihoods = likelihoods;
   child[1]->likelihoods = likelihoods;
-  pcafe->familysizes[0] = 0;
-  pcafe->familysizes[1] = 2;
+  pcafe->range.min = 0;
+  pcafe->range.max = 2;
 
   compute_internal_node_likelihood((pTree)pcafe, (pTreeNode)node);
 	DOUBLES_EQUAL(9, node->likelihoods[0], .001);
@@ -632,7 +632,7 @@ TEST(TreeTests, cafe_tree_random_probabilities)
 	probability_cache->maxFamilysize = max_fam_size;
 	pArrayList node_list = tree->super.nlist;
 	square_matrix bd;
-	square_matrix_init(&bd, tree->familysizes[1] + 1);
+	square_matrix_init(&bd, tree->range.max + 1);
 	for (int i = 0; i < bd.size; ++i)
 	{
         for (int j = 0; j < bd.size; ++j)
@@ -1107,10 +1107,10 @@ TEST(FirstTestGroup, cafe_tree_set_parameters)
 	cafe_tree_set_parameters(tree, &range, 0.05);
 
 	DOUBLES_EQUAL(0.05, tree->lambda, 0.0001);
-	LONGS_EQUAL(0, tree->familysizes[0]);
-	LONGS_EQUAL(50, tree->familysizes[1]);
-	LONGS_EQUAL(15, tree->rootfamilysizes[0]);
-	LONGS_EQUAL(20, tree->rootfamilysizes[1]);
+	LONGS_EQUAL(0, tree->range.min);
+	LONGS_EQUAL(50, tree->range.max);
+	LONGS_EQUAL(15, tree->range.root_min);
+	LONGS_EQUAL(20, tree->range.root_max);
 
 	LONGS_EQUAL(51, tree->size_of_factor);
 	// TODO: test that each node's likelihood and viterbi values have been reset to a size of 51

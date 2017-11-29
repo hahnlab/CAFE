@@ -62,10 +62,10 @@ void cafe_free_birthdeath_cache(pCafeTree pcafe)
 
 void copy_range_to_tree(pCafeTree tree, family_size_range* range)
 {
-	tree->rootfamilysizes[0] = range->root_min;
-	tree->rootfamilysizes[1] = range->root_max;
-	tree->familysizes[0] = range->min;
-	tree->familysizes[1] = range->max;
+	tree->range.root_min = range->root_min;
+	tree->range.root_max = range->root_max;
+	tree->range.min = range->min;
+	tree->range.max = range->max;
 	tree->rfsize = range->root_max - range->root_min + 1;
 
 }
@@ -125,9 +125,9 @@ void show_sizes(FILE* f, pCafeTree pcafe, family_size_range* range, pCafeFamilyI
 {
 	fprintf(f, ">> %d %d\n", i, pitem->ref);
 	fprintf(f, "Root size: %d ~ %d , %d \n",
-		pcafe->rootfamilysizes[0],
-		pcafe->rootfamilysizes[1], pcafe->rfsize);
-	fprintf(f, "Family size: %d ~ %d\n", pcafe->familysizes[0], pcafe->familysizes[1]);
+		pcafe->range.root_min,
+		pcafe->range.root_max, pcafe->rfsize);
+	fprintf(f, "Family size: %d ~ %d\n", pcafe->range.min, pcafe->range.max);
 	fprintf(f, "Root size: %d ~ %d\n", range->root_min, range->root_max);
 	fprintf(f, "Family size: %d ~ %d\n", range->min, range->max);
 }
@@ -198,7 +198,7 @@ double cafe_get_clustered_posterior(pCafeParam param, double *ML, double *MAP, d
 				if(prior_rfsize) {		// prior is a poisson distribution on the root size based on leaves' size
 					for(j = 0; j < param->pcafe->rfsize; j++)	// j: root family size
 					{
-						posterior[j+param->pcafe->rootfamilysizes[0]] = exp(log(k_likelihoods[k][j])+log(prior_rfsize[j]));
+						posterior[j+param->pcafe->range.root_min] = exp(log(k_likelihoods[k][j])+log(prior_rfsize[j]));
 					}				
 				}
 				// Max_on_rootsize k_likelihoods(rootsize)
@@ -415,10 +415,10 @@ double* cafe_each_best_lambda_by_fminsearch(pCafeParam param, int lambda_len )
 
 		cafe_family_set_size_with_family_forced(param->pfamily,i,param->pcafe);
 
-		param->family_size.root_min = param->pcafe->rootfamilysizes[0];
-		param->family_size.root_max = param->pcafe->rootfamilysizes[1];
-		param->family_size.min = param->pcafe->familysizes[0];
-		param->family_size.max = param->pcafe->familysizes[1];
+		param->family_size.root_min = param->pcafe->range.root_min;
+		param->family_size.root_max = param->pcafe->range.root_max;
+		param->family_size.min = param->pcafe->range.min;
+		param->family_size.max = param->pcafe->range.max;
 
 		cafe_log(param,"%s:\n", pitem->id );
 		

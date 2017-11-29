@@ -49,7 +49,7 @@ void print_pvalues(std::ostream& ost, pCafeTree pcafe, int max, int num_random_s
 	double* lh = get_likelihoods(pcafe);
 	int rfsize = __maxidx(lh, pcafe->rfsize);
 	double mlh = lh[rfsize];
-	rfsize += pcafe->rootfamilysizes[0];
+	rfsize += pcafe->range.root_min;
 
 	std::vector<double> pcd = get_random_probabilities(pcafe, rfsize, num_random_samples);
 	double pv = pvalue(mlh, &pcd[0], num_random_samples);
@@ -115,7 +115,7 @@ void pvalues_for_family(pCafeTree pTree, pCafeFamily family, family_size_range *
 
 	for (int i = 0; i < pTree->rfsize; i++)
 	{
-		printf("%d\t%lg\t%lg\n", i + pTree->rootfamilysizes[0], lh[i], pvalues[i]);
+		printf("%d\t%lg\t%lg\n", i + pTree->range.root_min, lh[i], pvalues[i]);
 	}
 }
 

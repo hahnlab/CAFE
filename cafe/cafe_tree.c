@@ -326,17 +326,17 @@ void compute_internal_node_likelihood(pTree ptree, pTreeNode ptnode)
     pCafeNode pcnode = (pCafeNode)ptnode;
 
     family_size_range range;
-    range.min = pcafe->familysizes[0];
-    range.max = pcafe->familysizes[1];
+    range.min = pcafe->range.min;
+    range.max = pcafe->range.max;
     if (tree_is_root(ptree, ptnode))
     {
-        range.root_min = pcafe->rootfamilysizes[0];
-        range.root_max = pcafe->rootfamilysizes[1];
+        range.root_min = pcafe->range.root_min;
+        range.root_max = pcafe->range.root_max;
     }
     else
     {
-        range.root_min = pcafe->familysizes[0];
-        range.root_max = pcafe->familysizes[1];
+        range.root_min = pcafe->range.min;
+        range.root_max = pcafe->range.max;
     }
 
     double *left_factor = memory_new(pcafe->size_of_factor, sizeof(double));
@@ -583,10 +583,10 @@ void cafe_tree_node_copy(pTreeNode psrc, pTreeNode pdest)
 void __cafe_tree_copy_new_fill(pCafeTree psrc, pCafeTree pdest )
 {
 	pdest->size_of_factor = psrc->size_of_factor;
-	pdest->familysizes[0] = psrc->familysizes[0];
-	pdest->familysizes[1] = psrc->familysizes[1];
-	pdest->rootfamilysizes[0] = psrc->rootfamilysizes[0];
-	pdest->rootfamilysizes[1] = psrc->rootfamilysizes[1];
+	pdest->range.min = psrc->range.min;
+	pdest->range.max = psrc->range.max;
+	pdest->range.root_min = psrc->range.root_min;
+	pdest->range.root_max = psrc->range.root_max;
 	pdest->lambda = psrc->lambda;
 	pdest->rfsize = psrc->rfsize;
 }
@@ -657,7 +657,7 @@ int cafe_tree_random_familysize(pCafeTree pcafe, int rootFamilysize, int maxFami
 
 void initialize_leaf_likelihood_clustered(pTree ptree, pTreeNode ptnode)
 {
-    int* rootfamilysizes;
+    int root_min, root_max;
     pCafeTree pcafe = (pCafeTree)ptree;
     pCafeNode pcnode = (pCafeNode)ptnode;
 
@@ -665,13 +665,15 @@ void initialize_leaf_likelihood_clustered(pTree ptree, pTreeNode ptnode)
 
     if (tree_is_root(ptree, ptnode->parent))
     {
-        rootfamilysizes = pcafe->rootfamilysizes;
+        root_min = pcafe->range.root_min;
+        root_max = pcafe->range.root_max;
     }
     else
     {
-        rootfamilysizes = pcafe->familysizes;
+        root_min = pcafe->range.min;
+        root_max = pcafe->range.max;
     }
-    for (s = rootfamilysizes[0], i = 0; s <= rootfamilysizes[1]; s++, i++)
+    for (s = root_min, i = 0; s <= root_max; s++, i++)
     {
         for (k = 0; k < pcafe->k; k++) {
             if (pcnode->familysize < 0) {
@@ -697,8 +699,7 @@ void initialize_leaf_likelihood_clustered(pTree ptree, pTreeNode ptnode)
 
 void compute_internal_node_likelihood_clustered(pTree ptree, pTreeNode ptnode)
 {
-    int* familysizes;
-    int* rootfamilysizes;
+    family_size_range family_size;
     pCafeTree pcafe = (pCafeTree)ptree;
     pCafeNode pcnode = (pCafeNode)ptnode;
     double *tree_factors[2];
@@ -711,12 +712,17 @@ void compute_internal_node_likelihood_clustered(pTree ptree, pTreeNode ptnode)
     double mu = -1;
     if (tree_is_root(ptree, ptnode))
     {
-        rootfamilysizes = pcafe->rootfamilysizes;
-        familysizes = pcafe->familysizes;
+        family_size.root_min = pcafe->range.root_min;
+        family_size.root_max = pcafe->range.root_max;
+        family_size.min = pcafe->range.min;
+        family_size.max = pcafe->range.max;
     }
     else
     {
-        rootfamilysizes = familysizes = pcafe->familysizes;
+        family_size.root_min = pcafe->range.min;
+        family_size.root_max = pcafe->range.max;
+        family_size.min = pcafe->range.min;
+        family_size.max = pcafe->range.max;
     }
     int idx;
     double *factors[2] = { NULL, NULL };
@@ -734,15 +740,15 @@ void compute_internal_node_likelihood_clustered(pTree ptree, pTreeNode ptnode)
         {
             factors[idx] = tree_factors[idx];
             memset(factors[idx], 0, pcafe->size_of_factor * sizeof(double));
-            for (s = rootfamilysizes[0], i = 0; s <= rootfamilysizes[1]; s++, i++)
+            for (s = family_size.root_min, i = 0; s <= family_size.root_max; s++, i++)
             {
-                for (int c = familysizes[0], j = 0; c <= familysizes[1]; c++, j++)
+                for (int c = family_size.min, j = 0; c <= family_size.max; c++, j++)
                 {
                     factors[idx][i] += birthdeath_likelihood_with_s_c(s, c, child[idx]->super.branchlength, lambda, mu, NULL) * child[idx]->k_likelihoods[k][j];
                 }
             }
         }
-        int size = rootfamilysizes[1] - rootfamilysizes[0] + 1;
+        int size = family_size.root_max - family_size.root_min + 1;
         for (i = 0; i < size; i++)
         {
             pcnode->k_likelihoods[k][i] = factors[0][i] * factors[1][i];
@@ -760,7 +766,7 @@ void compute_node_clustered_likelihood(pTree ptree, pTreeNode ptnode, va_list ap
     va_end(ap);
 
     pCafeTree pcafe = (pCafeTree)ptree;
-    int maxFamilySize = MAX(pcafe->rootfamilysizes[1], pcafe->familysizes[1]);
+    int maxFamilySize = MAX(pcafe->range.root_max, pcafe->range.max);
     if (!chooseln_is_init2(ln_cache))
     {
         chooseln_cache_init2(ln_cache, maxFamilySize);
@@ -797,11 +803,11 @@ void __cafe_tree_node_compute_clustered_likelihood_using_cache(pTree ptree, pTre
 
     int size;
     int s, c, i, j, k;
-    int* rootfamilysizes;
-    int* familysizes;
+    family_size_range family_size;
+
     double** bd = NULL;
 
-    int maxFamilySize = MAX(pcafe->rootfamilysizes[1], pcafe->familysizes[1]);
+    int maxFamilySize = MAX(pcafe->range.root_max, pcafe->range.max);
     if (!chooseln_is_init2(ln_cache))
     {
         chooseln_cache_init2(ln_cache, maxFamilySize);
@@ -816,13 +822,15 @@ void __cafe_tree_node_compute_clustered_likelihood_using_cache(pTree ptree, pTre
     {
         if (tree_is_root(ptree, ptnode->parent))
         {
-            rootfamilysizes = pcafe->rootfamilysizes;
+            family_size.root_min = pcafe->range.root_min;
+            family_size.root_max = pcafe->range.root_max;
         }
         else
         {
-            rootfamilysizes = pcafe->familysizes;
+            family_size.root_min = pcafe->range.min;
+            family_size.root_max = pcafe->range.max;
         }
-        for (s = rootfamilysizes[0], i = 0; s <= rootfamilysizes[1]; s++, i++)
+        for (s = family_size.root_min, i = 0; s <= family_size.root_max; s++, i++)
         {
             //			pcnode->likelihoods[i] = pcnode->bd[s][pcnode->familysize];
             for (k = 0; k < pcafe->k; k++) {
@@ -852,12 +860,17 @@ void __cafe_tree_node_compute_clustered_likelihood_using_cache(pTree ptree, pTre
     {
         if (tree_is_root(ptree, ptnode))
         {
-            rootfamilysizes = pcafe->rootfamilysizes;
-            familysizes = pcafe->familysizes;
+            family_size.root_min = pcafe->range.root_min;
+            family_size.root_max = pcafe->range.root_max;
+            family_size.min = pcafe->range.min;
+            family_size.max = pcafe->range.max;
         }
         else
         {
-            rootfamilysizes = familysizes = pcafe->familysizes;
+            family_size.root_min = pcafe->range.min;
+            family_size.root_max = pcafe->range.max;
+            family_size.min = pcafe->range.min;
+            family_size.max = pcafe->range.max;
         }
         int idx;
         double *factors[2] = { NULL, NULL };
@@ -872,16 +885,16 @@ void __cafe_tree_node_compute_clustered_likelihood_using_cache(pTree ptree, pTre
                     factors[idx] = tree_factors[idx];
                     memset(factors[idx], 0, pcafe->size_of_factor * sizeof(double));
                     bd = child[idx]->k_bd->array[k];
-                    for (s = rootfamilysizes[0], i = 0; s <= rootfamilysizes[1]; s++, i++)
+                    for (s = family_size.root_min, i = 0; s <= family_size.root_max; s++, i++)
                     {
-                        for (c = familysizes[0], j = 0; c <= familysizes[1]; c++, j++)
+                        for (c = family_size.min, j = 0; c <= family_size.max; c++, j++)
                         {
                             factors[idx][i] += bd[s][c] * child[idx]->k_likelihoods[k][j];
                         }
                     }
                 }
             }
-            size = rootfamilysizes[1] - rootfamilysizes[0] + 1;
+            size = family_size.root_max - family_size.root_min + 1;
             for (i = 0; i < size; i++)
             {
                 pcnode->k_likelihoods[k][i] = factors[0][i] * factors[1][i];
