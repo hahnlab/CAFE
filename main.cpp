@@ -1,3 +1,5 @@
+#include "config.h"
+
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -12,9 +14,12 @@ extern "C" {
 #include "cafe_commands.h"
 #include "Globals.h"
 
-#ifdef USE_READLINE
-#include <readline/readline.h>
+#ifdef HAVE_READLINE_HISTORY_H
 #include <readline/history.h>
+#endif
+
+#ifdef HAVE_READLINE_READLINE_H
+#include <readline/readline.h>
 #endif
 
 const char* __date__ = __DATE__;
@@ -44,7 +49,7 @@ int main(int argc, char* argv[])
 	{
 		while(shell !=  CAFE_SHELL_EXIT )
 		{
-#ifdef USE_READLINE
+#if defined(HAVE_READLINE_HISTORY_H) && defined(HAVE_READLINE_READLINE_H) 
 			char *prompt = readline("# ");
 			if (prompt == NULL)
 				return -1;

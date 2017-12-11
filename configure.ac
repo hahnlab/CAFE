@@ -1,4 +1,7 @@
 AC_INIT(cafe, 4.1)
+
+m4_include([m4/ax_lib_readline.m4])
+
 AC_CONFIG_HEADER([config.h])
 
 AC_LANG(C++)
@@ -22,6 +25,7 @@ if test $ax_blas_ok = yes; then
 fi
 
 AC_CHECK_HEADERS_ONCE([dirent.h ndir.h])
+AX_LIB_READLINE
 
 dnl Process Makefile.in to create Makefile
 AC_OUTPUT(Makefile)
