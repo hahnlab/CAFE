@@ -41,6 +41,7 @@ extern "C" {
     extern struct chooseln_cache cache;
 }
 
+using namespace std;
 
 static void init_cafe_tree(Globals& globals)
 {
@@ -1685,6 +1686,25 @@ TEST(FirstTestGroup, sync_sanity_check_passes)
     LONGS_EQUAL(0, sync_sanity_check(pfamily, pcafe));
 
     cafe_family_free(pfamily);
+}
+
+TEST(FirstTestGroup, viterbi_max_p)
+{
+    viterbi_parameters v;
+    double x = 5;
+    v.maximumPvalues = &x;
+    v.num_rows = 1;
+    vector<double> values;
+
+    viterbi_set_max_pvalue(&v, 0, values);
+    DOUBLES_EQUAL(0.0, x, 0.0001);
+
+    values.push_back(1);
+    values.push_back(7);
+    values.push_back(5);
+
+    viterbi_set_max_pvalue(&v, 0, values);
+    DOUBLES_EQUAL(7.0, x, 0.0001);
 }
 
 int main(int ac, char** av)

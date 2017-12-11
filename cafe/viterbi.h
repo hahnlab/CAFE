@@ -59,7 +59,8 @@ public:
 
 void viterbi_parameters_init(viterbi_parameters *viterbi, int nnodes, int nrows);
 
-void viterbi_set_max_pvalue(viterbi_parameters* viterbi, int index, double val);
+void viterbi_set_max_pvalue(viterbi_parameters* viterbi, int index, const std::vector<double>& values );
+
 void cafe_viterbi(Globals& globals, viterbi_parameters& viterbi, std::vector<std::vector<double> >* pCD);
 void viterbi_sum_probabilities(viterbi_parameters *viterbi, pCafeTree pcafe, pCafeFamilyItem pitem);
 void* __cafe_viterbi_thread_func(void* ptr);

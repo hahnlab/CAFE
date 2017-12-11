@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 
 #include "viterbi.h"
 #include "Globals.h"
@@ -28,10 +29,13 @@ void viterbi_parameters_init(viterbi_parameters *viterbi, int nnodes, int nrows)
 	viterbi->expandRemainDecrease.resize(nnodes);
 }
 
-void viterbi_set_max_pvalue(viterbi_parameters* viterbi, int index, double val)
+void viterbi_set_max_pvalue(viterbi_parameters* viterbi, int index, const std::vector<double>& values)
 {
 	assert(index < viterbi->num_rows);
-	viterbi->maximumPvalues[index] = val;
+    if (values.empty())
+        viterbi->maximumPvalues[index] = 0;
+    else
+        viterbi->maximumPvalues[index] = *max_element(values.begin(), values.end());
 }
 
 
@@ -89,7 +93,9 @@ void viterbi_section(pCafeFamily pcf, double pvalue, int num_random_samples, vit
 
     std::vector<double> p1(pcafe->rfsize);
     cafe_tree_p_values(pcafe, p1, *pCD, num_random_samples);
-    viterbi_set_max_pvalue(viterbi, i, __max(&p1[0], pcafe->rfsize));
+
+    viterbi_set_max_pvalue(viterbi, i, p1);
+    
     cafe_tree_viterbi(pcafe);
     familysize_sanity_check(ptree);
 
