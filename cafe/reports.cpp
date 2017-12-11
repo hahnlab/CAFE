@@ -1069,7 +1069,7 @@ void ascii_visualization::serialize(std::ostream& ost) const
 }
 
 svg_visualization::svg_visualization(pTree tree) :
-    width(400), left_margin(10), right_margin(10), top_margin(5), _font_size(15), tip_space(20), _tree(tree)
+    _tree(tree), width(400), left_margin(10), right_margin(10), top_margin(5), _font_size(15), tip_space(20)
 {
     int canvas_width = width - left_margin - right_margin;
 

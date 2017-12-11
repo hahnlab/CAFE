@@ -34,16 +34,33 @@ pHistogram histogram_load(char* file)
 		return NULL;
 	}
 	pHistogram phist = (pHistogram) memory_new(1, sizeof(Histogram));
-	fscanf(fp,"MIN: %lf ~ MAX: %lf\n", &phist->min , &phist->max );	
-	fscanf(fp,"BIN: %d\n", &phist->nbins );
-	fscanf(fp,"# Samples: %d\n", &phist->nsamples);
-	phist->point = (double*) memory_new(phist->nbins, sizeof(double) );
+    if (fscanf(fp, "MIN: %lf ~ MAX: %lf\n", &phist->min, &phist->max) == EOF)
+    {
+        perror(file);
+        return NULL;
+    }
+    if (fscanf(fp,"BIN: %d\n", &phist->nbins ) == EOF)
+    {
+        perror(file);
+        return NULL;
+    }
+    if (fscanf(fp,"# Samples: %d\n", &phist->nsamples) == EOF)
+    {
+        perror(file);
+        return NULL;
+    }
+    phist->point = (double*) memory_new(phist->nbins, sizeof(double) );
 	phist->count = (unsigned int*) memory_new(phist->nbins, sizeof(unsigned int));
 	int i;
 	float f;
 	for ( i = 0 ; i < phist->nbins ; i++ )
 	{
-		fscanf(fp,"%lf\t%d\t%g\n", &phist->point[i],&phist->count[i],&f);
+		if (fscanf(fp,"%lf\t%d\t%g\n", &phist->point[i],&phist->count[i],&f) == EOF)
+        {
+            perror(file);
+            return NULL;
+        }
+
 	}
 	fclose(fp);
 	return phist;

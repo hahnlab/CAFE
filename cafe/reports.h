@@ -120,7 +120,6 @@ struct report_parameters
   std::string name;
 };
 
-void draw_ascii_tree(pTree tree, int column_width);
 void update_depths(pTreeNode node, std::map<int, double>& depths, double curr_depth);
 
 report_parameters get_report_parameters(std::vector<std::string> tokens);

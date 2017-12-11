@@ -141,16 +141,20 @@ void cafe_family_split_cvfiles_byspecies(pCafeParam param)
 		sprintf(tmp, "}' %s > %s.%s.train", file, file, (char*)data->array[j-1]);
 		string_add(command, tmp);
 		//printf("%s\n", command->buf);
-		system(command->buf);
-		string_free(command);
+		int status = system(command->buf);
+        if (status < 0)
+            fprintf( stderr, "Error: %s\n", strerror(errno));		
+        string_free(command);
 		pString command2 = string_new_with_string( "awk '{print $1\"\\t\"$2" );
 		sprintf(tmp, "\"\\t\"$%d", j);
 		string_add(command2, tmp);
 		sprintf(tmp, "}' %s > %s.%s.valid", file, file, (char*)data->array[j-1]);
 		string_add(command2, tmp);
 		//printf("%s\n", command2->buf);
-		system(command2->buf);
-		string_free(command2);
+		status = system(command2->buf);
+        if (status < 0)
+            fprintf(stderr, "Error: %s\n", strerror(errno));
+        string_free(command2);
 		
 	}
 	arraylist_free(data, free);

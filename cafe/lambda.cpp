@@ -53,15 +53,6 @@ void lambda_arg_base::load(vector<Argument> pargs)
 		}
 		else if (!strcmp(parg->opt.c_str(), "-t"))
 		{
-            char *arg1 = NULL, *arg2 = NULL;
-            if (parg->argc == 2)
-            {
-                arg1 = parg->argv[0];
-                arg2 = parg->argv[1];
-            }
-            else
-            {
-            }
 			bdone = __cafe_cmd_lambda_tree(cafe_param, parg->argv[0], parg->argc > 1 ? parg->argv[1] : NULL);
 			if (bdone < 0) {
 				throw std::exception();
