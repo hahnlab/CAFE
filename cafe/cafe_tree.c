@@ -46,69 +46,19 @@ void cafe_tree_set_parameters(pCafeTree pcafe, family_size_range* range, double 
 	}
 }
 
-pTree __cafe_tree_new(tree_func_node_new new_tree_node_func, int size)
-{
-	pCafeTree pcafe = (pCafeTree)memory_new(1,sizeof(CafeTree));
-	pcafe->size_of_factor = size;
-	tree_new_fill((pTree)pcafe, cafe_tree_new_empty_node);
-	pcafe->super.size = sizeof(CafeTree);
-	return (pTree)pcafe;
-}
 
-
-void cafe_tree_parse_node(pTree ptree, pTreeNode ptnode)
-{
-	pCafeNode pcnode = (pCafeNode)ptnode;
-	char* name = pcnode->super.name;
-	if ( name == NULL ) return;
-	char* familysize = (char*)strchr(name,'_');
-	if ( familysize )
-	{
-		*familysize++ = '\0';
-		pcnode->familysize = atoi(familysize);
-	}
-}
-
-pCafeTree cafe_tree_new(const char* sztree, family_size_range* range, double lambda, double mu)
-{
-	int rsize = range->root_max - range->root_min  + 1;
-	int fsize = range->max - range->min  + 1;
-
-	assert(strlen(sztree) < STRING_BUF_SIZE);
-	char buf[STRING_BUF_SIZE];
-	strcpy(buf, sztree);	// needs a writable buffer to work with
-	pCafeTree pcafe = (pCafeTree)phylogeny_load_from_string(
-			             		buf, 
-								__cafe_tree_new, 
-			             		cafe_tree_new_empty_node, 
-								cafe_tree_parse_node, 
-								rsize > fsize ? rsize : fsize );
-	if (pcafe == NULL) {
-		return NULL;
-	}
-
-	copy_range_to_tree(pcafe, range);
-
-	pcafe->lambda = lambda;
-	pcafe->mu = mu;
-
-	((pCafeNode)pcafe->super.root)->birth_death_probabilities.lambda = lambda;
-	((pCafeNode)pcafe->super.root)->birth_death_probabilities.mu = mu;
-	tree_build_node_list((pTree)pcafe);
-	return pcafe;
-}
 
 void __cafe_tree_free_node(pTree ptree, pTreeNode ptnode, va_list ap1)
 {
-  va_list ap;
-  if (ap1) va_copy(ap, ap1);
-	pCafeNode pcnode = (pCafeNode)ptnode;
-	if ( pcnode->likelihoods ) memory_free(pcnode->likelihoods);	
-	pcnode->likelihoods = NULL;
-	if ( pcnode->viterbi ) memory_free(pcnode->viterbi);
-	pcnode->viterbi = NULL;
-	__phylogeny_free_node(ptree,ptnode,ap);		
-  if (ap1) va_end(ap1);
+    va_list ap;
+    if (ap1) va_copy(ap, ap1);
+    pCafeNode pcnode = (pCafeNode)ptnode;
+    if (pcnode->likelihoods) memory_free(pcnode->likelihoods);
+    pcnode->likelihoods = NULL;
+    if (pcnode->viterbi) memory_free(pcnode->viterbi);
+    pcnode->viterbi = NULL;
+    __phylogeny_free_node(ptree, ptnode, ap);
+    if (ap1) va_end(ap1);
 }
 
 

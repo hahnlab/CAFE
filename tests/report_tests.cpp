@@ -21,12 +21,7 @@ extern "C" {
 
 static pCafeTree create_tree(family_size_range range)
 {
-  const char *newick_tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)";
-  char tree[100];
-  strcpy(tree, newick_tree);
-  pCafeTree pcafe = cafe_tree_new(tree, &range, 0.01, 0);
-
-  return pcafe;
+  return cafe_tree_new("(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)", &range, 0.01, 0);
 }
 
 TEST_GROUP(ReportTests)
@@ -77,7 +72,6 @@ TEST(ReportTests, write_report)
   range.max = 15;
   range.root_min = 0;
   range.root_max = 15;
-
   globals.param.pcafe = create_tree(range);
   globals.param.pfamily = &fam;
   probability_cache = NULL;
@@ -87,6 +81,7 @@ TEST(ReportTests, write_report)
   globals.param.lambda_tree = (pTree)globals.param.pcafe;
   Report r(&globals.param, *globals.viterbi);
   ost << r;
+
   STRCMP_CONTAINS("Tree:(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)\n", ost.str().c_str());
   STRCMP_CONTAINS("Lambda:\t1.5\t2.5\t3.5\n", ost.str().c_str());
   STRCMP_CONTAINS("Lambda tree:\t(((:6,:6):81,(:17,:17):70):6,:9)\n", ost.str().c_str());
@@ -95,26 +90,34 @@ TEST(ReportTests, write_report)
   STRCMP_CONTAINS("(0,2) (1,5) (4,6) (3,8) \n", ost.str().c_str());
   STRCMP_CONTAINS("# Output format for 'Branch cutting P-values' and 'Likelihood Ratio Test': (0, 1, 2, 3, 4, 5, 6, 7, 8)\n", ost.str().c_str());
   STRCMP_CONTAINS("", ost.str().c_str());
+
+  cafe_tree_free(globals.param.pcafe);
+  arraylist_free(fam.flist, NULL);
 }
 
 Report create_report()
 {
-  Report r;
-  r.tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)";
-  r.lambdas = { 0.1, 0.3, 0.5, 0.7 };
-  r.lambda_tree = "(((:6,:6):81,(:17,:17):70):6,:9)";
-  r.id_tree = "(((chimp<0>,human<2>)<1>,(mouse<4>,rat<6>)<5>)<3>,dog<8>)<7>";
-  r.node_pairs = { { 1,2 },{ 3,4 },{ 5,6 } };
-  r.averageExpansion = { 1.1, 1.3, 1.5, 1.7, 2.1, 2.3, 2.5, 2.7 };
-  r.changes = { change(1,2,3), change(4,5,6), change(7,8,9), change(10,11,12) };
-  family_line_item f;
-  f.node_id = "C1";
-  f.tree = "tree";
-  f.max_p_value = 0.08;
-  f.pvalues = { { 11,12 },{ 13,14 },{ 15,16 } };
-  r.family_line_items = { f };
+    family_size_range range;
+    range.min = range.root_min = 0;
+    range.max = range.root_max = 10;
+    Report r;
+    r.tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)";
 
-  return r;
+    r.aTree = cafe_tree_new("(c1:3,c2:3):5", &range, 0.01, 0);
+    r.lambdas = { 0.1, 0.3, 0.5, 0.7 };
+    r.lambda_tree = "(((:6,:6):81,(:17,:17):70):6,:9)";
+//    r.id_tree = "(((chimp<0>,human<2>)<1>,(mouse<4>,rat<6>)<5>)<3>,dog<8>)<7>";
+    r.node_pairs = { { 1,2 },{ 3,4 },{ 5,6 } };
+    r.averageExpansion = { 1.1, 1.3, 1.5, 1.7, 2.1, 2.3, 2.5, 2.7 };
+    r.changes = { change(1,2,3), change(4,5,6), change(7,8,9), change(10,11,12) };
+    family_line_item f;
+    f.node_id = "C1";
+    f.tree = "tree";
+    f.max_p_value = 0.08;
+    f.pvalues = { { 11,12 },{ 13,14 },{ 15,16 } };
+    r.family_line_items = { f };
+
+    return r;
 }
 
 TEST(ReportTests, write_html_report)
@@ -272,3 +275,107 @@ TEST(ReportTests, family_line_item_sets_pvalues)
 	DOUBLES_EQUAL(0.0, item.pvalues[1].second, 0.0001);
 	cafe_family_free(globals.param.pfamily);
 }
+
+TEST(ReportTests, draw_ascii_tree)
+{
+    family_size_range range;
+    range.min = range.root_min = 0;
+    range.max = range.root_max = 10;
+    pCafeTree tree = create_tree(range);
+    ascii_visualization v((pTree)tree, 120);
+    std::ostringstream ost;
+    ost << v;
+    const char *expected[] = {
+"                                                                                         _____                    chimp",
+"        ________________________________________________________________________________|",
+"       |                                                                                |_____                    human",
+"  _____|",
+" |     |                                                                      ________________                    mouse",
+"_|     |_____________________________________________________________________|",
+" |                                                                           |________________                    rat",
+" |",
+" |________                                                                                                        dog"
+    };
+
+    std::string s = ost.str();
+    for (int i = 0; i < 9; ++i)
+    {
+        STRCMP_CONTAINS(expected[i], s.c_str());
+    }
+}
+
+TEST(ReportTests, draw_svg)
+{
+    family_size_range range;
+    range.min = range.root_min = 0;
+    range.max = range.root_max = 10;
+    pCafeTree tree = cafe_tree_new("(c1:3,c2:3):5", &range, 0.01, 0);
+
+    std::ostringstream ost;
+    svg_visualization svg((pTree)tree);
+    svg.height = 200;
+    svg.legend = false;
+    ost << svg;
+    const char *expected[] = {
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"400\" height=\"200\" style=\"border: 1px solid #cccccc;\">",
+        "<line x1=\"610\" y1=\"115\" x2=\"970\" y2=\"115\" stroke=\"#181818\" stroke-width=\"2\" />",
+        "<text x=\"975\" y=\"120\" font-size=\"15\" font-family=\"Arial;\">0 (c1)</text>",
+        "<line x1=\"610\" y1=\"135\" x2=\"970\" y2=\"135\" stroke=\"#181818\" stroke-width=\"2\" />",
+        "<text x=\"975\" y=\"140\" font-size=\"15\" font-family=\"Arial;\">2 (c2)</text>",
+        "<line x1=\"610\" y1=\"115\" x2=\"610\" y2=\"135\" stroke=\"#181818\" stroke-width=\"2\" />",
+        "<line x1=\"10\" y1=\"125\" x2=\"610\" y2=\"125\" stroke=\"#181818\" stroke-width=\"2\" />",
+        "</svg>"
+    };
+
+    std::string s = ost.str();
+    for (int i = 0; i<8; ++i)
+        STRCMP_CONTAINS(expected[i], s.c_str());
+}
+
+TEST(ReportTests, draw_svg_puts_internal_node_ids)
+{
+    family_size_range range;
+    range.min = range.root_min = 0;
+    range.max = range.root_max = 10;
+    const char *newick_tree = "(((a:6,b:6):81,(c:17,d:17):70):6,dog:93)";
+    pCafeTree tree = cafe_tree_new(newick_tree, &range, 0.01, 0);
+
+    std::ostringstream ost;
+    svg_visualization svg((pTree)tree);
+    svg.height = 100;
+    svg.legend = false;
+    ost << svg;
+    const char *expected[] = {
+        "<text x=\"342.419\" y=\"30\" font-size=\"15\" font-family=\"Arial;\">1</text>",
+        "<text x=\"37.5806\" y=\"50\" font-size=\"15\" font-family=\"Arial;\">3</text>",
+        "<text x=\"301.022\" y=\"70\" font-size=\"15\" font-family=\"Arial;\">5</text>"
+    };
+
+    std::string s = ost.str();
+    for (int i = 0; i<3; ++i)
+        STRCMP_CONTAINS(expected[i], s.c_str());
+}
+
+TEST(ReportTests, depth)
+{
+    family_size_range range;
+    range.min = range.root_min = 0;
+    range.max = range.root_max = 10;
+
+    pCafeTree tree = create_tree(range);
+    std::map<int, double> depths;
+
+    update_depths(tree->super.root, depths, 0);
+
+    LONGS_EQUAL(depths.size(), 9);
+    DOUBLES_EQUAL(93, depths[0], 0.001);
+    DOUBLES_EQUAL(87, depths[1], 0.001);
+    DOUBLES_EQUAL(93, depths[2], 0.001);
+    DOUBLES_EQUAL(6, depths[3], 0.001);
+    DOUBLES_EQUAL(93, depths[4], 0.001);
+    DOUBLES_EQUAL(76, depths[5], 0.001);
+    DOUBLES_EQUAL(93, depths[6], 0.001);
+    DOUBLES_EQUAL(0, depths[7], 0.001);
+    DOUBLES_EQUAL(9, depths[8], 0.001);
+}
+

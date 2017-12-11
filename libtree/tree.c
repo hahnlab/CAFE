@@ -166,51 +166,6 @@ void tree_traveral_postfix(pTree ptree, tree_func_node func, ...)
 	tree_clear_reg(ptree);
 }
 
-// Only for complete binary tree
-void tree_traveral_infix(pTree ptree, tree_func_node func, ... )
-{
-	va_list ap;
-	va_start( ap, func );
-	pStack pstack = stack_new();
-	stack_push(pstack,ptree->root);	
-	while( stack_has_items(pstack) )
-	{
-		pTreeNode pnode = (pTreeNode)pstack->head->data;
-		if ( pnode->children )
-		{
-			if ( pnode->children->size != 2 ) {
-				fprintf(stderr, "ERROR(tree.c): running infix on nonbinary tree\n");
-				return;
-			} 
-			pTreeNode left = (pTreeNode)pnode->children->head->data;
-			if ( left->reg )
-			{
-				stack_pop(pstack);
-				pnode->reg = 1;
-				if (  pnode->children->size > 1  )
-				{
-					stack_push(pstack, pnode->children->tail->data);
-				}
-				func(ptree, pnode, ap);
-			}
-			else
-			{
-				stack_push(pstack, left);	
-			}
-		}
-		else
-		{
-			stack_pop(pstack);
-			func(ptree, pnode, ap);	// adds to nlist
-			pnode->reg = 1;
-		}
-	}
-	va_end(ap);
-	stack_free(pstack);
-	tree_clear_reg(ptree);
-}
-
-
 void __tree_clear_reg(pTree ptree, pTreeNode pnode, va_list ap1)
 {
 #ifdef __DEBUG_TREE__
@@ -295,42 +250,3 @@ pTree tree_copy(pTree psrc,
 	return pdest;
 }
 
-void __tree_build_node_list(pTree ptree, pTreeNode ptnode, va_list ap1)
-{
-	arraylist_add((pArrayList)ptree->nlist,ptnode);
-}
-
-void __tree_build_prefix_node_list(pTree ptree, pTreeNode ptnode, va_list ap1)
-{
-	arraylist_add((pArrayList)ptree->prefix,ptnode);
-}
-
-void __tree_build_postfix_node_list(pTree ptree, pTreeNode ptnode, va_list ap1)
-{
-	arraylist_add((pArrayList)ptree->postfix,ptnode);
-}
-
-void tree_build_node_list(pTree ptree)
-{
-	if ( ptree->nlist )
-	{
-		arraylist_free(ptree->nlist, NULL);			
-		arraylist_free(ptree->postfix, NULL);			
-		arraylist_free(ptree->prefix, NULL);			
-	}
-	// Even index ( 0, 2, 4, .... ) : leaf
-	ptree->nlist = arraylist_new(100);
-	ptree->postfix = arraylist_new(100);
-	ptree->prefix = arraylist_new(100);
-
-	tree_traveral_infix(ptree, __tree_build_node_list);
-	tree_traveral_postfix(ptree, __tree_build_postfix_node_list);
-	tree_traveral_prefix(ptree, __tree_build_prefix_node_list);
-
-//	arraylist_trim((pArrayList)ptree->nlist);
-	int i = 0;
-	for ( i = 0 ; i < ptree->nlist->size ; i++ )
-	{
-		((pTreeNode)ptree->nlist->array[i])->id = i;
-	}
-}

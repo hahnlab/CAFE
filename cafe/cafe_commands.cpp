@@ -1765,6 +1765,150 @@ int cafe_cmd_seed(Globals& globals, std::vector<std::string> tokens)
     return 0;
 }
 
+void __tree_build_node_list(pTree ptree, pTreeNode ptnode, va_list ap1)
+{
+    arraylist_add((pArrayList)ptree->nlist, ptnode);
+}
+
+void __tree_build_prefix_node_list(pTree ptree, pTreeNode ptnode, va_list ap1)
+{
+    arraylist_add((pArrayList)ptree->prefix, ptnode);
+}
+
+void __tree_build_postfix_node_list(pTree ptree, pTreeNode ptnode, va_list ap1)
+{
+    arraylist_add((pArrayList)ptree->postfix, ptnode);
+}
+
+// Only for complete binary tree
+void tree_traveral_infix(pTree ptree, tree_func_node func, ...)
+{
+    va_list ap;
+    va_start(ap, func);
+    pStack pstack = stack_new();
+    stack_push(pstack, ptree->root);
+    while (stack_has_items(pstack))
+    {
+        pTreeNode pnode = (pTreeNode)pstack->head->data;
+        if (pnode->children)
+        {
+            if (pnode->children->size != 2) {
+                throw std::runtime_error("Tree must be binary");
+                return;
+            }
+            pTreeNode left = (pTreeNode)pnode->children->head->data;
+            if (left->reg)
+            {
+                stack_pop(pstack);
+                pnode->reg = 1;
+                if (pnode->children->size > 1)
+                {
+                    stack_push(pstack, pnode->children->tail->data);
+                }
+                func(ptree, pnode, ap);
+            }
+            else
+            {
+                stack_push(pstack, left);
+            }
+        }
+        else
+        {
+            stack_pop(pstack);
+            func(ptree, pnode, ap);	// adds to nlist
+            pnode->reg = 1;
+        }
+    }
+    va_end(ap);
+    stack_free(pstack);
+    tree_clear_reg(ptree);
+}
+
+
+
+void tree_build_node_list(pTree ptree)
+{
+    if (ptree->nlist)
+    {
+        arraylist_free(ptree->nlist, NULL);
+        arraylist_free(ptree->postfix, NULL);
+        arraylist_free(ptree->prefix, NULL);
+    }
+    // Even index ( 0, 2, 4, .... ) : leaf
+    ptree->nlist = arraylist_new(100);
+    ptree->postfix = arraylist_new(100);
+    ptree->prefix = arraylist_new(100);
+
+    tree_traveral_infix(ptree, __tree_build_node_list);
+    tree_traveral_postfix(ptree, __tree_build_postfix_node_list);
+    tree_traveral_prefix(ptree, __tree_build_prefix_node_list);
+
+    //	arraylist_trim((pArrayList)ptree->nlist);
+    int i = 0;
+    for (i = 0; i < ptree->nlist->size; i++)
+    {
+        ((pTreeNode)ptree->nlist->array[i])->id = i;
+    }
+}
+
+pTree __cafe_tree_new(tree_func_node_new new_tree_node_func, int size)
+{
+    pCafeTree pcafe = (pCafeTree)memory_new(1, sizeof(CafeTree));
+    pcafe->size_of_factor = size;
+    tree_new_fill((pTree)pcafe, cafe_tree_new_empty_node);
+    pcafe->super.size = sizeof(CafeTree);
+    return (pTree)pcafe;
+}
+
+void cafe_tree_parse_node(pTree ptree, pTreeNode ptnode)
+{
+    pCafeNode pcnode = (pCafeNode)ptnode;
+    char* name = pcnode->super.name;
+    if (name == NULL) return;
+    char* familysize = (char*)strchr(name, '_');
+    if (familysize)
+    {
+        *familysize++ = '\0';
+        pcnode->familysize = atoi(familysize);
+    }
+}
+
+
+pCafeTree cafe_tree_new(const char* sztree, family_size_range* range, double lambda, double mu)
+{
+    assert(range->min >= 0);
+    assert(range->root_min >= 0);
+    assert(range->root_max >= range->root_min);
+    assert(range->max >= range->min);
+    int rsize = range->root_max - range->root_min + 1;
+    int fsize = range->max - range->min + 1;
+
+    assert(strlen(sztree) < STRING_BUF_SIZE);
+    char buf[STRING_BUF_SIZE];
+    strcpy(buf, sztree);	// needs a writable buffer to work with
+    pCafeTree pcafe = (pCafeTree)phylogeny_load_from_string(
+        buf,
+        __cafe_tree_new,
+        cafe_tree_new_empty_node,
+        cafe_tree_parse_node,
+        rsize > fsize ? rsize : fsize);
+    if (pcafe == NULL) {
+        return NULL;
+    }
+
+    copy_range_to_tree(pcafe, range);
+
+    pcafe->lambda = lambda;
+    pcafe->mu = mu;
+
+    ((pCafeNode)pcafe->super.root)->birth_death_probabilities.lambda = lambda;
+    ((pCafeNode)pcafe->super.root)->birth_death_probabilities.mu = mu;
+    tree_build_node_list((pTree)pcafe);
+    return pcafe;
+}
+
+
+
 #ifdef DEBUG
 
 void viterbi_print(pCafeTree pcafe, int max)

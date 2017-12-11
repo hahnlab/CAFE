@@ -28,14 +28,77 @@ struct family_line_item
 	family_line_item() : max_p_value(0.0) {}
 };
 
+class tree_visualization
+{
+    virtual void serialize(std::ostream& ost) const = 0;
+    friend std::ostream& operator<<(std::ostream& ost, const tree_visualization& newick);
+};
+
+class newick_visualization : public tree_visualization
+{
+    pTree _tree;
+public:
+    newick_visualization(pTree tree) : _tree(tree)
+    {
+
+    }
+    virtual void serialize(std::ostream& ost) const;
+
+};
+
+struct coord
+{
+    double x;
+    double y;
+    coord() {}
+    coord(double _x, double _y) : x(_x), y(_y)
+    {
+
+    }
+};
+
+class svg_visualization : public tree_visualization
+{
+    pTree _tree;
+    int width;
+    int left_margin;
+    int right_margin;
+    int top_margin;
+    double legend_ratio;
+    double _font_size;
+    double precision;
+    int tip_space;
+    int longest_label;
+    double scaler;
+    void set_xcoord(pTreeNode node);
+    void set_ycoord(pTreeNode node);
+public:
+    svg_visualization(pTree tree);
+    virtual void serialize(std::ostream& ost) const;
+    std::map<int, coord> coordinates;
+    void plot_node(std::ostream& ost, pTreeNode node) const;
+    int height;
+    bool legend;
+
+};
+
+class ascii_visualization : public tree_visualization
+{
+    pTree _tree;
+    int _width;
+public:
+    ascii_visualization(pTree tree, int width) : _tree(tree), _width(width) {}
+    virtual void serialize(std::ostream& ost) const;
+};
+
 struct Report
 {
   enum Formats { Unknown, Text, HTML, JSON };
   static int report_format;
 
+  pCafeTree aTree;
 	std::string tree;
 	std::string lambda_tree;
-	std::string id_tree;
 	std::vector<double> lambdas;
 	std::vector<double> averageExpansion;
 	std::vector<change> changes;
@@ -57,6 +120,8 @@ struct report_parameters
   std::string name;
 };
 
+void draw_ascii_tree(pTree tree, int column_width);
+void update_depths(pTreeNode node, std::map<int, double>& depths, double curr_depth);
 
 report_parameters get_report_parameters(std::vector<std::string> tokens);
 int cafe_cmd_report(Globals& globals, std::vector<std::string> tokens);

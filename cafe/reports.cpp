@@ -1,11 +1,17 @@
+#include "../config.h"
+
 #include <stdexcept>
 #include <ostream>
+#include <iostream>
+
 #include <iomanip>
 #include <fstream>
 #include <iterator>
 #include <algorithm>
 
+#ifdef HAVE_STRINGS_H
 #include <strings.h>
+#endif // HAVE_STRINGS_H
 
 #include "reports.h"
 #include "likelihood_ratio.h"
@@ -357,6 +363,19 @@ std::ostream& operator<<(std::ostream& ost, const family_line_item& item)
 	return ost;
 }
 
+void newick_visualization::serialize(std::ostream& ost) const
+{
+    pString pstr = phylogeny_string_newick((pTree)_tree, cafe_tree_string_id, PS_SKIP_BL);
+    ost << pstr->buf;
+    string_free(pstr);
+}
+
+std::ostream& operator<<(std::ostream& ost, const tree_visualization& viz)
+{
+    viz.serialize(ost);
+    return ost;
+}
+
 Report::Report(pCafeParam param, viterbi_parameters& viterbi)
 {
 	pString pstr = phylogeny_string((pTree)param->pcafe, NULL);
@@ -378,9 +397,7 @@ Report::Report(pCafeParam param, viterbi_parameters& viterbi)
 	averageExpansion = viterbi.averageExpansion;
 	changes = viterbi.expandRemainDecrease;
 
-	pstr = phylogeny_string_newick((pTree)param->pcafe, cafe_tree_string_id, PS_SKIP_BL);
-	id_tree = pstr->buf;
-	string_free(pstr);
+    aTree = param->pcafe;
 
 	pArrayList nlist = param->pcafe->super.nlist;
 
@@ -431,7 +448,7 @@ std::ostream& operator<<(ostream& ost, const Report& report)
 
     ost << "# IDs of nodes:";
 
-    ost << report.id_tree << "\n";
+    ost << newick_visualization((pTree)report.aTree) << "\n";
 
     ost << "# Output format for: ' Average Expansion', 'Expansions', 'No Change', 'Contractions', and 'Branch-specific P-values' = (node ID, node ID): ";
     for (size_t i = 0; i < report.node_pairs.size(); ++i)
@@ -469,7 +486,7 @@ std::ostream& operator<<(ostream& ost, const Report& report)
     {
       ost << "<h3>Lambda tree</h3><p>" << report.lambda_tree << "</p>";
     }
-    ost << "<h3>ID tree</h3><p>" << report.id_tree << "</p>";
+    ost << "<h3>ID tree</h3><p>" << svg_visualization((pTree)report.aTree) << "</p>";
 
     ost << "<h3>Family Change Summary</h3>";
     ost << "<table><tr><th>Node Pairs</th>";
@@ -540,7 +557,7 @@ std::ostream& operator<<(ostream& ost, const Report& report)
     {
       ost << quoted("LambdaTree") << ":" << quoted(report.lambda_tree) << "," << endl;
     }
-    ost << quoted("IDTree") << ":" << quoted(report.id_tree) << "," << endl;
+    ost << quoted("IDTree") << ":\"" << newick_visualization((pTree)report.aTree) << "\"," << endl;
     ost << quoted("NodePairs") << ":[" << report.node_pairs << "]," << endl;
     write_viterbi(ost, report);
     ost << quoted("Families") << ":[" << report.family_line_items << "]" << endl;
@@ -907,5 +924,323 @@ int cafe_report_retrieve_data(const char* file, pCafeParam param, viterbi_parame
 	return 0;
 }
 
+    void update_depths(pTreeNode node, std::map<int, double>& depths, double curr_depth)
+    {
+        depths[node->id] = curr_depth;
+
+        if (!tree_is_leaf(node))
+        {
+            pPhylogenyNode child1 = (pPhylogenyNode)node->children->head->data;
+            update_depths((pTreeNode)child1, depths, curr_depth + child1->branchlength);
+
+            pPhylogenyNode child2 = (pPhylogenyNode)node->children->tail->data;
+            update_depths((pTreeNode)child2, depths, curr_depth + child2->branchlength);
+        }
+    }
+
+    void calc_row(pTreeNode node, map<int, int>& positions)
+    {
+        pTreeNode child1 = (pTreeNode)node->children->head->data;
+        pTreeNode child2 = (pTreeNode)node->children->tail->data;
+        if (!tree_is_leaf(node))
+        {
+            if (positions.find(child1->id) == positions.end())
+                calc_row(child1, positions);
+            if (positions.find(child2->id) == positions.end())
+                calc_row(child2, positions);
+            positions[node->id] = ((positions[child1->id] + positions[child2->id]) / 2.0);
+        }
+    }
+
+    map<int, int> get_row_positions(pTree tree)
+    {
+        map<int, int> positions;
+        int leaf_count = 0;
+        for (int i = 0; i < tree->nlist->size; ++i)
+        {
+            pTreeNode node = (pTreeNode)tree->nlist->array[i];
+            if (tree_is_leaf(node))
+            {
+                positions[node->id] = 2 * leaf_count;
+                leaf_count++;
+            }
+        }
+
+        calc_row(tree->root, positions);
+
+        return positions;
+    }
+
+    map<int, int> get_col_positions(pTree tree, int drawing_width)
+    {
+        int leaf_count = 0;
+        for (int i = 0; i < tree->nlist->size; ++i)
+        {
+            if (tree_is_leaf((pTreeNode)tree->nlist->array[i]))
+                leaf_count++;
+        }
+        std::map<int, double> depths;
+        update_depths(tree->root, depths, 0);
+        int max_depth = 0;
+        for (auto& d : depths)
+        {
+            if (d.second > max_depth)
+                max_depth = d.second;
+        }
+        int fudge_margin = int(ceil(log2(leaf_count)));
+        int cols_per_branch_unit = ((drawing_width - fudge_margin) / float(max_depth));
+        std::map<int, int> result;
+        for (auto& d : depths)
+        {
+            result[d.first] = int(d.second * cols_per_branch_unit + 1.0);
+        }
+
+        return result;
+    }
+
+    void draw_clade(pTreeNode node, vector<string>& char_matrix, int startcol, map<int, int>& col_positions, map<int, int>& row_positions)
+    {
+        int thiscol = col_positions[node->id];
+        int thisrow = row_positions[node->id];
+        // Draw a horizontal line
+        for (int col = startcol; col < thiscol; ++col)
+        {
+            char_matrix[thisrow][col] = '_';
+            if (!tree_is_leaf(node))
+            {
+                pTreeNode child1 = (pTreeNode)node->children->head->data;
+                pTreeNode child2 = (pTreeNode)node->children->tail->data;
+
+                // Draw a vertical line
+                int toprow = row_positions[child1->id];
+                int botrow = row_positions[child2->id];
+                for (int row = toprow + 1; row < botrow + 1; ++row)
+                {
+                    char_matrix[row][thiscol] = '|';
+                    // NB : Short terminal branches need something to stop rstrip()
+                    if ((col_positions[child1->id] - thiscol) < 2)
+                        char_matrix[toprow][thiscol] = ',';
+                    draw_clade(child1, char_matrix, thiscol + 1, col_positions, row_positions);
+                    draw_clade(child2, char_matrix, thiscol + 1, col_positions, row_positions);
+                }
+            }
+        }
+    }
 
 
+void ascii_visualization::serialize(std::ostream& ost) const
+{
+    int max_label_width = -1;
+    int leaf_count = 0;
+    for (int i = 0; i < _tree->nlist->size; ++i)
+    {
+        pTreeNode node = (pTreeNode)_tree->nlist->array[i];
+        if (tree_is_leaf(node))
+        {
+            leaf_count++;
+            int len = strlen(((pPhylogenyNode)node)->name);
+            if (len > max_label_width)
+                max_label_width = len;
+        }
+    }
+
+    int drawing_width = _width - max_label_width - 1;
+    int drawing_height = 2 * leaf_count - 1;
+    auto col_positions = get_col_positions(_tree, drawing_width);
+    auto row_positions = get_row_positions(_tree);
+    vector<string> char_matrix(drawing_height);
+    char_matrix.resize(drawing_height);
+    for (auto& v : char_matrix)
+    {
+        v.resize(drawing_width, ' ');
+    }
+    draw_clade(_tree->root, char_matrix, 0, col_positions, row_positions);
+    for (size_t i = 0; i < char_matrix.size(); ++i)
+    {
+        ost << char_matrix[i];
+        if (i % 2 == 0)
+        {
+            pPhylogenyNode node = (pPhylogenyNode)_tree->nlist->array[i];
+            ost << node->name;
+        }
+        ost << endl;
+
+    }
+}
+
+svg_visualization::svg_visualization(pTree tree) :
+    width(400), left_margin(10), right_margin(10), top_margin(5), _font_size(15), tip_space(20), _tree(tree)
+{
+    int canvas_width = width - left_margin - right_margin;
+
+    int longest_label = 0;
+    for (int i = 0; i < tree->nlist->size; ++i)
+    {
+        pTreeNode node = (pTreeNode)tree->nlist->array[i];
+        if (tree_is_leaf(node))
+        {
+            int len = strlen(((pPhylogenyNode)node)->name);
+            if (len > longest_label)
+                longest_label = len;
+        }
+    }
+
+    double label_len = (_font_size / 1.5) * longest_label;
+
+    map<int, double> depths;
+    update_depths(_tree->root, depths, 0);
+    double max_depth = 0;
+    for (auto& x : depths)
+    {
+        if (x.second > max_depth)
+            max_depth = x.second;
+    }
+    scaler = (canvas_width - label_len) / max_depth;
+
+    set_xcoord(_tree->root);
+    set_ycoord(_tree->root);
+}
+void svg_visualization::set_xcoord(pTreeNode node)
+{
+    /* create the coordinate info of the node's scaled branch length (edge
+    towards root) */
+    coord c(max(((pPhylogenyNode)node)->branchlength * scaler, 0.0), 0);
+
+    /* if the node has a parent then add the x coord of the parent such that
+    the branch is shifted towards right, otherwise, if the node is the root,
+    align it with the left margin */
+    if (node->parent)
+        c.x += coordinates[node->parent->id].x;
+    else
+    {
+        c.x += left_margin;
+    }
+
+    coordinates[node->id] = c;
+
+    if (!tree_is_leaf(node))
+    {
+        /* recursively set coordinates of the other nodes in a pre-order fashion */
+        pTreeNode child1 = (pTreeNode)node->children->head->data;
+        pTreeNode child2 = (pTreeNode)node->children->tail->data;
+        set_xcoord(child1);
+        set_xcoord(child2);
+    }
+}
+void svg_visualization::set_ycoord(pTreeNode node)
+{
+    if (!tree_is_leaf(node))
+    {
+        /* recursively set coordinates of the other nodes in a pre-order fashion */
+        pTreeNode child1 = (pTreeNode)node->children->head->data;
+        pTreeNode child2 = (pTreeNode)node->children->tail->data;
+        set_ycoord(child1);
+        set_ycoord(child2);
+
+        double ly, ry;
+        ly = coordinates.at(child1->id).y;
+        ry = coordinates.at(child2->id).y;
+        coordinates[node->id].y = (ly + ry) / 2.0;
+    }
+    else
+    {
+        static int tip_occ = 0;
+        const long legend_spacing = 10;
+        coordinates[node->id].y = tip_occ * tip_space + top_margin + legend_spacing;
+        tip_occ++;
+    }
+}
+
+    static void svg_line(std::ostream& ost, double x1, double y1, double x2, double y2, double stroke_width)
+    {
+        ost << "<line x1=\"" << x1 << "\" y1=\"" << y1 << "\" x2=\"" << x2 << "\" y2=\"" << y2 << "\" ";
+        ost << "stroke=\"#181818\" stroke-width=\"" << stroke_width << "\" />\n";
+    }
+
+    static void svg_text(std::ostream& ost, double x, double y, int size, string text)
+    {
+        ost << "<text x=\"" << x << "\" y=\"" << y << "\" ";
+        ost << "font-size=\"" << size << "\" font-family=\"Arial;\">" << text << "</text>\n";
+    }
+
+    void svg_visualization::plot_node(std::ostream& ost, pTreeNode node) const
+    {
+        const int stroke_width = 2;
+        double ly = 0.0, ry = 0.0;
+        double y = coordinates.at(node->id).y;
+        if (!tree_is_leaf(node))
+        {
+            pTreeNode child1 = (pTreeNode)node->children->head->data;
+            plot_node(ost, child1);
+            pTreeNode child2 = (pTreeNode)node->children->tail->data;
+            plot_node(ost, child2);
+
+            ly = coordinates.at(child1->id).y;
+            ry = coordinates.at(child2->id).y;
+        }
+        if (tree_is_root(_tree, node))
+        {
+            double x = left_margin + ((pPhylogenyNode)node)->branchlength*scaler;
+
+            svg_line(ost, x,
+                ly,
+                x,
+                ry,
+                stroke_width);
+            svg_text(ost, x + 5, y + _font_size / 3.0, _font_size, std::to_string(node->id));
+            
+            //            svg_circle(x, y, opt_svg_inner_radius);
+
+            /* draw tail */
+            svg_line(ost, left_margin, y, x, y, stroke_width);
+        }
+        else
+        {
+            double x = coordinates.at(node->id).x;
+            if (!tree_is_leaf(node))
+            {
+                // draw vertical line
+                svg_line(ost, x, ly,  x, ry, stroke_width);
+                svg_text(ost, x + 5, y + _font_size / 3.0, _font_size, std::to_string(node->id));
+
+                // svg_circle(x, y, opt_svg_inner_radius);
+            }
+            /* horizontal line */
+            double px = coordinates.at(node->parent->id).x;
+            svg_line(ost, px, y, x, y, stroke_width);
+
+            if (tree_is_leaf(node))
+            {
+                string str = std::to_string(node->id) + " (" + ((pPhylogenyNode)node)->name + ")";
+                svg_text(ost, x + 5, y + _font_size / 3.0, _font_size, str);
+            }
+            else
+                ost << "\n";
+        }
+    }
+
+void svg_visualization::serialize(std::ostream& ost) const
+{
+    ost << "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"" << width << "\" ";
+    ost << "height=\"" << height << "\" style=\"border: 1px solid #cccccc;\">\n";
+
+    int canvas_width = width - left_margin - right_margin;
+
+    if (legend)
+    {
+        double label_len = (_font_size / 1.5) * longest_label;
+
+        svg_line(ost, left_margin,
+            10,
+            (canvas_width - label_len)*legend_ratio + left_margin,
+            10,
+            3);
+
+        double x = (canvas_width - longest_label)*legend_ratio + left_margin + 5;
+        ost << "<text x=\"" << x << "\" y=\"" << 20 - _font_size / 3.0 << "\" font-size=\"" << (long)_font_size << "\" ";
+        ost << "font-family=\"Arial;\">" << "Node ID's" << "</text>\n";
+    }
+
+    plot_node(ost, _tree->root);
+    ost << "</svg>\n";
+}
