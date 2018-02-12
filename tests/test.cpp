@@ -8,6 +8,8 @@
 #include <math.h>
 #include <algorithm>
 
+#include "../config.h"
+
 #include "gene_family.h"
 
 extern "C" {
@@ -157,6 +159,26 @@ TEST(TreeTests, cafe_tree_clustered_likelihood)
 {
     pCafeTree tree = create_tree(range);
     cafe_tree_clustered_likelihood(tree, &cache);
+}
+
+TEST(TreeTests, node_set_birthdeath_matrix2)
+{
+    std::string str;
+
+    chooseln_cache_init2(&cache, 141);
+    pBirthDeathCacheArray bdcache = birthdeath_cache_init(140, &cache);
+    pTree tree = (pTree)create_tree(range);
+    pCafeNode node = (pCafeNode)tree_get_child(tree->root, 0);
+
+    node->super.branchlength = 68.7105;
+    node->birth_death_probabilities.lambda = 0.006335;
+    node->birth_death_probabilities.mu = -1;
+    node_set_birthdeath_matrix(node, bdcache, 0);
+    DOUBLES_EQUAL(0.195791, square_matrix_get(node->birthdeath_matrix, 5, 5), 0.00001);
+
+    node->super.branchlength = 68;
+    node_set_birthdeath_matrix(node, bdcache, 0);
+    DOUBLES_EQUAL(0.195791, square_matrix_get(node->birthdeath_matrix, 5, 5), 0.00001);
 }
 
 TEST(FirstTestGroup, TestStringSplitter)
@@ -698,6 +720,8 @@ TEST(FirstTestGroup, birthdeath_rate_with_log_alpha	)
 	DOUBLES_EQUAL(0.107, birthdeath_rate_with_log_alpha(40, 42, -1.37, 0.5, &cache), .001);
 	DOUBLES_EQUAL(0.006, birthdeath_rate_with_log_alpha(41, 34, -1.262, 0.4, &cache), .001);
 
+    DOUBLES_EQUAL(0.19466, birthdeath_rate_with_log_alpha(5, 5, -1.193124100281034, 0.3934553412290217, &cache), 0.0001);
+    DOUBLES_EQUAL(0.19466, birthdeath_rate_with_log_alpha(5, 5, -1.1931291703283662, 0.39345841643135504, &cache), 0.0001);
 
 }
 
@@ -773,6 +797,15 @@ TEST(FirstTestGroup, compute_birthdeath_rates)
 	DOUBLES_EQUAL(.007, square_matrix_get(matrix, 2, 0), 0.001);
 	DOUBLES_EQUAL(.131, square_matrix_get(matrix, 2, 1), 0.001);
 	DOUBLES_EQUAL(.591, square_matrix_get(matrix, 2, 2), 0.001);
+}
+
+TEST(FirstTestGroup, compute_birthdeath_rates2)
+{
+    chooseln_cache_init2(&cache, 141);
+    struct square_matrix* matrix = compute_birthdeath_rates(68.7105, 0.006335, -1, 140);
+    LONGS_EQUAL(141, matrix->size);
+
+    DOUBLES_EQUAL(0.19466, square_matrix_get(matrix, 5, 5), 0.00001);
 }
 
 std::ostream& operator<<(std::ostream& ost, square_matrix& matrix)
@@ -888,6 +921,15 @@ TEST(FirstTestGroup, reset_birthdeath_cache)
 	for (int i = 0; i < expected->size; ++i)
 		for (int j = 0; j < expected->size; ++j)
 			DOUBLES_EQUAL(square_matrix_get(expected, i, j), square_matrix_get(actual, i, j), .0001);
+}
+
+TEST(FirstTestGroup, birthdeath_cache_get_matrix_ignores_fractional_branch_lengths)
+{
+    pBirthDeathCacheArray bdcache = birthdeath_cache_init(range.root_max, &cache);
+    struct square_matrix* actual = birthdeath_cache_get_matrix(bdcache, 68.7105, 0.006335, -1);
+    DOUBLES_EQUAL(.195791, square_matrix_get(actual, 5, 5), .0001);
+    actual = birthdeath_cache_get_matrix(bdcache, 68, 0.006335, -1);
+    DOUBLES_EQUAL(.195791, square_matrix_get(actual, 5, 5), .0001);
 }
 
 TEST(FirstTestGroup, get_num_trials)
@@ -1286,6 +1328,7 @@ TEST(FirstTestGroup, initialize_k_bd_no_lambda)
 	param.pcafe = tree;
 	param.lambda_tree = NULL;
 	param.parameterized_k_value = 0;
+    param.fixcluster0 = 0;
 	initialize_k_bd(tree, NULL, 0, param.fixcluster0, &values[0]);
 
 	// The following assertions should be true for every node in the tree

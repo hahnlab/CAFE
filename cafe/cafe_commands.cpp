@@ -16,6 +16,7 @@
 #if defined(_OPENMP)
 #include <omp.h>
 #endif
+#include "../config.h"
 
 #include "lambda.h"
 #include "lambdamu.h"
