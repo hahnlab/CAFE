@@ -1,21 +1,21 @@
 @font-face {
-  font-family: 'Gill Sans';
-  src: url('font-gill-sans.ttf') format('truetype'); /* Chrome 4+, Firefox 3.5, Opera 10+, Safari 3—5 */
+    font-family: 'Gill Sans';
+    src: url('font-gill-sans.ttf') format('truetype'); /* Chrome 4+, Firefox 3.5, Opera 10+, Safari 3—5 */
 }
 
 @font-face{
-  font-family: 'Gill Sans Light';
-  src: url('font-gill-sans-light.ttf') format('truetype');
+    font-family: 'Gill Sans Light';
+    src: url('font-gill-sans-light.ttf') format('truetype');
 }
 
 @font-face{
-  font-family: 'Futura';
-  src: url('font-futura.ttf') format('truetype');
+    font-family: 'Futura';
+    src: url('font-futura.ttf') format('truetype');
 }
 
 @font-face{
-  font-family: 'Futura Bold';
-  src: url('font-futura-bold.ttf') format('truetype');
+    font-family: 'Futura Bold';
+    src: url('font-futura-bold.ttf') format('truetype');
 }
 
 .logo {
@@ -29,27 +29,11 @@
 }
 
 a:link {
-color: rgb(0,255,255);
+    color: rgb(0,255,255);
 }
 
 a:visited {
-color: rgb(255,255,0);
-}
-
-li.nav a:hover {
-    color: rgb(255,255,255);
-    background-position: 0 -25px;
-    padding-left: 50px;
-    text-transform: uppercase;
-}
-
-li a.nav {
-    text-decoration: none;
-    color: rgb(255,255,255);
-    padding-left: 50px;
-    display: inline-block;
-    height: 24px;
-    background: url('../images/coffee_button.png') no-repeat 0 0;
+    color: rgb(255,255,0);
 }
 
 nav {
@@ -93,15 +77,15 @@ h2 { color: rgb(255,255,255);
      font-size: 105%;
 }
 
+ul {
+    list-style-type: none;
+}
+
 ul.announce {
     padding: 0;
     color: rgb(255,255,255);
     font-size: 90%;
     line-height: 1.2em;
-}
-
-li.announce {
-    list-style-type: disc;
 }
 
 li {
@@ -111,10 +95,26 @@ li {
     margin-bottom: 20px;
     margin-left: 20px;
     text-align: left;
-    }
+}
 
-ol.install {
-    list-style-type: decimal;
+li.nav a:hover {
+    color: rgb(255,255,255);
+    background-position: 0 -25px;
+    padding-left: 50px;
+    text-transform: uppercase;
+}
+
+li a.nav {
+    text-decoration: none;
+    color: rgb(255,255,255);
+    padding-left: 50px;
+    display: inline-block;
+    height: 24px;
+    background: url('../images/coffee_button.png') no-repeat 0 0;
+}
+
+li.announce {
+    list-style-type: disc;
 }
 
 li.downl {
@@ -128,6 +128,10 @@ li.downl_un {
     font-size: 90%;
 }
 
+ol.install {
+    list-style-type: decimal;
+}
+
 p {
     font-family: 'Gill Sans Light';
     font-size: 90%;
@@ -138,4 +142,5 @@ p.indented {
 }
 
 body {
-    background: rgb(20,50,59); }
+    background: rgb(20,50,59);
+}
