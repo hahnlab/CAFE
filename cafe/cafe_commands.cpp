@@ -11,6 +11,8 @@
 #include <stdexcept>
 #include <stack>
 
+#include "../config.h"
+
 #include "lambda.h"
 #include "lambdamu.h"
 #include "cafe_commands.h"
