@@ -184,11 +184,9 @@ int cafe_cmd_exit(Globals& globals, std::vector<std::string> tokens)
 {
 	pCafeParam param = &globals.param;
 
-	if (param->str_log)
+	if (param->flog && param->flog != stdout)
 	{
-		string_free(param->str_log);
 		fclose(param->flog);
-		param->str_log = NULL;
 	}
 	if (tmp_lambda_tree) phylogeny_free(tmp_lambda_tree);
 	tmp_lambda_tree = NULL;
@@ -196,6 +194,29 @@ int cafe_cmd_exit(Globals& globals, std::vector<std::string> tokens)
 
 	return CAFE_SHELL_EXIT;
 }
+
+void set_log_file(Globals& globals, string log_file)
+{
+    if (globals.param.flog && globals.param.flog != stdout)
+    {
+        fclose(globals.param.flog);
+        globals.str_log.clear();
+    }
+    if (log_file == "stdout")
+    {
+        globals.param.flog = stdout;
+    }
+    else
+    {
+        globals.str_log = log_file;
+        if ((globals.param.flog = fopen(log_file.c_str(), "a")) == NULL)
+        {
+            globals.param.flog = stdout;
+            throw io_error("Log", log_file, true);
+        }
+    }
+}
+
 
 /**
 \ingroup Commands
@@ -211,7 +232,7 @@ int cafe_cmd_log(Globals& globals, std::vector<std::string> tokens)
 {
 	if (tokens.size() == 1)
 	{
-		printf("Log: %s\n", globals.param.flog == stdout ? "stdout" : globals.param.str_log->buf);
+		printf("Log: %s\n", globals.param.flog == stdout ? "stdout" : globals.str_log.c_str());
 	}
 	else
 	{
@@ -223,7 +244,7 @@ int cafe_cmd_log(Globals& globals, std::vector<std::string> tokens)
 			copy(tokens.begin()+1, tokens.end(), std::ostream_iterator<string>(ost, " "));
 			file_name = ost.str().substr(0, ost.str().size() - 1);
 		}
-		return set_log_file(&globals.param, file_name.c_str());
+		set_log_file(globals, file_name);
 	}
 	return 0;
 }
@@ -764,7 +785,7 @@ void copy_args_to_param(Globals& globals, struct load_args& args)
 	if (args.pvalue > 0.0)
 		globals.param.pvalue = args.pvalue;
 	if (!args.log_file_name.empty())
-		set_log_file(&globals.param, args.log_file_name.c_str());
+		set_log_file(globals, args.log_file_name);
 }
 
 bool endsWith(std::string const &fullString, std::string const &ending) {
@@ -1314,7 +1335,7 @@ int cafe_cmd_lhtest(Globals& globals, std::vector<std::string> tokens)
 		std::string fname = files[i];
 		if (fname[0] == '.') continue;
 		cafe_shell_dispatch_commandf(globals, "load -i %s/%s -p 0.01 -t 10 -l %s",
-			args.directory.c_str(), fname.c_str(), param->str_log ? param->str_log->buf : "stdout");
+			args.directory.c_str(), fname.c_str(), globals.str_log.empty() ? "stdout" : globals.str_log.c_str());
 		cafe_shell_dispatch_commandf(globals, "tree %s", pstr_cafe->buf);
 		cafe_shell_dispatch_commandf(globals, "lambda -s -l %lf", args.lambda);
 		try
@@ -1648,7 +1669,7 @@ int cafe_cmd_rootdist(Globals& globals, std::vector<std::string> tokens)
 
 		cafe_log(param, "-----------------------------------------------------------\n");
 		cafe_log(param, "Family information: %s\n", param->str_fdata->buf);
-		cafe_log(param, "Log: %s\n", param->flog == stdout ? "stdout" : param->str_log->buf);
+		cafe_log(param, "Log: %s\n", param->flog == stdout ? "stdout" : globals.str_log.c_str());
 		if (param->pcafe)
 		{
 			pString pstr = phylogeny_string((pTree)param->pcafe, NULL);
@@ -1728,7 +1749,7 @@ void log_param_values(std::ostream& ost, Globals& globals)
 
 	ost << "-----------------------------------------------------------\n";
 	ost << "Family information: " << param->str_fdata->buf << "\n";
-	ost << "Log: " << (param->flog == stdout ? "stdout" : param->str_log->buf) << "\n";
+	ost << "Log: " << (param->flog == stdout ? "stdout" : globals.str_log.c_str()) << "\n";
 	if (param->pcafe)
 	{
 		pString pstr = phylogeny_string((pTree)param->pcafe, NULL);

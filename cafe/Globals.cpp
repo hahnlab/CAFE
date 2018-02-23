@@ -55,7 +55,6 @@ Globals::Globals() : viterbi(new viterbi_parameters()), validator(new cross_vali
 	param.quiet = 0;
 	param.root_dist = NULL;
 	param.str_fdata = NULL;
-	param.str_log = NULL;
 	param.sum_branch_length = 0;
 
 	viterbi->cutPvalues = NULL;

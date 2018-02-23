@@ -25,8 +25,6 @@ typedef struct
 } ErrorMeasure;
 typedef ErrorMeasure* pErrorMeasure;
  
-int set_log_file(pCafeParam param, const char *file_name);
-
 void initialize_k_bd(pCafeTree pcafe, pTree lambda_tree, int num_values, int fixcluster, double *parameters);
 void set_birth_death_probabilities4(struct probabilities *probs, int num_lambdas, int fix_cluster, int taxa_id, double* parameters);
 

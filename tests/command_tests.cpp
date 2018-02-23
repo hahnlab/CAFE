@@ -43,7 +43,6 @@ TEST_GROUP(CommandTests)
 		globals.param.pfamily = NULL;
 		globals.param.quiet = 1;
 		globals.param.lambda = NULL;
-		globals.param.str_log = NULL;
 		globals.param.flog = stdout;
 	}
 };
@@ -115,7 +114,6 @@ TEST(CommandTests, cafe_cmd_exit)
 {
 	// all of these are values that could potentially be freed on exit
 	pCafeParam param = &globals.param;
-	param->str_log = NULL;
 	param->lambda_tree = NULL;
 	input_values_construct(&param->input, 10);
 	param->pfamily = NULL;
@@ -181,7 +179,7 @@ TEST(CommandTests, cafe_cmd_log)
 
 	tokens[1] = "log.txt";
 	cafe_cmd_log(globals, tokens);
-	STRCMP_EQUAL("log.txt", globals.param.str_log->buf);
+	STRCMP_EQUAL("log.txt", globals.str_log.c_str());
 }
 
 TEST(CommandTests, get_load_arguments)

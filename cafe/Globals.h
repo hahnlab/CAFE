@@ -26,6 +26,8 @@ public:
 
 	int  num_random_samples;
 
+    std::string str_log;
+
 };
 
 #endif

@@ -397,33 +397,6 @@ void set_range_from_family(family_size_range* range, pCafeFamily family)
 	init_family_size(range, family->max_size);
 }
 
-int set_log_file(pCafeParam param, const char *log_file)
-{
-	if ( param->str_log )
-	{
-		string_free( param->str_log );
-		fclose( param->flog );
-		param->str_log = NULL;
-	}
-	if ( !strcmp(log_file, "stdout" ) )
-	{
-		param->str_log = NULL;
-		param->flog = stdout;
-	}
-	else
-	{
-		param->str_log = string_new_with_string(log_file);
-		if (  ( param->flog = fopen( param->str_log->buf, "a" ) ) == NULL )
-		{
-			fprintf(stderr, "ERROR(log): Cannot open log file: %s\n", param->str_log->buf );	
-			string_free( param->str_log );
-			param->flog = stdout;
-			return -1;
-		}
-	}
-	return 0;
-}
-
 void __cafe_tree_string_gainloss(pString pstr, pPhylogenyNode ptnode)
 {
 	int familysize =  ((pCafeNode)ptnode)->familysize;

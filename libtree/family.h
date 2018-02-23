@@ -115,7 +115,7 @@ void cafe_shell_set_lambdas(pCafeParam param, double* lambda);
 struct tagCafeParam
 {
 	FILE *fout, *flog;
-	pString str_fdata, str_log;
+	pString str_fdata;
 
 	/// tree information stored when the user calls the "tree" command
 	pCafeTree pcafe;		
