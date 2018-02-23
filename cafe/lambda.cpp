@@ -51,7 +51,11 @@ void lambda_arg_base::load(vector<Argument> pargs)
 		{
 			checkconv = true;
 		}
-		else if (!strcmp(parg->opt.c_str(), "-t"))
+        else if (parg->opt == "-score")
+        {
+            score = true;
+        }
+        else if (!strcmp(parg->opt.c_str(), "-t"))
 		{
 			bdone = __cafe_cmd_lambda_tree(cafe_param, parg->argv[0], parg->argc > 1 ? parg->argv[1] : NULL);
 			if (bdone < 0) {
@@ -382,6 +386,10 @@ int cafe_cmd_lambda(Globals& globals, vector<string> tokens)
 	else {
 		lambda_set(param, params);
 		cafe_shell_set_lambda(param, param->input.parameters);
+        if (params.score)
+        {
+            __cafe_best_lambda_search(globals.param.lambda, &globals.param);
+        }
 	}
 		
 	FILE* fpout = stdout;

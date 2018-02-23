@@ -13,10 +13,11 @@
 #include <stdexcept>
 #include <stack>
 
+#include "../config.h"
+
 #if defined(_OPENMP)
 #include <omp.h>
 #endif
-#include "../config.h"
 
 #include "lambda.h"
 #include "lambdamu.h"
@@ -1694,6 +1695,10 @@ int cafe_cmd_rootdist(Globals& globals, std::vector<std::string> tokens)
 		string_pchar_chomp(buf);
 		pArrayList data = string_pchar_split(buf, ' ');
 		pArrayList max = string_pchar_split((char *)data->array[data->size - 1], ':');
+        if (max->size < 2)
+        {
+            throw std::runtime_error("Invalid format in rootdist file");
+        }
 		max_rootsize = atoi((char*)max->array[1]);
 		arraylist_free(data, NULL);
 		if (param->root_dist) { memory_free(param->root_dist); param->root_dist = NULL; }

@@ -33,6 +33,7 @@ struct lambda_arg_base
 	std::vector<double> k_weights;
 	pTree lambda_tree;
 	bool checkconv;
+    bool score;
 	int num_params;
 	int fixcluster0;
 
