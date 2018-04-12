@@ -3,8 +3,6 @@
 #include <fstream>
 #include <iostream>
 
-#include "CppUTest/TestHarness.h"
-
 #include <error_model.h>
 #include <gene_family.h>
 #include "cafe_commands.h"
@@ -14,6 +12,8 @@ extern "C" {
 //#include <tree.h>
 #include <cafe.h>
 };
+
+#include "CppUTest/TestHarness.h"
 
 
 

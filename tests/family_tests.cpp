@@ -1,7 +1,6 @@
 #include <sstream>
 #include <fstream>
 
-#include "CppUTest/TestHarness.h"
 #include "gene_family.h"
 #include "viterbi.h"
 #include "cafe_commands.h"
@@ -12,6 +11,8 @@ extern "C" {
 #include <tree.h>
 #include <cafe.h>
 };
+
+#include "CppUTest/TestHarness.h"
 
 static pCafeTree create_tree()
 {
