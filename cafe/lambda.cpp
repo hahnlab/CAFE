@@ -14,6 +14,7 @@ extern "C" {
 #include <algorithm>
 #include <iostream>
 #include <numeric>
+#include <cmath>
 
 #include "lambda.h"
 #include "cafe_commands.h"

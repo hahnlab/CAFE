@@ -126,6 +126,7 @@ TEST(LambdaTests, TestLambdaTree)
 	init_cafe_tree(globals);
 	char strs[2][100];
 	strcpy(strs[0], "(((2,2)1,(1,1)1)1,1)");
+    strs[1][0] = 0;
 
 	Argument arg;
 	arg.argc = 1;

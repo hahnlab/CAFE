@@ -20,12 +20,12 @@ after_success:
 - curl --upload-file $TRAVIS_BUILD_DIR/*.tar.gz -u "$FTP_USER:$FTP_PASSWORD" $FTP_TARGET
 - cd $TRAVIS_BUILD_DIR/src_docs
 #- ./publish.sh   # publish documentation manually for now
-deploy:
-  provider: pages
-  local_dir: $TRAVIS_BUILD_DIR/distro
-  skip_cleanup: true
-  github_token: $DEPLOY_TOKEN # Set in travis-ci.org dashboard
-  on:
-    branch: master
+#deploy:
+#  provider: pages
+#  local_dir: $TRAVIS_BUILD_DIR/distro
+#  skip_cleanup: true
+#  github_token: $DEPLOY_TOKEN # Set in travis-ci.org dashboard
+#  on:
+#    branch: master
 notifications:
   slack: hahnlab-cafe:qWd7TTjmDiENiF99zgek98Rr

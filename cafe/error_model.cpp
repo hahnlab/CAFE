@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <fstream>
 #include <iostream>
+#include <cmath>
 
 #include "error_model.h"
 #include "cafe_commands.h"
