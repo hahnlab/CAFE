@@ -13,8 +13,8 @@ ax_blas_ok=no
 
 # Get an appropriate command line for PGI compiler
 AC_SUBST(ALL_WARNINGS,-Wall)
-wallswitch=`$CC -Wall 2>/dev/null`
-if ! echo "$wallswitch" | grep -i "Error-Unknown" >/dev/null ; then
+wallswitch=`$CC -Wall 2>&1`
+if echo "$wallswitch" | grep -i "Error-Unknown" >/dev/null ; then
         AC_SUBST(ALL_WARNINGS,-Minform=inform)
 else
         AC_SUBST(C_STANDARD,-std=c11)
