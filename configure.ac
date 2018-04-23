@@ -18,6 +18,7 @@ if echo "$wallswitch" | grep -i "Error-Unknown" >/dev/null ; then
         AC_SUBST(ALL_WARNINGS,-Minform=inform)
 else
         AC_SUBST(C_STANDARD,-std=c11)
+        AC_SUBST(DYNAMIC,-rdynamic)
 fi
 
 AC_SEARCH_LIBS(sgemm, mkl_intel_lp64,

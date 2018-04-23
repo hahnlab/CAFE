@@ -56,8 +56,8 @@ RELCFLAGS = -O3 -DNDEBUG
 TESTDIR = test
 TESTEXE = $(TESTDIR)/runtests
 TESTOBJS=$(addprefix $(TESTDIR)/, $(TESTSRCS:.cpp=.o)) $(addprefix $(TESTDIR)/, $(OBJS))
-TESTCFLAGS = -g -rdynamic -O0 -DDEBUG
-TESTCPPFLAGS = -g -rdynamic -O0 -DDEBUG
+TESTCFLAGS = -g @DYNAMIC@ -O0 -DDEBUG
+TESTCPPFLAGS = -g @DYNAMIC@ -O0 -DDEBUG
 
 .PHONY: all clean debug prep release remake test
 
