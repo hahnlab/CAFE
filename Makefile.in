@@ -10,8 +10,8 @@ prefix=/usr/local
 #
 VPATH = cafe:libcommon:libtree:tests
 INCLUDE:=-I cafe -I libtree -I libcommon
-CFLAGS = -Wall -std=c11 $(INCLUDE) @OPENMP_CXXFLAGS@
-CXXFLAGS = -Wall -std=c++11 $(INCLUDE) @OPENMP_CXXFLAGS@
+CFLAGS = @ALL_WARNINGS@ @C_STANDARD@ $(INCLUDE) @OPENMP_CXXFLAGS@
+CXXFLAGS = @ALL_WARNINGS@ -std=c++11 $(INCLUDE) @OPENMP_CXXFLAGS@
 LINKFLAGS = -lpthread -lm @LIBS@ 
 TESTLIBS=-lCppUTest -lCppUTestExt 
 AUX = 	CHANGELOG.md configure INSTALL LICENSE Makefile.in mcl2rawcafe.py README.md
