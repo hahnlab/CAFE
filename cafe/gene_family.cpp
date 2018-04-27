@@ -130,8 +130,11 @@ pCafeFamily load_gene_families(std::istream& ist, char separator, int max_size)
 
   vector<string> species_list = string_split(buf, separator);
   if (species_list.size() < 2)
-    throw runtime_error("Failed to identify species for gene families");
-
+  {
+      vector<string> t;
+      species_list.swap(t); // guarantees that memory won't leak
+      throw runtime_error("Failed to identify species for gene families");
+  }
   species_list.erase(species_list.begin(), species_list.begin()+2); // first two items are description and ID - delete them
   pCafeFamily pcf = cafe_family_init(species_list);
 
