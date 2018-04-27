@@ -295,7 +295,9 @@ void compute_internal_node_likelihood(pTree ptree, pTreeNode ptnode)
     pCafeNode child1 = (pCafeNode)((pTreeNode)pcnode)->children->head->data;
     pCafeNode child2 = (pCafeNode)((pTreeNode)pcnode)->children->tail->data;
 
+#if _OPENMP > 201307    // tasks aren't supported by older OpenMP versions
 #pragma omp parallel
+#endif
 #pragma omp single nowait
     {
 #pragma omp task
