@@ -5,7 +5,11 @@ Dockerfiles for various environments to be supported by CAFE
 ## Getting Started
 
 The Dockerfiles represent the supported compilation platforms officially supported by CAFE: 
-Ubuntu 17.10,Ubuntu 14.04 with Clang, and Debian with gcc 5.4.
+* Ubuntu 14.04 (trusty) with Clang 3.4
+* Ubuntu 16.04 (xenial) with PGI Community Edition 17.10 
+* Ubuntu 17.10 (artful) with GCC 7.2,
+* Debian 8 (jessie) with gcc 5.4.
+
 
 ### Running the tests
 
