@@ -7,6 +7,7 @@
 #include <iostream>
 #include <math.h>
 #include <algorithm>
+#include <queue>
 
 #include "../config.h"
 
@@ -179,6 +180,47 @@ TEST(TreeTests, node_set_birthdeath_matrix2)
     node->super.branchlength = 68;
     node_set_birthdeath_matrix(node, bdcache, 0);
     DOUBLES_EQUAL(0.195791, square_matrix_get(node->birthdeath_matrix, 5, 5), 0.00001);
+}
+
+TEST(TreeTests, thousand_node_tree_to_string_and_back)
+{
+    pCafeTree pcafe = (pCafeTree)memory_new(1, sizeof(CafeTree));
+    tree_new_fill((pTree)pcafe, cafe_tree_new_empty_node);
+    pcafe->super.size = sizeof(CafeTree);
+    std::queue<pTreeNode> nodes;
+
+    pTreeNode node = cafe_tree_new_empty_node((pTree)pcafe);
+    ((pPhylogenyNode)node)->name = strdup("Root");
+    pcafe->super.root = node;
+
+    nodes.push(node);
+    int cur_count = 1;
+    while (cur_count < 1000)
+    {
+        auto parent = nodes.front();
+        parent->children = vector_new();
+        pTreeNode child1 = cafe_tree_new_empty_node((pTree)pcafe);
+        
+        ((pPhylogenyNode)child1)->name = (char *)calloc(20, sizeof(char));
+        sprintf(((pPhylogenyNode)child1)->name, "Node_%d", cur_count++);
+        vector_add(parent->children, child1);
+        child1->parent = parent;
+        pTreeNode child2 = cafe_tree_new_empty_node((pTree)pcafe);
+        ((pPhylogenyNode)child2)->name = (char *)calloc(20, sizeof(char));
+        sprintf(((pPhylogenyNode)child2)->name, "Node_%d", cur_count++);
+        vector_add(parent->children, child2);
+        child2->parent = parent;
+        nodes.push(child1);
+        nodes.push(child2);
+        nodes.pop();
+    }
+    pString pstr = phylogeny_string((pTree)pcafe, NULL);
+
+    pCafeTree actual = cafe_tree_new(pstr->buf, &range, 0.01, 0);
+
+    CHECK_EQUAL(1001, actual->super.nlist->size);
+
+    cafe_tree_free(pcafe);
 }
 
 TEST(FirstTestGroup, TestStringSplitter)
@@ -1754,3 +1796,4 @@ int main(int ac, char** av)
 {
 	return CommandLineTestRunner::RunAllTests(ac, av);
 }
+
