@@ -2,6 +2,7 @@ var group__Commands =
 [
     [ "cafe_cmd_date", "group__Commands.html#gacc4c3cc2a879f25550ce7fffa2978f74", null ],
     [ "cafe_cmd_echo", "group__Commands.html#gad362d01ad5826f9221ac14884d95a7b8", null ],
+    [ "cafe_cmd_errormodel", "group__Commands.html#ga81f3613d236af1c72ce528caeba47528", null ],
     [ "cafe_cmd_exit", "group__Commands.html#ga804e2afb586038ebe5e5f419cad905ed", null ],
     [ "cafe_cmd_generate_random_family", "group__Commands.html#ga80724152155f3a4417b57b38339ed983", null ],
     [ "cafe_cmd_list", "group__Commands.html#ga7571acba90600c49b3d49e056e40ac6e", null ],

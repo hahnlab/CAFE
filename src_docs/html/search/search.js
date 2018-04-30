@@ -19,7 +19,7 @@ var indexSectionsWithContent =
   9: "o",
   10: "_abcefhilmpst",
   11: "c",
-  12: "cet"
+  12: "celrt"
 };
 
 var indexSectionNames =

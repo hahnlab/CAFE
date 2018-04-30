@@ -8,7 +8,7 @@ var searchData=
   ['cafe_5fcluster_5flambda_5fmu_5fsearch',['cafe_cluster_lambda_mu_search',['../lambdamu_8cpp.html#a5fd8bd215a8fbe962f325e25047a12b6',1,'cafe_cluster_lambda_mu_search(double *parameters, void *args):&#160;lambdamu.cpp'],['../lambdamu_8h.html#a5fd8bd215a8fbe962f325e25047a12b6',1,'cafe_cluster_lambda_mu_search(double *parameters, void *args):&#160;lambdamu.cpp']]],
   ['cafe_5fcmd_5fdate',['cafe_cmd_date',['../group__Commands.html#gacc4c3cc2a879f25550ce7fffa2978f74',1,'cafe_commands.cpp']]],
   ['cafe_5fcmd_5fecho',['cafe_cmd_echo',['../group__Commands.html#gad362d01ad5826f9221ac14884d95a7b8',1,'cafe_commands.cpp']]],
-  ['cafe_5fcmd_5ferrormodel',['cafe_cmd_errormodel',['../cafe__commands_8cpp.html#a81f3613d236af1c72ce528caeba47528',1,'cafe_commands.cpp']]],
+  ['cafe_5fcmd_5ferrormodel',['cafe_cmd_errormodel',['../group__Commands.html#ga81f3613d236af1c72ce528caeba47528',1,'cafe_commands.cpp']]],
   ['cafe_5fcmd_5festerror',['cafe_cmd_esterror',['../cafe__commands_8cpp.html#a3e29659616e6c397826ed93cb1101d8e',1,'cafe_commands.cpp']]],
   ['cafe_5fcmd_5fexit',['cafe_cmd_exit',['../group__Commands.html#ga804e2afb586038ebe5e5f419cad905ed',1,'cafe_commands.cpp']]],
   ['cafe_5fcmd_5fgenerate_5frandom_5ffamily',['cafe_cmd_generate_random_family',['../group__Commands.html#ga80724152155f3a4417b57b38339ed983',1,'cafe_commands.cpp']]],
@@ -209,5 +209,6 @@ var searchData=
   ['cut_5fpvalues',['cut_pvalues',['../structfamily__line__item.html#ae6118680263cc0b0821b61db477267ad',1,'family_line_item']]],
   ['cutbranch',['CutBranch',['../classCutBranch.html',1,'CutBranch'],['../classCutBranch.html#a26061601c5c217754e9a341cf08613d6',1,'CutBranch::CutBranch()']]],
   ['cutpvalues',['cutPvalues',['../classviterbi__parameters.html#ae1ed969897870f89cddc4c07a78c6e54',1,'viterbi_parameters']]],
-  ['change_20log',['Change Log',['../md__mnt_c_Users_befulton_Documents_GIT_CAFE_CHANGELOG.html',1,'']]]
+  ['change_20log',['Change Log',['../md__mnt_c_Users_befulton_Documents_GIT_CAFE_CHANGELOG.html',1,'']]],
+  ['cafe_20usage',['CAFE Usage',['../Usage.html',1,'']]]
 ];

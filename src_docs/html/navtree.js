@@ -1,14 +1,18 @@
 var NAVTREE =
 [
   [ "CAFE", "index.html", [
-    [ "Usage", "Usage.html", [
+    [ "CAFE Usage", "Usage.html", [
       [ "Commands", "Usage.html#Commands", null ],
       [ "Caferror", "Usage.html#Caferror", [
         [ "Example", "Usage.html#Example", null ],
         [ "Command line options", "Usage.html#options", null ]
       ] ]
     ] ],
+    [ "Tree", "Tree.html", null ],
     [ "Error Model", "ErrorModel.html", null ],
+    [ "Load", "Load.html", null ],
+    [ "Lambda", "Lambda.html", null ],
+    [ "Reports", "Report.html", null ],
     [ "Change Log", "md__mnt_c_Users_befulton_Documents_GIT_CAFE_CHANGELOG.html", null ],
     [ "Testing in Various Environments", "md__mnt_c_Users_befulton_Documents_GIT_CAFE_tests_Docker_readme.html", null ],
     [ "Modules", "modules.html", "modules" ],
@@ -52,15 +56,15 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "ErrorModel.html",
-"cafe__commands_8h.html#aba7cbfbbe6d65bb19e1bbb675874a88e",
-"classcross__validator.html#ac5723ccec1999a3e508355482d59f465",
-"functions_d.html",
-"histogram_8c.html#a845213c0f1e3bd362be092ea91676306",
-"mathfunc_8h.html#a95ae3d35765701d3d63e6c6438c91a3f",
-"reports_8h.html#a0b45febaf9aa2c877a38dec8e8873f1c",
-"structhash__table__element.html#ad593b6162bbc460f156f6a67a7d02c04",
-"test_8cpp.html#a446615307b0eb823a8dc1ad166c3007d",
-"utils__string_8h.html#a6a31a576af1c3e5048319790af4688ea"
+"cafe__commands_8h.html#aa815aa35cb1ab8394c7107036deae1eb",
+"classcross__validator.html#a17df66c00530275e58d8e1e3236d8dfc",
+"functions.html",
+"histogram_8c.html#a264c3d81acda8a85702caafffadf6143",
+"mathfunc_8h.html#a8a8cf00084684d31bd1385a85ec4b63f",
+"reports_8cpp.html#ac039fd06be76f5c24a11ecd980a81249",
+"structhash__table.html#add4d03acc47b7cbef17c96396fcc9cc6",
+"test_8cpp.html#a3815ef5bd0938f30046d332856785b4f",
+"utils__string_8h.html#a3585a2bd97585d7b3e807b046b124325"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

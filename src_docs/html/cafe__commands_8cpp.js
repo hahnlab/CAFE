@@ -15,7 +15,7 @@ var cafe__commands_8cpp =
     [ "build_argument_list", "cafe__commands_8cpp.html#a42a572db5015132cb834f74dc5483085", null ],
     [ "cafe_cmd_date", "cafe__commands_8cpp.html#gacc4c3cc2a879f25550ce7fffa2978f74", null ],
     [ "cafe_cmd_echo", "cafe__commands_8cpp.html#gad362d01ad5826f9221ac14884d95a7b8", null ],
-    [ "cafe_cmd_errormodel", "cafe__commands_8cpp.html#a81f3613d236af1c72ce528caeba47528", null ],
+    [ "cafe_cmd_errormodel", "cafe__commands_8cpp.html#ga81f3613d236af1c72ce528caeba47528", null ],
     [ "cafe_cmd_esterror", "cafe__commands_8cpp.html#a3e29659616e6c397826ed93cb1101d8e", null ],
     [ "cafe_cmd_exit", "cafe__commands_8cpp.html#ga804e2afb586038ebe5e5f419cad905ed", null ],
     [ "cafe_cmd_generate_random_family", "cafe__commands_8cpp.html#ga80724152155f3a4417b57b38339ed983", null ],

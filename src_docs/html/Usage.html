@@ -4,7 +4,7 @@
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.6"/>
-<title>CAFE: $title</title>
+<title>CAFE: CAFE Usage</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -86,6 +86,10 @@ $(document).ready(function(){initNavTree('Usage.html','');});
 </iframe>
 </div>
 
+<div class="header">
+  <div class="headertitle">
+<div class="title">CAFE Usage </div>  </div>
+</div><!--header-->
 <div class="contents">
 <div class="textblock"><p>In order to give CAFE commands, you must do it interactively through its shell, or by providing CAFE with a shell script listing CAFE commands. To run CAFE interactively, type <b>cafe</b> at your shell prompt. If all is well, the prompt should change to <b></b> #. At this point you may now begin inputting commands. To exit the shell, type <b>exit</b>. If you need to run multiple analyses using similar inputs, you can provide CAFE with a shell script. These scripts should be saved as text files with UNIX line endings. Scripts may be then executed from your OS or CAFE's shell. Here is an example:</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#! cafe </span></div>
@@ -96,27 +100,36 @@ $(document).ready(function(){initNavTree('Usage.html','');});
 <div class="line">lambda -s -t (((1,1)1,(2,2)2)2,2) </div>
 <div class="line">report resultfile</div>
 </div><!-- fragment --><p>In this example, the first line indicates the location of the CAFE shell program. Subsequently, lines beginning with "#" are regarded as comments. Thus, the example above only executes lines 4, 5, 6 and 7. Remember that to run a script you must make the file executable from your OS shell prompt (in the UNIX shell, this is done with <em>chmod a+x filename</em>). CAFE will automatically exit after the last command in the script is completed, so it is not necessary to specify the exit command.</p>
+<p>Running an analysis will generally require at least four commands:</p>
+<ol type="1">
+<li><em>load</em> to specify the gene families to analyze</li>
+<li><em>tree</em> to specify the structure of the phylogenetic tree</li>
+<li><em>lambda</em> to specify a specific lambda value or to have CAFE search for a value</li>
+<li><em>report</em> to return the results of running the analysis</li>
+</ol>
 <h1><a class="anchor" id="Commands"></a>
 Commands</h1>
 <ul>
 <li><a class="el" href="group__Commands.html#gacc4c3cc2a879f25550ce7fffa2978f74">Date</a></li>
 <li><a class="el" href="group__Commands.html#gad362d01ad5826f9221ac14884d95a7b8">Echo</a></li>
+<li><a class="el" href="ErrorModel.html">Error Model</a></li>
 <li><a class="el" href="group__Commands.html#ga804e2afb586038ebe5e5f419cad905ed">Exit</a></li>
 <li><a class="el" href="group__Commands.html#ga80724152155f3a4417b57b38339ed983">Generate_Random_Family</a></li>
+<li><a class="el" href="Lambda.html">Lambda</a></li>
 <li><a class="el" href="group__Commands.html#ga7571acba90600c49b3d49e056e40ac6e">List</a></li>
-<li><a class="el" href="group__Commands.html#ga0d7475baa4c442681303ad2cb5e6e661">Load</a></li>
+<li><a class="el" href="Load.html">Load</a></li>
 <li><a class="el" href="group__Commands.html#ga7ac8c9725ab55a00f78d7afc594bc831">Log</a></li>
 <li><a class="el" href="group__Commands.html#ga7ef9c67ebfe8352252ae0390df57dd72">PValue</a></li>
-<li><a class="el" href="group__Commands.html#ga253a988faf635d35659dd94f7817557d">Report</a></li>
+<li><a class="el" href="Report.html">Reports</a></li>
 <li><a class="el" href="group__Commands.html#gab755dba468550331490767c8185e8f93">Rootdist</a></li>
 <li><a class="el" href="group__Commands.html#gae0632720183e106d6289700af52eb3af">Seed</a></li>
 <li><a class="el" href="group__Commands.html#gac324109f83ca3a0904aec1eb1ee147a3">Source</a></li>
-<li><a class="el" href="group__Commands.html#ga7af77816ceb043abbb3306295e2e6b84">Tree</a></li>
+<li><a class="el" href="Tree.html">Tree</a></li>
 <li><a class="el" href="group__Commands.html#ga8ef6aa988b313cc25eddda2d828e9d3f">Version</a></li>
 </ul>
 <h1><a class="anchor" id="Caferror"></a>
 Caferror</h1>
-<p><a class="el" href="caferror_8py.html">caferror.py</a> is a Python script included with the CAFE v4.0 and later software packages that uses the errormodel command iteratively to estimate error in an input data set with no prior knowledge of the error distribution. <a class="el" href="caferror_8py.html">caferror.py</a> uses the likelihood scores of runs with varying error models to perform a precise grid search of the likelihood surface. The program fiÅrst estimates average global error across all species in the input phylogeny and then may continue to individual species estimations depending on -s.</p>
+<p><a class="el" href="caferror_8py.html">caferror.py</a> is a Python script included with the CAFE v4.0 and later software packages that uses the errormodel command iteratively to estimate error in an input data set with no prior knowledge of the error distribution. <a class="el" href="caferror_8py.html">caferror.py</a> uses the likelihood scores of runs with varying error models to perform a precise grid search of the likelihood surface. The program first estimates average global error across all species in the input phylogeny and then may continue to individual species estimations depending on -s.</p>
 <h2><a class="anchor" id="Example"></a>
 Example</h2>
 <div class="fragment"><div class="line">$ python caferror.py [-i shell script filename] [-e initial error value] [-d output directory name] [-l log filename] [-o output filename] [-s value]</div>

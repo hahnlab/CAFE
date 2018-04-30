@@ -37,7 +37,7 @@ var searchData=
   ['release',['release',['../namespaceconf.html#a325dc746d8bf05c54d26351c35a21d90',1,'conf']]],
   ['remain',['remain',['../structchange.html#a14a6de090b0f12110e38094cc52e8a79',1,'change::remain()'],['../structArrayList.html#a07833455649c4c98ec7ef964c96ce16e',1,'ArrayList::remain()']]],
   ['remove_5ferror_5fmodel',['remove_error_model',['../error__model_8cpp.html#a8f26c617b7d8302189b0c6a1436c0034',1,'remove_error_model(pCafeFamily family, pCafeTree pcafe, std::string species_name):&#160;error_model.cpp'],['../error__model_8h.html#a8f26c617b7d8302189b0c6a1436c0034',1,'remove_error_model(pCafeFamily family, pCafeTree pcafe, std::string species_name):&#160;error_model.cpp']]],
-  ['report',['Report',['../structReport.html',1,'Report'],['../structReport.html#ae3150817fcf4ebf814358baf5bd72e8f',1,'Report::Report()'],['../structReport.html#ace46cab4ca2c58876b4378f638973542',1,'Report::Report(pCafeParam param, viterbi_parameters &amp;viterbi)']]],
+  ['report',['Report',['../structReport.html',1,'Report'],['../structReport.html#ae3150817fcf4ebf814358baf5bd72e8f',1,'Report::Report()'],['../structReport.html#ace46cab4ca2c58876b4378f638973542',1,'Report::Report(pCafeParam param, viterbi_parameters &amp;viterbi)'],['../Report.html',1,'(Global Namespace)']]],
   ['report_5fformat',['report_format',['../structReport.html#a143ba01808acf0a33b11c83c481eb650',1,'Report']]],
   ['report_5fparameters',['report_parameters',['../structreport__parameters.html',1,'']]],
   ['report_5ftests_2ecpp',['report_tests.cpp',['../report__tests_8cpp.html',1,'']]],
