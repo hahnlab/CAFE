@@ -1,0 +1,22 @@
+var searchData=
+[
+  ['anova',['anova',['../grpcmp_8c.html#affdfd9f4b605a22edd35b0dd71438641',1,'anova(pANOVA panova,...):&#160;grpcmp.c'],['../mathfunc_8h.html#affdfd9f4b605a22edd35b0dd71438641',1,'anova(pANOVA panova,...):&#160;grpcmp.c']]],
+  ['anova1_5frun',['anova1_run',['../grpcmp_8c.html#a2da1d3e26ad1ca190482b7fe10d26307',1,'anova1_run(pANOVA panova):&#160;grpcmp.c'],['../mathfunc_8h.html#a2da1d3e26ad1ca190482b7fe10d26307',1,'anova1_run(pANOVA panova):&#160;grpcmp.c']]],
+  ['anova2_5frun',['anova2_run',['../grpcmp_8c.html#ab66facc05368740997081658b540cc2a',1,'anova2_run(pANOVA panova):&#160;grpcmp.c'],['../mathfunc_8h.html#ab66facc05368740997081658b540cc2a',1,'anova2_run(pANOVA panova):&#160;grpcmp.c']]],
+  ['anova_5fdegree_5fof_5ffreedom',['anova_degree_of_freedom',['../grpcmp_8c.html#a041c2d0cfb742113b5a5caf98b937d71',1,'grpcmp.c']]],
+  ['anova_5ffree',['anova_free',['../grpcmp_8c.html#a0fbe7dfcab6857e6d9784cf24d2f3d9a',1,'anova_free(pANOVA panova):&#160;grpcmp.c'],['../mathfunc_8h.html#a0fbe7dfcab6857e6d9784cf24d2f3d9a',1,'anova_free(pANOVA panova):&#160;grpcmp.c']]],
+  ['anova_5fgroup_5ferror_5fand_5fstat',['anova_group_error_and_stat',['../grpcmp_8c.html#a8280035b72629ef94389072f324fc4f8',1,'grpcmp.c']]],
+  ['anova_5fnew',['anova_new',['../grpcmp_8c.html#ac6805280af083a22ac67a2112bbcf66b',1,'anova_new(int nways, int *ngrps):&#160;grpcmp.c'],['../mathfunc_8h.html#ac6805280af083a22ac67a2112bbcf66b',1,'anova_new(int nways, int *ngrps):&#160;grpcmp.c']]],
+  ['anova_5fprint',['anova_print',['../grpcmp_8c.html#a439fc6dc93cc102b795bc27850392013',1,'anova_print(pANOVA panova, char **name):&#160;grpcmp.c'],['../mathfunc_8h.html#a439fc6dc93cc102b795bc27850392013',1,'anova_print(pANOVA panova, char **name):&#160;grpcmp.c']]],
+  ['anova_5fprint_5fdata',['anova_print_data',['../grpcmp_8c.html#a3f1126642dbb859ca57c319f860ea0cf',1,'anova_print_data(pANOVA panova):&#160;grpcmp.c'],['../mathfunc_8h.html#a3f1126642dbb859ca57c319f860ea0cf',1,'anova_print_data(pANOVA panova):&#160;grpcmp.c']]],
+  ['anovan_5frun',['anovan_run',['../mathfunc_8h.html#aef1fdc5d4d8f391ef2c62efbe143a97e',1,'mathfunc.h']]],
+  ['arraylist_5fadd',['arraylist_add',['../utils_8c.html#a421361ad686b59f3015fe5ffd7ab49b1',1,'arraylist_add(pArrayList pal, void *data):&#160;utils.c'],['../utils_8h.html#a421361ad686b59f3015fe5ffd7ab49b1',1,'arraylist_add(pArrayList pal, void *data):&#160;utils.c']]],
+  ['arraylist_5fclear',['arraylist_clear',['../utils_8c.html#a4f4903e4bdbb99f5d332b4991281f797',1,'arraylist_clear(pArrayList pal):&#160;utils.c'],['../utils_8h.html#a4f4903e4bdbb99f5d332b4991281f797',1,'arraylist_clear(pArrayList pal):&#160;utils.c']]],
+  ['arraylist_5ffree',['arraylist_free',['../utils_8c.html#ae58d3aeb819f3910c7adb79af859c991',1,'arraylist_free(pArrayList pal, freefunc datafree):&#160;utils.c'],['../utils_8h.html#ae58d3aeb819f3910c7adb79af859c991',1,'arraylist_free(pArrayList pal, freefunc datafree):&#160;utils.c']]],
+  ['arraylist_5fget',['arraylist_get',['../utils_8c.html#a4b3a33994818b2ee2c93b388535c0a87',1,'arraylist_get(pArrayList pal, int idx):&#160;utils.c'],['../utils_8h.html#a4b3a33994818b2ee2c93b388535c0a87',1,'arraylist_get(pArrayList pal, int idx):&#160;utils.c']]],
+  ['arraylist_5fnew',['arraylist_new',['../utils_8c.html#ab7e08039ec7de369dfa487de41dbff57',1,'arraylist_new(int step):&#160;utils.c'],['../utils_8h.html#ab7e08039ec7de369dfa487de41dbff57',1,'arraylist_new(int step):&#160;utils.c']]],
+  ['arraylist_5fshuffle',['arraylist_shuffle',['../utils_8c.html#a475181daeb4a9daac353045b39129e2e',1,'arraylist_shuffle(pArrayList pal):&#160;utils.c'],['../utils_8h.html#a475181daeb4a9daac353045b39129e2e',1,'arraylist_shuffle(pArrayList pal):&#160;utils.c']]],
+  ['arraylist_5fsort',['arraylist_sort',['../utils_8c.html#af3d508d94cd68c69e3a5475938ac13e7',1,'arraylist_sort(pArrayList pal, int(*compar)(const void *, const void *)):&#160;utils.c'],['../utils_8h.html#af3d508d94cd68c69e3a5475938ac13e7',1,'arraylist_sort(pArrayList pal, int(*compar)(const void *, const void *)):&#160;utils.c']]],
+  ['arraylist_5ftrim',['arraylist_trim',['../utils_8c.html#a7043f7c45b23ece9052c6199630f71e2',1,'arraylist_trim(pArrayList pal):&#160;utils.c'],['../utils_8h.html#a7043f7c45b23ece9052c6199630f71e2',1,'arraylist_trim(pArrayList pal):&#160;utils.c']]],
+  ['assert_5fgainloss_5fexception',['assert_gainloss_exception',['../test_8cpp.html#accef620c544e50fabf0eede0ad5090f7',1,'test.cpp']]]
+];

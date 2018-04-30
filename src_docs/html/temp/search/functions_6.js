@@ -1,0 +1,19 @@
+var searchData=
+[
+  ['factorial',['factorial',['../mathfunc_8c.html#a86b2afa43e68f1358917f965d699efbf',1,'mathfunc.c']]],
+  ['factorialln',['factorialln',['../mathfunc_8c.html#ae21d339294c732bfb8a3c150b8cec15c',1,'mathfunc.c']]],
+  ['fcdf',['fcdf',['../mathfunc_8c.html#ab2749d3acd3768d196b6dea6c07553df',1,'fcdf(double x, int df1, int df2):&#160;mathfunc.c'],['../mathfunc_8h.html#ab2749d3acd3768d196b6dea6c07553df',1,'fcdf(double x, int df1, int df2):&#160;mathfunc.c']]],
+  ['file_5fread',['file_read',['../io_8c.html#a4b60a4e1868e7fbe6fad31bd63ee43a1',1,'file_read(pString pstr, FILE *fp):&#160;io.c'],['../io_8h.html#a4b60a4e1868e7fbe6fad31bd63ee43a1',1,'file_read(pString pstr, FILE *fp):&#160;io.c']]],
+  ['file_5fread_5fall',['file_read_all',['../io_8c.html#ac7960e0d96e41f0e8ed7fcf39c2b6c1d',1,'file_read_all(char *fname):&#160;io.c'],['../io_8h.html#ac7960e0d96e41f0e8ed7fcf39c2b6c1d',1,'file_read_all(char *fname):&#160;io.c']]],
+  ['file_5fread_5fline',['file_read_line',['../io_8c.html#a7eb771e8f17ce609a93f62efd2faca84',1,'file_read_line(pString pstr, FILE *fp):&#160;io.c'],['../io_8h.html#a7eb771e8f17ce609a93f62efd2faca84',1,'file_read_line(pString pstr, FILE *fp):&#160;io.c']]],
+  ['fminsearch',['fminsearch',['../mathfunc_8h.html#a7de4b563ee6de54a9e4cc3d140bc415f',1,'mathfunc.h']]],
+  ['fminsearch_5fclear_5fmemory',['fminsearch_clear_memory',['../fminsearch_8c.html#a3a8e5cd0661768fa2597b24a7883ef86',1,'fminsearch.c']]],
+  ['fminsearch_5ffree',['fminsearch_free',['../fminsearch_8c.html#af25668cefad78b9fc88f6424e9638de9',1,'fminsearch_free(pFMinSearch pfm):&#160;fminsearch.c'],['../mathfunc_8h.html#af25668cefad78b9fc88f6424e9638de9',1,'fminsearch_free(pFMinSearch pfm):&#160;fminsearch.c']]],
+  ['fminsearch_5fget_5fminf',['fminsearch_get_minF',['../fminsearch_8c.html#a390464337908c47ccfc5c212174d07cb',1,'fminsearch_get_minF(pFMinSearch pfm):&#160;fminsearch.c'],['../mathfunc_8h.html#a390464337908c47ccfc5c212174d07cb',1,'fminsearch_get_minF(pFMinSearch pfm):&#160;fminsearch.c']]],
+  ['fminsearch_5fget_5fminx',['fminsearch_get_minX',['../fminsearch_8c.html#acc9e98273ab92df81e641c962f041ed1',1,'fminsearch_get_minX(pFMinSearch pfm):&#160;fminsearch.c'],['../mathfunc_8h.html#acc9e98273ab92df81e641c962f041ed1',1,'fminsearch_get_minX(pFMinSearch pfm):&#160;fminsearch.c']]],
+  ['fminsearch_5fmin',['fminsearch_min',['../fminsearch_8c.html#adc176fb7e39a8f532f329402878cb07f',1,'fminsearch_min(pFMinSearch pfm, double *X0):&#160;fminsearch.c'],['../mathfunc_8h.html#adc176fb7e39a8f532f329402878cb07f',1,'fminsearch_min(pFMinSearch pfm, double *X0):&#160;fminsearch.c']]],
+  ['fminsearch_5fnew',['fminsearch_new',['../fminsearch_8c.html#aac6ac5f9637a2f01ac31a2b4d01bb7f7',1,'fminsearch_new():&#160;fminsearch.c'],['../mathfunc_8h.html#aac6ac5f9637a2f01ac31a2b4d01bb7f7',1,'fminsearch_new():&#160;fminsearch.c']]],
+  ['fminsearch_5fnew_5fwith_5feq',['fminsearch_new_with_eq',['../fminsearch_8c.html#a1b0e2d8d909e12b5ae470812ca2e4ba0',1,'fminsearch_new_with_eq(math_func eq, int Xsize, void *args):&#160;fminsearch.c'],['../mathfunc_8h.html#a1b0e2d8d909e12b5ae470812ca2e4ba0',1,'fminsearch_new_with_eq(math_func eq, int Xsize, void *args):&#160;fminsearch.c']]],
+  ['fminsearch_5fset_5fequation',['fminsearch_set_equation',['../fminsearch_8c.html#ae6d61d7e69b12b08ffaf52443c97f669',1,'fminsearch_set_equation(pFMinSearch pfm, math_func eq, int Xsize, void *args):&#160;fminsearch.c'],['../mathfunc_8h.html#ae6d61d7e69b12b08ffaf52443c97f669',1,'fminsearch_set_equation(pFMinSearch pfm, math_func eq, int Xsize, void *args):&#160;fminsearch.c']]],
+  ['fpdf',['fpdf',['../mathfunc_8c.html#ac19f8bec088731f2d2e8146600193920',1,'fpdf(double x, int df1, int df2):&#160;mathfunc.c'],['../mathfunc_8h.html#ac19f8bec088731f2d2e8146600193920',1,'fpdf(double x, int df1, int df2):&#160;mathfunc.c']]]
+];
