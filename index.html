@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>CAFE</title>
+    <link rel="stylesheet" type="text/css" href="css/960_12_col.css"/>
+    <link rel="stylesheet" type="text/css" href="css/elements.css"/>
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+  </head>
+
+  <body>
+    <div class="container_12">
+      
+      <div class="logo grid_12">
+	<img src="images/cafe_logo2.png" alt="CAFE software"
+	     width="391.6"/>
+      </div>
+
+      <div class="menulogo grid_4">
+	<nav>
+	  <ul>
+	    <li class="nav"><a class="nav" href="">HOME</a></li>
+	    <li class="nav"><a class="nav" href="download.html">DOWNLOAD</a></li>
+	    <li class="nav"><a class="nav" href="manual.html">MANUAL</a></li>
+	    <li class="nav"><a class="nav" href="faq.html">FAQ</a></li>
+	    <li class="nav"><a class="nav" href="citation.html">CITATION</a></li>
+	    <li class="nav"><a class="nav" href="contact.html">CONTACT</a></li>
+	  </ul>
+	</nav>
+      </div>
+      
+      <div class="content grid_8">
+	<h1>Announcements</h1>
+		  <h2>November 1, 2017</h2>
+		  <p>CAFE v4.1 is out!</p>
+		  <p><u><b>Added</b></u></p>
+		  <ul class="announce">
+			  <li type="disc" class="announce">seed: new command that sets the random seed so commands with randomness can be replicated</li>
+		  </ul>
+		  <p><u><b>Changed</b></u></p>
+		  <ul class="announce">
+			  <li class="announce">report: fixed bug where viterbi values were showing incorrect data</li>
+			  <li class="announce">load: fixed bug in handling trees with more than about 100 species</li>
+		  </ul>
+
+		  <h2>August 21, 2017</h2>
+		  <p>CAFE v4.0.2 is out!</p>
+		  <p><u><b>Added</b></u></p>
+		  <ul class="announce">
+			  <li type="disc" class="announce">load: max_size parameter added that filters out any families with family sizes larger than the value</li>
+			  <li type="disc" class="announce">lambda: warning added when calculated posterior probability for a family is 0</li>
+			  <li type="disc" class="announce">Use Intel compiler and MKL library for calculations if they are available</li>
+		  </ul>
+		  <p><u><b>Changed</b></u></p>
+		  <ul class="announce">
+			  <li class="announce">- Fixes to allow compilation with gcc 4.9</li>
+			  <li class="announce">Errormodel command no longer fails if model has fewer lines than the expected maximum family size</li>
+		  </ul>
+
+		  <h2>May 15, 2017</h2>
+		  <p>CAFE v4.0.1 is out!</p>
+		  <p><u><b>Added</b></u></p>
+		  <ul class="announce">
+			  <li type="disc" class="announce">report: "json" flag added to output data in that format;</li>
+			  <li type="disc" class="announce">load: Files with "CSV" extension will now be interpreted as comma-separated values;</li>
+		  </ul>
+		  <p><u><b>Changed</b></u></p>
+		  <ul class="announce">
+			  <li class="announce">Buffer overflow error when setting random family sizes fixed</li>
+		  </ul>
+      </div>
+
+    <!-- <div class="container_12"> -->
+      <div class="foot grid_12">
+	<img src="images/cafe_footer.png" width="940"/>
+      </div>
+    <!-- </div> -->
+
+    </div>    
+  </body>
+</html>

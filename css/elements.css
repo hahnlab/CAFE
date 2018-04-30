@@ -1,0 +1,146 @@
+@font-face {
+    font-family: 'Gill Sans';
+    src: url('font-gill-sans.ttf') format('truetype'); /* Chrome 4+, Firefox 3.5, Opera 10+, Safari 3—5 */
+}
+
+@font-face{
+    font-family: 'Gill Sans Light';
+    src: url('font-gill-sans-light.ttf') format('truetype');
+}
+
+@font-face{
+    font-family: 'Futura';
+    src: url('font-futura.ttf') format('truetype');
+}
+
+@font-face{
+    font-family: 'Futura Bold';
+    src: url('font-futura-bold.ttf') format('truetype');
+}
+
+.logo {
+    background: rgb(20,50,59);
+    margin: 0px auto;
+}
+
+.menulogo{
+    background: rgb(20,50,59);
+    margin: 0px auto;
+}
+
+a:link {
+    color: rgb(0,255,255);
+}
+
+a:visited {
+    color: rgb(255,255,0);
+}
+
+nav {
+    font-family: 'Gill Sans';
+    font-size: 150%;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.content {
+    color: rgb(255,255,255);
+    background: rgb(20,50,59);
+    padding: 0px 10px 0px 10px;
+    margin: 0px auto;
+    margin-bottom: 20px;
+    line-height: 150%;
+    font-size: 120%;
+    font-family: 'Gill Sans Light'; }
+
+.header{
+    background: rgb(20,50,59);
+    height: 180px;
+    margin: 0px auto;
+}
+
+.foot {
+    background: rgb(20,50,59);
+    margin: 0px auto;
+    text-align: center;
+    font-family: 'Futura';
+}
+
+h1 { color: rgb(255,255,255);
+     margin-top: 20px;
+     font-family: 'Futura Bold';
+     font-size: 130%;
+}
+
+h2 { color: rgb(255,255,255);
+     font-family: 'Futura';
+     font-size: 105%;
+}
+
+ul {
+    list-style-type: none;
+}
+
+ul.announce {
+    padding: 0;
+    color: rgb(255,255,255);
+    font-size: 90%;
+    line-height: 1.2em;
+}
+
+li {
+    color: rgb(209,210,212);
+    font-size: 80%;
+    margin: 0px auto;
+    margin-bottom: 20px;
+    margin-left: 20px;
+    text-align: left;
+}
+
+li.nav a:hover {
+    color: rgb(255,255,255);
+    background-position: 0 -25px;
+    padding-left: 50px;
+    text-transform: uppercase;
+}
+
+li a.nav {
+    text-decoration: none;
+    color: rgb(255,255,255);
+    padding-left: 50px;
+    display: inline-block;
+    height: 24px;
+    background: url('../images/coffee_button.png') no-repeat 0 0;
+}
+
+li.announce {
+    list-style-type: disc;
+}
+
+li.downl {
+    list-style-type: decimal;
+    color: rgb(255,255,255);
+    font-size: 90%;
+}
+
+li.downl_un {
+    color: rgb(255,255,255);
+    font-size: 90%;
+}
+
+ol.install {
+    list-style-type: decimal;
+}
+
+p {
+    font-family: 'Gill Sans Light';
+    font-size: 90%;
+}
+
+p.indented {
+    padding-left: 30px;
+}
+
+body {
+    background: rgb(20,50,59);
+}
