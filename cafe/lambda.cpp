@@ -1,3 +1,51 @@
+/*! \page Lambda Lambda
+* \code{.sh}
+# lambda [-l values | -s | -r start:step:end] [-t lambda structure]
+* \endcode
+
+In CAFE terms, <em>lambda</em> represents the rate of change of evolution in a tree. &Lambda; values may be specified 
+in one of four ways:
+1. A single value, shared by the entire tree
+2. Multiple values, with different values applied to different branches of the tree
+3. A range of values for which CAFE will calculate the likelihood
+4. No value, in which case CAFE will calculate an appropriate value
+
+\b -l <em>lambda values</em>: This option allows the user to specify the value(s) of &lambda;. If more than one &lambda; is specified, 
+then the -t option must also be used. &lambda; values are specified in the order 1 2 3... which correspond to the integers 
+specified in the -t option. &lambda; values should be separated by spaces.
+\note
+1. The product of &lambda; and the depth of the tree structure should not exceed one (i.e., &lambda; &times; t < 1 must be true; where t is the 
+time from tips to the root). See the Known Limitations section for details as to how to diagnose this problem. 
+2. CAFE will use the last &lambda; value(s) estimated (or user-specified) to compute ancestral gene family sizes and to 
+run Monte Carlo simulations.
+
+\b -s: CAFE will search using an optimization algorithm to find the value(s) of &lambda; that maximize the log likelihood of
+the data for all families. CAFE starts with an intermediate value and then searches iteratively for the best value for &lambda; 
+(or set of &lambda; values if used in conjunction with the -t option). Subsequent analyses will automatically use the 
+results from the lambda search.
+
+\b -r <em>start:step:end</em>: Returns the likelihood scores for &lambda; values in the user specified range (start:step:end).
+For example, to see the score distribution with a lambda between 0.003 and 0.005, the range would be 0.003:0.001:0.005. 
+In case of more than one lambda, ranges are separated by a space.
+
+\b -t <em>lambda structure</em>: To investigate whether different parts of the tree are evolving at different rates, the user
+may specify which branches of the tree will take the same or different &lambda; values. Input the same NEWICK tree 
+structure as in the tree command, but exclude branch lengths and substitute integer values from 1 up to n or taxon names 
+(where n = the total number of branches on the tree; matching integer values indicate that these branches will take 
+the same value of &lambda;). Default: all branches have the same value for &lambda;. Here is an example of a lambda structure:
+
+\code
+(((1,1)1,(2,2)2)2,2)
+\endcode
+
+This &lambda; structure corresponds to the tree example above, and specifies &lambda; = 1 for the Human, Chimp, and Ape branches, 
+and &lambda; =2 for the remaining branches.
+\note 
+CAFE will not always converge to a single optimum with models that contain many parameters. See the Known limitations 
+section below for details on assessing this problem.
+
+*/
+
 extern "C" {
 #include <family.h>
 #include "cafe_shell.h"

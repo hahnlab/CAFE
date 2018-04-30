@@ -1,3 +1,59 @@
+/*! \page Load Load
+* \code{.sh}
+# load -i filename [-t # of CPU threads] [-l filename] [-p &alpha;] [-r # of random samples
+* \endcode
+
+-i filename: Enter the path to the file containing gene family data. The data file format must be tab-delimited with 
+UNIX line endings. Family description may contain spaces (but not tabs). The first line must contain labels in the order: 
+* Description
+* ID, 
+* A list of tab-delimited taxon names
+
+\note If you do not have a Description or ID, CAFE still requires two tabs at the beginning of each line). 
+
+The taxon names must be spelled exactly as they are in the provided phylogenetic tree. Each subsequent line then 
+corresponds to a single gene family. If the data file contains taxa that do not appear in the tree structure, 
+they are not considered in the analysis.
+
+Here is an example of an input data file:
+
+\code
+Description ID Chimp Human Mouse Rat Dog 
+EF 1 ALPHA ENSF00000000004 5 8 6 12 40 
+HLA CLASS II ENSF00000000007 4 4 3 3 3 
+HLA CLASS I ENSF00000000014 5 3 5 6 3 
+RAG 1 ENSF00000000015 1 1 1 1 1 
+IG HEAVY CHAIN ENSF00000000020 32 42 51 60 18 
+ACTIN ENSF00000000027 27 30 22 28 25 
+OPSIN ENSF00000000029 2 2 2 2 2 
+HEAVY CHAIN ENSF00000000030 25 25 23 24 18
+\endcode
+
+If the file is loaded correctly, CAFE will output summary information about the current data file to the log file.
+
+\b -t <em># of CPU threads</em>: The maximum number (integer) of CPU threads to be used. Default: 8.
+
+\b -l <em>filename</em>: Enter the path to the file where CAFE will write the main output. This file will contain a 
+summary of input parameters as well as details of &lambda; searches, including likelihood scores and maximum likelihood 
+values of &lambda;. If the file does not exist, CAFE will create it for you; if the file already exists, CAFE will append 
+the results to the previous file. Default: output to screen (no log file created).
+
+\b -p &alpha;: For each family in the data file, CAFE computes a probability (p-value) of observing the data given the 
+average rate of gain and loss of genes. All else being equal, families with more variance in size are expected to have 
+lower p-values. The significance level (&alpha;, a float) allows the user to specify the cutoff for subsequent analyses. 
+Families with p-values larger than the designated significance level will not be included in the identification of the 
+most unlikely branch. Default: 0.01.
+
+\b -r <em># of random samples</em>: To determine the probability of a gene family with the observed sizes among taxa, 
+CAFE uses a Monte Carlo re-sampling procedure. This option specifies the number of samples CAFE should use to calculate 
+p-values. The tradeoff is between precision and computation time; in most cases 1000 samples should provide reasonable 
+balance. Default: 1000.
+
+\b -filter: The birth-death model of CAFE assumes at least one gene in the root of the species tree. This assumption may 
+not be valid for families that were created after the most recent common ancestor of all species. The filter option 
+filters out the families that are inferred (by parsimony) to have no genes in the root node of the species tree.
+*/
+
 #include <sstream>
 #include <fstream>
 #include <algorithm>

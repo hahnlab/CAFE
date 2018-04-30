@@ -1,3 +1,35 @@
+/*! \page Report Reports
+* \code{.sh}
+# report filename
+* \endcode
+The report command outputs results. Although all analyses must be specified by their own commands, report directs the 
+output of CAFE to <em>filename</em> (there is no need to add an extension to <em>filename</em>).
+
+Here is a description of the output file (a tab-delimited summary of the results): 
+- Tree: The current tree; 
+- &lambda;(s) and likelihood: The current &lambda; values set by the lambda command; it can be either specified by the 
+user (-t) or obtained by searching for the maximum likelihood value (-s). The likelihood of the data given the 
+current &lambda; value; 
+- Average expansion: Mean number of genes gained or lost per family, where "minus" expansion is a net contraction;
+- Expansions and contractions: Total count of families that experienced expansions, contractions, or no change along each 
+branch of the species tree; 
+- List of family and description;
+- List of overall p-value for each family: The p-values are based on a Monte-Carlo re-sampling procedure. To determine 
+the probability of a gene family with the observed sizes among taxa, CAFE will generate the expected distribution of 
+family sizes under the stochastic birth-death model for the tree specified in the load command with the current &lambda; value.
+Running the simulations uses the most machine resources and thus is the most time intensive step in CAFE. For each 
+family in the data file, CAFE computes a probability (p-value) of observing the data given the average rate of gain and 
+loss of genes. All else being equal, families with more variance in size are expected to have lower p-values.
+- List of branch-specific p-values for the significant families: The branch-specific p-values are obtained by the
+Viterbi method with the randomly generated likelihood distribution. This method calculates exact p-values for 
+transitions between the parent and child family sizes for all branches of the phylogenetic tree. A low p-value indicates 
+a rapidly evolving branch. This information is reported only for the families with an overall p-value less than the 
+p-value cutoff set with the load command.
+- List of ancestral states for each family: Reports the maximum likelihood values of the ancestral number of genes at all 
+inner nodes of all gene families.
+
+*/
+
 #include "../config.h"
 
 #include <stdexcept>

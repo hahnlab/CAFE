@@ -1,4 +1,4 @@
-/*! \page Usage
+/*! \page Usage CAFE Usage
 *
 * In order to give CAFE commands, you must do it interactively through its shell, or by providing
 * CAFE with a shell script listing CAFE commands. To run CAFE interactively, type **cafe** at your shell prompt. 
@@ -23,27 +23,35 @@
 * _chmod a+x filename_). CAFE will automatically exit after the last command in the script is completed, so it is 
 * not necessary to specify the exit command.
 *
+* Running an analysis will generally require at least four commands:
+* 1. <em>load</em> to specify the gene families to analyze
+* 2. <em>tree</em> to specify the structure of the phylogenetic tree
+* 3. <em>lambda</em> to specify a specific lambda value or to have CAFE search for a value
+* 4. <em>report</em> to return the results of running the analysis
+* 
 * \section Commands
  - \ref cafe_cmd_date "Date"
  - \ref cafe_cmd_echo "Echo"
+ - \ref ErrorModel
  - \ref cafe_cmd_exit "Exit"
  - \ref cafe_cmd_generate_random_family "Generate_Random_Family"
+ - \ref Lambda
  - \ref cafe_cmd_list "List"
- - \ref cafe_cmd_load "Load"
+ - \ref Load
  - \ref cafe_cmd_log "Log"
  - \ref cafe_cmd_pvalue "PValue"
- - \ref cafe_cmd_report "Report"
+ - \ref Report
  - \ref cafe_cmd_rootdist "Rootdist"
  - \ref cafe_cmd_seed "Seed"
  - \ref cafe_cmd_source "Source"
- - \ref cafe_cmd_tree "Tree"
+ - \ref Tree
  - \ref cafe_cmd_version "Version"
 *
 * \section Caferror
 * caferror.py is a Python script included with the CAFE v4.0 and later software packages that uses the \ref errormodel 
 * command iteratively to estimate error in an input data set with no prior knowledge of the error distribution. 
 * caferror.py uses the likelihood scores of runs with varying error models to perform a precise grid search of the 
-* likelihood surface. The program fiÅrst estimates average global error across all species in the input phylogeny and 
+* likelihood surface. The program first estimates average global error across all species in the input phylogeny and 
 * then may continue to individual species estimations depending on -s.
 *
 * \subsection Example
@@ -1523,6 +1531,12 @@ errormodel_args get_errormodel_arguments(vector<Argument> pargs)
 	return args;
 }
 
+  
+/**
+\ingroup Commands
+\brief \b errormodel: allows the user to specify an error distribution.
+
+*/
 int cafe_cmd_errormodel(Globals& globals, std::vector<std::string> tokens)
 {
 	pCafeParam param = &globals.param;
