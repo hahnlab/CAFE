@@ -1,15 +1,4 @@
-/*! \page intro Program Structure
-*
-* \section intro_sec Introduction
-*
-* CAFE is built as a command line interface application. When the user starts the program,
-* they are presented with a command line where various commands can be typed. Alternatively,
-* by passing a text file of commands as an argument to the application a series of commands
-* can be run at once.
-*
-* The list of available commands are stored in the #cafe_cmd
-variable in cafe_shell.c .
-* 
+/*! 
 * The variable \ref cafe_param is a global singleton that holds general program state.
 * \ref cafe_param holds pcafe, a \ref CafeTree, and pfamily, a \ref CafeFamily . These are set
 * by the user via the commands "tree" and "load" respectively. When the user calls

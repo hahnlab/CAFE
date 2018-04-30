@@ -1,3 +1,87 @@
+/*! \page Usage
+*
+* In order to give CAFE commands, you must do it interactively through its shell, or by providing
+* CAFE with a shell script listing CAFE commands. To run CAFE interactively, type **cafe** at your shell prompt. 
+* If all is well, the prompt should change to \b#. At this point you may now begin inputting commands. 
+* To exit the shell, type **exit**. If you need to run multiple analyses using similar inputs, you can provide CAFE 
+* with a shell script. These scripts should be saved as text files with UNIX line endings. Scripts may be then executed 
+* from your OS or CAFE's shell. Here is an example:
+*
+* \code{.sh}
+* #! cafe 
+* # version 
+* # date 
+* load -i data/example2.tab -t 10 -l logfile.txt -p 0.05 
+* tree (((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:93) 
+* lambda -s -t (((1,1)1,(2,2)2)2,2) 
+* report resultfile
+* \endcode
+* 
+* In this example, the first line indicates the location of the CAFE shell program. Subsequently, lines beginning 
+* with "#" are regarded as comments. Thus, the example above only executes lines 4, 5, 6 and 7. Remember that to 
+* run a script you must make the file executable from your OS shell prompt (in the UNIX shell, this is done with 
+* _chmod a+x filename_). CAFE will automatically exit after the last command in the script is completed, so it is 
+* not necessary to specify the exit command.
+*
+* \section Commands
+ - \ref cafe_cmd_date "Date"
+ - \ref cafe_cmd_echo "Echo"
+ - \ref cafe_cmd_exit "Exit"
+ - \ref cafe_cmd_generate_random_family "Generate_Random_Family"
+ - \ref cafe_cmd_list "List"
+ - \ref cafe_cmd_load "Load"
+ - \ref cafe_cmd_log "Log"
+ - \ref cafe_cmd_pvalue "PValue"
+ - \ref cafe_cmd_report "Report"
+ - \ref cafe_cmd_rootdist "Rootdist"
+ - \ref cafe_cmd_seed "Seed"
+ - \ref cafe_cmd_source "Source"
+ - \ref cafe_cmd_tree "Tree"
+ - \ref cafe_cmd_version "Version"
+*
+* \section Caferror
+* caferror.py is a Python script included with the CAFE v4.0 and later software packages that uses the \ref errormodel 
+* command iteratively to estimate error in an input data set with no prior knowledge of the error distribution. 
+* caferror.py uses the likelihood scores of runs with varying error models to perform a precise grid search of the 
+* likelihood surface. The program fiÅrst estimates average global error across all species in the input phylogeny and 
+* then may continue to individual species estimations depending on -s.
+*
+* \subsection Example
+* \code{.sh}
+$ python caferror.py [-i shell script filename] [-e initial error value] [-d output directory name] [-l log filename] [-o output filename] [-s value]
+* \endcode
+*
+* Note that: 
+* 1. Python 2.6 or newer must be installed on your machine. You can find it on https://www.python.org; 
+* 2. caferror.py must run in the directory in which CAFE is located, as it uses that path to run CAFE.
+* 
+* \subsection options Command line options
+* -i <em>shell script filename</em>: The main input of caferror.py is a CAFE shell script, as shown above. caferror.py 
+* will extract the following information needed from the shell script and use it to run CAFE many times to estimate error:
+* the input gene family file from the load command, the tree command, and the lambda command. caferror.py will not 
+* overwrite the input script, but will instead write its own.
+*
+* -e <em>initial error value</em>: This is the value with which caferror will begin the grid search. This should be a 
+* floating point value between 0 and 1. Default: 0.4.
+*
+* -d <em>output directory name</em>: caferror.py runs CAFE many times, and therefore creates and stores many error model 
+* and CAFE log files. All CAFE log files, error model files, and caferror.py output files will be stored in a directory 
+* specified with this option. If the directory has not been created, caferror.py will create it automatically. 
+* Default: <em>caferror_tmp_dir_x</em>, where x is an integer one higher than the previous default directory.
+*
+* -l <em>log filename</em>: caferror.py keeps track of the error estimates and scores in its own log file. This is 
+* also where you will find the final error estimates. The user may specify the name of the file with this option. 
+* Default: <em>caferrorLog.txt</em>.
+*
+* -o <em>output filename</em>: The user may specify a name for the output file with this option. The error estimation 
+* algorithms create a curve for visualization if plotted, and this output file contains two tab-delimited columns 
+* consisting of error model and the corresponding score while using that error model. Simply copy and paste these 
+* data points into your favorite graphing software to see how caferror.py estimated the error. 
+* Default: <em>caferror_default_output.txt</em>.
+* 
+* Note: this option outputs data points for the global error estimation.
+* 
+*/
 #include "../config.h"
 
 #include <stdio.h>
@@ -144,6 +228,7 @@ io_error::io_error(string source, string file, bool write) : runtime_error("")
 
 
 /**
+\b Echo
 \ingroup Commands
 \brief Echoes test to the log file
 *
@@ -162,7 +247,7 @@ int cafe_cmd_echo(Globals& globals, std::vector<std::string> tokens)
 
 /**
 \ingroup Commands
-\brief Writes the current date and time to log file
+\brief \b Date: Writes the current date and time to log file
 *
 */
 int cafe_cmd_date(Globals& globals, std::vector<std::string> tokens)
@@ -177,7 +262,7 @@ int cafe_cmd_date(Globals& globals, std::vector<std::string> tokens)
 
 /**
 \ingroup Commands
-\brief Close files, release memory and exit application
+\brief \b Exit: Close files, release memory and exit application
 *
 */
 int cafe_cmd_exit(Globals& globals, std::vector<std::string> tokens)
@@ -221,7 +306,7 @@ void set_log_file(Globals& globals, string log_file)
 /**
 \ingroup Commands
 \ingroup Setters
-\brief Sets file to which data is logged
+\brief \b Log: Sets file to which data is logged
 *
 * With no arguments, writes the current log file to stdout
 * 
@@ -256,7 +341,7 @@ void write_version(ostream &ost)
 
 /**
 \ingroup Commands
-\brief Prints CAFE version and date of build
+\brief \b Version: Prints CAFE version and date of build
 *
 */
 int cafe_cmd_version(Globals& globals, std::vector<std::string> tokens)
@@ -267,7 +352,7 @@ int cafe_cmd_version(Globals& globals, std::vector<std::string> tokens)
 
 /**
 \ingroup Commands
-\brief Executes a series of commands from a CAFE command file
+\brief \b Source: Executes a series of commands from a CAFE command file
 *
 */
 int cafe_cmd_source(Globals& globals, std::vector<std::string> tokens)
@@ -308,7 +393,7 @@ void list_commands(std::ostream& ost)
 
 /**
 \ingroup Commands
-\brief List all commands available in CAFE
+\brief \b List: List all commands available in CAFE
 *
 */
 int cafe_cmd_list(Globals&, std::vector<std::string> tokens)
@@ -618,7 +703,7 @@ void write_leaves(ostream& ofst, pCafeTree pcafe, int *k, int i, int id, bool ev
 
 /**
 \ingroup Commands
-\brief Generates random families
+\brief \b generate_random_family: Generates random families
 *
 */
 int cafe_cmd_generate_random_family(Globals& globals, std::vector<std::string> tokens)
@@ -799,7 +884,7 @@ bool endsWith(std::string const &fullString, std::string const &ending) {
 
 /**
 \ingroup Commands
-\brief Loads families from a family file with a defined format
+\brief \b Load: Loads families from a family file with a defined format
 *
 * Takes six arguments: -t, -r, -p, -l, -i, and -filter
 *
@@ -910,7 +995,7 @@ struct family_args get_family_arguments(vector<Argument> pargs)
 
 /**
 \ingroup Commands
-\brief Reports
+\brief \b Report: Generates reports in various formats of the calculations completed
 *
 */
 int cafe_cmd_report(Globals& globals, std::vector<std::string> tokens)
@@ -956,7 +1041,7 @@ void write_family(ostream& ost, pCafeFamily family)
 
 /**
 \ingroup Commands
-\brief Tree
+\brief \bTree: The tree to perform calculations on. Must be in Newick format.
 *
 */
 int cafe_cmd_tree(Globals& globals, std::vector<std::string> tokens)
@@ -1197,7 +1282,7 @@ static pArrayList to_arraylist(matrix& v)
 
 /**
 \ingroup Commands
-\brief Calculates pvalues
+\brief \b PValue: Calculates pvalues
 
 */
 int cafe_cmd_pvalue(Globals& globals, std::vector<std::string> tokens)
@@ -2499,7 +2584,7 @@ int cafe_cmd_cvspecies(Globals& globals, std::vector<std::string> tokens)
 \ingroup Commands
 \brief Runs a simulation to determine how many families are likely to have gone extinct
 
-Arguments: ñt parameter gives the number of trials. Logs the total number of extinct families?
+Arguments: -t parameter gives the number of trials. Logs the total number of extinct families?
 */
 int cafe_cmd_extinct(Globals& globals, std::vector<std::string> tokens)
 {

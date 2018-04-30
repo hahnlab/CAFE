@@ -1,3 +1,51 @@
+/*! \page ErrorModel Error Model
+* \code{.sh}
+# errormodel [-model filename] [-sp species name | -all ] 
+* \endcode
+The \b errormodel command allows the user to specify an error distribution. CAFE will correct for this error before 
+calculating ancestral family sizes and estimating &lambda; values. The errormodel function is also used by caferror.py to 
+estimate error in the input data set.
+
+-model <em>error model file</em>: This option allows the user to specify the errorfile to use in order to correct 
+the input data for errors. The error model file format should be as follows:
+
+\code
+maxcnt: 68
+cntdiff -1 0 1
+0 0.0 0.8 0.2
+0 0.2 0.6 0.2
+0 0.2 0.6 0.2
+...
+68 0.2 0.6 0.2
+\endcode
+
+In this file, \b maxcnt is the largest family size observed in the dataset. Errorclasses (for all following rows) are 
+defined with \b cntdiff and act as labels for error distributions for each gene family size. Error classes must be 
+space-delimited positive or negative integers (and 0). The error class with label 0 means that this corresponds to no 
+change in gene family size due to error. After the first two lines, each possible family size in the dataset (size 0 to 
+\b maxcnt ) should have an error distribution defined. Any omitted family size follows the distribution for the previous 
+row. The error distribution for each count should be space delimited probabilities whose columns correspond to the 
+error classes defined in line two. 
+
+<em>Default</em>: No error model is applied.
+
+\note 
+1. You should not specify any negative error correction for family size of 0 as this cannot occur (i.e., there 
+can't be negative gene family sizes); 
+2. The rows of the error model file must sum to 1; 
+3. If any gene counts are missing from the error model file, CAFE will assume the same error distribution from the 
+previous line. This can also be used as a shortcut if you know that all of the gene counts are specified with the
+same error distribution: simply enter the first four lines (\b maxcnt, \b cntdiff, <em>family size</em>=0,1) into 
+the error model file and CAFE will use the distribution for family size=1 as the distribution for all gene family sizes.
+
+-sp: This option is required to specify the species to which the error model will be applied. Species names must be 
+identical to those in the data file and the input tree. The user may specify any combination of species with the same 
+or different error model files with separate errormodel commands, or the user may specify all species with the same 
+error model file in one errormodel command using -all as the species option here.
+
+-all (see above)
+*/
+
 #include <cctype>
 #include <algorithm>
 #include <vector>
