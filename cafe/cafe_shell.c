@@ -437,8 +437,6 @@ double __cafe_tree_gainloss_mp_annotation(pString pstr, pTreeNode pnode, pMetapo
 	return last;
 }
 
-extern double cafe_tree_mp_remark(pString pstr, pTree ptree, pMetapostConfig pmc, va_list ap1);
-
 int __cafe_cmd_extinct_count_zero(pTree pcafe)
 {
 	int n;

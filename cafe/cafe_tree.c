@@ -182,18 +182,6 @@ void cafe_tree_string_print(pCafeTree pcafe)
 }
 
 
-double cafe_tree_mp_remark(pString pstr, pTree ptree, pMetapostConfig pmc, va_list ap1)
-{
-  va_list ap;
-  va_copy(ap, ap1);
-	char* title = va_arg(ap,char*);
-	string_add( pstr, "\n% annotation\n");
-	string_fadd( pstr, "label( btex  etex, (0.1u, %fu));\n", pmc->height + 0.7 ) ;
-	string_fadd( pstr, "label( btex %s etex, (0.1u, %fu));\n", title, pmc->height + 0.5 ) ;
-  va_end(ap);
-	return pmc->height + 0.5;
-}
-
 /**
 * \brief Initialize matrix values according to the error model or to defaults
 * if familysize < 0, sets the first (range) values of each row to 1, ignoring the others

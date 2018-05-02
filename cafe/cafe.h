@@ -63,7 +63,6 @@ extern void cafe_tree_clustered_viterbi(pCafeTree pcafe, int num_likelihoods);
 extern void cafe_tree_viterbi_posterior(pCafeTree pcafe, pCafeParam param);
 void initialize_leaf_likelihood_clustered(pTree ptree, pTreeNode ptnode);
 
-extern double cafe_tree_mp_remark(pString str, pTree ptree, pMetapostConfig pmc, va_list ap);
 extern int cafe_tree_random_familysize(pCafeTree pcafe, int rootFamilysize, int maxFamilySize);
 void node_set_birthdeath_matrix(pCafeNode pcnode, pBirthDeathCacheArray cache, int num_lambdas);
 void add_key(pArrayList arr, double branchlength, double lambda, double mu);
