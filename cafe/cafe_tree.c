@@ -3,6 +3,10 @@
 # tree NEWICK-formatted tree
 * \endcode
 *
+* \code{.sh}
+# tree -i treefile
+* \endcode
+*
 A NEWICK-formatted tree containing branch lengths and taxon names as they are specified in the \ref Load "input file". 
 Branch lengths 
 should be integer units and the tree should be ultrametric (all paths from root to tip should have the same length).
@@ -11,8 +15,6 @@ Please note that there should be no spaces in the tree string, nor semicolons at
 Here is an example of an ultrametric tree followed by its NEWICK notation:
 \htmlonly <style>div.image img[src="simple_tree.png"]{width:600px;}</style> \endhtmlonly
 \image html simple_tree.png "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:93)" width=\\textwidth
-
-
 
 */
 #include "cafe.h"
