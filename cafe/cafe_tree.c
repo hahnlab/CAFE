@@ -183,40 +183,6 @@ void cafe_tree_string_print(pCafeTree pcafe)
 
 
 /**
-* \brief Initialize matrix values according to the error model or to defaults
-* if familysize < 0, sets the first (range) values of each row to 1, ignoring the others
-* otherwise if errormodel is NULL, initializes all values of each row to 0 except for the one indexed by familysize, which is 1
-* otherwise, sets each row of matrix to the row of errormatrix indexed by familysize
-* I doubt this function is doing what was intended
-*/
-void initialize_leaf_likelihoods_for_viterbi(double **matrix, int num_rows, int range, int familysize, int num_cols, pErrorStruct errormodel)
-{
-	for (int i = 0; i < range; i++)
-	{
-		for (int k = 0; k < num_rows; k++) {
-			if (familysize < 0) {
-				matrix[k][i] = 1;
-			}
-			else {
-				if (errormodel) {
-					memset((void*)matrix[k], 0, num_cols*sizeof(double));
-					for (int j = 0; j<num_cols; j++) {
-						// conditional probability of measuring i=familysize when true count is j
-						matrix[k][j] = errormodel->errormatrix[familysize][j];
-					}
-
-				}
-				else {
-					memset((void*)matrix[k], 0, num_cols*sizeof(double));
-					matrix[k][familysize] = 1;
-				}
-			}
-		}
-	}
-
-}
-
-/**
 * \brief Set likelihood to 1 for actual value, 0 otherwise, or copy values from an existing errormodel
 * Copies likelihood values from an errormodel if one exists, 
 * otherwise sets all likelihoods to 0 except for familysize, which is set to 1
@@ -240,27 +206,6 @@ void initialize_leaf_likelihoods(pTree ptree, pTreeNode ptnode)
 		assert(pcnode->familysize >= 0 && pcnode->familysize < pcafe->size_of_factor);
 		memset((void*)pcnode->likelihoods, 0, pcafe->size_of_factor*sizeof(double));
 		pcnode->likelihoods[pcnode->familysize] = 1;
-	}
-}
-
-
-void compute_viterbis(pCafeNode node, int k, double *factors, int rootfamilysize_start, int rootfamilysize_end, int familysize_start, int familysize_end)
-{
-	struct square_matrix *bd = node->k_bd->array[k];
-	for (int s = rootfamilysize_start, i = 0; s <= rootfamilysize_end; s++, i++)
-	{
-		double tmp = 0;
-		for (int c = familysize_start, j = 0; c <= familysize_end; c++, j++)
-		{
-			double val = square_matrix_get(bd, s, c);
-			tmp = val * node->k_likelihoods[k][j];
-			if (tmp > factors[i])
-			{
-				factors[i] = tmp;
-				node->viterbi[i] = j;
-			}
-
-		}
 	}
 }
 

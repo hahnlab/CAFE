@@ -350,6 +350,61 @@ void __cafe_tree_node_backtrack_viterbi(pTree ptree, pTreeNode ptnode, va_list a
   }
 }
 
+/**
+* \brief Initialize matrix values according to the error model or to defaults
+* if familysize < 0, sets the first (range) values of each row to 1, ignoring the others
+* otherwise if errormodel is NULL, initializes all values of each row to 0 except for the one indexed by familysize, which is 1
+* otherwise, sets each row of matrix to the row of errormatrix indexed by familysize
+* I doubt this function is doing what was intended
+*/
+void initialize_leaf_likelihoods_for_viterbi(double **matrix, int num_rows, int range, int familysize, int num_cols, pErrorStruct errormodel)
+{
+    for (int i = 0; i < range; i++)
+    {
+        for (int k = 0; k < num_rows; k++) {
+            if (familysize < 0) {
+                matrix[k][i] = 1;
+            }
+            else {
+                if (errormodel) {
+                    memset((void*)matrix[k], 0, num_cols * sizeof(double));
+                    for (int j = 0; j<num_cols; j++) {
+                        // conditional probability of measuring i=familysize when true count is j
+                        matrix[k][j] = errormodel->errormatrix[familysize][j];
+                    }
+
+                }
+                else {
+                    memset((void*)matrix[k], 0, num_cols * sizeof(double));
+                    matrix[k][familysize] = 1;
+                }
+            }
+        }
+    }
+
+}
+
+void compute_viterbis(pCafeNode node, int k, double *factors, int rootfamilysize_start, int rootfamilysize_end, int familysize_start, int familysize_end)
+{
+    struct square_matrix *bd = (struct square_matrix *)node->k_bd->array[k];
+    for (int s = rootfamilysize_start, i = 0; s <= rootfamilysize_end; s++, i++)
+    {
+        double tmp = 0;
+        for (int c = familysize_start, j = 0; c <= familysize_end; c++, j++)
+        {
+            double val = square_matrix_get(bd, s, c);
+            tmp = val * node->k_likelihoods[k][j];
+            if (tmp > factors[i])
+            {
+                factors[i] = tmp;
+                node->viterbi[i] = j;
+            }
+
+        }
+    }
+}
+
+
 void __cafe_tree_node_compute_clustered_viterbi(pTree ptree, pTreeNode ptnode, va_list ap1)
 {
   va_list ap;

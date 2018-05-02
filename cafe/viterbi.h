@@ -8,7 +8,6 @@ extern "C"
 {
 #include <family.h>
 #include <cafe.h>
-void compute_viterbis(pCafeNode node, int k, double *factors, int rootfamilysize_start, int rootfamilysize_end, int familysize_start, int familysize_end);
 }
 
 class Globals;
@@ -79,5 +78,6 @@ struct ViterbiParam
 	int from;
 };
 
+void compute_viterbis(pCafeNode node, int k, double *factors, int rootfamilysize_start, int rootfamilysize_end, int familysize_start, int familysize_end);
 
 #endif
