@@ -1047,6 +1047,42 @@ void write_family(ostream& ost, pCafeFamily family)
 	}
 }
 
+float distance_from_root(pCafeTree tree, pCafeNode node)
+{
+    float result = 0;
+    pPhylogenyNode n = (pPhylogenyNode)node;
+    while (!tree_is_root((pTree)tree, (pTreeNode)n))
+    {
+        result += n->branchlength;
+        n = (pPhylogenyNode)n->super.parent;
+    }
+    return result;
+}
+
+inline bool is_nearly_equal(double x, double y)
+{
+    const double epsilon = 0.0000000000001;
+    return std::abs(x - y) <= epsilon * std::abs(x);
+}
+
+bool is_ultrametric(pCafeTree tree)
+{
+    float distance = -1;
+    for (int j = 0; j < tree->super.nlist->size; ++j)
+    {
+        pCafeNode pnode = (pCafeNode)tree->super.nlist->array[j];
+        if (tree_is_leaf((pTreeNode)pnode))
+        {
+            float d = distance_from_root(tree, pnode);
+            if (distance == -1)
+                distance = d;
+            else if (!is_nearly_equal(distance, d))
+                return false;
+        }
+    }
+    return true;
+}
+
 /**
 \ingroup Commands
 \brief \bTree: The tree to perform calculations on. Must be in Newick format.
@@ -1062,14 +1098,17 @@ int cafe_cmd_tree(Globals& globals, std::vector<std::string> tokens)
 		printf("Newick: ");
 		cin >> newick;
 		if (cin.fail())
-			fprintf(stderr, "Failed to read input\n");
-
+            throw std::runtime_error("Failed to read input\n");
 	}
     else if (tokens.size() > 2)
     {
         if (tokens[1] == "-i")
         {
             ifstream ifst(tokens[2]);
+            if (!ifst)
+            {
+                throw std::runtime_error("Failed to read file '" + tokens[2] + "'");
+            }
             stringstream buffer;
             buffer << ifst.rdbuf();
             newick = buffer.str();
@@ -1095,6 +1134,10 @@ int cafe_cmd_tree(Globals& globals, std::vector<std::string> tokens)
 	if (param->pcafe == NULL) {
 		throw runtime_error("Failed to load tree from provided string");
 	}
+    if (!is_ultrametric(param->pcafe))
+    {
+        cerr << "WARNING: tree is not ultrametric\n";
+    }
 	param->num_branches = param->pcafe->super.nlist->size - 1;
 	param->old_branchlength = (int*)memory_new(param->num_branches, sizeof(int));
 	pTree ptree = (pTree)param->pcafe;

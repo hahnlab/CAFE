@@ -223,6 +223,42 @@ TEST(TreeTests, thousand_node_tree_to_string_and_back)
     cafe_tree_free(pcafe);
 }
 
+pCafeNode find_node_named(pCafeTree tree, string s)
+{
+    for (int j = 0; j < tree->super.nlist->size; ++j)
+    {
+        pCafeNode pnode = (pCafeNode)tree->super.nlist->array[j];
+        if (pnode->super.name != NULL && s == pnode->super.name)
+            return pnode;
+    }
+    return NULL;
+}
+
+TEST(TreeTests, distance_from_root)
+{
+    pCafeTree tree = create_tree(range);
+    CHECK_EQUAL(0, distance_from_root(tree, (pCafeNode)tree->super.root));
+    DOUBLES_EQUAL(93, distance_from_root(tree, find_node_named(tree, "mouse")), 0.00001);
+    DOUBLES_EQUAL(93, distance_from_root(tree, find_node_named(tree, "chimp")), 0.00001);
+    DOUBLES_EQUAL(93, distance_from_root(tree, find_node_named(tree, "human")), 0.00001);
+    DOUBLES_EQUAL(93, distance_from_root(tree, find_node_named(tree, "rat")), 0.00001);
+    DOUBLES_EQUAL(9, distance_from_root(tree, find_node_named(tree, "dog")), 0.00001);
+}
+
+TEST(TreeTests, is_ultrametric)
+{
+    pCafeTree tree = create_tree(range);
+    CHECK_FALSE(is_ultrametric(tree));
+
+    const char *newick_tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:93)";
+    char buf[100];
+    strcpy(buf, newick_tree);
+    pCafeTree tree2 = cafe_tree_new(buf, &range, 0.01, 0);
+    CHECK(is_ultrametric(tree2));
+
+
+}
+
 TEST(FirstTestGroup, TestStringSplitter)
 {
 	char c[10];
