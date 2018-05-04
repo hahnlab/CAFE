@@ -164,61 +164,6 @@ void cafe_family_split_cvfiles_byspecies(pCafeParam param)
 
 
 
-/*! \brief Synchronize a family and tree together
-*
-*  Sets the value of index in pcf to the node index in the tree of the 
-*  leaf with the matching species ID. 
-*  \returns 0 on success, or -1 if there is a species in the tree with
-*  no matching species in the family
-*/int cafe_family_set_species_index(pCafeFamily pcf, pCafeTree pcafe )
-{
-	int i,j;
-	pTree ptree = (pTree)pcafe;
-	for ( i = 0 ; i < pcf->num_species ;  i++ )
-	{
-		if (pcf->species[i][0] == '-') {
-			//pPhylogenyNode pnode = (pPhylogenyNode)ptree->nlist->array[j];
-			int nodeidx = atoi(&pcf->species[i][1]);
-			pcf->index[i] = nodeidx;
-		}
-		else {
-			for( j = 0 ; j < ptree->nlist->size; j+=2 )		// find node with same name among leaves
-			{
-				pPhylogenyNode pnode = (pPhylogenyNode)ptree->nlist->array[j];
-				if ( pnode->name[0] & 0x80 ) {
-					continue;	// meta-bit set: skip already processed 
-				}
-				if ( string_pchar_cmp_ignore_case(pnode->name, pcf->species[i] ) )
-				{
-					pnode->name[0] |= 0x80;	// set meta-bit.
-					pcf->index[i] = j;
-					break;
-				}
-			}
-		}
-		//printf("%d: %s => %d\n", i, pcf->species[i], pcf->index[i] );
-	}
-
-	int err = 0;
-	for( j = 0 ; j < ptree->nlist->size; j+=2 )
-	{
-		pPhylogenyNode pnode = (pPhylogenyNode)ptree->nlist->array[j];
-		if ( !(pnode->name[0] & 0x80 ) )
-		{
-			fprintf(stderr,"Family has no %s species\n", pnode->name );
-			err = -1;
-		}
-	}
-
-	for( j = 0 ; j < ptree->nlist->size; j+=2 )
-	{
-		pPhylogenyNode pnode = (pPhylogenyNode)ptree->nlist->array[j];
-		pnode->name[0] &= 0x7F;
-	}
-	return err;
-}
-
-
 int cafe_family_get_species_index(pCafeFamily pcf, char* speciesname) 
 {
     int i;

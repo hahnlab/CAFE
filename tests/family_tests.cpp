@@ -197,8 +197,7 @@ TEST(FamilyTests, cafe_family_set_species_index)
 	pCafeFamily pcf = cafe_family_init({"chimp", "human", "mouse", "rat", "dog" });
 
 	LONGS_EQUAL(-1, pcf->index[0]);
-	int errcode = cafe_family_set_species_index(pcf, tree);
-	LONGS_EQUAL(0, errcode);
+	cafe_family_set_species_index(pcf, tree);
 	LONGS_EQUAL(0, pcf->index[0]);
 	LONGS_EQUAL(2, pcf->index[1]);
 	LONGS_EQUAL(4, pcf->index[2]);
@@ -207,10 +206,31 @@ TEST(FamilyTests, cafe_family_set_species_index)
 
   cafe_family_free(pcf);
 
-  pcf = cafe_family_init({ "chimp", "human", "mouse", "rat" });
-	errcode = cafe_family_set_species_index(pcf, tree);
-	LONGS_EQUAL(-1, errcode);	// Error because dog is missing from family list
-  cafe_family_free(pcf);
+  try
+  {
+      pcf = cafe_family_init({ "chimp", "human", "mouse", "rat" });
+      cafe_family_set_species_index(pcf, tree);
+      FAIL("Exception should have been thrown");
+      cafe_family_free(pcf);
+  }
+  catch (std::runtime_error& err)
+  {
+      STRCMP_EQUAL("No species 'dog' was found in the family list", err.what());
+      cafe_family_free(pcf);
+  }
+
+  try
+  {
+      pcf = cafe_family_init({ "chimp", "human", "mouse", "rat", "dog", "aardvark" });
+      cafe_family_set_species_index(pcf, tree);
+      FAIL("Exception should have been thrown");
+      cafe_family_free(pcf);
+  }
+  catch (std::runtime_error& err)
+  {
+      STRCMP_EQUAL("No species 'aardvark' was found in the tree", err.what());
+      cafe_family_free(pcf);
+  }
 }
 
 TEST(FamilyTests, cafe_family_set_size_with_family_forced)

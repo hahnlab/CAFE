@@ -59,6 +59,9 @@ filters out the families that are inferred (by parsimony) to have no genes in th
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>
+#include <map>
+#include <locale>
+#include <set>
 
 #include "gene_family.h"
 #include <tree.h>
@@ -382,4 +385,54 @@ int cafe_family_get_index(pCafeFamily pcf, const char* szid)
     if (pitem->id && strcmp(pitem->id, szid) == 0) break;
   }
   return flist->size == i ? -1 : i;
+}
+
+string lower(char *cp)
+{
+    string n(cp);
+    for (auto& c : n)
+    {
+        c = tolower(c);
+    }
+    return n;
+}
+
+/*! \brief Synchronize a family and tree together
+*
+*  Sets the value of index in pcf to the node index in the tree of the
+*  leaf with the matching species ID.
+*  \returns 0 on success, or -1 if there is a species in the tree with
+*  no matching species in the family
+*/void cafe_family_set_species_index(pCafeFamily pcf, pCafeTree pcafe)
+{
+    pTree ptree = (pTree)pcafe;
+    map<string, int> leaf_names;
+
+    for (int j = 0; j < ptree->nlist->size; j += 2)		// map leaf names to indices
+    {
+        pPhylogenyNode pnode = (pPhylogenyNode)ptree->nlist->array[j];
+        leaf_names[lower(pnode->name)] = j;
+    }
+
+    set<string> all_species;
+    for (int i = 0; i < pcf->num_species; i++)
+    {
+        string species = lower(pcf->species[i]);
+        all_species.insert(species);
+        if (pcf->species[i][0] == '-') {
+            int nodeidx = atoi(&pcf->species[i][1]);
+            pcf->index[i] = nodeidx;
+        }
+        else {
+            if (leaf_names.find(species) == leaf_names.end())
+                throw std::runtime_error("No species '" + species + "' was found in the tree");
+            pcf->index[i] = leaf_names[species];
+        }
+    }
+
+    for (auto& leaf : leaf_names)
+    {
+        if (all_species.find(leaf.first) == all_species.end())
+            throw std::runtime_error("No species '" + leaf.first + "' was found in the family list");
+    }
 }

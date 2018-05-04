@@ -18,6 +18,7 @@ std::vector<std::string> tokenize(std::string s, int flags);
 pCafeFamily cafe_family_init(const std::vector<std::string>& species_list);
 pCafeFamily load_gene_families(std::istream& ist, char separator, int max_size);
 void cafe_family_free(pCafeFamily pcf);
+void cafe_family_set_species_index(pCafeFamily pcf, pCafeTree pcafe);
 
 struct gene_family
 {
