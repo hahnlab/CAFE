@@ -255,8 +255,8 @@ TEST(CommandTests, cafe_cmd_tree)
 	CHECK(globals.param.pcafe != NULL);
 	LONGS_EQUAL(8, globals.param.num_branches);
 	CHECK(globals.param.old_branchlength != NULL);
-	LONGS_EQUAL(212, globals.param.sum_branch_length);
-	LONGS_EQUAL(81, globals.param.max_branch_length);
+
+    LONGS_EQUAL(81, max_branch_length((pTree)globals.param.pcafe));
 }
 
 TEST(CommandTests, cafe_cmd_tree_syncs_family_if_loaded)

@@ -147,6 +147,7 @@ void get_doubles_array(std::vector<double>& loc, pArgument parg);
 void log_param_values(std::ostream& ost, Globals& globals);
 float distance_from_root(pCafeTree tree, pCafeNode node);
 bool is_ultrametric(pCafeTree tree);
+int max_branch_length(pTree ptree);
 
 const int REQUIRES_FAMILY = 0x01;
 const int REQUIRES_TREE = 0x02;

@@ -35,7 +35,6 @@ Globals::Globals() : viterbi(new viterbi_parameters()), validator(new cross_vali
 	param.likelihoodRatios = NULL;
 	param.MAP = NULL;
 	param.ML = NULL;
-	param.max_branch_length = 0;
 	param.mu = NULL;
 	param.num_branches = 0;
 	param.num_lambdas = 0;
@@ -55,7 +54,6 @@ Globals::Globals() : viterbi(new viterbi_parameters()), validator(new cross_vali
 	param.quiet = 0;
 	param.root_dist = NULL;
 	param.str_fdata = NULL;
-	param.sum_branch_length = 0;
 
 	viterbi->cutPvalues = NULL;
 	mu_tree = NULL;

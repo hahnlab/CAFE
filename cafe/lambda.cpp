@@ -476,7 +476,7 @@ int cafe_cmd_lambda(Globals& globals, vector<string> tokens)
 			pString pstr = cafe_tree_string_with_familysize_lambda(pcafe);
 			for (int j = 0 ; j < param->num_lambdas; j++ )
 			{
-				double a = pitem->lambda[j] * param->max_branch_length;
+				double a = pitem->lambda[j] * max_branch_length((pTree)pcafe);
 				if ( a >= 0.5 || fabs(a-0.5) < 1e-3 )
 				{
 					fprintf(fpout, "@@ ");
@@ -536,10 +536,9 @@ double* cafe_best_lambda_by_fminsearch(pCafeParam param, int lambda_len, int k)
 		if (param->num_params > 0)
 		{
 			int kfix = k - param->fixcluster0;
-			double max_branch_length = param->max_branch_length;
 			double *k_weights = param->k_weights;
 			input_values_randomize(&param->input, param->num_lambdas, param->num_mus, param->parameterized_k_value,
-				kfix, max_branch_length, k_weights);
+				kfix, max_branch_length((pTree)param->pcafe), k_weights);
 		}
 
 		copy_range_to_tree(param->pcafe, &param->family_size);
@@ -908,7 +907,7 @@ double* cafe_each_best_lambda_by_fminsearch(pCafeParam param, int lambda_len)
     int i, j;
     for (i = 0; i < lambda_len; i++)
     {
-        param->lambda[i] = 0.5 / param->max_branch_length;
+        param->lambda[i] = 0.5 / max_branch_length((pTree)param->pcafe);
     }
     pFMinSearch pfm = fminsearch_new_with_eq(__cafe_each_best_lambda_search, lambda_len, param);
     pfm->tolx = 1e-6;
@@ -962,7 +961,7 @@ double* cafe_each_best_lambda_by_fminsearch(pCafeParam param, int lambda_len)
         {
             pitem->lambda[j] = re[j];
             //pitem->mu[j] = re[j];
-            double a = re[j] * param->max_branch_length;
+            double a = re[j] * max_branch_length((pTree)param->pcafe);
             //			printf("%f\n", a);
             if (a >= 0.5 || fabs(a - 0.5) < 1e-3)
             {

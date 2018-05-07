@@ -155,9 +155,8 @@ struct tagCafeParam
 
 	int checkconv;
     int* old_branchlength;
-	double max_branch_length;
-    double sum_branch_length;
-	int num_branches;
+
+    int num_branches;
 
 	family_size_range family_size;
 	

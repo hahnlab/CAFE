@@ -383,11 +383,10 @@ void best_lambda_mu_by_fminsearch(pCafeParam param, int lambda_len, int mu_len, 
 		if (param->num_params > 0)
 		{
 			int kfix = k - param->fixcluster0;
-			double max_branch_length = param->max_branch_length;
 			double *k_weights = param->k_weights;
 
 			input_values_randomize(&param->input, param->num_lambdas, param->num_mus, param->parameterized_k_value,
-				kfix, max_branch_length, k_weights);
+				kfix, max_branch_length((pTree)param->pcafe), k_weights);
 		}
 
 		copy_range_to_tree(param->pcafe, &param->family_size);

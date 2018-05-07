@@ -1083,6 +1083,29 @@ bool is_ultrametric(pCafeTree tree)
     return true;
 }
 
+int max_branch_length(pTree ptree)
+{
+    int max_branch_length = 0, sum_branch_length = 0;
+    // find max_branch_length and sum_branch_length.
+    for (int j = 0; j < ptree->nlist->size; j++)
+    {
+        pPhylogenyNode pnode = (pPhylogenyNode)ptree->nlist->array[j];
+        if (pnode->branchlength > 0)
+        {
+            sum_branch_length += pnode->branchlength;
+            if (max_branch_length < pnode->branchlength) {
+                max_branch_length = pnode->branchlength;
+            }
+        }
+        else if (!tree_is_root(ptree, (pTreeNode)pnode))
+        {
+            throw runtime_error("Failed to load tree from provided string (branch length missing)");
+        }
+    }
+
+    return max_branch_length;
+}
+
 /**
 \ingroup Commands
 \brief \bTree: The tree to perform calculations on. Must be in Newick format.
@@ -1140,27 +1163,7 @@ int cafe_cmd_tree(Globals& globals, std::vector<std::string> tokens)
     }
 	param->num_branches = param->pcafe->super.nlist->size - 1;
 	param->old_branchlength = (int*)memory_new(param->num_branches, sizeof(int));
-	pTree ptree = (pTree)param->pcafe;
-	// find max_branch_length and sum_branch_length.
-	param->max_branch_length = 0;
-	param->sum_branch_length = 0;
-	for (int j = 0; j < ptree->nlist->size; j++)
-	{
-		pPhylogenyNode pnode = (pPhylogenyNode)ptree->nlist->array[j];
-		if (pnode->branchlength > 0)
-		{
-			param->sum_branch_length += pnode->branchlength;
-			if (param->max_branch_length < pnode->branchlength) {
-				param->max_branch_length = pnode->branchlength;
-			}
-		}
-		else if (!tree_is_root(ptree, (pTreeNode)pnode))
-		{
-			cafe_tree_free(param->pcafe);
-			param->pcafe = NULL;
-			throw runtime_error("Failed to load tree from provided string (branch length missing)");
-		}
-	}
+    max_branch_length((pTree)param->pcafe);
 
 	if (!param->quiet)
 		cafe_tree_string_print(param->pcafe);
