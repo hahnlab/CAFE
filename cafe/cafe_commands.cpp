@@ -1047,9 +1047,9 @@ void write_family(ostream& ost, pCafeFamily family)
 	}
 }
 
-float distance_from_root(pCafeTree tree, pCafeNode node)
+double distance_from_root(pCafeTree tree, pCafeNode node)
 {
-    float result = 0;
+    double result = 0;
     pPhylogenyNode n = (pPhylogenyNode)node;
     while (!tree_is_root((pTree)tree, (pTreeNode)n))
     {
@@ -1065,22 +1065,34 @@ inline bool is_nearly_equal(double x, double y)
     return std::abs(x - y) <= epsilon * std::abs(x);
 }
 
+vector<pCafeNode> get_leaves(pCafeTree tree)
+{
+    auto n = tree->super.nlist;
+    vector<pCafeNode> nodes(n->size);
+    std::transform(n->array, n->array + n->size, nodes.begin(), [](void *p) {return (pCafeNode)p;});
+    auto it = std::remove_if(nodes.begin(), nodes.end(), [](pCafeNode p) {return !tree_is_leaf((pTreeNode)p);});
+    nodes.erase(it, nodes.end());
+    return nodes;
+}
+
 bool is_ultrametric(pCafeTree tree)
 {
-    float distance = -1;
-    for (int j = 0; j < tree->super.nlist->size; ++j)
-    {
-        pCafeNode pnode = (pCafeNode)tree->super.nlist->array[j];
-        if (tree_is_leaf((pTreeNode)pnode))
+    double max_dist = max_root_to_leaf_length(tree);
+    double tolerance = max_dist / 10000.0;
+    auto leaves = get_leaves(tree);
+    auto err = find_if(leaves.begin(), leaves.end(), [&](pCafeNode p) 
         {
-            float d = distance_from_root(tree, pnode);
-            if (distance == -1)
-                distance = d;
-            else if (!is_nearly_equal(distance, d))
-                return false;
-        }
-    }
-    return true;
+            return fabs(distance_from_root(tree, p) - max_dist) > tolerance;
+        });
+    return err == leaves.end();
+}
+
+double max_root_to_leaf_length(pCafeTree tree)
+{
+    auto leaves = get_leaves(tree);
+    vector<double> lengths(leaves.size());
+    transform(leaves.begin(), leaves.end(), lengths.begin(), [tree](pCafeNode p) {return distance_from_root(tree, p);});
+    return *max_element(lengths.begin(), lengths.end());
 }
 
 int max_branch_length(pTree ptree)

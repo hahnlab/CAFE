@@ -245,17 +245,28 @@ TEST(TreeTests, distance_from_root)
     DOUBLES_EQUAL(9, distance_from_root(tree, find_node_named(tree, "dog")), 0.00001);
 }
 
-TEST(TreeTests, is_ultrametric)
+TEST(TreeTests, max_root_to_leaf_length)
 {
-    pCafeTree tree = create_tree(range);
-    CHECK_FALSE(is_ultrametric(tree));
-
-    const char *newick_tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:93)";
+    const char *newick_tree = "(((chimp:6,human:6):81,(mouse:19,rat:17):70):6,dog:93)";
     char buf[100];
     strcpy(buf, newick_tree);
+    pCafeTree tree = cafe_tree_new(buf, &range, 0.01, 0);
+    LONGS_EQUAL(95, max_root_to_leaf_length(tree));
+}
+
+
+TEST(TreeTests, is_ultrametric)
+{
+    const char *ultrametric_tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:93)";
+    char buf[100];
+    strcpy(buf, ultrametric_tree);
     pCafeTree tree2 = cafe_tree_new(buf, &range, 0.01, 0);
     CHECK(is_ultrametric(tree2));
 
+    const char *almost_ultrametric_tree = "(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:92)";
+    strcpy(buf, almost_ultrametric_tree);
+    pCafeTree tree3 = cafe_tree_new(buf, &range, 0.01, 0);
+    CHECK_FALSE(is_ultrametric(tree3));
 
 }
 

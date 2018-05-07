@@ -10,6 +10,7 @@
 A NEWICK-formatted tree containing branch lengths and taxon names as they are specified in the \ref Load "input file". 
 Branch lengths 
 should be integer units and the tree should be ultrametric (all paths from root to tip should have the same length).
+If the tree is not ultrametric to a tolerance of .01%, a warning will be logged.
 Please note that there should be no spaces in the tree string, nor semicolons at the end of the line.
 
 Here is an example of an ultrametric tree followed by its NEWICK notation:

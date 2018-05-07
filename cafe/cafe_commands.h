@@ -145,9 +145,10 @@ void run_viterbi_sim(pCafeTree pcafe, pCafeFamily pfamily, roots& roots);
 int init_histograms(int rfsize, roots& roots, int nsamples);
 void get_doubles_array(std::vector<double>& loc, pArgument parg);
 void log_param_values(std::ostream& ost, Globals& globals);
-float distance_from_root(pCafeTree tree, pCafeNode node);
+double distance_from_root(pCafeTree tree, pCafeNode node);
 bool is_ultrametric(pCafeTree tree);
 int max_branch_length(pTree ptree);
+double max_root_to_leaf_length(pCafeTree tree);
 
 const int REQUIRES_FAMILY = 0x01;
 const int REQUIRES_TREE = 0x02;
