@@ -1,0 +1,14 @@
+Tree:(((Chimp:6,Human:6):81,(Mouse:17,Rat:17):70):6,Dog:93)
+(((Chimp:6,Human:6):81,(Mouse:17,Rat:17):70):6,Dog:93)Lambda:	0.00133949
+# IDs of nodes:(((Chimp<0>,Human<2>)<1>,(Mouse<4>,Rat<6>)<5>)<3>,Dog<8>)<7>
+# Output format for: ' Average Expansion', 'Expansions', 'No Change', 'Contractions', and 'Branch-specific P-values' = (node ID, node ID): (0,2) (1,5) (4,6) (3,8) 
+# Output format for 'Branch cutting P-values' and 'Likelihood Ratio Test': (0, 1, 2, 3, 4, 5, 6, 7, 8)
+Average Expansion:	(0.25,-0.25)	(0.25,0.25)	(0,0.25)	(0,-0.25)
+Expansion :	(1,0)	(1,1)	(0,1)	(0,0)
+nRemain :	(3,3)	(3,3)	(4,3)	(4,3)
+nDecrease :	(0,1)	(0,0)	(0,0)	(0,1)
+'ID'	'Newick'	'Family-wide P-value'	'Viterbi P-values'	'cut P-value'	'Likelihood Ratio'
+ENSF00000000007	(((Chimp_4:6,Human_4:6)_4:81,(Mouse_3:17,Rat_3:17)_3:70)_3:6,Dog_3:93)_3	0.6955	((-,-),(-,-),(-,-),(-,-))	
+ENSF00000000014	(((Chimp_5:6,Human_3:6)_4:81,(Mouse_5:17,Rat_6:17)_5:70)_4:6,Dog_3:93)_4	0.003	((0.0159398,0.0461031),(0.749143,0.165864),(0.596659,0.0553873),(0.530652,0.419912))	
+ENSF00000000015	(((Chimp_1:6,Human_1:6)_1:81,(Mouse_1:17,Rat_1:17)_1:70)_1:6,Dog_1:93)_1	0.7745	((-,-),(-,-),(-,-),(-,-))	
+ENSF00000000029	(((Chimp_2:6,Human_2:6)_2:81,(Mouse_2:17,Rat_2:17)_2:70)_2:6,Dog_2:93)_2	0.8985	((-,-),(-,-),(-,-),(-,-))	
