@@ -12,6 +12,8 @@ lambda -s -t (((2,2)1,(1,1)1)1,1)
 #specify the global lambda to for generating simulated data
 lambda -l 0.0017
 
+rootdist -i fly.table
+
 #generate 10 simulated data sets
 genfamily rndtree/rnd -t 10
 

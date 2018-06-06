@@ -2344,7 +2344,7 @@
   DONE: Lambda Search or setting, for command:
   lambda -s -v 0.001700 -t (((2,2)1,(1,1)1)1,1) 
 
-  $ cat lh2.out
+  $ cat $TESTDIR/lh2.out
   \t-593.926443\t0.001532\t-593.925727\t0.001534\t0.001521 (esc)
   \t-574.925635\t0.001254\t-572.883452\t0.001154\t0.002023 (esc)
   \t-599.577829\t0.001579\t-599.457210\t0.001548\t0.001779 (esc)
@@ -2358,5 +2358,5 @@
 
   $ rm -rf $TESTDIR/rndtree
 
-  $ rm lh2.out
+  $ rm $TESTDIR/lh2.out
 
