@@ -645,8 +645,6 @@ TEST(LambdaTests, get_posterior)
 	cafe_family_set_species_index(param.pfamily, param.pcafe);
 	cafe_family_add_item(param.pfamily, gene_family("id", "description", { 3, 5, 7, 11, 13 }));
 
-    std::vector<double> ml(15), map(15);
-
 	square_matrix m;
 	square_matrix_init(&m, 16);
 	for (int i = 0; i < 256; i++)
@@ -656,12 +654,12 @@ TEST(LambdaTests, get_posterior)
 
     std::vector<double> prior_rfsize;
     cafe_set_prior_rfsize_empirical(&param, prior_rfsize);
-	DOUBLES_EQUAL(-4.6503, get_posterior(param.pfamily, param.pcafe, &param.family_size, ml, map, prior_rfsize, param.quiet), .0001);
+	DOUBLES_EQUAL(-4.6503, get_posterior(param.pfamily, param.pcafe, prior_rfsize), .0001);
 
 	for (int i = 0; i < 256; i++)
 		m.values[i] = 0;
 
-	CHECK_THROWS(std::runtime_error, get_posterior(param.pfamily, param.pcafe, &param.family_size, ml, map, prior_rfsize, param.quiet));
+	CHECK_THROWS(std::runtime_error, get_posterior(param.pfamily, param.pcafe,prior_rfsize));
 
 	cafe_family_free(param.pfamily);
 };
@@ -727,8 +725,6 @@ TEST(LambdaTests, get_posterior2)
     cafe_family_add_item(pfamily, gene_family("ENS04", "description", { 6, 3 }));
     cafe_family_set_species_index(pfamily, pcafe);
 
-    std::vector<double> ml(pfamily->flist->size);
-    std::vector<double> map(pfamily->flist->size);
     std::vector<double> rf(FAMILYSIZEMAX);
     double poisson_lambda = 2.0;
     cafe_set_prior_rfsize_poisson_lambda(rf, 1, &poisson_lambda);
@@ -740,7 +736,7 @@ TEST(LambdaTests, get_posterior2)
         node->birth_death_probabilities.mu =mu;
     }
 
-    DOUBLES_EQUAL(-18.0085, get_posterior(pfamily, pcafe, &range, ml, map, rf, 1), .1);
+    DOUBLES_EQUAL(-18.0085, get_posterior(pfamily, pcafe, rf), .1);
 
     cafe_family_free(pfamily);
 };

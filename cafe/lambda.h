@@ -72,7 +72,7 @@ void set_all_lambdas(pCafeParam param, double value);
 pGMatrix cafe_lambda_distribution(pCafeParam param, const std::vector<lambda_range>& range);
 void cafe_set_prior_rfsize_poisson_lambda(std::vector<double>& prior_rfsize, int shift, double* lambda);
 double cafe_set_prior_rfsize_empirical(pCafeParam param, std::vector<double>& prior_rfsize);
-double get_posterior(pCafeFamily pfamily, pCafeTree pcafe, family_size_range*range, std::vector<double>& ML, std::vector<double>& MAP, std::vector<double>& prior_rfsize, int quiet);
+double get_posterior(pCafeFamily pfamily, pCafeTree pcafe, std::vector<double>& prior_rfsize);
 struct posterior
 {
     double max_likelihood;

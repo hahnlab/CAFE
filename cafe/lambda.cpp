@@ -672,9 +672,12 @@ posterior compute_posterior(pCafeFamilyItem pitem, pCafeTree pcafe, const std::v
     return result;
 }
 
-double get_posterior(pCafeFamily pfamily, pCafeTree pcafe, family_size_range*range, std::vector<double>& ML, std::vector<double>& MAP, std::vector<double>& prior_rfsize, int quiet)
+double get_posterior(pCafeFamily pfamily, pCafeTree pcafe, std::vector<double>& prior_rfsize)
 {
-	int i;
+    std::vector<double> family_max_likelihood(pfamily->flist->size);
+    std::vector<double> family_max_posterior(pfamily->flist->size);
+
+    int i;
 	double score = 0;
 	for (i = 0; i < pfamily->flist->size; i++)	// i: family index
 	{
@@ -684,22 +687,22 @@ double get_posterior(pCafeFamily pfamily, pCafeTree pcafe, family_size_range*ran
 		{
 			cafe_family_set_size(pfamily, pitem, pcafe);	// this part is just setting the leave counts.
 			posterior p = compute_posterior(pitem, pcafe, prior_rfsize);
-            ML[i] = p.max_likelihood;
-            MAP[i] = p.max_posterior;
+            family_max_likelihood[i] = p.max_likelihood;
+            family_max_posterior[i] = p.max_posterior;
 
 		}
 		else
 		{
-            ML[i] = ML[pitem->ref];
-			MAP[i] = MAP[pitem->ref];
+            family_max_likelihood[i] = family_max_likelihood[pitem->ref];
+			family_max_posterior[i] = family_max_posterior[pitem->ref];
 		}
-		if (ML[i] == 0)
+		if (family_max_likelihood[i] == 0)
 		{
 			ostringstream ost;
 			ost << "WARNING: Calculated posterior probability for family " << pitem->id << " = 0" << endl;
 			throw std::runtime_error(ost.str());
 		}
-		score += log(MAP[i]);			// add log-posterior across all families
+		score += log(family_max_posterior[i]);			// add log-posterior across all families
 	}
 	return score;
 }
@@ -727,12 +730,9 @@ double __cafe_best_lambda_search(double* plambda, void* args)
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
 		try
 		{
-            int num_families = param->pfamily->flist->size;
-            std::vector<double> ml(num_families), map(num_families), pr(FAMILYSIZEMAX);
-            copy(param->ML, param->ML + num_families, ml.begin());
-            copy(param->MAP, param->MAP + num_families, map.begin());
+            std::vector<double> pr(FAMILYSIZEMAX);
             copy(param->prior_rfsize, param->prior_rfsize + FAMILYSIZEMAX, pr.begin());
-            score = get_posterior(param->pfamily, param->pcafe, &param->family_size, ml, map, pr, param->quiet);
+            score = get_posterior(param->pfamily, param->pcafe, pr);
 		}
 		catch (std::runtime_error& e)
 		{
