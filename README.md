@@ -9,18 +9,18 @@ gain and loss across a user-specified phylogenetic tree. The distribution of fam
 sizes generated under this model can provide a basis for assessing the significance 
 of the observed family size differences among taxa.
 
-CAFE v4.0 is the first in a regular series of releases to the CAFE application. The 
-manual and various tutorials may be viewed on the website. This document describes how to 
-download and use CAFE v4.0. 
+CAFE v4.2 is the latest in a regular series of releases to the CAFE application. The 
+manual and various tutorials may be viewed on the website (https://hahnlab.github.io/CAFE/) . This document describes how to 
+download and use CAFE v4.2. 
 
 # Use
 
-The necessary inputs for CAFE v4.0 are:
+The necessary inputs for CAFE v4.2 are:
 1.  a data file containing gene family sizes for the taxa included in the 
 phylogenetic tree
 2.  a Newick formatted phylogenetic tree, including branch lengths
 
-From the inputs above, CAFE v4.0 will compute:
+From the inputs above, CAFE v4.2 will compute:
 1.  the maximum likelihood value of the birth & death parameter, λ (or of 
 separate birth and death parameters (λ and μ, respectively), over the whole 
 tree or for user-specified subsets of branches in the tree
@@ -33,8 +33,9 @@ along each branch in the tree
 
 # Install
 
-Run "./configure" and "make" from the home directory. If the readline library is available 
-on the system, running "make USE_READLINE=1" will allow CAFE to support a command line history.
+Run "configure" and "make" from the home directory. The only result is the "cafe" 
+executable in the release directory. This file should be copied to a convenient 
+location.  
 
 # History
 
@@ -46,3 +47,5 @@ an input data set with iterative use of the errormodel command using the
 accompanying python script **caferror.py**. This version also included the addition of the 
 **rootdist** command to give the user more control over simulations.
 
+CAFE v4.0 was the first release in a regular series of releases in order to make
+CAFE easier and more user-friendly, in addition to adding features and fixing bugs.

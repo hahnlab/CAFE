@@ -1,4 +1,4 @@
-AC_INIT(cafe, 4.1)
+AC_INIT(cafe, 4.2)
 
 m4_include([m4/ax_lib_readline.m4])
 

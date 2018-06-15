@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [4.2] - 2018-07-01
+### Added
+- tree: a -i parameter is now supported to load a tree from a file.
+- A wider variety of compiler/operating system combinations are now tested before releasing
+- lambda: a -score parameter has been added which logs the calculated 
+log-likelihood for the given set of lambdas.
+- The PGI compiler will now be autodetected and used if available.
+
+### Changed
+- Fixed bug where running the optimizer could change the initial values passed to the optimizer.
+(This did not seem to have an effect on the final values but made the optimizer less predictable)
+- load: Fixed occasional crash if the log file specified with the -l parameter is invalid 
+- report: Fixed occasional crash if multiple threads were specified in the load command
+- lambda: Fixed crash if there is a species in the family file that does not appear in the tree 
+- tree: A warning is now emitted if the tree is not ultrametric (to within 0.01% of the max 
+root-to-leaf length)
+
 ## [4.1] - 2017-10-27
 ### Added
 - seed: new command that sets the random seed so commands with randomness can be replicated
