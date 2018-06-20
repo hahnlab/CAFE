@@ -1,9 +1,104 @@
-/*! 
-* The variable \ref cafe_param is a global singleton that holds general program state.
-* \ref cafe_param holds pcafe, a \ref CafeTree, and pfamily, a \ref CafeFamily . These are set
-* by the user via the commands "tree" and "load" respectively. When the user calls
-* the command "lambda" calculations are performed on the pcafe and pfamily variables.
+/*! \page FAQ Frequently Asked Questions
+*
+* @section exclusive Is it useful to have a gene family that only includes genes in a single species?
+*
+* This is concerning because without adequate sampling across taxa for a gene family, CAFE may inaccurately infer ancestral
+* states. If you have families present in only one species,You may wish to use the \em -filter option with the \b load
+* command. With this option CAFE will remove any gene families that are not present at the root of your phylogeny.
+*
+* @section nospecies Why is CAFE reporting that a family has no XXX species when XXX is the very first species in the gene family file?
+*
+* The first two fields of the family input file are "Description" and "Family ID". If you leave out the Description field, CAFE
+* will assume that the family ID is the description and the first species is the family ID. Add an extra tab at the beginning of
+each line or add "none" or some other data to fulfill the role of description.
+*
+* @section internallabels Why does an error occur when running the cafetutorial_report_analysis.py script?
+*
+* One possibility is labels on internal nodes of the tree. While CAFE can handle labels on internal nodes of the tree, unfortunately
+* this version of the report analysis script cannot. If each node in your CAFE input tree was labeled as N0, N1, N2, N3, or N4,
+* you may either do a find and replace for each of the node labels in the report file and re-run the report analysis script, or
+* remove the internal nodes from the tree in your CAFE script and re-run CAFE to generate a report file without the node labels.
+*
+* @section Is it okay to run CAFE if my tree is not ultrametric?
+*
+* /em Ultrametric refers to a phylogenetic tree in which all paths from root to tips have the same length.  For CAFE to accurately
+* infer rates of gene gain/loss and ancestral states, branch lengths should be smoothed in units of time. We recommend the program
+* \b r8s for most cases of tree smoothing, as it is very quick. CAFE will log a warning if the tree is not ultrametric to within
+* a small percentage of the longest branch length.
+*
+* @section r8s How do I set r8s parameters to be compatible with CAFE?
+*
+*
+* The \b nsites parameter is simply the total number of columns in the alignment(s) used to construct your species tree.
+* Note that for input to r8s, the species tree must have branch lengths in terms of relative number of substitutions
+* (as commonly given from maximum likelihood programs like RAxML. As long as your tree construction application
+* uses a multiple-sequence alignment and infers a tree with branch lengths in
+* relative number of substitutions, then you should easily be able to count \b nsites from the alignment.
+*
+* \b fixage is the parameter to set the calibration points for divergence time estimation. You will need at least one
+* fossil calibration point to obtain a tree with branch lengths in terms of millions of years. To do this, you first
+* need to define the name of an internal node with the \b mrca command. For example, given the simple example topology
+* ((A,B),C), to name the internal node that is the direct ancestor of taxa A and B, the command would be:
+*
+* \code
+* mrca ABancestor A B;
+* \endcode
+*
+* Then, with some prior knowledge that this divergence occurred 1 million years ago, the \b fixage command is used to
+* set that calibration point:
+*
+* \code
+* fixage taxon=ABancestor age=1;
+* \endcode
+*
+* Alternatively, you can provide ranges of possible ages for nodes with the \b constrain command. For example, if there is
+* fossil evidence that the A and B lineages diverged between 1 and 5 million years ago:
+*
+* \code
+* constrain taxon=ABancestor minage=1 maxage=5;
+* \endcode
+*
+* The best way to determine the fossil calibration points for your phylogeny is to survey the literature for your set of
+* species. If you're unsure of where to start, a good
+* place is http://www.timetree.org/, which compiles average and median divergence times from the literature.
+* Simply search for the two species you wish to know the divergence time of and the website will show you average divergence
+* estimates and the references from which they were obtained.
+*
+* For more info on r8s, see the manual: https://web.bioinformatics.ic.ac.uk/doc/r8s. Also see section 2.3.1 of the CAFE
+* tutorial, where a script is provided to calculate the parameters appropriate for passing to r8s.
+*
+* @section expandcontract Is there a way to get the list of gene names that have expanded and contracted?
+*
+* You may want to know the expansions and contractions for each node in the supplied species tree, rather than just the counts.
+* As the input list for cafe consists of orthologous gene families, what you get is the list of those gene families
+* which either have undergone expansion or contractions for a given species. The cafe tutorial files include a script
+* called \b cafetutorial_report_analysis.py. Running this script generates a summary file named \em xxxxx_anc.txt. This
+* file contains all the gene families with their species-wise count, as well as counts in their internal nodes. The
+* species & internal nodes has also been assigned a number in ascending order (in the same topology as provided in the
+* input tree). You just need to arrange the columns in ascending order of this number. Now, whichever species
+* you want the expansion / contraction family list, subtract the family gene count from the immediate ascending node gene count:
+*
+* if the result number is +ve, the family is \em Contracted;
+*
+* if the result number is -ve, the family is \em Expanded;
+*
+* if the result number is 0, the family is \em Unchanged.
+*
+* @section contract Shouldn't a gene family that has contracted disappear from the species at the present time?
+*
+* CAFE's definition of contraction is the loss of any number of genes within a family along a lineage - it does not mean
+* that ALL genes in the family were lost. Suppose you see the following line in the summary file:
+* \code
+* mouse<22>:	11[+10*],23[+9*],36[+9*],52[+14*],10639[-2*]
+* \endcode
+*
+* The last item shows that gene family with the ID 10639 has contracted by 2 genes, and, as evidenced by the asterisk,
+* this is considered a rapid change. That means the ancestral lineage of the mouse was inferred to have 11 genes in that
+* family, and two of the genes were lost during the evolution of the mouse lineage - thus resulting in the 9 genes observed
+* in mouse today.
+*
 */
+
 #include "cafe.h"
 #include<stdlib.h>
 #include<math.h>
