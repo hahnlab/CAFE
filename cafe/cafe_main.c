@@ -21,10 +21,18 @@ each line or add "none" or some other data to fulfill the role of description.
 *
 * @section Is it okay to run CAFE if my tree is not ultrametric?
 *
-* /em Ultrametric refers to a phylogenetic tree in which all paths from root to tips have the same length.  For CAFE to accurately
+* <i>Ultrametric</i> refers to a phylogenetic tree in which all paths from root to tips have the same length.  For CAFE to accurately
 * infer rates of gene gain/loss and ancestral states, branch lengths should be smoothed in units of time. We recommend the program
 * \b r8s for most cases of tree smoothing, as it is very quick. CAFE will log a warning if the tree is not ultrametric to within
 * a small percentage of the longest branch length.
+*
+* @section genfamily What is the meaning of the "genfamily tutorial_genfamily/rnd -t 100" command in the tutorial?
+*
+* The \b genfamily command generates simulated data based on the properties of observed data. \em tutorial_genfamily refers
+* to a directory in which the generated data will be placed. \em rnd denotes a prefix that will be added to each of the generated
+* data files. In the tutorial example, within the tutorial_genfamily/ directory, you will create 100 files named rnd_1, rnd_2, etc.
+* up to rnd_100. \b Note: The tutorial_genfamily directory must exist before running this command - CAFE will not automatically
+* create the directory.
 *
 * @section r8s How do I set r8s parameters to be compatible with CAFE?
 *
