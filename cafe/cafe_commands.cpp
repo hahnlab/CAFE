@@ -104,6 +104,7 @@ $ python caferror.py [-i shell script filename] [-e initial error value] [-d out
 #include <algorithm>
 #include <stdexcept>
 #include <stack>
+#include <cmath>
 
 #include "../config.h"
 
