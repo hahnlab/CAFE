@@ -132,6 +132,13 @@ TEST(FamilyTests, load_gene_families_is_not_whitespace_separated)
   }
 }
 
+TEST(FamilyTests, load_gene_families_tolerates_extra_lines)
+{
+    std::istringstream ist("FAMILYDESC\tFAMILY\tA\tB\tC\na\tb\t1\t2\n\n");
+    pCafeFamily fam = load_gene_families(ist, '\t', -1);
+    cafe_family_free(fam);
+}
+
 TEST(FamilyTests, cafe_family_set_size)
 {
 	pCafeFamily pcf = cafe_family_init({"chimp", "human", "mouse", "rat", "dog" });

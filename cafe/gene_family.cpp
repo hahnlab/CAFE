@@ -178,43 +178,46 @@ std::istream& operator>>(std::istream& ist, gene_family& fam)
 
 pCafeFamily load_gene_families(std::istream& ist, char separator, int max_size)
 {
-  char buf[STRING_BUF_SIZE];
-  if (!ist)
-  {
-    return NULL;
-  }
-
-  ist.getline(buf, STRING_BUF_SIZE);
-  string_pchar_chomp(buf);
-
-  vector<string> species_list = string_split(buf, separator);
-  if (species_list.size() < 2)
-  {
-      vector<string> t;
-      species_list.swap(t); // guarantees that memory won't leak
-      throw runtime_error("Failed to identify species for gene families");
-  }
-  species_list.erase(species_list.begin(), species_list.begin()+2); // first two items are description and ID - delete them
-  pCafeFamily pcf = cafe_family_init(species_list);
-
-  string s;
-  for (int i = 0; std::getline(ist, s); i++)
-  {
+    char buf[STRING_BUF_SIZE];
     if (!ist)
-      break;
+    {
+        return NULL;
+    }
 
-	std::replace(s.begin(), s.end(), separator, '\t');
-	istringstream isst(s);
-	gene_family gf;
-	isst >> gf;
+    ist.getline(buf, STRING_BUF_SIZE);
+    string_pchar_chomp(buf);
 
-	if (max_size < 0 || *max_element(gf.values.begin(), gf.values.end()) <= max_size)
-		cafe_family_add_item(pcf, gf);
-  }
+    vector<string> species_list = string_split(buf, separator);
+    if (species_list.size() < 2)
+    {
+        vector<string> t;
+        species_list.swap(t); // guarantees that memory won't leak
+        throw runtime_error("Failed to identify species for gene families");
+    }
+    species_list.erase(species_list.begin(), species_list.begin() + 2); // first two items are description and ID - delete them
+    pCafeFamily pcf = cafe_family_init(species_list);
+
+    string s;
+    for (int i = 0; std::getline(ist, s); i++)
+    {
+        if (!ist)
+            break;
+
+        if (s.empty())
+            continue;
+
+        std::replace(s.begin(), s.end(), separator, '\t');
+        istringstream isst(s);
+        gene_family gf;
+        isst >> gf;
+
+        if (max_size < 0 || *max_element(gf.values.begin(), gf.values.end()) <= max_size)
+            cafe_family_add_item(pcf, gf);
+    }
 
     __cafe_famliy_check_the_pattern(pcf);
 
-  return pcf;
+    return pcf;
 }
 
 /// Data array is assumes to contain a description, an identifier, and a set of integers
