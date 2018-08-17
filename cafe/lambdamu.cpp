@@ -256,16 +256,9 @@ int cafe_cmd_lambdamu(Globals& globals, std::vector<std::string> tokens)
 		reset_birthdeath_cache(param->pcafe, param->parameterized_k_value, &param->family_size);
 	}
 
-	cafe_log(param, "DONE: Lamda,Mu Search or setting, for command:\n");
-	ostringstream ost;
-	copy(tokens.begin(), tokens.end(), std::ostream_iterator<string>(ost, " "));
-	cafe_log(param, "%s\n", ost.str().c_str());
+  log_complete(param, tokens, params.search, true);
 
-	if (params.search && (param->parameterized_k_value > 0)) {
-		// print the cluster memberships
-    log_cluster_membership(param->pfamily, param->parameterized_k_value, param->p_z_membership, log);
-	}
-	return 0;
+  return 0;
 }
 
 double cafe_cluster_lambda_mu_search(double* parameters, void* args)

@@ -354,6 +354,25 @@ void lambda_search(pCafeParam param, lambda_args& params)
 
 }
 
+string log_complete(pCafeParam param, std::vector<string> tokens, bool is_search, bool with_mu)
+{
+  ostringstream ost;
+  if (with_mu)
+    ost << "DONE: Lambda/Mu complete: ";
+  else
+    ost << "DONE: Lambda complete: ";
+
+  std::copy(tokens.begin(), tokens.end(),
+    std::ostream_iterator<std::string>(ost, " "));
+
+  if (is_search && (param->parameterized_k_value > 0)) {
+    // print the cluster memberships
+    log_cluster_membership(param->pfamily, param->parameterized_k_value, param->p_z_membership, ost);
+  }
+
+  return ost.str();
+}
+
 /**
 * \brief Find lambda values
 *
@@ -507,17 +526,7 @@ int cafe_cmd_lambda(Globals& globals, vector<string> tokens)
 		}
 	}
 	
-	cafe_log(param,"DONE: Lambda Search or setting, for command:\n");
-
-	std::ostringstream cmd;
-	std::copy(tokens.begin(), tokens.end(),
-		std::ostream_iterator<std::string>(cmd, " "));
-	cafe_log(param,"%s\n", cmd.str().c_str());
-	
-	if (params.search && (param->parameterized_k_value > 0)) {
-		// print the cluster memberships
-		log_cluster_membership(param->pfamily, param->parameterized_k_value, param->p_z_membership, ost);
-	}
+  ost << log_complete(param, tokens, params.search, false);
 
 	return 0;
 }

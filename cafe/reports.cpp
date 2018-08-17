@@ -740,7 +740,7 @@ void cafe_report_load_viterbi_pvalue(char* data, viterbi_parameters& v, pCafeFam
   array = NULL;
 }
 
-
+#ifdef DEBUG
 int cafe_report_retrieve_data(const char* file, pCafeParam param, viterbi_parameters& viterbi)
 {
 	int i, j;
@@ -955,6 +955,7 @@ int cafe_report_retrieve_data(const char* file, pCafeParam param, viterbi_parame
 	arraylist_free(plines, free);
 	return 0;
 }
+#endif
 
     void update_depths(pTreeNode node, std::map<int, double>& depths, double curr_depth)
     {

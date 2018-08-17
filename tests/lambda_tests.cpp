@@ -12,6 +12,8 @@
 #include "Globals.h"
 #include <gene_family.h>
 
+using namespace std;
+
 extern "C" {
 #include "cafe.h"
 #include <cafe_shell.h>
@@ -763,4 +765,22 @@ TEST(LambdaTests, collect_leaf_sizes)
     LONGS_EQUAL(5, pal2[3]);
 
     cafe_family_free(pfamily);
+}
+
+TEST(LambdaTests, log_complete)
+{
+  CafeParam param;
+  vector<string> tokens{ "lambda", "-s", "-t" };
+
+  auto str = log_complete(&param, tokens, false, false);
+
+  STRCMP_EQUAL("DONE: Lambda complete: lambda -s -t ", str.c_str());
+
+  str = log_complete(&param, tokens, false, true);
+
+  STRCMP_EQUAL("DONE: Lambda/Mu complete: lambda -s -t ", str.c_str());
+
+  param.parameterized_k_value = 2;
+  str = log_complete(&param, tokens, true, false);
+  STRCMP_CONTAINS("The Number of families", str.c_str());
 }
