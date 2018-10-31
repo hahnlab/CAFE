@@ -465,7 +465,7 @@ std::ostream& operator<<(ostream& ost, const Report& report)
   case Report::Text:
   case Report::Unknown:
     ost << "Tree:";
-    ost << report.tree << "\n" << report.tree;
+    ost << report.tree << "\n";
 
     ost << "Lambda:";
     for (size_t i = 0; i < report.lambdas.size(); i++)

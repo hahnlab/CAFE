@@ -83,6 +83,8 @@ TEST(ReportTests, write_report)
   ost << r;
 
   STRCMP_CONTAINS("Tree:(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)\n", ost.str().c_str());
+  std::string s = ost.str();
+  CHECK(s.find("Tree:(((chimp:6,human:6):81,(mouse:17,rat:17):70):6,dog:9)\n(((chimp:6,human:6)") == std::string::npos);
   STRCMP_CONTAINS("Lambda:\t1.5\t2.5\t3.5\n", ost.str().c_str());
   STRCMP_CONTAINS("Lambda tree:\t(((:6,:6):81,(:17,:17):70):6,:9)\n", ost.str().c_str());
   STRCMP_CONTAINS("IDs of nodes:(((chimp<0>,human<2>)<1>,(mouse<4>,rat<6>)<5>)<3>,dog<8>)<7>\n", ost.str().c_str());
