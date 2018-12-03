@@ -165,14 +165,21 @@ int to_int(std::string s)
 
 std::istream& operator>>(std::istream& ist, gene_family& fam)
 {
-	std::string str;
-	std::getline(ist, str);
-	std::vector<std::string> values = string_split(str, '\t');
-	fam.desc = values[0];
-	fam.id = values[1];
-	fam.values.resize(values.size() - 2);
-	std::transform(values.begin() + 2, values.end(), fam.values.begin(), to_int);
-	return ist;
+    try
+    {
+        std::string str;
+        std::getline(ist, str);
+        std::vector<std::string> values = string_split(str, '\t');
+        fam.desc = values[0];
+        fam.id = values[1];
+        fam.values.resize(values.size() - 2);
+        std::transform(values.begin() + 2, values.end(), fam.values.begin(), to_int);
+        return ist;
+    }
+    catch (std::invalid_argument arg)
+    {
+        throw std::runtime_error("Error reading family '" + fam.id + "'");
+    }
 }
 
 
