@@ -128,6 +128,6 @@ install: $(RELEXE)
 
 .PHONY dist:
 dist: $(AUX)
-	mkdir distro
+	mkdir -p distro
 	tar  --transform "s,^,CAFE/," -cf distro/CAFE-@PACKAGE_VERSION@.tar.gz cafe docs example libcommon libtree tests main.cpp $(AUX)
 

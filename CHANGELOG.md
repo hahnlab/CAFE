@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [4.2.1] - 2019-03-15
+### Changed
+- Fixed a memory leak in situations where branch lengths were almost identical to each other
+- Improved error messages when there is an error in the family file
+- Fixed bug where the tree was printed twice in the report
+
 ## [4.2] - 2018-07-01
 ### Added
 - tree: a -i parameter is now supported to load a tree from a file.
