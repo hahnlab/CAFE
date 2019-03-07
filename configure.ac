@@ -1,4 +1,4 @@
-AC_INIT(cafe, [4.2], hahnlabcafe@googlegroups.com,, hahnlab.github.io/CAFE)
+AC_INIT(cafe, [4.2.1], hahnlabcafe@googlegroups.com,, hahnlab.github.io/CAFE)
 
 m4_include([m4/ax_lib_readline.m4])
 

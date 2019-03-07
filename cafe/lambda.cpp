@@ -646,10 +646,26 @@ double* cafe_best_lambda_by_fminsearch(pCafeParam param, int lambda_len, int k)
 	return param->input.parameters;
 }
 
+void cafe_tree_string_likelihood(pString pstr, pPhylogenyNode pnode)
+{
+    pCafeNode pcnode = (pCafeNode)pnode;
+    double val = *std::max_element(pcnode->likelihoods, pcnode->likelihoods+50);
+    if (pnode->name) string_fadd(pstr, "%s", pnode->name);
+    string_fadd(pstr, "<%f>", val);
+}
+
 posterior compute_posterior(pCafeFamilyItem pitem, pCafeTree pcafe, const std::vector<double>& prior_rfsize)
 {
     posterior result;
     compute_tree_likelihoods(pcafe);
+
+#if 0
+    // print probabiities in Newick format, for debugging
+    cout << "Family: " << pitem->id;
+    pString pstr = phylogeny_string_newick((pTree)pcafe, cafe_tree_string_likelihood, PS_SKIP_BL);
+    cout << pstr->buf << endl;
+    string_free(pstr);
+#endif
 
     double *likelihood = get_likelihoods(pcafe);		// likelihood of the whole tree = multiplication of likelihood of all nodes
 

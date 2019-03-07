@@ -317,7 +317,7 @@ void cafe_shell_set_branchlength(pCafeParam param, int max_family_size)
 		}
 	}
 	
-    cafe_tree_set_birthdeath(param->pcafe, max_family_size);
+    free_cache_keep_matrices(cafe_tree_set_birthdeath(param->pcafe, max_family_size));
 }
 
 

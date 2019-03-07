@@ -371,8 +371,9 @@ void node_set_birthdeath_matrix(pCafeNode pcnode, pBirthDeathCacheArray cache, i
 
 }
 
-void add_key(pArrayList arr, double branchlength, double lambda, double mu)
+void add_key(pArrayList arr, double d_branchlength, double lambda, double mu)
 {
+    int branchlength = (int)d_branchlength;
     for (int i = 0; i < arr->size; ++i)
     {
         struct BirthDeathCacheKey *key = (struct BirthDeathCacheKey *)arraylist_get(arr, i);
@@ -444,10 +445,20 @@ void gather_keys(pTree ptree, pTreeNode ptnode, va_list ap1)
     get_keys_from_node((pCafeNode)ptnode, arr, pcafe->k);
 }
 
+void free_cache_keep_matrices(pBirthDeathCacheArray bd_cache)
+{
+    // free the cache without deleting the matrices
+    void** keys = NULL;
+    hash_table_get_keys(bd_cache->table, &keys);
+    free(keys);
+    hash_table_delete(bd_cache->table);
+    memory_free(bd_cache);
+}
+
 /**
 *	Set each node's birthdeath matrix based on its values of branchlength, lambdas, and mus
 **/
-void cafe_tree_set_birthdeath(pCafeTree pcafe, int max_family_size)
+pBirthDeathCacheArray cafe_tree_set_birthdeath(pCafeTree pcafe, int max_family_size)
 {
     pArrayList arr = arraylist_new(40);
     tree_traveral_prefix((pTree)pcafe, gather_keys, arr);
@@ -466,12 +477,9 @@ void cafe_tree_set_birthdeath(pCafeTree pcafe, int max_family_size)
 
 	tree_traveral_prefix((pTree)pcafe, do_node_set_birthdeath, bd_cache);
 
-    // free the cache without deleting the matrices
-    void** keys = NULL;
-    hash_table_get_keys(bd_cache->table, &keys);
-    free(keys);
-    hash_table_delete(bd_cache->table);
-    memory_free(bd_cache);
+    arraylist_free(arr, NULL);
+
+    return bd_cache;
 }
 
 void cafe_tree_node_copy(pTreeNode psrc, pTreeNode pdest)
@@ -513,8 +521,8 @@ pCafeTree cafe_tree_split(pCafeTree pcafe, int idx )
 	{
 		__cafe_tree_copy_new_fill(pcafe,psub);
 	}
-	cafe_tree_set_birthdeath(pcafe, probability_cache->maxFamilysize);
-	cafe_tree_set_birthdeath(psub, probability_cache->maxFamilysize);
+	free_cache_keep_matrices(cafe_tree_set_birthdeath(pcafe, probability_cache->maxFamilysize));
+	free_cache_keep_matrices(cafe_tree_set_birthdeath(psub, probability_cache->maxFamilysize));
 	return psub;
 }
 
