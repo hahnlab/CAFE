@@ -31,6 +31,33 @@
       
       <div class="content grid_8">
 	<h1>Announcements</h1>
+		  <h2>March 15, 2019</h2>
+		  <p>CAFE v4.2.1 is out!</p>
+		  <p><u><b>Changed</b></u></p>
+		  <ul class="announce">
+			  <li class="announce">Fixed a memory leak in situations where branch lengths were almost identical to each other</li>
+			  <li class="announce">Improved error messages when there is an error in the family file</li>
+			  <li class="announce">Fixed bug where the tree was printed twice in the report</li>
+		  </ul>
+
+		  <h2>July 1, 2018</h2>
+		  <p>CAFE v4.2 is out!</p>
+		  <p><u><b>Added</b></u></p>
+		  <ul class="announce">
+			  <li type="disc" class="announce">tree: a -i parameter is now supported to load a tree from a file.</li>
+			  <li type="disc" class="announce">A wider variety of compiler/operating system combinations are now tested before releasing</li>
+			  <li type="disc" class="announce">lambda: a -score parameter has been added which logs the calculated log-likelihood for the given set of lambdas.</li>
+			  <li type="disc" class="announce">The PGI compiler will now be autodetected and used if available.</li>
+		  </ul>
+		  <p><u><b>Changed</b></u></p>
+		  <ul class="announce">
+			  <li class="announce">Fixed bug where running the optimizer could change the initial values passed to the optimizer. (This did not seem to have an effect on the final values but made the optimizer less predictable)</li>
+			  <li class="announce">load: Fixed occasional crash if the log file specified with the -l parameter is invalid</li>
+			  <li class="announce">report: Fixed occasional crash if multiple threads were specified in the load command</li>
+			  <li class="announce">lambda: Fixed crash if there is a species in the family file that does not appear in the tree</li>
+			  <li class="announce">tree: A warning is now emitted if the tree is not ultrametric (to within 0.01% of the max root-to-leaf length)</li>
+		  </ul>
+
 		  <h2>November 1, 2017</h2>
 		  <p>CAFE v4.1 is out!</p>
 		  <p><u><b>Added</b></u></p>
