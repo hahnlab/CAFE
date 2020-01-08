@@ -9,7 +9,7 @@ gain and loss across a user-specified phylogenetic tree. The distribution of fam
 sizes generated under this model can provide a basis for assessing the significance 
 of the observed family size differences among taxa.
 
-[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
+[![Project Status: Moved to https://github.com/hahnlab/CAFExp – The project has been moved to a new location, and the version at that location should be considered authoritative.](https://www.repostatus.org/badges/latest/moved.svg)](https://www.repostatus.org/#moved) to [https://github.com/hahnlab/CAFExp](https://github.com/hahnlab/CAFExp)
 
 [![Build Status](https://travis-ci.org/hahnlab/CAFE.svg?branch=master)](https://travis-ci.org/hahnlab/CAFE)
 
