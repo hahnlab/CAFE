@@ -25,7 +25,7 @@ def errorOut(errnum, errmsg):
 # Formatting for error messages.
 	fullmsg = "|**Error " + str(errnum) + ": " + errmsg + " |";
 	border = " " + "-" * (len(fullmsg)-2);
-	print "\n" + border + "\n" + fullmsg + "\n" + border + "\n";
+	print("\n" + border + "\n" + fullmsg + "\n" + border + "\n");
 
 ############################################
 def optParse(errorflag):
@@ -93,7 +93,7 @@ def printWrite(o_name, v, o_line1, o_line2="", pad=0):
 	else:
 		outline = o_line1 + " "*(pad-len(o_line1)) + o_line2;
 	if v == 1 or v == -2:
-		print outline;
+		print(outline);
 	f = open(o_name, "a");
 	f.write(outline + "\n");
 	f.close();
@@ -275,7 +275,7 @@ def getScore(error, spectomin, tempDir, wout, cafLog):
 	initFile.write(scoreFile);
 	initFile.write("\n")
 
-	for s in xrange(len(sLines)):
+	for s in range(len(sLines)):
 		if sLines[s][:7] == "Poisson":
 			initFile.write(sLines[s]);
 		#if sLines[s][:7] == "Poisson" and sLines[s].find("inf") != -1:
