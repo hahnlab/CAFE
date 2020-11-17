@@ -1138,17 +1138,19 @@ int cafe_cmd_tree(Globals& globals, std::vector<std::string> tokens)
 	}
     else if (tokens.size() > 2)
     {
-        if (tokens[1] == "-i")
-        {
-            ifstream ifst(tokens[2]);
-            if (!ifst)
-            {
-                throw std::runtime_error("Failed to read file '" + tokens[2] + "'");
-            }
-            stringstream buffer;
-            buffer << ifst.rdbuf();
-            newick = buffer.str();
-        }
+		if (tokens[1] == "-i")
+		{
+			ifstream ifst(tokens[2]);
+			if (!ifst)
+			{
+				throw std::runtime_error("Failed to read file '" + tokens[2] + "'");
+			}
+			stringstream buffer;
+			buffer << ifst.rdbuf();
+			newick = buffer.str();
+		}
+		else
+			throw std::runtime_error("Unrecognized parameter " + tokens[1]);
     }
 	else
 	{
