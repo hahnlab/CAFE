@@ -41,10 +41,6 @@ inner nodes of all gene families.
 #include <iterator>
 #include <algorithm>
 
-#ifdef HAVE_STRINGS_H
-#include <strings.h>
-#endif // HAVE_STRINGS_H
-
 #include "reports.h"
 #include "likelihood_ratio.h"
 #include "pvalue.h"

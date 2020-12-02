@@ -132,6 +132,14 @@ pArrayList ConditionalDistribution::to_arraylist()
 	return result;
 }
 
+/// <summary>
+/// Computes pvalues for each possible tree root size, by comparing the probabilities in the conditional distribution
+/// with the probability of the tree
+/// </summary>
+/// <param name="pcafe">A tree with precalculated likelihoods</param>
+/// <param name="pvalues">Output array</param>
+/// <param name="pconddist">Conditional distribution array</param>
+/// <param name="cdlen">size of the CD</param>
 void cafe_tree_p_values(pCafeTree pcafe, std::vector<double>& pvalues, std::vector<std::vector<double> >& pconddist, int cdlen)
 {
   compute_tree_likelihoods(pcafe);

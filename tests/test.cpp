@@ -1624,31 +1624,15 @@ TEST(FirstTestGroup, initialize_k_weights)
 	DOUBLES_EQUAL(.15, weights[5], .0001);
 }
 
-double my_pvalue(double v, std::vector<double>& conddist)
-{
-	int idx = std::upper_bound(conddist.begin(), conddist.end(), v) - conddist.begin();
-	return  idx / (double)conddist.size();
-}
-
 TEST(PValueTests, pvalue3)
 {
 	double v = .35;
-	//	double conddist[] = { .9, .8, .7, .6, .5, .4, .3, .2, .1 };
 	std::vector<double> conddist = { .1, .2, .3, .4, .5, .6, .7, .8, .9 };
-	double actual = my_pvalue(v, conddist);
+	double actual = pvalue(v, conddist.data(), conddist.size());
 	DOUBLES_EQUAL(3.0 / 9.0, actual, .00001);
 }
 
-TEST(PValueTests, pvalue2)
-{
-	double v = .35;
-	//	double conddist[] = { .9, .8, .7, .6, .5, .4, .3, .2, .1 };
-	double conddist[] = { .1, .2, .3, .4, .5, .6, .7, .8, .9 };
-	double actual = pvalue(v, conddist, 9);
-	DOUBLES_EQUAL(3.0 / 9.0, actual, .00001);
-}
-
-TEST(PValueTests, pvalue)
+TEST(PValueTests, print_pvalues)
 {
 	probability_cache = NULL;
     if (cache.size > 0)
