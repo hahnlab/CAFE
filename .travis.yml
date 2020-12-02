@@ -28,4 +28,4 @@ after_success:
 #  on:
 #    branch: master
 notifications:
-  slack: hahnlab-cafe:qWd7TTjmDiENiF99zgek98Rr
+  slack: hahnlabworkspace:AWJdGIemc7W3GNMRYBNS8Yj0
