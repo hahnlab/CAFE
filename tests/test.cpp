@@ -1048,17 +1048,17 @@ TEST(FirstTestGroup, viterbi_sum_probabilities)
   human->familysize = 3;
   ((pCafeNode)((pTree)tree)->nlist->array[3])->familysize = 7;
 
-  auto m = chimp->birthdeath_matrix;	// (human and chimp matrices are the same)
-  square_matrix_set(m, 5, 8, 5);
-  square_matrix_set(m, 5, 1, 5);
-  square_matrix_set(m, 5, 3, 11);
-  square_matrix_set(m, 5, 4, 2);
+  square_matrix_set(chimp->birthdeath_matrix, 5, 8, 5);
+  square_matrix_set(chimp->birthdeath_matrix, 5, 1, 5);
+  square_matrix_set(human->birthdeath_matrix, 5, 3, 11);
+  square_matrix_set(human->birthdeath_matrix, 5, 4, 2);
 
   CafeFamilyItem item;
   viterbi_sum_probabilities(&v, tree, &item);
 
   DOUBLES_EQUAL(8, v.viterbiPvalues[viterbi_parameters::NodeFamilyKey(chimp->super.super.id, &item)], .001);
-  DOUBLES_EQUAL(18.5, v.viterbiPvalues[viterbi_parameters::NodeFamilyKey(human->super.super.id, &item)], .001);
+  DOUBLES_EQUAL(18.5, v.viterbiPvalues[viterbi_parameters::NodeFamilyKey(parent->super.super.id, &item)], .001);
+  DOUBLES_EQUAL(0, v.viterbiPvalues[viterbi_parameters::NodeFamilyKey(human->super.super.id, &item)], .001);
 }
 
 TEST(FirstTestGroup, initialize_leaf_likelihoods)

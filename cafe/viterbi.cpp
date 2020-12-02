@@ -53,9 +53,10 @@ void viterbi_sum_probabilities(viterbi_parameters *viterbi, pCafeTree pcafe, pCa
         for (int k = 0; k < 2; k++)
         {
             double p = square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, child[k]->familysize);
+            int node_id = 2 * j + k;
             for (int m = 0; m <= pcafe->range.max; m++)
             {
-                auto key = viterbi_parameters::NodeFamilyKey(child[k]->super.super.id, pitem);
+                auto key = viterbi_parameters::NodeFamilyKey(node_id, pitem);
                 if (square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, m) == p)
                 {
                     viterbi->viterbiPvalues[key] += square_matrix_get(child[k]->birthdeath_matrix, pcnode->familysize, m) / 2.0;
