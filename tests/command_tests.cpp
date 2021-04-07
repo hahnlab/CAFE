@@ -93,7 +93,7 @@ TEST(CommandTests, cafe_cmd_date)
 	char outbuf[10000];
 	globals.param.flog = fmemopen(outbuf, 999, "w");
 	cafe_cmd_date(globals, tokens);
-	STRCMP_CONTAINS("2020", outbuf);	// this will start to fail in 2021
+	STRCMP_CONTAINS("2021", outbuf);	// this will start to fail in 2022
 	fclose(globals.param.flog);
 }
 
