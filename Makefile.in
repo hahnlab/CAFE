@@ -3,7 +3,7 @@ CXX=@CXX@
 LD=@CXX@
 CXXFLAGS=@CXXFLAGS@
 
-prefix=/usr/local
+prefix=@prefix@
 
 #
 # Compiler flags
@@ -124,6 +124,7 @@ clean:
 	rm -f $(RELEXE) $(RELOBJS) $(DBGEXE) $(DBGOBJS) $(TESTEXE) $(TESTOBJS) $(DBGDIR)/main.o $(RELDIR)/main.o
 
 install: $(RELEXE)
+	mkdir -p $(prefix)/bin
 	install -m 0755 $(RELEXE) $(prefix)/bin
 
 .PHONY dist:
